@@ -1,0 +1,8 @@
+\section{Hamiltonian transport diagnostics}
+The implementation should preserve the energy decomposition used by the sampler when reporting diagnostics.
+
+\begin{proposition}[Hamiltonian energy decomposition]\label{prop:hamiltonian-energy}
+The Hamiltonian is the sum of the potential energy and kinetic energy terms.
+\end{proposition}
+
+This diagnostic identity is used only for monitoring; it should not alter the transition kernel.

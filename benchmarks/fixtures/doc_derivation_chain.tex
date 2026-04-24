@@ -1,0 +1,8 @@
+\section{Transport derivation support}
+The transformed density should preserve the Jacobian correction in the final expression.
+
+\begin{equation}\label{eq:transport-density-step}
+\log \tilde{\pi}(u) = \log \pi(u) + \logdet
+\end{equation}
+
+The implementation-level shorthand may reorder the terms, but it should not drop the correction.

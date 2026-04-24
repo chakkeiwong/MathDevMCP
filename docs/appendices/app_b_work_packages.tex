@@ -1,0 +1,49 @@
+\chapter{Work Packages and Delivery Plan}
+
+This appendix breaks the project into concrete work packages.
+
+\section*{WP1: Document and code indexing}
+\begin{itemize}
+  \item Build LaTeX extraction for chapters, labels, theorem-like blocks, equations, and references.
+  \item Build code inventory for functions, classes, tests, and relevant symbols.
+  \item Produce local caches and unified search.
+  \item Deliver first retrieval benchmark.
+\end{itemize}
+
+\section*{WP2: Verification backends}
+\begin{itemize}
+  \item Add SymPy and SymEngine first-line symbolic checks.
+  \item Add mpmath numeric probing.
+  \item Add SageMath and Maxima fallback wrappers.
+  \item Add Z3-based consistency checks for encodable cases.
+  \item Normalize outputs into structured result records.
+\end{itemize}
+
+\section*{WP3: MCP interface}
+\begin{itemize}
+  \item Implement a local Python MCP server.
+  \item Expose a small tool surface with structured schemas.
+  \item Add project-local configuration for Claude Code.
+  \item Create examples and smoke tests.
+\end{itemize}
+
+\section*{WP4: Audit and consistency workflows}
+\begin{itemize}
+  \item Implement claim auditing and gap localization.
+  \item Implement code--document consistency checks.
+  \item Produce batch reports and benchmark outputs.
+\end{itemize}
+
+\section*{WP5: Code generation support}
+\begin{itemize}
+  \item Define mathematically constrained generation tasks.
+  \item Add acceptance-test harnesses based on formulas and examples.
+  \item Benchmark generated code against baseline workflows.
+\end{itemize}
+
+\section*{WP6: Adoption and documentation}
+\begin{itemize}
+  \item Write user-facing workflow guides.
+  \item Create sample benchmark tasks and example reports.
+  \item Train group members on interactive and batch usage patterns.
+\end{itemize}

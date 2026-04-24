@@ -1,0 +1,83 @@
+\chapter{Core Workflows}
+
+MathDevMCP should be judged by whether it improves the group's real workflows rather than by whether it produces attractive isolated outputs. This chapter defines the main workflows the platform must support.
+
+\section{Monograph and long-form documentation support}
+
+The first workflow is the drafting and revision of long monographs, technical notes, and project proposals. In this workflow, the user should be able to search for a theorem, proposition, label, or definition; retrieve the surrounding context; compare current text with implementation details; and draft or revise new material while remaining grounded in local evidence. The platform should make it easier to maintain notation consistency, track references, and avoid silently contradicting earlier assumptions.
+
+\section{Code--document consistency review}
+
+A central workflow is checking whether code and documentation remain aligned. The platform should support both directions:
+
+\begin{itemize}
+  \item from documentation to code: does the implementation match the described objective, transformation, dimension, algorithm step, or assumption?
+  \item from code to documentation: does the text accurately describe what the implementation actually does after recent changes?
+\end{itemize}
+
+This workflow should produce localized discrepancies rather than vague warnings. Examples include mismatched state dimensions, omitted Jacobian terms, stale algorithm names, inconsistent parameter definitions, or divergence between documented assumptions and runtime behavior.
+
+\section{Documentation auditing}
+
+The audit workflow should verify claims, localize proof gaps, search for counterexamples, and classify findings with explicit evidence. The goal is not just to say that something is wrong, but to say \emph{where} it is wrong and \emph{why}. A useful audit should distinguish among correct claims, false claims, missing assumptions, incomplete derivations, and claims that cannot be verified from local context.
+
+\section{Mathematically informed code generation}
+
+MathDevMCP should also support code generation from mathematical specifications, but under stricter controls than generic agent-assisted generation. The workflow should begin from a structured mathematical description or extracted formula set, generate code in a bounded scope, and then validate the result against executable acceptance checks. For mathematical code, verification should include dimension consistency, sign conventions, basic symbolic equivalence where possible, and scenario-level behavior checks. This is especially valuable for transformations, likelihood terms, linear algebra kernels, and diagnostic routines.
+
+\section{Proposal drafting and review under deadline pressure}
+
+The same platform should support short-cycle proposal work. In that setting, the system should help build drafts from source material, summarize prior chapters or code modules, detect contradictions, and provide review checklists. Time-to-draft matters, but unsupported claims and stale descriptions remain costly. Therefore, proposal workflows should integrate retrieval and quick consistency checks by default.
+
+\section{Tool matrix for the group's hardest problems}
+
+The most difficult workflows currently faced by the group can be mapped directly to tool classes. This mapping should guide both implementation and evaluation.
+
+\begin{longtable}{p{0.22\textwidth}p{0.27\textwidth}p{0.39\textwidth}}
+\toprule
+\textbf{Problem} & \textbf{Best tool classes} & \textbf{Why they matter} \\
+\midrule
+Very long documents and many chapters & LaTeX parsing and indexing, theorem/equation inventory, label dependency graph, MCP search and context extraction & The main bottleneck is structured retrieval over long-range dependencies, not prose generation alone \\
+Code--document consistency & Unified code and document index, traceability checker, mismatch localizer, seeded inconsistency benchmarks & The group needs localized evidence that equations, assumptions, algorithm descriptions, and implementations still match \\
+Derivation auditing and math-aware typo detection & Symbolic checks, numeric falsification, proof-step extraction, notation drift checker, counterexample search & Many dangerous failures are mathematical near-typos, missing assumptions, or incorrect local derivation steps \\
+AI implementation ignores the document and improvises & Document-grounded code generation, specification extraction, acceptance-test harnesses, code--spec consistency checks & The remedy is to force the generation workflow to start from retrieved specifications and validate outputs before trusting them \\
+Difficulty reading dense mathematical exposition & Claim-context extraction, symbol expansion, equation dependency graph, local derivation-step verification & Users need tools that isolate dense local context and explain or verify it incrementally \\
+\bottomrule
+\end{longtable}
+
+\section{Recommended workflow pattern}
+
+Across all workflows, the recommended pattern is:
+\begin{enumerate}[label=\arabic*.]
+  \item retrieve the relevant document and code context;
+  \item extract the exact local claim, equation, or implementation region;
+  \item invoke the lightest appropriate verification tool;
+  \item escalate to richer backends only when needed;
+  \item summarize findings with explicit evidence and uncertainty;
+  \item if drafting or generating code, run acceptance checks before treating the output as trustworthy.
+\end{enumerate}
+
+This pattern keeps the platform focused on evidence-based assistance rather than unconstrained generation.
+
+\subsection*{Version 1}
+\begin{itemize}
+  \item LaTeX indexing and search
+  \item context extraction for sections, theorem-like environments, and equations
+  \item unified code and document search
+  \item first-line symbolic and numeric verification wrappers
+  \item MCP exposure for retrieval and verification tools
+\end{itemize}
+
+\subsection*{Version 2}
+\begin{itemize}
+  \item code--document consistency checks with localized mismatch reports
+  \item audit-oriented workflows for claim verification, gap localization, and counterexample search
+  \item richer backend fallback with SageMath and Maxima
+\end{itemize}
+
+\subsection*{Version 3}
+\begin{itemize}
+  \item document-grounded code generation
+  \item acceptance-test harnesses derived from mathematical specifications
+  \item team-facing batch reports and broader adoption tooling
+\end{itemize}

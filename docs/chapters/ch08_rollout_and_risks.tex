@@ -1,0 +1,47 @@
+\chapter{Rollout, Risks, and Adoption}
+
+The project should be delivered in stages. A staged approach is important because the largest technical risk is not that the underlying tools are unavailable, but that the platform becomes too broad, too noisy, or too difficult to trust before the highest-value workflows are stabilized.
+
+\section{Rollout stages}
+
+\subsection*{Stage 1: indexing and retrieval MVP}
+Implement LaTeX extraction, chapter/equation/theorem inventories, code inventory, and unified search over document and code artifacts. Deliver MCP tools for search and context extraction, together with a small benchmark suite.
+
+\subsection*{Stage 2: verification backends}
+Add symbolic identity checking, numeric falsification, and basic logical consistency checks through a small number of structured tools. Integrate backend selection and failure reporting.
+
+\subsection*{Stage 3: audit and consistency workflows}
+Implement composite tools for claim verification, counterexample search, proof-gap localization, and code--document consistency review. Add seeded inconsistency tests and report generation.
+
+\subsection*{Stage 4: code generation support and wider adoption}
+Add mathematically constrained code-generation workflows and acceptance-test harnesses. Expand CLI and batch reporting surfaces so the platform supports the full group.
+
+\section{Adoption model}
+
+The platform should be introduced as a shared internal service with three access modes: interactive Claude Code workflows, CLI scripts, and batch reports. This allows gradual adoption without requiring all teammates to change their habits at once. Documentation should include examples, benchmark tasks, and a small set of recommended review procedures.
+
+\section{Key project risks}
+
+\begin{riskbox}
+\textbf{Risk 1: Overbuilding.} A large general-purpose math agent platform could absorb significant effort before proving value. The mitigation is to keep the first release small and benchmark-driven.
+\end{riskbox}
+
+\begin{riskbox}
+\textbf{Risk 2: Tool noise and false confidence.} Symbolic or logical tools can produce outputs that are technically correct but irrelevant to the real mathematical issue. Mitigation requires structured schemas, clear statuses, and explicit evidence recording.
+\end{riskbox}
+
+\begin{riskbox}
+\textbf{Risk 3: Fragile encodings.} Some claims do not translate naturally into symbolic or solver-ready form. The platform must support ``inconclusive'' and ``not encodable'' outcomes instead of overclaiming.
+\end{riskbox}
+
+\begin{riskbox}
+\textbf{Risk 4: Workflow friction.} If the system is only usable by one expert, group-level adoption will fail. The platform therefore needs CLI and report surfaces in addition to MCP integration.
+\end{riskbox}
+
+\begin{riskbox}
+\textbf{Risk 5: Benchmark mismatch.} A benchmark that rewards polished explanations rather than mathematical correctness could push development in the wrong direction. The mitigation is to score retrieval, verdict quality, localization, and executable consistency outcomes.
+\end{riskbox}
+
+\section{Governance and review}
+
+The proposal recommends treating MathDevMCP as an internal research engineering project with explicit milestone reviews. Each stage should end with a small benchmark report, examples from real group workflows, and a decision on whether to expand the platform or simplify it.

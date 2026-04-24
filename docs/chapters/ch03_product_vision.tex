@@ -1,0 +1,55 @@
+\chapter{Product Vision and Scope}
+
+MathDevMCP is envisioned as an internal copilot platform for mathematical development. Its purpose is to help researchers and developers work effectively across long technical documents, symbolic derivations, numerical code, and implementation-heavy research workflows. The platform should make Claude Code and related agent tools materially more reliable in the specific settings that matter for the group: DSGE development, macrofinance research, technical monographs, project proposals, and mathematically structured codebases.
+
+\section{Vision}
+
+The vision is not to create a generic AI writing system. The platform should instead provide a grounded, tool-mediated environment in which drafting and coding are continuously supported by retrieval, verification, and consistency checks. In the target workflow, an agent should be able to locate the relevant theorem or code path, extract the precise local context, invoke symbolic or numeric checks through a stable interface, and produce a recommendation that is explicitly tied to evidence.
+
+At a practical level, MathDevMCP should enable the following:
+
+\begin{itemize}
+  \item drafting long technical sections from indexed local sources rather than from free-form memory;
+  \item deriving and checking intermediate mathematical steps in project notation before the agent makes categorical claims;
+  \item verifying symbolic identities, intermediate derivation steps, and change-of-variable relationships with external algebra systems;
+  \item detecting drift between code and documentation;
+  \item auditing mathematical claims with repeatable verdicts and measurable evidence quality;
+  \item generating code from mathematical specifications subject to explicit acceptance tests;
+  \item supporting both expert users in Claude Code and teammates who only need batch reports or prebuilt workflows.
+\end{itemize}
+
+\section{Scope for version 1}
+
+Version 1 should focus on a disciplined, high-value subset of capabilities.
+
+\subsection*{In scope}
+\begin{enumerate}[label=\alph*.]
+  \item LaTeX parsing, indexing, and retrieval for chapters, labels, equations, theorem-like environments, references, and local context.
+  \item Code indexing and linkable search over mathematical implementations, tests, and supporting scripts.
+  \item Symbolic checks via SymPy and SymEngine, with SageMath and Maxima as richer or independent fallback backends.
+  \item Numeric falsification and sanity checks via mpmath or related Python tooling.
+  \item Constraint and consistency checks for suitably encodable cases via Z3.
+  \item MCP exposure of these capabilities to Claude Code through stable, structured tools.
+  \item Audit-oriented composite workflows such as claim verification, gap localization, counterexample search, and code--document consistency review.
+\end{enumerate}
+
+\subsection*{Out of scope for version 1}
+\begin{enumerate}[label=\alph*.]
+  \item general theorem proving over arbitrary monograph content;
+  \item automatic translation of unrestricted prose into formal logic;
+  \item fully autonomous production of correct long-form chapters without human review;
+  \item universal symbolic support for every mathematical domain equally well;
+  \item large-scale distributed infrastructure or heavyweight platform engineering before local workflows have proven value.
+\end{enumerate}
+
+\section{Design principles}
+
+The project should follow a few explicit principles.
+
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{Small, structured tool surface.} A few well-defined tools are preferable to many overlapping tool endpoints.
+  \item \textbf{Benchmark-driven development.} Capabilities should be justified by measurable improvement on representative tasks, not by intuition alone.
+  \item \textbf{Evidence before prose.} The platform should prefer workflows that generate traceable evidence, such as an extracted equation, symbolic simplification result, or numeric counterexample.
+  \item \textbf{Human-centered review.} The goal is to reduce pain and increase reliability, not to remove expert oversight.
+  \item \textbf{Group usability.} The system must support both interactive and batch use so that the whole group benefits.
+\end{enumerate}

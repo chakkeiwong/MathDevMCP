@@ -1,0 +1,25 @@
+\chapter{Problem Statement}
+
+The group's current workflow already demonstrates that modern coding agents and drafting assistants can materially reduce the effort of writing technical documentation. However, mathematically dense projects expose sharp limitations. The documentation corpus can easily run to 500--600 pages across chapters, appendices, technical notes, and research proposals, while the codebase simultaneously evolves through solver revisions, algorithmic experiments, and implementation hardening. In such settings, correctness depends not on any single paragraph or equation, but on long-range consistency among assumptions, notation, derivations, data structures, dimensions, transforms, numerical approximations, and algorithmic descriptions.
+
+This creates a recurring mismatch between the strengths of current AI-assisted tools and the group's actual needs. Present tools can help with local drafting, rephrasing, and summarization, but they struggle with multi-hop mathematical dependencies across distant files and document sections. They can restate derivations fluently without reliably checking them. They can generate code that appears aligned with a mathematical description while quietly dropping assumptions, terms, or shape constraints. They can summarize code into documentation that sounds plausible but no longer matches the implementation after a refactor. Under a short deadline, these failures become especially dangerous because they are easy to miss during rapid drafting cycles.
+
+Several concrete problem classes motivate the project:
+
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{Long-range document dependency failures.} Definitions, symbols, and assumptions introduced early in a monograph are often used much later in proofs, algorithm boxes, and appendices. Current tools lose track of these dependencies and may create notation drift or inconsistent restatements.
+  \item \textbf{Code--document drift.} Mathematical software frequently evolves faster than associated exposition. A proposal may describe an older algorithm variant, a chapter may mention a Jacobian term that has been removed from code, or a code path may no longer implement the assumptions described in the text.
+  \item \textbf{Weak mathematical verification.} A large model can produce confident expository text without proving symbolic identities, checking dimensions, or finding counterexamples. This is especially problematic for transport maps, perturbation algebra, adjoint systems, and other domains where small sign or transformation errors matter.
+  \item \textbf{Unstructured auditing workflows.} Existing review usually depends on manual reading, ad hoc scripts, and memory of prior incidents. There is insufficient infrastructure for repeatable claim verification, seeded inconsistency detection, or benchmarked audit quality.
+  \item \textbf{Deadline compression.} The group sometimes needs to produce long, mathematically coherent documentation in three to four weeks. In such windows, even strong manual workflows become fragile because retrieval, checking, and revision are too expensive.
+\end{enumerate}
+
+These challenges imply that the project should not be framed merely as a writing assistant. The actual need is for a trustworthy mathematical development environment that links documents, code, and math-checking tools. Such an environment must support both human drafting and machine-assisted verification. It must provide structured retrieval over code and LaTeX, external symbolic and numeric reasoning backends, and group-facing workflows for consistency checking and auditing.
+
+\section{Why existing tools are not enough}
+
+General-purpose editors with embedded language models help at the paragraph level, but they do not provide the structured tool contracts needed for high-stakes mathematical development. They usually lack an explicit layer for theorem/equation indexing, do not expose domain-specific verification backends as stable tools, and do not maintain a persistent bridge between the document corpus and implementation artifacts. Without such structure, the model must repeatedly rediscover context and improvise its own checking strategy, which is inefficient and fragile.
+
+\section{Project objective}
+
+The objective of MathDevMCP is to reduce these failure modes by creating a common platform for retrieval, verification, consistency checking, and workflow orchestration. The platform should support large-document authoring and mathematical software development as one integrated process rather than as separate activities.

@@ -1,0 +1,5 @@
+\section{Context extraction and seeded mismatch benchmarks}
+
+The implementation roadmap should now include two concrete early capabilities beyond plain indexing. First, the platform should support extraction of local LaTeX context around a label or structural block so that users and agents can inspect a theorem, equation, or section together with the surrounding lines. This addresses the recurring need to read dense mathematical material locally rather than as an undifferentiated whole. Second, the project should include seeded code--document mismatch fixtures in the benchmark suite. These fixtures should deliberately introduce inconsistencies between a document statement and a small code artifact so that MathDevMCP can be tested on its ability to detect and localize mismatches before it is trusted on real project material.
+
+These capabilities are useful because they turn abstract goals into testable implementation milestones. Context extraction supports reading, auditing, and grounded drafting. Seeded mismatch fixtures support regression testing of code--document consistency logic and reduce the risk that the project overestimates its own usefulness.

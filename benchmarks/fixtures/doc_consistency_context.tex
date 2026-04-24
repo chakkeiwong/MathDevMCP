@@ -1,0 +1,8 @@
+\section{Transport implementation context}
+The implementation should preserve the Jacobian correction term and the transformed density structure.
+
+\begin{proposition}[Transport implementation identity]\label{prop:transport-implementation}
+The transformed log density is $\log \pi(u) + \logdet$.
+\end{proposition}
+
+A correct implementation should therefore keep both the base density and the log-determinant correction.

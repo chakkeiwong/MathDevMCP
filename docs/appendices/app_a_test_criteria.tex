@@ -1,0 +1,64 @@
+\chapter{Detailed Test Criteria}
+
+This appendix provides explicit test criteria for the first major evaluation domains. The intent is to make MathDevMCP measurable and falsifiable.
+
+\section{Monograph support tests}
+
+\begin{longtable}{p{0.22\textwidth}p{0.28\textwidth}p{0.42\textwidth}}
+\toprule
+\textbf{Test area} & \textbf{Task} & \textbf{Pass criteria} \\
+\midrule
+Retrieval & Find the exact proposition, definition, equation, or appendix entry for a natural-language query & Correct file and local label found with high top-$k$ recall and low hallucinated references \\
+Notation consistency & Update a section that reuses notation from distant chapters & No introduced symbol drift, inconsistent reuse, or broken cross-reference \\
+Draft grounding & Draft a section from indexed local sources & Claims are linked to retrieved evidence and unsupported additions are flagged \\
+Revision support & Apply a change to notation or assumptions and propagate consequences & Affected chapters and references are correctly identified and revision checklist is generated \\
+\bottomrule
+\end{longtable}
+
+\section{Code--document consistency tests}
+
+\begin{longtable}{p{0.22\textwidth}p{0.28\textwidth}p{0.42\textwidth}}
+\toprule
+\textbf{Test area} & \textbf{Task} & \textbf{Pass criteria} \\
+\midrule
+Equation--code alignment & Compare a documented formula with its implementation & Correctly identify match or mismatch and localize the relevant code path \\
+Assumption consistency & Check whether stated assumptions are enforced or relied upon in code & Correct trace from assumption to implementation/test artifact \\
+Algorithm drift & Detect when text describes an obsolete algorithm variant & Seeded drift is detected with high precision and actionable localization \\
+Dimension consistency & Compare documented dimensions with runtime structures & Shape mismatch or agreement is stated correctly and supported by evidence \\
+\bottomrule
+\end{longtable}
+
+\section{Code generation tests}
+
+\begin{longtable}{p{0.22\textwidth}p{0.28\textwidth}p{0.42\textwidth}}
+\toprule
+\textbf{Test area} & \textbf{Task} & \textbf{Pass criteria} \\
+\midrule
+Specification fidelity & Generate code from a mathematical specification & Generated code preserves the required structure, variables, and conventions \\
+Executable correctness & Run unit and scenario checks derived from the specification & Generated code passes acceptance checks without hidden manual repair \\
+Traceability & Explain where the generated code came from & Output is tied back to equations, assumptions, and source snippets \\
+Hallucination control & Inspect for invented routines or unsupported simplifications & Low hallucination rate relative to baseline generation workflows \\
+\bottomrule
+\end{longtable}
+
+\section{Documentation auditing tests}
+
+\begin{longtable}{p{0.22\textwidth}p{0.28\textwidth}p{0.42\textwidth}}
+\toprule
+\textbf{Test area} & \textbf{Task} & \textbf{Pass criteria} \\
+\midrule
+Verdict accuracy & Classify a claim as correct, incorrect, gapful, ambiguous, or unverifiable & Classification matches gold or reviewer consensus \\
+Gap localization & Identify the broken step or missing assumption & Localized finding points to the right proof segment, equation, or code path \\
+Counterexample generation & Produce a contradiction when a claim is false & Counterexample is valid, relevant, and reproducible \\
+Unsupported claim detection & Flag claims not justified by local evidence & Reduced rate of confident unsupported conclusions \\
+\bottomrule
+\end{longtable}
+
+\section{Team adoption tests}
+
+\begin{itemize}
+  \item A new teammate can use a documented workflow without bespoke coaching.
+  \item The same task produces similar outputs across users because tools and reports are structured.
+  \item Time-to-first-draft and time-to-reviewed-draft decrease on representative tasks.
+  \item Failure modes are understandable and do not silently masquerade as success.
+\end{itemize}

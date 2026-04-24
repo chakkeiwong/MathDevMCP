@@ -1,0 +1,53 @@
+\chapter{System Architecture}
+
+MathDevMCP should be implemented as a layered system whose main purpose is to give Claude Code and related workflows reliable access to document-aware and math-aware tools. The recommended architecture has three layers: an implementation substrate in Python, a thin MCP server facade, and a workflow layer that exposes task-oriented capabilities to users and agents.
+
+\section{Layer 1: Python implementation substrate}
+
+The base layer should be a local Python toolkit responsible for parsing, indexing, verification, consistency analysis, and report generation. This layer should contain the real logic of the system because it is the easiest part to test, extend, and reuse outside interactive agent sessions.
+
+Core subcomponents should include:
+
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{Document extraction and indexing.} Parse LaTeX sources, collect theorem-like environments, labels, equation blocks, references, and section structure, and store them in normalized index artifacts.
+  \item \textbf{Code inventory and traceability.} Build searchable inventories of functions, classes, configuration points, tests, and implementation modules relevant to mathematical workflows.
+  \item \textbf{Verification backends.} Provide wrappers for symbolic algebra, numeric probing, and logical consistency checking.
+  \item \textbf{Audit and reporting logic.} Implement task-oriented routines for claim verification, consistency checks, and benchmark scoring.
+\end{enumerate}
+
+This layer should rely on local tools already available to the group: SymPy, SymEngine, SageMath, Maxima, mpmath, and Z3. The implementation should prefer lightweight on-disk caches such as JSON and optionally SQLite for larger indexes, rather than introducing heavyweight infrastructure too early.
+
+\section{Layer 2: MCP server facade}
+
+The second layer should expose a carefully chosen subset of the implementation toolkit as MCP tools. Claude Code works best when tools have clear schemas and narrow semantics. Therefore, MathDevMCP should not start by exposing unrestricted shell access or large numbers of backend-specific entrypoints. Instead, it should provide structured tools such as:
+
+\begin{itemize}
+  \item \texttt{build\_document\_index}
+  \item \texttt{search\_document\_and\_code}
+  \item \texttt{extract\_latex\_context}
+  \item \texttt{verify\_identity}
+  \item \texttt{find\_numeric\_counterexample}
+  \item \texttt{check\_logical\_consistency}
+  \item \texttt{audit\_claim}
+  \item \texttt{check\_code\_doc\_consistency}
+\end{itemize}
+
+These tools should hide most backend details while still allowing backend preference or fallback selection. For example, a single identity-verification tool can default to SymPy, optionally escalate to SageMath or Maxima, and record which backend produced the result. This reduces cognitive load for the agent and makes benchmarking easier.
+
+\section{Layer 3: Workflow layer}
+
+The final layer should organize the tools into actual group workflows. The system should support three user surfaces:
+
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{Claude Code integration.} Interactive use for drafting, auditing, code reading, and consistency checks.
+  \item \textbf{CLI scripts.} Repeatable commands for local and batch use, suitable for users who prefer shell workflows or want reproducible reports.
+  \item \textbf{Batch reports.} Chapter-level or repository-level audit reports for teammates who do not need interactive tooling.
+\end{enumerate}
+
+\section{Claude Code integration}
+
+Project-local MCP configuration should make MathDevMCP tools available only in repositories where they are relevant. Claude Code should remain the planner and synthesizer, while MathDevMCP provides retrieval, verification, and audit operations with stable contracts. This division of responsibility is important: the agent decides what to inspect and how to summarize results, while the MCP system produces structured evidence.
+
+\section{Security and reliability guardrails}
+
+The platform should treat external math tools as evidence engines, not as unquestionable truth oracles. Each tool invocation should record inputs, backend used, outputs, and failure conditions. Timeouts, normalization of outputs, and clear inconclusive states should be standard. The system should prefer explicit statuses such as \emph{proved}, \emph{disproved}, \emph{inconclusive}, and \emph{not encodable} rather than forcing a binary verdict.

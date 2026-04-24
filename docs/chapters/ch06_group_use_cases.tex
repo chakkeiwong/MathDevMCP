@@ -1,0 +1,23 @@
+\chapter{Group Use Cases}
+
+The project is motivated by workflows shared across the group rather than by the needs of a single user. The group's research and development tasks combine mathematically dense code, long technical documentation, and rapid iteration under publication or proposal deadlines. MathDevMCP should therefore be designed as a shared internal platform.
+
+\section{DSGE development}
+
+In DSGE development, model derivations, perturbation systems, filtering algorithms, transformations, priors, and estimation procedures all require tight alignment between equations and implementation. Typical failure cases include incorrect dimensions, missing terms in Jacobians, stale assumptions in the documentation, and algorithm descriptions that lag behind code changes. MathDevMCP should help the team trace these dependencies across code and text, and provide audit support when model or solver changes propagate through the documentation.
+
+\section{Macrofinance and empirical research documentation}
+
+Macrofinance work often requires long-form explanation of models, identification assumptions, empirical strategies, and numerical methods. Such projects are especially sensitive to inconsistencies in notation, conditioning assumptions, and the mapping between the paper's mathematical objects and the actual code. The platform should help maintain coherence across research proposals, appendices, replication documentation, and implementation notes.
+
+\section{Large monographs and appendices}
+
+For 500--600 page monographs or technical manuals, retrieval and consistency are themselves major challenges. A productive system must help users find the right theorem, equation, or appendix entry quickly, verify that revisions do not break earlier notation, and keep cross-references stable. The platform should support chapter-level and whole-document views so that both local editing and global review are feasible.
+
+\section{Team workflows}
+
+The platform should not assume every teammate will work interactively with Claude Code. Some users will prefer command-line scripts, while others will mainly consume generated reports. Therefore, each core capability should be implementable in a reusable internal library, surfaced through MCP for interactive users, and also callable through CLI or batch reporting layers.
+
+\section{Training and adoption implications}
+
+A shared platform should reduce duplicated manual effort. Once the group agrees on workflows for indexing, auditing, and consistency review, members can reuse the same procedures across projects. This should improve onboarding, reduce dependence on individual memory, and make large writing efforts less brittle. The platform will also create a common vocabulary for review: for example, whether a finding is a false statement, a proof gap, a missing assumption, or an implementation mismatch.

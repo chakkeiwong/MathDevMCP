@@ -1,0 +1,151 @@
+\chapter{Evaluation Plan}
+
+MathDevMCP should be evaluated by whether it improves mathematically meaningful outcomes rather than merely whether it produces fluent prose. The evaluation framework should therefore measure retrieval quality, audit correctness, consistency-checking effectiveness, code generation quality, and real workflow usability.
+
+\section{Evaluation philosophy}
+
+The proposal recommends a benchmark-driven evaluation strategy. Each evaluation task should have explicit expected outputs, measurable scoring rules, and a clear definition of what counts as success, failure, or inconclusive evidence. Whenever possible, the platform should be tested on tasks grounded in existing documents, code, and archived review findings rather than on synthetic prompts alone.
+
+\section{Benchmark classes}
+
+\subsection{Retrieval benchmark}
+The retrieval benchmark measures whether the system can find the correct local mathematical or implementation context from a natural-language prompt.
+
+Representative tasks include:
+\begin{itemize}
+  \item finding the proposition defining a Jacobian determinant identity;
+  \item locating the chapter and equation where a transport map is introduced;
+  \item finding the implementation associated with a documented algorithm step;
+  \item retrieving the assumptions relevant to a later proof or appendix remark.
+\end{itemize}
+
+Primary metrics:
+\begin{itemize}
+  \item correct file/chapter hit rate;
+  \item correct proposition/equation/label hit rate;
+  \item rank of first correct hit;
+  \item time to answer;
+  \item hallucinated reference count.
+\end{itemize}
+
+\subsection{Verification benchmark}
+The verification benchmark measures whether the system can determine whether a claim is correct, false, gapful, ambiguous, or unverifiable from local context.
+
+Representative tasks include:
+\begin{itemize}
+  \item checking whether a proposition matches its proof;
+  \item verifying a change-of-variables identity;
+  \item determining whether a stationarity condition is sufficient as stated;
+  \item deciding whether an implementation-level transformation matches the documented formula.
+\end{itemize}
+
+Primary metrics:
+\begin{itemize}
+  \item verdict accuracy;
+  \item evidence quality;
+  \item symbolic derivation success;
+  \item counterexample success when a claim is false;
+  \item false positive and false negative rates.
+\end{itemize}
+
+\subsection{Repair-guidance benchmark}
+The repair-guidance benchmark measures whether the system can identify the broken step, missing assumption, or local correction needed after a problem has been found.
+
+Primary metrics:
+\begin{itemize}
+  \item localization accuracy;
+  \item whether the proposed repair is locally correct;
+  \item whether the proposal reduces ambiguity rather than introducing new errors.
+\end{itemize}
+
+\subsection{Derivation-backed claim benchmark}
+This benchmark measures whether the system can avoid unsupported categorical claims by producing either a local derivation in project notation or a cited equation plus a logical explanation.
+
+Primary metrics:
+\begin{itemize}
+  \item fraction of categorical claims backed by an explicit derivation or cited equation;
+  \item correctness of the derivation step classification;
+  \item rate of unsupported confident claims;
+  \item usefulness of the produced derivation for human review.
+\end{itemize}
+
+
+\section{Evaluation modes}
+
+The proposal recommends evaluating at least four modes:
+\begin{enumerate}[label=\arabic*.]
+  \item Claude-only baseline;
+  \item Claude plus retrieval/indexing tools;
+  \item Claude plus math backends;
+  \item Claude plus full MathDevMCP stack.
+\end{enumerate}
+
+For internal analysis, richer ablations can distinguish parser/index gains from symbolic, numeric, and logical gains. This will help the group avoid overbuilding underused features.
+
+\section{Domain-specific test criteria}
+
+\subsection{Monograph support}
+Success criteria should include:
+\begin{itemize}
+  \item improved retrieval of chapters, propositions, equations, definitions, and references;
+  \item lower notation drift across long documents;
+  \item reduced unsupported claims in drafted material;
+  \item lower revision time for cross-chapter updates;
+  \item improved consistency of citations and internal references.
+\end{itemize}
+
+\subsection{Code--document consistency}
+Success criteria should include:
+\begin{itemize}
+  \item detection of seeded mismatches between equations and implementation;
+  \item detection of stale algorithm descriptions after code changes;
+  \item traceability between documented assumptions and code-level artifacts;
+  \item ability to explain mismatches precisely rather than vaguely.
+\end{itemize}
+
+\subsection{Code generation}
+Success criteria should include:
+\begin{itemize}
+  \item generated code passes mathematical acceptance tests;
+  \item generated code preserves dimensions, sign conventions, and transformation structure;
+  \item lower hallucination rate than baseline agent-assisted code generation;
+  \item generated code is localizable to the source mathematical specification.
+\end{itemize}
+
+\subsection{Documentation auditing}
+Success criteria should include:
+\begin{itemize}
+  \item higher verdict accuracy on archived audited claims;
+  \item better proof-gap localization;
+  \item successful production of counterexamples when claims fail;
+  \item reduced rate of confident but unsupported audit conclusions.
+\end{itemize}
+
+\subsection{Team usability}
+Success criteria should include:
+\begin{itemize}
+  \item shorter time-to-first-draft and time-to-reviewed-draft;
+  \item lower manual cleanup burden;
+  \item repeatable use by multiple group members;
+  \item clear failure modes and escalation paths.
+\end{itemize}
+
+\section{Recommended acceptance threshold}
+
+A feature should be considered valuable only if it improves at least one important benchmark class without materially degrading the others. In practice, the strongest near-term criterion is likely improved verdict accuracy and localization on previously audited claims, combined with lower manual effort in drafting and consistency review.
+
+\section{Implementation test plan}
+
+The implementation itself should be tested in the same spirit as the product. Version 1 should include automated tests for:
+\begin{itemize}
+  \item LaTeX index construction on small fixture documents;
+  \item search ranking for theorem, equation, section, and label queries;
+  \item extraction of local context with correct file and line spans;
+  \item CLI commands for building and querying indexes;
+  \item symbolic and numeric wrapper smoke checks when optional math backends are installed;
+  \item MCP tool schema validation once the MCP facade is introduced.
+\end{itemize}
+
+Version 2 should add seeded inconsistency tests in which a document fixture and code fixture intentionally disagree about an equation, dimension, algorithm name, or assumption. A code--document consistency feature should not be considered usable until it can detect these seeded mismatches and report their locations.
+
+Version 3 should add code-generation acceptance tests. Each generated implementation should be evaluated against examples or formulas extracted from the source document, not only against generic style checks.

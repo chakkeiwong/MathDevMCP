@@ -1,0 +1,47 @@
+\documentclass[12pt,a4paper,openany]{book}
+
+\input{preamble}
+
+\title{\Huge\textbf{MathDevMCP}\\[10pt]
+  \Large A Group Copilot Platform for Mathematical Development, Documentation, and Code--Document Consistency}
+\author{Chak Wong and collaborators}
+\date{\today}
+
+\begin{document}
+
+\frontmatter
+\maketitle
+\tableofcontents
+
+\mainmatter
+
+\part{Motivation and Vision}
+\input{chapters/ch01_executive_summary}
+\input{chapters/ch02_problem_statement}
+\input{chapters/ch03_product_vision}
+
+\part{Architecture and Workflows}
+\input{chapters/ch04_system_architecture}
+\input{chapters/ch05_core_workflows}
+\input{chapters/ch05b_context_and_mismatch_benchmarks}
+\input{chapters/ch06_group_use_cases}
+
+\part{Evaluation and Delivery}
+\input{chapters/ch07_evaluation_plan}
+\input{chapters/ch08_rollout_and_risks}
+\input{chapters/ch09_conclusion}
+
+\appendix
+\part*{Appendices}
+\addcontentsline{toc}{part}{Appendices}
+\input{appendices/app_a_test_criteria}
+\input{appendices/app_b_work_packages}
+\input{appendices/app_c_risk_register}
+\input{appendices/app_d_fixture_tests}
+\input{appendices/app_e_context_extraction}
+
+\backmatter
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

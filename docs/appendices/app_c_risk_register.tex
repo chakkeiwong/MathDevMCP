@@ -1,0 +1,15 @@
+\chapter{Risk Register}
+
+\begin{longtable}{p{0.2\textwidth}p{0.18\textwidth}p{0.24\textwidth}p{0.28\textwidth}}
+\toprule
+\textbf{Risk} & \textbf{Likelihood} & \textbf{Impact} & \textbf{Mitigation} \\
+\midrule
+Overly broad scope & Medium & High & Keep the tool surface small, use staged delivery, and require benchmark evidence before expansion \\
+Noisy symbolic outputs & Medium & Medium & Normalize outputs, record backend provenance, and support inconclusive states \\
+Fragile solver encodings & Medium & Medium & Restrict logical checks to encodable cases and explicitly label not-encodable tasks \\
+Weak group adoption & Medium & High & Support Claude Code, CLI, and batch reports; document workflows with examples \\
+Benchmark drift & Low & High & Use real group tasks and archived audit findings instead of only synthetic examples \\
+Maintenance burden & Medium & Medium & Build reusable Python internals and avoid unnecessary infrastructure \\
+False confidence in generated code & Medium & High & Require executable acceptance tests and traceability to the mathematical specification \\
+\bottomrule
+\end{longtable}

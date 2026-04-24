@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "mathdevmcp": {
+      "type": "stdio",
+      "command": "python",
+      "args": [
+        "-m",
+        "mathdevmcp.mcp_server"
+      ],
+      "env": {
+        "PYTHONPATH": "/home/chakwong/MathDevMCP/src"
+      }
+    }
+  }
+}

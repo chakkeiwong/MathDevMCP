@@ -16,6 +16,7 @@ from .code_search import search_files
 from .consistency import compare_files, compare_label_to_code
 from .derivation import derive_step_for_label, derive_step_from_files
 from .latex_index import build_index, extract_context_for_label, extract_paragraph_context_for_label, search_index, write_index
+from .performance import index_performance_smoke
 from .tool_matrix import tool_matrix
 from .workflow import build_implementation_brief
 
@@ -163,6 +164,14 @@ def _cmd_benchmark_gate(args: argparse.Namespace) -> int:
 
 
 
+def _cmd_index_performance(args: argparse.Namespace) -> int:
+    queries = [query.strip() for query in args.query if query.strip()]
+    result = index_performance_smoke(Path(args.root), queries=queries or None, repeat=args.repeat, limit=args.limit)
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+
 def _cmd_implementation_brief(args: argparse.Namespace) -> int:
     required_terms = [term.strip() for term in args.required_terms.split(",") if term.strip()]
     result = build_implementation_brief(
@@ -277,6 +286,13 @@ def make_parser() -> argparse.ArgumentParser:
     p_benchmark_gate = sub.add_parser("benchmark-gate", help="Run benchmark gate evaluation for CI")
     p_benchmark_gate.add_argument("--root", default=".", help="Project root")
     p_benchmark_gate.set_defaults(func=_cmd_benchmark_gate)
+
+    p_index_perf = sub.add_parser("index-performance-smoke", help="Measure cold indexing and repeated LaTeX search timings")
+    p_index_perf.add_argument("--root", default=".", help="Project root or LaTeX root")
+    p_index_perf.add_argument("--query", action="append", default=[], help="Search query to time; can be repeated")
+    p_index_perf.add_argument("--repeat", type=int, default=3, help="Repeated searches per query")
+    p_index_perf.add_argument("--limit", type=int, default=5, help="Maximum search results per query")
+    p_index_perf.set_defaults(func=_cmd_index_performance)
 
     p_brief = sub.add_parser("implementation-brief", help="Build a document-grounded implementation brief")
     p_brief.add_argument("query", help="Document search query")

@@ -2055,6 +2055,67 @@ The next best industrialization slice remains lightweight indexing performance i
 - report cold index build, label count, block count, and repeated-query timing,
 - keep the measurement advisory at first rather than making it a strict CI gate.
 
+## Lightweight indexing performance instrumentation outcome
+
+The next slice added an advisory performance smoke path for cold LaTeX indexing and repeated search timing.
+
+### Changes implemented
+
+Added [src/mathdevmcp/performance.py](../../src/mathdevmcp/performance.py) with `index_performance_smoke(...)`, which reports:
+
+- root path,
+- block count,
+- label count,
+- cold index build seconds,
+- total repeated-search seconds,
+- per-query total and average seconds,
+- top labels returned for each timed query,
+- contract metadata `index_performance_smoke`.
+
+Updated [src/mathdevmcp/cli.py](../../src/mathdevmcp/cli.py) to expose:
+
+```bash
+python -m mathdevmcp.cli index-performance-smoke --root ROOT --query QUERY --repeat N
+```
+
+Added [tests/test_performance_smoke.py](../../tests/test_performance_smoke.py) covering both the library helper and CLI command.
+
+### Verification completed
+
+Audited CLI output on the fixture corpus:
+
+```text
+n_blocks=52, n_labels=32, top label=eq:repeat-kalman-target-score, contract=index_performance_smoke
+```
+
+Targeted performance/release smoke tests passed:
+
+```text
+4 passed
+```
+
+Full suite after this slice passed:
+
+```text
+66 passed
+```
+
+### Audit notes
+
+The performance smoke path is intentionally advisory rather than a strict CI gate. It makes cold indexing and repeated-query behavior visible without introducing brittle timing thresholds on small or variable machines.
+
+### Remaining ambiguity
+
+This does not yet add persistent index caching or invalidation. It only creates a stable measurement surface so future caching work can compare cold and warm behavior.
+
+### Next slice
+
+The next best industrialization slice is index reuse/caching design and implementation:
+
+- add a small index cache keyed by root and file mtimes or content hashes,
+- expose warm-query behavior without changing search semantics,
+- add tests for invalidation when a fixture file changes.
+
 ## Current status
 
 MathDevMCP now has:

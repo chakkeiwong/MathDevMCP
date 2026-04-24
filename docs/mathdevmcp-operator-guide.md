@@ -176,6 +176,49 @@ Implementation lives in:
 - [src/mathdevmcp/mcp_server.py](../src/mathdevmcp/mcp_server.py)
 - [src/mathdevmcp/mcp_facade.py](../src/mathdevmcp/mcp_facade.py)
 
+## Benchmark and release-gate checks
+
+MathDevMCP includes a fixture-scale benchmark program for the main product surfaces:
+
+- `consistency`: document/code term and provenance checks,
+- `derivation`: conservative derivation-status and evidence checks,
+- `workflow`: end-to-end implementation-brief checks.
+
+Each benchmark result has:
+
+- `category`,
+- `evaluation_focus`,
+- `expected_status`,
+- `observed_status`,
+- `expected_abstention`,
+- `quality_checks`,
+- `details`.
+
+An `expected_abstention` means `unverified` is the correct conservative result for that case. It is not a failure and it does not relax the gate. The current gate policy is still strict: every benchmark case must pass its own expected-status, provenance, and contract checks.
+
+CLI:
+```bash
+PYTHONPATH=/home/chakwong/MathDevMCP/src python -m mathdevmcp.cli \
+  benchmark-gate --root /home/chakwong/MathDevMCP
+```
+
+Local smoke script:
+```bash
+/home/chakwong/MathDevMCP/scripts/benchmark_gate_smoke.sh /home/chakwong/MathDevMCP
+```
+
+The gate output includes:
+
+- `passed`,
+- `total`,
+- `passed_count`,
+- `failed_count`,
+- grouped summaries by category and evaluation focus,
+- `expected_abstentions`,
+- policy metadata.
+
+Use `expected_abstentions` to monitor how often conservative abstention is expected, not as a pass/fail budget. If a future larger corpus needs category-specific budgets, that should be a policy change rather than an interpretation change.
+
 ## Practical recommendation
 
 If another agent is reading a scientific paper and needs help staying grounded, it is worth trying MathDevMCP now.

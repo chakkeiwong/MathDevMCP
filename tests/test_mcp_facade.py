@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from mathdevmcp.mcp_facade import call_mcp_tool, list_mcp_tools
+from test_context_and_fixtures import EXPECTED_BENCHMARK_SUMMARY, EXPECTED_BENCHMARK_TOTAL
 
 
 FIXTURES = Path(__file__).resolve().parent.parent / "benchmarks" / "fixtures"
@@ -56,25 +57,11 @@ def test_call_mcp_tool_implementation_brief_returns_consistent_result():
 def test_call_mcp_tool_run_benchmarks_aggregates_results():
     result = call_mcp_tool("run_benchmarks", {"root": str(ROOT)})
 
-    assert result["total"] == 10
-    assert result["passed"] == 10
+    assert result["total"] == EXPECTED_BENCHMARK_TOTAL
+    assert result["passed"] == EXPECTED_BENCHMARK_TOTAL
     assert result["metadata"] == {"schema_version": "1.0", "contract": "benchmark_results"}
     assert all("details" in item for item in result["results"])
-    assert result["summary"] == {
-        "by_category": {
-            "consistency": {"total": 5, "passed": 5},
-            "derivation": {"total": 2, "passed": 2},
-            "workflow": {"total": 3, "passed": 3},
-        },
-        "by_focus": {
-            "status_regression": {"total": 2, "passed": 2},
-            "provenance_correctness": {"total": 2, "passed": 2},
-            "abstention_quality": {"total": 1, "passed": 1},
-            "false_confidence_control": {"total": 1, "passed": 1},
-            "realistic_fixture": {"total": 1, "passed": 1},
-            "workflow_contract": {"total": 3, "passed": 3},
-        },
-    }
+    assert result["summary"] == EXPECTED_BENCHMARK_SUMMARY
     assert result["ok"] is True
 
 
@@ -85,24 +72,10 @@ def test_call_mcp_tool_benchmark_gate_returns_ci_shape():
     assert result == {
         "ok": True,
         "passed": True,
-        "total": 10,
-        "passed_count": 10,
+        "total": EXPECTED_BENCHMARK_TOTAL,
+        "passed_count": EXPECTED_BENCHMARK_TOTAL,
         "failed_count": 0,
-        "summary": {
-            "by_category": {
-                "consistency": {"total": 5, "passed": 5},
-                "derivation": {"total": 2, "passed": 2},
-                "workflow": {"total": 3, "passed": 3},
-            },
-            "by_focus": {
-                "status_regression": {"total": 2, "passed": 2},
-                "provenance_correctness": {"total": 2, "passed": 2},
-                "abstention_quality": {"total": 1, "passed": 1},
-                "false_confidence_control": {"total": 1, "passed": 1},
-                "realistic_fixture": {"total": 1, "passed": 1},
-                "workflow_contract": {"total": 3, "passed": 3},
-            },
-        },
+        "summary": EXPECTED_BENCHMARK_SUMMARY,
         "policy": {
             "name": "all_benchmarks_must_pass",
             "required_pass_rate": 1.0,

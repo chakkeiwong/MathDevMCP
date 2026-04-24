@@ -1516,6 +1516,545 @@ The next best industrialization slice is realistic corpus expansion with conserv
 - start separating hard failures from expected conservative abstentions in benchmark summaries,
 - keep the gate policy strict until the abstention accounting is explicit.
 
+## Schema validator outcome
+
+The next slice added a lightweight contract validator for agent-facing payloads, rather than expanding semantics or benchmarks before the schema surface is easier to audit.
+
+### Changes implemented
+
+Updated [src/mathdevmcp/contracts.py](src/mathdevmcp/contracts.py) to add:
+
+- `validate_contract_payload(...)`, a small schema validator for top-level success/error envelopes,
+- validation of `ok`, `metadata.schema_version`, and `metadata.contract`,
+- validation of structured error payloads for `ok: false` responses.
+
+Updated [tests/test_schema_contracts.py](../../tests/test_schema_contracts.py) to cover:
+
+- successful implementation-brief payload validation,
+- MCP facade error envelope validation,
+- invalid payload diagnostics,
+- benchmark report contract validation.
+
+### Verification completed
+
+Targeted schema-contract tests passed:
+
+```text
+5 passed
+```
+
+Audited representative CLI/MCP payloads:
+
+- `implementation-brief` returns `ok: true`, `metadata.contract: implementation_brief`, and provenance,
+- `benchmark-gate` returns `ok: true`, `metadata.contract: benchmark_gate`, and policy metadata,
+- MCP facade payload validation returns no schema errors for success, gate, and unknown-tool error paths.
+
+Full suite after this slice passed:
+
+```text
+58 passed
+```
+
+Benchmark gate smoke passed:
+
+```text
+passed=true, total=10, failed_count=0, policy=all_benchmarks_must_pass
+```
+
+### Audit notes
+
+This validator is intentionally top-level and conservative. It does not yet attempt to prove every nested finding/evidence schema, but it gives future benchmark and MCP audits a reusable way to catch broken agent-facing envelopes.
+
+### Remaining ambiguity
+
+The next schema gap is nested payload stability:
+
+- consistency `findings` and derivation `evidence` are still related but not represented by shared typed models,
+- benchmark `details` remains category-specific and validated indirectly through benchmark tests,
+- CLI error behavior still relies mostly on exit codes and printed payloads.
+
+### Next slice
+
+The next best industrialization slice is nested finding/evidence schema stabilization:
+
+- introduce typed nested models or validators for consistency findings and derivation evidence,
+- keep status semantics conservative,
+- add realistic abstention benchmarks only after nested schema validation can distinguish expected abstention from hard failure.
+
+## Nested finding/evidence schema outcome
+
+The next slice stabilized the first layer of nested agent-facing payloads: consistency findings and derivation evidence.
+
+### Changes implemented
+
+Updated [src/mathdevmcp/contracts.py](src/mathdevmcp/contracts.py) to add:
+
+- `validate_consistency_findings(...)`, covering:
+  - `missing_term`,
+  - `matched_term`,
+  - `extra_code_terms`,
+  - required vs audit-only severity rules,
+- `validate_derivation_evidence(...)`, covering:
+  - `normalized_match`,
+  - `symbol_overlap`,
+  - `label_context`,
+  - `cited_label`,
+  - `symbol_mismatch`,
+  - expected evidence severity for each kind.
+
+Updated [tests/test_schema_contracts.py](../../tests/test_schema_contracts.py) to cover:
+
+- current consistency finding payloads,
+- current derivation evidence payloads,
+- malformed nested payload diagnostics.
+
+### Verification completed
+
+Targeted schema-contract tests passed:
+
+```text
+8 passed
+```
+
+Audited representative nested outputs:
+
+- consistency output returned `matched_term` with `severity: required`, plus `extra_code_terms` with `severity: audit_only`,
+- derivation output returned `symbol_overlap` and `label_context` evidence with `severity: supporting`,
+- both nested validators returned no errors on those representative outputs.
+
+Full suite after this slice passed:
+
+```text
+61 passed
+```
+
+Benchmark gate smoke passed:
+
+```text
+passed=true, total=10, failed_count=0, policy=all_benchmarks_must_pass
+```
+
+### Audit notes
+
+This is still a validator-first stabilization rather than a broad dataclass rewrite. That keeps the change small while making nested schema drift visible to tests and future benchmark audits.
+
+### Remaining ambiguity
+
+The next schema/evaluation gap is benchmark-level abstention accounting:
+
+- benchmark results can record status and quality checks, but they do not yet distinguish expected conservative abstention from unexpected failure at the summary level,
+- larger realistic derivation fixtures should be added only with explicit expected-abstention semantics,
+- CLI error shape is still not fully standardized beyond successful JSON payloads and nonzero exits.
+
+### Next slice
+
+The next best industrialization slice is benchmark abstention accounting:
+
+- add an `expected_abstention` or equivalent quality signal for benchmark cases that should remain `unverified`,
+- expose abstention counts in benchmark summaries without relaxing the current strict gate,
+- add one realistic unverified derivation/workflow fixture after the accounting is explicit.
+
+## Benchmark abstention accounting outcome
+
+The next slice made conservative abstention visible in benchmark results and summaries without relaxing the all-benchmarks-must-pass gate.
+
+### Changes implemented
+
+Updated [src/mathdevmcp/benchmarks.py](src/mathdevmcp/benchmarks.py) to add:
+
+- `expected_abstention` on benchmark result payloads,
+- expected-abstention case metadata for:
+  - the derivation context-support benchmark that should remain `unverified`,
+  - the workflow implementation-brief benchmark with an unverified derivation check,
+- `expected_abstention_match` quality checks for derivation and workflow cases,
+- `expected_abstentions` counts in:
+  - category summaries,
+  - evaluation-focus summaries,
+  - the top-level benchmark summary.
+
+Updated benchmark-facing tests in:
+
+- [tests/test_context_and_fixtures.py](../../tests/test_context_and_fixtures.py),
+- [tests/test_mcp_facade.py](../../tests/test_mcp_facade.py).
+
+### Verification completed
+
+Targeted benchmark abstention tests passed:
+
+```text
+16 passed
+```
+
+Audited benchmark gate output:
+
+```text
+passed=true, total=10, failed_count=0, expected_abstentions=2
+```
+
+The expected abstention cases are:
+
+- `derivation_context_support`: `observed_status=unverified`,
+- `workflow_implementation_brief_unverified`: `observed_status=unverified`.
+
+Full suite after this slice passed:
+
+```text
+61 passed
+```
+
+Benchmark gate smoke passed with the strict gate still active:
+
+```text
+passed=true, total=10, failed_count=0, policy=all_benchmarks_must_pass
+```
+
+### Audit notes
+
+This separates “the tool correctly abstained” from “the benchmark failed” while preserving the current release rule that every benchmark case must pass. That is important before adding larger realistic derivation fixtures, where `unverified` may be the correct conservative output.
+
+### Remaining ambiguity
+
+The benchmark corpus still needs a larger realistic unverified derivation or workflow case. Now that abstention is explicit, that fixture can be added without confusing expected conservatism with hard failure.
+
+### Next slice
+
+The next best industrialization slice is realistic unverified fixture expansion:
+
+- add a realistic dense-math derivation/workflow benchmark expected to remain `unverified`,
+- require provenance and nested evidence validation for that case,
+- keep the benchmark gate strict while tracking the additional expected abstention.
+
+## Realistic unverified fixture outcome
+
+The next slice added a Kalman-filter Hessian-flavored derivation fixture that is intentionally expected to remain `unverified`.
+
+### Changes implemented
+
+Added [benchmarks/fixtures/doc_realistic_kalman_hessian.tex](../../benchmarks/fixtures/doc_realistic_kalman_hessian.tex), containing a local innovation-score equation and surrounding text explaining that it fixes terms for second-derivative work but does not prove a full Hessian block.
+
+Updated [src/mathdevmcp/benchmarks.py](src/mathdevmcp/benchmarks.py) to add a new derivation benchmark case:
+
+- `derivation_realistic_kalman_hessian_abstention`,
+- category: `derivation`,
+- focus: `realistic_abstention`,
+- expected status: `unverified`,
+- expected abstention: `true`,
+- provenance target: `doc_realistic_kalman_hessian.tex`, label `eq:kalman-innovation-score-local`.
+
+Updated benchmark expectations in:
+
+- [tests/test_context_and_fixtures.py](../../tests/test_context_and_fixtures.py),
+- [tests/test_mcp_facade.py](../../tests/test_mcp_facade.py),
+- [tests/test_mcp_server.py](../../tests/test_mcp_server.py).
+
+### Verification completed
+
+Targeted benchmark/MCP tests passed:
+
+```text
+23 passed
+```
+
+Audited derivation benchmark output:
+
+```text
+derivation_realistic_kalman_hessian_abstention unverified expected_abstention=true passed=true
+```
+
+The audited evidence was conservative:
+
+```text
+symbol_overlap, severity=supporting
+```
+
+Full suite after this slice passed:
+
+```text
+61 passed
+```
+
+Benchmark gate smoke passed:
+
+```text
+passed=true, total=11, failed_count=0, expected_abstentions=3, policy=all_benchmarks_must_pass
+```
+
+### Audit notes
+
+This case is deliberately not a proof of the Kalman Hessian. It verifies the desired product behavior: on a realistic dense-math local equation, MathDevMCP can provide provenance and symbol-overlap evidence while still abstaining from categorical derivation certification.
+
+### Remaining ambiguity
+
+The realistic fixture is still small and local. The next benchmark quality gap is a longer multi-label document case where the tool must retrieve the right local equation neighborhood without treating nearby text as a proof chain.
+
+### Next slice
+
+The next best industrialization slice is multi-label provenance stress testing:
+
+- add a longer fixture with several nearby equations/labels,
+- test that search and label extraction select the intended Kalman/derivation label,
+- preserve `unverified` behavior unless an exact normalized match is present.
+
+## Multi-label provenance stress-test outcome
+
+The next slice added a longer nearby-label Kalman fixture to stress search ranking, label provenance, and conservative abstention behavior.
+
+### Changes implemented
+
+Added [benchmarks/fixtures/doc_multilabel_kalman_chain.tex](../../benchmarks/fixtures/doc_multilabel_kalman_chain.tex), containing a short Kalman derivative chain with several nearby labeled equations:
+
+- `eq:kalman-prediction-covariance`,
+- `eq:kalman-innovation-covariance`,
+- `eq:kalman-score-contribution`.
+
+Updated [tests/test_context_and_fixtures.py](../../tests/test_context_and_fixtures.py) to verify that search for score-contribution terms ranks `eq:kalman-score-contribution` first while still surfacing nearby covariance labels as related context.
+
+Updated [src/mathdevmcp/benchmarks.py](../../src/mathdevmcp/benchmarks.py) to add a new derivation benchmark case:
+
+- `derivation_multilabel_kalman_score_abstention`,
+- category: `derivation`,
+- focus: `multilabel_provenance`,
+- expected status: `unverified`,
+- expected abstention: `true`,
+- provenance target: `doc_multilabel_kalman_chain.tex`, label `eq:kalman-score-contribution`.
+
+Updated benchmark expectations in:
+
+- [tests/test_context_and_fixtures.py](../../tests/test_context_and_fixtures.py),
+- [tests/test_mcp_facade.py](../../tests/test_mcp_facade.py),
+- [tests/test_mcp_server.py](../../tests/test_mcp_server.py).
+
+### Verification completed
+
+Targeted benchmark/MCP tests passed:
+
+```text
+30 passed
+```
+
+Full suite after this slice passed:
+
+```text
+62 passed
+```
+
+Audited search and benchmark output showed:
+
+- `eq:kalman-score-contribution` ranked first for the score-contribution query,
+- nearby covariance labels remained discoverable in lower-ranked results,
+- benchmark totals increased to `total=12`, `passed=12`,
+- expected abstentions increased to `4`, including the new multi-label provenance case.
+
+### Audit notes
+
+This case verifies the intended behavior for dense mathematical neighborhoods: MathDevMCP can identify the right local labeled equation and preserve provenance without treating surrounding dependency equations as a proof of a second-derivative transformation.
+
+### Remaining ambiguity
+
+The corpus now has a better multi-label stress case, but it is still fixture-scale. The next quality gap is using real project documents or larger synthetic corpora to evaluate retrieval and provenance stability at long-document scale.
+
+### Next slice
+
+The next best industrialization slice is long-document scale/provenance evaluation:
+
+- add a larger fixture or real-document benchmark for label retrieval over many sections,
+- measure whether provenance stays stable under nearby repeated notation,
+- keep conservative abstention accounting visible in the benchmark summary.
+
+## Long-document provenance evaluation outcome
+
+The next slice added a longer retrieval/provenance fixture that spreads related Kalman labels across multiple sections and verifies that the score-contribution equation remains distinguishable from nearby smoothing and information identities.
+
+### Changes implemented
+
+Added [benchmarks/fixtures/doc_longdoc_kalman_retrieval.tex](../../benchmarks/fixtures/doc_longdoc_kalman_retrieval.tex), with section-separated labels for:
+
+- transition covariance,
+- innovation residual,
+- innovation covariance,
+- local score contribution,
+- smoothing gain,
+- observed information.
+
+Updated [tests/test_context_and_fixtures.py](../../tests/test_context_and_fixtures.py) to verify that a query mixing score, residual, derivative, observed-information, and smoothing-gain terms still ranks `eq:longdoc-score-contribution` first while keeping the nearby smoothing and observed-information labels discoverable.
+
+Updated [src/mathdevmcp/benchmarks.py](../../src/mathdevmcp/benchmarks.py) to add a new derivation benchmark case:
+
+- `derivation_longdoc_kalman_score_abstention`,
+- category: `derivation`,
+- focus: `long_document_provenance`,
+- expected status: `unverified`,
+- expected abstention: `true`,
+- provenance target: `doc_longdoc_kalman_retrieval.tex`, label `eq:longdoc-score-contribution`, section path `Likelihood derivative notes`.
+
+Updated benchmark/MCP expectations in:
+
+- [tests/test_context_and_fixtures.py](../../tests/test_context_and_fixtures.py),
+- [tests/test_mcp_facade.py](../../tests/test_mcp_facade.py),
+- [tests/test_mcp_server.py](../../tests/test_mcp_server.py).
+
+### Verification completed
+
+Targeted benchmark/MCP tests passed:
+
+```text
+31 passed
+```
+
+Full suite after this slice passed:
+
+```text
+63 passed
+```
+
+Audited benchmark gate output showed:
+
+```text
+total=13, passed=13, expected_abstentions=5
+```
+
+The audited long-document search returned `eq:longdoc-score-contribution` first, with `eq:longdoc-smoothing-gain` and `eq:longdoc-observed-information` present in lower-ranked results.
+
+### Audit notes
+
+This fixture exercises a more realistic provenance failure mode: repeated state-space notation across sections. The benchmark still expects conservative abstention, so provenance improvement does not accidentally become a derivation-certification claim.
+
+### Remaining ambiguity
+
+The long-document fixture is larger and section-separated, but still synthetic. The next scale gap is performance and stability over many repeated labels or a real project document tree rather than one handcrafted file.
+
+### Next slice
+
+The next best industrialization slice is indexing scale and repeat-label stability:
+
+- add a synthetic many-section fixture or use a real project document tree for retrieval stress,
+- measure cold index build and repeated query behavior,
+- keep provenance and abstention checks separate from performance measurements.
+
+## Repeat-label stability evaluation outcome
+
+The next slice added a synthetic many-section Kalman fixture to stress provenance stability when repeated covariance and smoothing labels surround the target score equation.
+
+### Changes implemented
+
+Added [benchmarks/fixtures/doc_repeat_label_kalman_scale.tex](../../benchmarks/fixtures/doc_repeat_label_kalman_scale.tex), with repeated Kalman covariance/smoothing blocks and a target likelihood-derivative block labeled `eq:repeat-kalman-target-score`.
+
+Updated [tests/test_context_and_fixtures.py](../../tests/test_context_and_fixtures.py) to verify:
+
+- direct search for the target likelihood derivative ranks `eq:repeat-kalman-target-score` first,
+- the extracted context preserves section path `Target likelihood derivative block`,
+- repeated covariance labels remain discoverable in the same fixture corpus,
+- fixture indexing now includes at least 18 labels for this repeat-label stress class.
+
+Updated [src/mathdevmcp/benchmarks.py](../../src/mathdevmcp/benchmarks.py) to add:
+
+- `derivation_repeat_label_kalman_score_abstention`,
+- category: `derivation`,
+- focus: `repeat_label_stability`,
+- expected status: `unverified`,
+- expected abstention: `true`,
+- provenance target: `doc_repeat_label_kalman_scale.tex`, label `eq:repeat-kalman-target-score`, section path `Target likelihood derivative block`.
+
+Updated benchmark/MCP expectations in:
+
+- [tests/test_context_and_fixtures.py](../../tests/test_context_and_fixtures.py),
+- [tests/test_mcp_facade.py](../../tests/test_mcp_facade.py),
+- [tests/test_mcp_server.py](../../tests/test_mcp_server.py).
+
+### Verification completed
+
+Targeted benchmark/MCP tests passed:
+
+```text
+32 passed
+```
+
+Full suite after this slice passed:
+
+```text
+64 passed
+```
+
+Audited benchmark gate output showed:
+
+```text
+total=14, passed=14, expected_abstentions=6
+```
+
+The audited repeat-label benchmark returned `unverified`, `expected_abstention=true`, and all quality checks passed, including provenance and abstention matching.
+
+### Audit notes
+
+This slice confirms that the benchmark program can represent repeated-label retrieval pressure while preserving the conservative derivation policy: finding the right local score equation still does not certify a reordered same-symbol transformation.
+
+### Remaining ambiguity
+
+This is still a synthetic fixture. The next product gap is performance measurement and index reuse behavior; the benchmark corpus now has enough fixture density to justify measuring cold indexing and repeated query latency without changing semantics.
+
+### Next slice
+
+The next best industrialization slice is lightweight indexing performance instrumentation:
+
+- add a deterministic local performance smoke helper around index build and repeated search,
+- report cold index build, label count, block count, and repeated-query timing,
+- keep the measurement advisory at first rather than making it a strict CI gate.
+
+## Benchmark documentation and expectation deduplication outcome
+
+The next slice paused before performance instrumentation to document the benchmark/release-gate surface and reduce duplicated benchmark expectation literals in tests.
+
+### Changes implemented
+
+Updated [docs/mathdevmcp-operator-guide.md](../mathdevmcp-operator-guide.md) with a benchmark and release-gate section covering:
+
+- benchmark categories: `consistency`, `derivation`, and `workflow`,
+- result fields such as `expected_status`, `observed_status`, `expected_abstention`, `quality_checks`, and `details`,
+- the meaning of expected abstentions,
+- the strict all-benchmarks-must-pass gate policy,
+- CLI and local smoke commands for `benchmark-gate`,
+- how to interpret `expected_abstentions` as monitoring information rather than a failure budget.
+
+Updated benchmark-facing tests to reduce repeated summary literals:
+
+- [tests/test_context_and_fixtures.py](../../tests/test_context_and_fixtures.py) now defines `EXPECTED_BENCHMARK_SUMMARY` and `EXPECTED_BENCHMARK_TOTAL`,
+- [tests/test_mcp_facade.py](../../tests/test_mcp_facade.py) reuses those constants for MCP benchmark and gate assertions.
+
+### Verification completed
+
+Audited benchmark gate output:
+
+```text
+gate=True, total=14, passed_count=14, failed_count=0, expected_abstentions=6, policy=all_benchmarks_must_pass
+```
+
+Targeted benchmark/MCP tests passed:
+
+```text
+32 passed
+```
+
+Full suite after this slice passed:
+
+```text
+64 passed
+```
+
+### Audit notes
+
+This was intentionally a small documentation/refactor checkpoint rather than a broad cleanup. The docs now explain the current benchmark contract well enough for a human or agent operator, and the tests have one local source of truth for the benchmark summary shape.
+
+### Remaining ambiguity
+
+The benchmark documentation is still operator-level. It does not yet define a formal schema compatibility policy for every nested benchmark detail payload.
+
+### Next slice
+
+The next best industrialization slice remains lightweight indexing performance instrumentation:
+
+- add a deterministic local performance smoke helper around index build and repeated search,
+- report cold index build, label count, block count, and repeated-query timing,
+- keep the measurement advisory at first rather than making it a strict CI gate.
+
 ## Current status
 
 MathDevMCP now has:

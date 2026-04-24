@@ -19,6 +19,7 @@ class BenchmarkResult:
     evaluation_focus: str
     expected_status: str
     observed_status: str
+    expected_abstention: bool
     passed: bool
     quality_checks: dict[str, bool]
     details: dict
@@ -28,6 +29,7 @@ class BenchmarkResult:
 class BenchmarkSummary:
     by_category: dict[str, dict[str, int]]
     by_focus: dict[str, dict[str, int]]
+    expected_abstentions: int
 
 
 @dataclass(frozen=True)
@@ -78,6 +80,7 @@ def _benchmark_result(
     passed: bool,
     quality_checks: dict[str, bool],
     details: dict,
+    expected_abstention: bool = False,
 ) -> dict:
     return asdict(
         BenchmarkResult(
@@ -86,6 +89,7 @@ def _benchmark_result(
             evaluation_focus=evaluation_focus,
             expected_status=expected_status,
             observed_status=observed_status,
+            expected_abstention=expected_abstention,
             passed=passed,
             quality_checks=quality_checks,
             details=details,
@@ -170,6 +174,7 @@ def _derivation_cases(root: Path) -> list[dict]:
             "rhs": "logdet + log pi(u)",
             "paragraph_context": True,
             "expected_status": "unverified",
+            "expected_abstention": True,
             "expected_supported_by_context": True,
             "expected_cited_labels": [],
             "expected_doc_context": {"file": "doc_consistency_context.tex", "label": "prop:transport-implementation"},
@@ -184,9 +189,70 @@ def _derivation_cases(root: Path) -> list[dict]:
             "rhs": "log pi(u)",
             "paragraph_context": True,
             "expected_status": "mismatch",
+            "expected_abstention": False,
             "expected_supported_by_context": True,
             "expected_cited_labels": [],
             "expected_doc_context": {"file": "doc_derivation_chain.tex", "label": "eq:transport-density-step"},
+        },
+        {
+            "id": "derivation_realistic_kalman_hessian_abstention",
+            "category": "derivation",
+            "evaluation_focus": "realistic_abstention",
+            "doc_root": str(fixtures),
+            "label": "eq:kalman-innovation-score-local",
+            "lhs": "trace + S_t + inverse + d_i + S_t + quadratic + v_t + S_t + inverse + d_i + S_t + S_t + inverse + v_t + d_i + v_t + S_t + inverse + v_t",
+            "rhs": "d_i + v_t + S_t + inverse + v_t + quadratic + v_t + S_t + inverse + d_i + S_t + S_t + inverse + v_t + trace + S_t + inverse + d_i + S_t",
+            "paragraph_context": True,
+            "expected_status": "unverified",
+            "expected_abstention": True,
+            "expected_supported_by_context": False,
+            "expected_cited_labels": [],
+            "expected_doc_context": {"file": "doc_realistic_kalman_hessian.tex", "label": "eq:kalman-innovation-score-local"},
+        },
+        {
+            "id": "derivation_multilabel_kalman_score_abstention",
+            "category": "derivation",
+            "evaluation_focus": "multilabel_provenance",
+            "doc_root": str(fixtures),
+            "label": "eq:kalman-score-contribution",
+            "lhs": "trace + S_t + inverse + d_i + S_t + quadratic + v_t + S_t + inverse + d_i + S_t + S_t + inverse + v_t + d_i + v_t + S_t + inverse + v_t",
+            "rhs": "d_i + v_t + S_t + inverse + v_t + quadratic + v_t + S_t + inverse + d_i + S_t + S_t + inverse + v_t + trace + S_t + inverse + d_i + S_t",
+            "paragraph_context": True,
+            "expected_status": "unverified",
+            "expected_abstention": True,
+            "expected_supported_by_context": False,
+            "expected_cited_labels": [],
+            "expected_doc_context": {"file": "doc_multilabel_kalman_chain.tex", "label": "eq:kalman-score-contribution"},
+        },
+        {
+            "id": "derivation_longdoc_kalman_score_abstention",
+            "category": "derivation",
+            "evaluation_focus": "long_document_provenance",
+            "doc_root": str(fixtures),
+            "label": "eq:longdoc-score-contribution",
+            "lhs": "trace + S_t + inverse + d_i + S_t + quadratic + v_t + S_t + inverse + d_i + S_t + S_t + inverse + v_t + d_i + v_t + S_t + inverse + v_t",
+            "rhs": "d_i + v_t + S_t + inverse + v_t + quadratic + v_t + S_t + inverse + d_i + S_t + S_t + inverse + v_t + trace + S_t + inverse + d_i + S_t",
+            "paragraph_context": True,
+            "expected_status": "unverified",
+            "expected_abstention": True,
+            "expected_supported_by_context": False,
+            "expected_cited_labels": [],
+            "expected_doc_context": {"file": "doc_longdoc_kalman_retrieval.tex", "label": "eq:longdoc-score-contribution", "section_path": ["Likelihood derivative notes"]},
+        },
+        {
+            "id": "derivation_repeat_label_kalman_score_abstention",
+            "category": "derivation",
+            "evaluation_focus": "repeat_label_stability",
+            "doc_root": str(fixtures),
+            "label": "eq:repeat-kalman-target-score",
+            "lhs": "trace + S_t + inverse + d_i + S_t + quadratic + v_t + S_t + inverse + d_i + S_t + S_t + inverse + v_t + d_i + v_t + S_t + inverse + v_t",
+            "rhs": "d_i + v_t + S_t + inverse + v_t + quadratic + v_t + S_t + inverse + d_i + S_t + S_t + inverse + v_t + trace + S_t + inverse + d_i + S_t",
+            "paragraph_context": True,
+            "expected_status": "unverified",
+            "expected_abstention": True,
+            "expected_supported_by_context": False,
+            "expected_cited_labels": [],
+            "expected_doc_context": {"file": "doc_repeat_label_kalman_scale.tex", "label": "eq:repeat-kalman-target-score", "section_path": ["Target likelihood derivative block"]},
         },
     ]
 
@@ -219,6 +285,7 @@ def _workflow_cases(root: Path) -> list[dict]:
             "lhs": "log_pi + logdet",
             "rhs": "logdet + log_pi",
             "expected_status": "unverified",
+            "expected_abstention": True,
             "expected_selected_label": "prop:transport-logdet",
             "expected_doc_context": {"file": "doc_consistency_good.tex", "label": "prop:transport-logdet"},
             "expected_check_statuses": {"consistency": "consistent", "derivation": "unverified"},
@@ -337,6 +404,7 @@ def run_derivation_benchmark(root: Path) -> list[dict]:
                     "supported_by_context_match": context_ok,
                     "cited_labels_match": cited_ok,
                     "provenance_match": provenance_ok,
+                    "expected_abstention_match": result["status"] == "unverified" if case.get("expected_abstention", False) else result["status"] != "unverified",
                 },
                 details={
                     "label": case["label"],
@@ -345,6 +413,7 @@ def run_derivation_benchmark(root: Path) -> list[dict]:
                     "doc_context": result["doc_context"],
                     "evidence": result["evidence"],
                 },
+                expected_abstention=case.get("expected_abstention", False),
             )
         )
     return results
@@ -370,6 +439,7 @@ def run_workflow_benchmark(root: Path) -> list[dict]:
             for name, expected_status in case["expected_check_statuses"].items()
         )
         envelope_ok = result.get("ok") is True and result.get("metadata", {}).get("contract") == "implementation_brief"
+        abstention_ok = result["status"] == "unverified" if case.get("expected_abstention", False) else result["status"] != "unverified"
         results.append(
             _benchmark_result(
                 benchmark_id=case["id"],
@@ -377,13 +447,14 @@ def run_workflow_benchmark(root: Path) -> list[dict]:
                 evaluation_focus=case["evaluation_focus"],
                 expected_status=case["expected_status"],
                 observed_status=result["status"],
-                passed=status_ok and label_ok and provenance_ok and checks_ok and envelope_ok,
+                passed=status_ok and label_ok and provenance_ok and checks_ok and envelope_ok and abstention_ok,
                 quality_checks={
                     "status_match": status_ok,
                     "selected_label_match": label_ok,
                     "provenance_match": provenance_ok,
                     "check_statuses_match": checks_ok,
                     "envelope_match": envelope_ok,
+                    "expected_abstention_match": abstention_ok,
                 },
                 details={
                     "metadata": result.get("metadata"),
@@ -392,6 +463,7 @@ def run_workflow_benchmark(root: Path) -> list[dict]:
                     "doc_context": result.get("doc_context"),
                     "checks": result["checks"],
                 },
+                expected_abstention=case.get("expected_abstention", False),
             )
         )
     return results
@@ -401,17 +473,28 @@ def run_workflow_benchmark(root: Path) -> list[dict]:
 def summarize_benchmark_results(results: list[dict]) -> dict:
     category_totals: dict[str, dict[str, int]] = {}
     focus_totals: dict[str, dict[str, int]] = {}
+    expected_abstentions = 0
     for result in results:
         category = result["category"]
         focus = result["evaluation_focus"]
-        category_bucket = category_totals.setdefault(category, {"total": 0, "passed": 0})
-        focus_bucket = focus_totals.setdefault(focus, {"total": 0, "passed": 0})
+        category_bucket = category_totals.setdefault(category, {"total": 0, "passed": 0, "expected_abstentions": 0})
+        focus_bucket = focus_totals.setdefault(focus, {"total": 0, "passed": 0, "expected_abstentions": 0})
         category_bucket["total"] += 1
         focus_bucket["total"] += 1
         if result["passed"]:
             category_bucket["passed"] += 1
             focus_bucket["passed"] += 1
-    return asdict(BenchmarkSummary(by_category=category_totals, by_focus=focus_totals))
+        if result.get("expected_abstention", False):
+            expected_abstentions += 1
+            category_bucket["expected_abstentions"] += 1
+            focus_bucket["expected_abstentions"] += 1
+    return asdict(
+        BenchmarkSummary(
+            by_category=category_totals,
+            by_focus=focus_totals,
+            expected_abstentions=expected_abstentions,
+        )
+    )
 
 
 

@@ -1,0 +1,51 @@
+\section{State-space preliminaries}
+The first part fixes notation for a long-document retrieval stress test. Several labels use similar covariance and innovation language, so search should not rely on a unique phrase appearing only once.
+
+\begin{equation}\label{eq:longdoc-transition-covariance}
+P_{t|t-1} = T_t P_{t-1|t-1}T_t' + R_t Q_t R_t'.
+\end{equation}
+
+The transition covariance is only a prediction object. It does not define the smoothing gain or the score contribution.
+
+\section{Innovation bookkeeping}
+The innovation residual and innovation covariance are reused by several later formulas.
+
+\begin{equation}\label{eq:longdoc-innovation-residual}
+v_t = y_t - Z_t a_{t|t-1}.
+\end{equation}
+
+\begin{equation}\label{eq:longdoc-innovation-covariance}
+S_t = Z_t P_{t|t-1}Z_t' + H_t.
+\end{equation}
+
+These equations are dependencies for likelihood derivatives. They should remain distinct from any smoothed-state identity.
+
+\section{Likelihood derivative notes}
+The local score contribution combines trace, quadratic, innovation residual, and innovation covariance derivative terms.
+
+\begin{equation}\label{eq:longdoc-score-contribution}
+\partial_i \ell_t
+= -\frac{1}{2}\operatorname{tr}(S_t^{-1}\partial_i S_t)
++ \frac{1}{2}v_t' S_t^{-1}(\partial_i S_t)S_t^{-1}v_t
+- (\partial_i v_t)'S_t^{-1}v_t.
+\end{equation}
+
+This local score contribution is not a Hessian proof. Differentiating it requires additional derivative recursions that are not included here.
+
+\section{Smoothing recursions}
+The smoothing pass introduces a nearby but different gain matrix. It shares state-space notation with the likelihood section, which makes it useful for provenance stress testing.
+
+\begin{equation}\label{eq:longdoc-smoothing-gain}
+J_t = P_{t|t}T_{t+1}'P_{t+1|t}^{-1}.
+\end{equation}
+
+The gain equation mentions covariance matrices and time indices, but it is not evidence for the score contribution above.
+
+\section{Observed information reminder}
+The observed information block uses second derivatives of the likelihood. The score contribution above is one dependency, not the complete observed information identity.
+
+\begin{equation}\label{eq:longdoc-observed-information}
+\mathcal I_{ij} = -\partial_{ij}^2 \ell(\theta).
+\end{equation}
+
+A provenance-aware tool should retrieve the score contribution when asked about trace residual derivative terms, not the smoothing gain or the generic observed information reminder.

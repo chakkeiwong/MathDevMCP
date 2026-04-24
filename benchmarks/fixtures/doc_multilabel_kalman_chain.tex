@@ -1,0 +1,23 @@
+\section{Kalman derivative chain}
+The filter recursions introduce several nearby quantities that should not be conflated when checking Hessian work.
+
+\begin{equation}\label{eq:kalman-prediction-covariance}
+P_{t|t-1} = T_t P_{t-1|t-1}T_t' + R_t Q_t R_t'.
+\end{equation}
+
+The innovation residual and covariance use the predicted moments.
+
+\begin{equation}\label{eq:kalman-innovation-covariance}
+S_t = Z_t P_{t|t-1}Z_t' + H_t.
+\end{equation}
+
+The score contribution depends on the innovation covariance, its derivative, and the innovation residual.
+
+\begin{equation}\label{eq:kalman-score-contribution}
+\partial_i \ell_t
+= -\frac{1}{2}\operatorname{tr}(S_t^{-1}\partial_i S_t)
++ \frac{1}{2}v_t' S_t^{-1}(\partial_i S_t)S_t^{-1}v_t
+- (\partial_i v_t)'S_t^{-1}v_t.
+\end{equation}
+
+A Hessian derivation differentiates this score contribution again. The surrounding covariance equations are dependencies, not proofs of the second derivative.

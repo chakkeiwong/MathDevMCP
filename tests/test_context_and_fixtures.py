@@ -12,10 +12,33 @@ from mathdevmcp.benchmarks import (
     write_benchmark_report,
 )
 from mathdevmcp.consistency import compare_files, compare_label_to_code
-from mathdevmcp.latex_index import build_index, extract_context_for_label
+from mathdevmcp.latex_index import build_index, extract_context_for_label, search_index
 
 
 FIXTURES = Path(__file__).resolve().parent.parent / "benchmarks" / "fixtures"
+
+EXPECTED_BENCHMARK_SUMMARY = {
+    "by_category": {
+        "consistency": {"total": 5, "passed": 5, "expected_abstentions": 0},
+        "derivation": {"total": 6, "passed": 6, "expected_abstentions": 5},
+        "workflow": {"total": 3, "passed": 3, "expected_abstentions": 1},
+    },
+    "by_focus": {
+        "status_regression": {"total": 2, "passed": 2, "expected_abstentions": 0},
+        "provenance_correctness": {"total": 2, "passed": 2, "expected_abstentions": 0},
+        "abstention_quality": {"total": 1, "passed": 1, "expected_abstentions": 1},
+        "false_confidence_control": {"total": 1, "passed": 1, "expected_abstentions": 0},
+        "realistic_fixture": {"total": 1, "passed": 1, "expected_abstentions": 0},
+        "realistic_abstention": {"total": 1, "passed": 1, "expected_abstentions": 1},
+        "multilabel_provenance": {"total": 1, "passed": 1, "expected_abstentions": 1},
+        "long_document_provenance": {"total": 1, "passed": 1, "expected_abstentions": 1},
+        "repeat_label_stability": {"total": 1, "passed": 1, "expected_abstentions": 1},
+        "workflow_contract": {"total": 3, "passed": 3, "expected_abstentions": 1},
+    },
+    "expected_abstentions": 6,
+}
+
+EXPECTED_BENCHMARK_TOTAL = 14
 
 
 def test_extract_context_for_label_returns_local_excerpt():
@@ -48,6 +71,51 @@ def test_compare_files_marks_bad_fixture_mismatch():
 
     assert result["status"] == "mismatch"
     assert result["missing_in_code"] == ["logdet"]
+
+
+
+def test_multilabel_kalman_fixture_keeps_score_provenance_distinct():
+    index = build_index(FIXTURES)
+
+    results = search_index(index, "multilabel kalman derivative chain partial_i ell_t trace residual", limit=5)
+    context = extract_context_for_label(index, "eq:kalman-score-contribution", before=1, after=1)
+
+    assert results[0]["label"] == "eq:kalman-score-contribution"
+    assert context["file"] == "doc_multilabel_kalman_chain.tex"
+    assert context["label"] == "eq:kalman-score-contribution"
+    assert context["section_path"] == ["Kalman derivative chain"]
+    assert any(block.get("label") == "eq:kalman-innovation-covariance" for block in results[1:])
+
+
+
+def test_longdoc_kalman_fixture_retrieves_score_not_nearby_smoothing_labels():
+    index = build_index(FIXTURES)
+
+    results = search_index(index, "score contribution trace residual derivative observed information smoothing gain", limit=8)
+    context = extract_context_for_label(index, "eq:longdoc-score-contribution", before=1, after=1)
+
+    assert results[0]["label"] == "eq:longdoc-score-contribution"
+    assert context["file"] == "doc_longdoc_kalman_retrieval.tex"
+    assert context["label"] == "eq:longdoc-score-contribution"
+    assert context["section_path"] == ["Likelihood derivative notes"]
+    assert any(block.get("label") == "eq:longdoc-smoothing-gain" for block in results[1:])
+    assert any(block.get("label") == "eq:longdoc-observed-information" for block in results[1:])
+
+
+
+def test_repeat_label_kalman_fixture_preserves_target_score_provenance():
+    index = build_index(FIXTURES)
+
+    results = search_index(index, "repeat-kalman-target-score target likelihood derivative block", limit=8)
+    context = extract_context_for_label(index, "eq:repeat-kalman-target-score", before=1, after=1)
+
+    assert results[0]["label"] == "eq:repeat-kalman-target-score"
+    assert context["file"] == "doc_repeat_label_kalman_scale.tex"
+    assert context["label"] == "eq:repeat-kalman-target-score"
+    assert context["section_path"] == ["Target likelihood derivative block"]
+    assert index["n_labels"] >= 18
+    repeated = search_index(index, "repeat kalman covariance smoothing", limit=8)
+    assert any((block.get("label") or "").startswith("eq:repeat-kalman-covariance-") for block in repeated)
 
 
 
@@ -146,11 +214,43 @@ def test_derivation_benchmark_runner_reports_abstention_and_false_confidence_che
 
     results = run_derivation_benchmark(root)
 
-    assert {result["id"] for result in results} == {"derivation_context_support", "derivation_symbol_mismatch"}
-    assert {result["evaluation_focus"] for result in results} == {"abstention_quality", "false_confidence_control"}
+    assert {result["id"] for result in results} == {
+        "derivation_context_support",
+        "derivation_symbol_mismatch",
+        "derivation_realistic_kalman_hessian_abstention",
+        "derivation_multilabel_kalman_score_abstention",
+        "derivation_longdoc_kalman_score_abstention",
+        "derivation_repeat_label_kalman_score_abstention",
+    }
+    assert {result["evaluation_focus"] for result in results} == {
+        "abstention_quality",
+        "false_confidence_control",
+        "realistic_abstention",
+        "multilabel_provenance",
+        "long_document_provenance",
+        "repeat_label_stability",
+    }
     assert all(result["quality_checks"]["supported_by_context_match"] for result in results)
     assert all(result["quality_checks"]["provenance_match"] for result in results)
     assert all(result["passed"] for result in results)
+    expected_abstention = {result["id"]: result["expected_abstention"] for result in results}
+    assert expected_abstention == {
+        "derivation_context_support": True,
+        "derivation_symbol_mismatch": False,
+        "derivation_realistic_kalman_hessian_abstention": True,
+        "derivation_multilabel_kalman_score_abstention": True,
+        "derivation_longdoc_kalman_score_abstention": True,
+        "derivation_repeat_label_kalman_score_abstention": True,
+    }
+    realistic = next(result for result in results if result["id"] == "derivation_realistic_kalman_hessian_abstention")
+    longdoc = next(result for result in results if result["id"] == "derivation_longdoc_kalman_score_abstention")
+    repeat = next(result for result in results if result["id"] == "derivation_repeat_label_kalman_score_abstention")
+    assert realistic["details"]["doc_context"]["file"] == "doc_realistic_kalman_hessian.tex"
+    assert longdoc["details"]["doc_context"]["section_path"] == ["Likelihood derivative notes"]
+    assert repeat["details"]["doc_context"]["section_path"] == ["Target likelihood derivative block"]
+    assert realistic["quality_checks"]["expected_abstention_match"] is True
+    assert longdoc["quality_checks"]["expected_abstention_match"] is True
+    assert repeat["quality_checks"]["expected_abstention_match"] is True
 
 
 
@@ -178,7 +278,7 @@ def test_benchmark_cases_cover_consistency_derivation_and_workflow_categories():
 
     cases = benchmark_cases(root)
 
-    assert len(cases) == 10
+    assert len(cases) == EXPECTED_BENCHMARK_TOTAL
     assert {case["category"] for case in cases} == {"consistency", "derivation", "workflow"}
 
 
@@ -190,8 +290,8 @@ def test_build_benchmark_report_returns_contract_and_typed_results():
 
     assert report["ok"] is True
     assert report["metadata"] == {"schema_version": "1.0", "contract": "benchmark_results"}
-    assert report["total"] == 10
-    assert report["passed"] == 10
+    assert report["total"] == EXPECTED_BENCHMARK_TOTAL
+    assert report["passed"] == EXPECTED_BENCHMARK_TOTAL
     assert all("details" in result for result in report["results"])
 
 
@@ -216,24 +316,10 @@ def test_benchmark_gate_report_is_ci_friendly():
     assert gate == {
         "ok": True,
         "passed": True,
-        "total": 10,
-        "passed_count": 10,
+        "total": EXPECTED_BENCHMARK_TOTAL,
+        "passed_count": EXPECTED_BENCHMARK_TOTAL,
         "failed_count": 0,
-        "summary": {
-            "by_category": {
-                "consistency": {"total": 5, "passed": 5},
-                "derivation": {"total": 2, "passed": 2},
-                "workflow": {"total": 3, "passed": 3},
-            },
-            "by_focus": {
-                "status_regression": {"total": 2, "passed": 2},
-                "provenance_correctness": {"total": 2, "passed": 2},
-                "abstention_quality": {"total": 1, "passed": 1},
-                "false_confidence_control": {"total": 1, "passed": 1},
-                "realistic_fixture": {"total": 1, "passed": 1},
-                "workflow_contract": {"total": 3, "passed": 3},
-            },
-        },
+        "summary": EXPECTED_BENCHMARK_SUMMARY,
         "policy": {
             "name": "all_benchmarks_must_pass",
             "required_pass_rate": 1.0,
@@ -256,18 +342,4 @@ def test_summarize_benchmark_results_groups_by_category_and_focus():
     )
     summary = summarize_benchmark_results(results)
 
-    assert summary == {
-        "by_category": {
-            "consistency": {"total": 5, "passed": 5},
-            "derivation": {"total": 2, "passed": 2},
-            "workflow": {"total": 3, "passed": 3},
-        },
-        "by_focus": {
-            "status_regression": {"total": 2, "passed": 2},
-            "provenance_correctness": {"total": 2, "passed": 2},
-            "abstention_quality": {"total": 1, "passed": 1},
-            "false_confidence_control": {"total": 1, "passed": 1},
-            "realistic_fixture": {"total": 1, "passed": 1},
-            "workflow_contract": {"total": 3, "passed": 3},
-        },
-    }
+    assert summary == EXPECTED_BENCHMARK_SUMMARY

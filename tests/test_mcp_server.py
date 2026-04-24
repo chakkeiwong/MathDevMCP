@@ -45,8 +45,8 @@ def test_mcp_server_run_benchmarks_returns_structured_report():
     result = run_benchmarks(str(ROOT))
 
     assert result["metadata"] == {"schema_version": "1.0", "contract": "benchmark_results"}
-    assert result["total"] == 10
-    assert result["passed"] == 10
+    assert result["total"] == 14
+    assert result["passed"] == 14
 
 
 

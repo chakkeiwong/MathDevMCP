@@ -1,0 +1,92 @@
+\section{Kalman stress prelude}
+This synthetic fixture repeats nearly identical Kalman notation across many sections. Its purpose is to check that retrieval keeps provenance stable when labels and text are dense, not to certify a derivation.
+
+\section{Repeated Kalman block 01}
+The covariance forecast in block 01 uses transition and shock covariance notation.
+\begin{equation}\label{eq:repeat-kalman-covariance-01}
+P^{(01)}_{t|t-1} = T_t P^{(01)}_{t-1|t-1}T_t' + R_t Q_t R_t'.
+\end{equation}
+The smoothing gain in block 01 shares the same state transition notation.
+\begin{equation}\label{eq:repeat-kalman-smoothing-01}
+J^{(01)}_t = P^{(01)}_{t|t}T_{t+1}'(P^{(01)}_{t+1|t})^{-1}.
+\end{equation}
+
+\section{Repeated Kalman block 02}
+The covariance forecast in block 02 uses transition and shock covariance notation.
+\begin{equation}\label{eq:repeat-kalman-covariance-02}
+P^{(02)}_{t|t-1} = T_t P^{(02)}_{t-1|t-1}T_t' + R_t Q_t R_t'.
+\end{equation}
+The smoothing gain in block 02 shares the same state transition notation.
+\begin{equation}\label{eq:repeat-kalman-smoothing-02}
+J^{(02)}_t = P^{(02)}_{t|t}T_{t+1}'(P^{(02)}_{t+1|t})^{-1}.
+\end{equation}
+
+\section{Repeated Kalman block 03}
+The covariance forecast in block 03 uses transition and shock covariance notation.
+\begin{equation}\label{eq:repeat-kalman-covariance-03}
+P^{(03)}_{t|t-1} = T_t P^{(03)}_{t-1|t-1}T_t' + R_t Q_t R_t'.
+\end{equation}
+The smoothing gain in block 03 shares the same state transition notation.
+\begin{equation}\label{eq:repeat-kalman-smoothing-03}
+J^{(03)}_t = P^{(03)}_{t|t}T_{t+1}'(P^{(03)}_{t+1|t})^{-1}.
+\end{equation}
+
+\section{Repeated Kalman block 04}
+The covariance forecast in block 04 uses transition and shock covariance notation.
+\begin{equation}\label{eq:repeat-kalman-covariance-04}
+P^{(04)}_{t|t-1} = T_t P^{(04)}_{t-1|t-1}T_t' + R_t Q_t R_t'.
+\end{equation}
+The smoothing gain in block 04 shares the same state transition notation.
+\begin{equation}\label{eq:repeat-kalman-smoothing-04}
+J^{(04)}_t = P^{(04)}_{t|t}T_{t+1}'(P^{(04)}_{t+1|t})^{-1}.
+\end{equation}
+
+\section{Repeated Kalman block 05}
+The covariance forecast in block 05 uses transition and shock covariance notation.
+\begin{equation}\label{eq:repeat-kalman-covariance-05}
+P^{(05)}_{t|t-1} = T_t P^{(05)}_{t-1|t-1}T_t' + R_t Q_t R_t'.
+\end{equation}
+The smoothing gain in block 05 shares the same state transition notation.
+\begin{equation}\label{eq:repeat-kalman-smoothing-05}
+J^{(05)}_t = P^{(05)}_{t|t}T_{t+1}'(P^{(05)}_{t+1|t})^{-1}.
+\end{equation}
+
+\section{Repeated Kalman block 06}
+The covariance forecast in block 06 uses transition and shock covariance notation.
+\begin{equation}\label{eq:repeat-kalman-covariance-06}
+P^{(06)}_{t|t-1} = T_t P^{(06)}_{t-1|t-1}T_t' + R_t Q_t R_t'.
+\end{equation}
+The smoothing gain in block 06 shares the same state transition notation.
+\begin{equation}\label{eq:repeat-kalman-smoothing-06}
+J^{(06)}_t = P^{(06)}_{t|t}T_{t+1}'(P^{(06)}_{t+1|t})^{-1}.
+\end{equation}
+
+\section{Target likelihood derivative block}
+The target score contribution uses innovation residual terms, trace terms, and a covariance derivative. It is intentionally surrounded by repeated Kalman notation.
+\begin{equation}\label{eq:repeat-kalman-target-score}
+\partial_i \ell_t
+= -\frac{1}{2}\operatorname{tr}(S_t^{-1}\partial_i S_t)
++ \frac{1}{2}v_t' S_t^{-1}(\partial_i S_t)S_t^{-1}v_t
+- (\partial_i v_t)'S_t^{-1}v_t.
+\end{equation}
+The target block is local evidence for the score contribution only. It is not a complete Hessian derivation.
+
+\section{Repeated Kalman block 07}
+The covariance forecast in block 07 uses transition and shock covariance notation.
+\begin{equation}\label{eq:repeat-kalman-covariance-07}
+P^{(07)}_{t|t-1} = T_t P^{(07)}_{t-1|t-1}T_t' + R_t Q_t R_t'.
+\end{equation}
+The smoothing gain in block 07 shares the same state transition notation.
+\begin{equation}\label{eq:repeat-kalman-smoothing-07}
+J^{(07)}_t = P^{(07)}_{t|t}T_{t+1}'(P^{(07)}_{t+1|t})^{-1}.
+\end{equation}
+
+\section{Repeated Kalman block 08}
+The covariance forecast in block 08 uses transition and shock covariance notation.
+\begin{equation}\label{eq:repeat-kalman-covariance-08}
+P^{(08)}_{t|t-1} = T_t P^{(08)}_{t-1|t-1}T_t' + R_t Q_t R_t'.
+\end{equation}
+The smoothing gain in block 08 shares the same state transition notation.
+\begin{equation}\label{eq:repeat-kalman-smoothing-08}
+J^{(08)}_t = P^{(08)}_{t|t}T_{t+1}'(P^{(08)}_{t+1|t})^{-1}.
+\end{equation}

@@ -44,7 +44,10 @@ Primary metrics:
   \item verdict accuracy;
   \item evidence quality;
   \item symbolic derivation success;
+  \item proof-obligation extraction accuracy;
+  \item backend routing correctness for symbolic, logical, numeric, and unsupported obligations;
   \item counterexample success when a claim is false;
+  \item correct classification of \emph{unknown}, \emph{not encodable}, timeout, and unavailable-backend cases;
   \item false positive and false negative rates.
 \end{itemize}
 
@@ -65,6 +68,7 @@ Primary metrics:
 \begin{itemize}
   \item fraction of categorical claims backed by an explicit derivation or cited equation;
   \item correctness of the derivation step classification;
+  \item fraction of extracted proof obligations certified, refuted, or explicitly left inconclusive;
   \item rate of unsupported confident claims;
   \item usefulness of the produced derivation for human review.
 \end{itemize}
@@ -143,6 +147,7 @@ The implementation itself should be tested in the same spirit as the product. Ve
   \item extraction of local context with correct file and line spans;
   \item CLI commands for building and querying indexes;
   \item symbolic and numeric wrapper smoke checks when optional math backends are installed;
+  \item proof-obligation checks that certify trivial equalities, refute simple false identities, preserve assumptions, and report unavailable or not-encodable backends conservatively;
   \item MCP tool schema validation once the MCP facade is introduced.
 \end{itemize}
 

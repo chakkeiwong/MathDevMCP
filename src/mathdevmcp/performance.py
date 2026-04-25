@@ -4,6 +4,7 @@ from pathlib import Path
 from time import perf_counter
 
 from .contracts import contract_metadata, success_result
+from .index_cache import load_or_build_index
 from .latex_index import build_index, search_index
 
 
@@ -14,10 +15,16 @@ DEFAULT_PERFORMANCE_QUERIES = [
 ]
 
 
-def index_performance_smoke(root: Path, queries: list[str] | None = None, repeat: int = 3, limit: int = 5) -> dict:
+def index_performance_smoke(
+    root: Path,
+    queries: list[str] | None = None,
+    repeat: int = 3,
+    limit: int = 5,
+    cache_path: Path | None = None,
+) -> dict:
     query_list = queries or DEFAULT_PERFORMANCE_QUERIES
     started = perf_counter()
-    index = build_index(root)
+    index = load_or_build_index(root, cache_path) if cache_path else build_index(root)
     build_seconds = perf_counter() - started
 
     query_results = []
@@ -44,6 +51,7 @@ def index_performance_smoke(root: Path, queries: list[str] | None = None, repeat
         "n_blocks": index["n_blocks"],
         "n_labels": index["n_labels"],
         "build_seconds": build_seconds,
+        "cache": index.get("cache", {"path": None, "hit": False}),
         "total_search_seconds": total_search_seconds,
         "queries": query_results,
         "metadata": contract_metadata("index_performance_smoke"),

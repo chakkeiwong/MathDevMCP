@@ -9,7 +9,9 @@ from .code_search import search_files
 from .consistency import compare_files, compare_label_to_code
 from .contracts import error_result, success_result
 from .derivation import derive_step_for_label
+from .index_cache import load_or_build_index
 from .latex_index import build_index, extract_context_for_label, extract_paragraph_context_for_label, search_index
+from .proof_obligations import check_proof_obligation
 from .tool_matrix import tool_matrix
 from .workflow import build_implementation_brief
 
@@ -21,6 +23,12 @@ def _required_string(args: dict[str, Any], name: str) -> str:
     if not isinstance(value, str) or not value:
         raise ValueError(f"Missing required string argument: {name}")
     return value
+
+
+def _index_for_args(args: dict[str, Any]) -> dict[str, Any]:
+    root = Path(_required_string(args, "root"))
+    cache = args.get("cache")
+    return load_or_build_index(root, Path(cache)) if isinstance(cache, str) and cache else build_index(root)
 
 
 def _optional_terms(args: dict[str, Any]) -> list[str] | None:
@@ -35,12 +43,12 @@ def _optional_terms(args: dict[str, Any]) -> list[str] | None:
 
 
 def _tool_search_latex(args: dict[str, Any]) -> list[dict[str, Any]]:
-    index = build_index(Path(_required_string(args, "root")))
+    index = _index_for_args(args)
     return search_index(index, _required_string(args, "query"), limit=int(args.get("limit", 10)))
 
 
 def _tool_extract_latex_context(args: dict[str, Any]) -> dict[str, Any]:
-    index = build_index(Path(_required_string(args, "root")))
+    index = _index_for_args(args)
     return extract_context_for_label(
         index,
         _required_string(args, "label"),
@@ -50,7 +58,7 @@ def _tool_extract_latex_context(args: dict[str, Any]) -> dict[str, Any]:
 
 
 def _tool_extract_latex_neighborhood(args: dict[str, Any]) -> dict[str, Any]:
-    index = build_index(Path(_required_string(args, "root")))
+    index = _index_for_args(args)
     return extract_paragraph_context_for_label(
         index,
         _required_string(args, "label"),
@@ -76,6 +84,7 @@ def _tool_compare_label_code(args: dict[str, Any]) -> dict[str, Any]:
         after=int(args.get("after", 0)),
         paragraph_context=bool(args.get("paragraph_context", False)),
         required_terms=_optional_terms(args),
+        index=_index_for_args(args),
     )
 
 
@@ -88,6 +97,7 @@ def _tool_derive_label_step(args: dict[str, Any]) -> dict[str, Any]:
         before=int(args.get("before", 0)),
         after=int(args.get("after", 0)),
         paragraph_context=bool(args.get("paragraph_context", False)),
+        index=_index_for_args(args),
     )
 
 
@@ -101,6 +111,27 @@ def _tool_implementation_brief(args: dict[str, Any]) -> dict[str, Any]:
         lhs=args.get("lhs") or None,
         rhs=args.get("rhs") or None,
         limit=int(args.get("limit", 3)),
+        cache_path=args.get("cache") or None,
+    )
+
+
+def _tool_check_proof_obligation(args: dict[str, Any]) -> dict[str, Any]:
+    assumptions = args.get("assumptions")
+    if assumptions is None:
+        assumptions = args.get("assumption")
+    if assumptions is None:
+        assumption_list = None
+    elif isinstance(assumptions, str):
+        assumption_list = [assumptions]
+    elif isinstance(assumptions, list) and all(isinstance(item, str) for item in assumptions):
+        assumption_list = assumptions
+    else:
+        raise ValueError("assumptions must be a string or list of strings")
+    return check_proof_obligation(
+        _required_string(args, "lhs"),
+        _required_string(args, "rhs"),
+        assumptions=assumption_list,
+        backend=str(args.get("backend", "auto")),
     )
 
 
@@ -128,6 +159,7 @@ TOOL_HANDLERS: dict[str, ToolHandler] = {
     "compare_label_code": _tool_compare_label_code,
     "derive_label_step": _tool_derive_label_step,
     "implementation_brief": _tool_implementation_brief,
+    "check_proof_obligation": _tool_check_proof_obligation,
     "run_benchmarks": _tool_run_benchmarks,
     "benchmark_gate": _tool_benchmark_gate,
     "tool_matrix": _tool_tool_matrix,
@@ -146,6 +178,7 @@ def list_mcp_tools() -> list[dict[str, Any]]:
             ("compare_label_code", "Compare a labeled document block against code."),
             ("derive_label_step", "Check a derivation step against labeled document context."),
             ("implementation_brief", "Build a document-grounded implementation brief."),
+            ("check_proof_obligation", "Check a bounded derivation/proof obligation with optional backend assistance."),
             ("run_benchmarks", "Run seeded consistency benchmarks."),
             ("benchmark_gate", "Return CI-friendly benchmark gate results."),
             ("tool_matrix", "Return the current MathDevMCP tool matrix."),

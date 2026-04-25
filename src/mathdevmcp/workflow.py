@@ -5,6 +5,7 @@ from pathlib import Path
 from .consistency import compare_label_to_code
 from .contracts import attach_contract, success_result
 from .derivation import derive_step_for_label
+from .index_cache import load_or_build_index
 from .latex_index import build_index, extract_paragraph_context_for_label, search_index
 
 
@@ -17,9 +18,10 @@ def build_implementation_brief(
     lhs: str | None = None,
     rhs: str | None = None,
     limit: int = 3,
+    cache_path: str | Path | None = None,
 ) -> dict:
     root = Path(doc_root)
-    index = build_index(root)
+    index = load_or_build_index(root, Path(cache_path)) if cache_path else build_index(root)
     search_results = search_index(index, query, limit=limit)
     selected_label = label
     if selected_label is None:
@@ -32,6 +34,7 @@ def build_implementation_brief(
         "search_results": search_results,
         "selected_label": selected_label,
         "status": "inconclusive",
+        "cache": index.get("cache", {"path": None, "hit": False}),
         "checks": {},
     }
     if selected_label is None:
@@ -47,6 +50,7 @@ def build_implementation_brief(
         after=1,
         paragraph_context=True,
         required_terms=required_terms,
+        index=index,
     )
     brief["checks"]["consistency"] = consistency
 
@@ -60,6 +64,7 @@ def build_implementation_brief(
             before=1,
             after=1,
             paragraph_context=True,
+            index=index,
         )
         brief["checks"]["derivation"] = derivation
 

@@ -2116,6 +2116,233 @@ The next best industrialization slice is index reuse/caching design and implemen
 - expose warm-query behavior without changing search semantics,
 - add tests for invalidation when a fixture file changes.
 
+## Index reuse/cache helper outcome
+
+The next slice added a small reusable index-cache helper and wired cache visibility into the performance smoke path.
+
+### Changes implemented
+
+Added [src/mathdevmcp/index_cache.py](../../src/mathdevmcp/index_cache.py) with `load_or_build_index(root, cache_path)`, which:
+
+- fingerprints the LaTeX root using relative `.tex` paths, file sizes, and `mtime_ns`,
+- reuses a JSON cache when the fingerprint matches,
+- rebuilds and overwrites the cache when the fingerprint changes,
+- returns cache metadata on the index payload: cache path and hit/miss status.
+
+Updated [src/mathdevmcp/performance.py](../../src/mathdevmcp/performance.py) so `index_performance_smoke(...)` accepts an optional `cache_path` and reports cache metadata.
+
+Updated [src/mathdevmcp/cli.py](../../src/mathdevmcp/cli.py) so `index-performance-smoke` accepts:
+
+```bash
+--cache PATH
+```
+
+Updated [tests/test_performance_smoke.py](../../tests/test_performance_smoke.py) to cover:
+
+- cold cache miss,
+- warm cache hit,
+- invalidation after a fixture file changes,
+- CLI cache reporting.
+
+### Verification completed
+
+Audited cached CLI behavior on the fixture corpus:
+
+```text
+first run: cache.hit=false, n_blocks=52, n_labels=32, top label=eq:repeat-kalman-target-score
+second run: cache.hit=true, n_blocks=52, n_labels=32, top label=eq:repeat-kalman-target-score
+```
+
+Targeted cache/release smoke tests passed:
+
+```text
+6 passed
+```
+
+Full suite after this slice passed:
+
+```text
+68 passed
+```
+
+### Audit notes
+
+This is a minimal cache layer, not a global architectural rewrite. It is deliberately explicit: callers opt into cache use by providing a cache path, and semantics stay identical because the cached payload is the same index shape returned by `build_index(...)`.
+
+### Remaining ambiguity
+
+The cache fingerprint is based on size and mtime rather than content hashes. That is fast and adequate for this first slice, but a future stronger cache may need hashes for environments where mtimes are unreliable.
+
+### Next slice
+
+The next best industrialization slice is applying index reuse to repeated workflow/MCP paths:
+
+- identify repeated `build_index(...)` calls inside workflow/facade usage,
+- add optional cache paths only where they improve repeated invocations without changing defaults,
+- keep cache behavior explicit and test invalidation separately from semantic correctness.
+
+## Workflow/MCP index reuse outcome
+
+The next slice applied the explicit cache helper to repeated workflow and MCP paths without changing default uncached behavior.
+
+### Changes implemented
+
+Updated [src/mathdevmcp/workflow.py](../../src/mathdevmcp/workflow.py) so `build_implementation_brief(...)` accepts an optional `cache_path` and reports cache metadata in the brief payload.
+
+Updated [src/mathdevmcp/consistency.py](../../src/mathdevmcp/consistency.py) and [src/mathdevmcp/derivation.py](../../src/mathdevmcp/derivation.py) so label-based checks can receive an already-built index. This lets the implementation-brief workflow reuse the same index for search, context extraction, consistency checking, and derivation checking instead of rebuilding inside nested calls.
+
+Updated [src/mathdevmcp/cli.py](../../src/mathdevmcp/cli.py) so `implementation-brief` accepts:
+
+```bash
+--cache PATH
+```
+
+Updated [src/mathdevmcp/mcp_facade.py](../../src/mathdevmcp/mcp_facade.py) and [src/mathdevmcp/mcp_server.py](../../src/mathdevmcp/mcp_server.py) so search/context/label-check/implementation-brief MCP paths can opt into the same explicit cache argument.
+
+### Tests added / updated
+
+Updated:
+
+- [tests/test_workflow.py](../../tests/test_workflow.py)
+- [tests/test_mcp_facade.py](../../tests/test_mcp_facade.py)
+
+The new checks cover cold/warm cache metadata for implementation briefs through both direct library usage and MCP facade dispatch.
+
+### Verification completed
+
+Audited CLI implementation-brief output with cache enabled:
+
+```text
+first run: cache.hit=false, selected_label=prop:transport-logdet, status=consistent
+second run: cache.hit=true, selected_label=prop:transport-logdet, status=consistent
+```
+
+Targeted workflow/facade/performance tests passed:
+
+```text
+14 passed
+```
+
+Full suite after this slice passed:
+
+```text
+69 passed
+```
+
+### Audit notes
+
+The cache remains explicit and opt-in. The nested consistency and derivation checks now share the workflow index when invoked from `build_implementation_brief(...)`, preserving result semantics while avoiding repeated index builds on cached workflow paths.
+
+### Remaining ambiguity
+
+The cache is still file-level and path-explicit rather than a long-lived process-global index service. That is appropriate for this slice, but larger projects may eventually need:
+
+- content-hash fingerprints,
+- process-local index reuse across multiple MCP calls,
+- cache diagnostics for stale or oversized cache files.
+
+### Next slice
+
+The next best industrialization slice is to refine cache and performance diagnostics without making timing a CI gate:
+
+- expose cache hit/miss information consistently in agent-facing workflow outputs,
+- add a small diagnostic for cache fingerprint size and indexed file count,
+- keep semantic benchmark work separate from cache mechanics.
+
+## Backend-assisted proof-obligation outcome
+
+The next slice shifted derivation support from token-level similarity toward bounded proof-obligation orchestration.
+
+### Changes implemented
+
+Added [src/mathdevmcp/proof_obligations.py](../../src/mathdevmcp/proof_obligations.py) with `check_proof_obligation(...)`, which accepts:
+
+- left-hand side expression,
+- right-hand side expression,
+- optional assumptions,
+- backend preference: `auto`, `sympy`, `sage`, or `z3`.
+
+The first implementation keeps theorem proving deliberately bounded:
+
+- exact MathDevMCP normalization can certify trivial equality,
+- SymPy can certify simple algebraic equality and refute simple numeric false identities,
+- SageMath and Z3 paths currently return conservative `not_encodable` evidence until scoped adapters are implemented,
+- assumptions are preserved in the result payload rather than inferred from prose.
+
+Updated [src/mathdevmcp/contracts.py](../../src/mathdevmcp/contracts.py) so backend evidence kinds validate alongside existing derivation evidence.
+
+Exposed the new proof-obligation check through:
+
+- [src/mathdevmcp/cli.py](../../src/mathdevmcp/cli.py): `check-proof-obligation`,
+- [src/mathdevmcp/mcp_facade.py](../../src/mathdevmcp/mcp_facade.py): `check_proof_obligation`,
+- [src/mathdevmcp/mcp_server.py](../../src/mathdevmcp/mcp_server.py): FastMCP wrapper,
+- [src/mathdevmcp/tool_matrix.py](../../src/mathdevmcp/tool_matrix.py): concrete derivation-backed tool recommendation.
+
+Updated proposal documentation to describe proof obligations, backend orchestration, assumptions, statuses, limitations, and evaluation criteria:
+
+- [docs/chapters/ch03_product_vision.tex](../chapters/ch03_product_vision.tex)
+- [docs/chapters/ch04_system_architecture.tex](../chapters/ch04_system_architecture.tex)
+- [docs/chapters/ch05_core_workflows.tex](../chapters/ch05_core_workflows.tex)
+- [docs/chapters/ch07_evaluation_plan.tex](../chapters/ch07_evaluation_plan.tex)
+- [docs/appendices/app_b_work_packages.tex](../appendices/app_b_work_packages.tex)
+
+### Tests added / updated
+
+Added [tests/test_proof_obligations.py](../../tests/test_proof_obligations.py), covering:
+
+- exact normalized equality,
+- SymPy-backed commutative equality,
+- SymPy-backed numeric mismatch,
+- assumption preservation,
+- conservative not-encodable handling for planned backends,
+- contract/evidence validation,
+- CLI, MCP facade, and MCP server exposure.
+
+### Verification completed
+
+Audited CLI output:
+
+```text
+backend=sympy, status=equivalent, evidence.kind=backend_verified, backend_status=proved
+```
+
+Targeted proof-obligation/schema/derivation tests passed:
+
+```text
+23 passed
+```
+
+Full suite after this slice passed:
+
+```text
+78 passed
+```
+
+Attempted proposal PDF build, but the local conda TeX toolchain still fails before source compilation:
+
+```text
+Can't locate mktexlsr.pl ... I can't find the format file `pdflatex.fmt'
+```
+
+This matches the previously observed environment/toolchain issue rather than a proposal-source error.
+
+### Audit notes
+
+This slice intentionally does not claim general theorem proving. It gives the long-derivation agent a structured way to outsource small algebraic obligations and record when stronger backends are unavailable or not yet encodable. This is the right reliability boundary: backend evidence can certify a scoped step, but full theorem correctness still requires explicit assumptions, provenance, and human/agent review.
+
+### Remaining ambiguity
+
+The largest remaining design gap is obligation extraction and routing rather than backend execution itself. Future work should decide how to split long derivations into atomic obligations and when a step is suitable for symbolic algebra, Z3, numeric probing, or human review.
+
+### Next slice
+
+The next best industrialization slice is derivation decomposition:
+
+- extract multiple proof obligations from a labeled derivation block,
+- classify each obligation by backend suitability,
+- aggregate statuses into a proof-audit report,
+- add realistic Kalman/Hessian-style proof-obligation benchmark fixtures.
+
 ## Current status
 
 MathDevMCP now has:

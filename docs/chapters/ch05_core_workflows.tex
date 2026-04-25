@@ -21,6 +21,8 @@ This workflow should produce localized discrepancies rather than vague warnings.
 
 The audit workflow should verify claims, localize proof gaps, search for counterexamples, and classify findings with explicit evidence. The goal is not just to say that something is wrong, but to say \emph{where} it is wrong and \emph{why}. A useful audit should distinguish among correct claims, false claims, missing assumptions, incomplete derivations, and claims that cannot be verified from local context.
 
+For long derivations and theorem-style arguments, the audit workflow should turn the derivation into a sequence of small proof obligations. Each obligation should state the local claim, assumptions, source label or line range, and preferred backend class. The system should then check the obligation with exact normalization, symbolic algebra, logical reasoning, or numerical probing as appropriate. If no backend can certify the step, the workflow should preserve an explicit \emph{unverified}, \emph{not encodable}, or \emph{inconclusive} result rather than converting token overlap into a proof.
+
 \section{Mathematically informed code generation}
 
 MathDevMCP should also support code generation from mathematical specifications, but under stricter controls than generic agent-assisted generation. The workflow should begin from a structured mathematical description or extracted formula set, generate code in a bounded scope, and then validate the result against executable acceptance checks. For mathematical code, verification should include dimension consistency, sign conventions, basic symbolic equivalence where possible, and scenario-level behavior checks. This is especially valuable for transformations, likelihood terms, linear algebra kernels, and diagnostic routines.
@@ -50,9 +52,9 @@ Difficulty reading dense mathematical exposition & Claim-context extraction, sym
 Across all workflows, the recommended pattern is:
 \begin{enumerate}[label=\arabic*.]
   \item retrieve the relevant document and code context;
-  \item extract the exact local claim, equation, or implementation region;
+  \item extract the exact local claim, equation, proof obligation, or implementation region;
   \item invoke the lightest appropriate verification tool;
-  \item escalate to richer backends only when needed;
+  \item escalate to richer backends only when needed and when the obligation is encodable;
   \item summarize findings with explicit evidence and uncertainty;
   \item if drafting or generating code, run acceptance checks before treating the output as trustworthy.
 \end{enumerate}

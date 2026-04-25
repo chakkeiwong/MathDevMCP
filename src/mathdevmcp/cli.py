@@ -17,6 +17,7 @@ from .consistency import compare_files, compare_label_to_code
 from .derivation import derive_step_for_label, derive_step_from_files
 from .latex_index import build_index, extract_context_for_label, extract_paragraph_context_for_label, search_index, write_index
 from .performance import index_performance_smoke
+from .proof_obligations import check_proof_obligation
 from .tool_matrix import tool_matrix
 from .workflow import build_implementation_brief
 
@@ -166,7 +167,8 @@ def _cmd_benchmark_gate(args: argparse.Namespace) -> int:
 
 def _cmd_index_performance(args: argparse.Namespace) -> int:
     queries = [query.strip() for query in args.query if query.strip()]
-    result = index_performance_smoke(Path(args.root), queries=queries or None, repeat=args.repeat, limit=args.limit)
+    cache_path = Path(args.cache) if args.cache else None
+    result = index_performance_smoke(Path(args.root), queries=queries or None, repeat=args.repeat, limit=args.limit, cache_path=cache_path)
     print(json.dumps(result, indent=2))
     return 0
 
@@ -183,7 +185,15 @@ def _cmd_implementation_brief(args: argparse.Namespace) -> int:
         lhs=args.lhs or None,
         rhs=args.rhs or None,
         limit=args.limit,
+        cache_path=Path(args.cache) if args.cache else None,
     )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+
+def _cmd_check_proof_obligation(args: argparse.Namespace) -> int:
+    result = check_proof_obligation(args.lhs, args.rhs, assumptions=args.assumption or None, backend=args.backend)
     print(json.dumps(result, indent=2))
     return 0
 
@@ -292,6 +302,7 @@ def make_parser() -> argparse.ArgumentParser:
     p_index_perf.add_argument("--query", action="append", default=[], help="Search query to time; can be repeated")
     p_index_perf.add_argument("--repeat", type=int, default=3, help="Repeated searches per query")
     p_index_perf.add_argument("--limit", type=int, default=5, help="Maximum search results per query")
+    p_index_perf.add_argument("--cache", default="", help="Optional cache JSON path for index reuse")
     p_index_perf.set_defaults(func=_cmd_index_performance)
 
     p_brief = sub.add_parser("implementation-brief", help="Build a document-grounded implementation brief")
@@ -303,7 +314,15 @@ def make_parser() -> argparse.ArgumentParser:
     p_brief.add_argument("--lhs", default="", help="Optional derivation left-hand side")
     p_brief.add_argument("--rhs", default="", help="Optional derivation right-hand side")
     p_brief.add_argument("--limit", type=int, default=3, help="Maximum search results")
+    p_brief.add_argument("--cache", default="", help="Optional cache JSON path for index reuse")
     p_brief.set_defaults(func=_cmd_implementation_brief)
+
+    p_obligation = sub.add_parser("check-proof-obligation", help="Check a bounded derivation/proof obligation")
+    p_obligation.add_argument("lhs", help="Left-hand side expression")
+    p_obligation.add_argument("rhs", help="Right-hand side expression")
+    p_obligation.add_argument("--assumption", action="append", default=[], help="Assumption attached to the obligation; can be repeated")
+    p_obligation.add_argument("--backend", choices=["auto", "sympy", "sage", "z3"], default="auto", help="Backend preference")
+    p_obligation.set_defaults(func=_cmd_check_proof_obligation)
 
     return parser
 

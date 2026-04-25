@@ -137,6 +137,11 @@ def validate_derivation_evidence(evidence: list[dict]) -> list[str]:
         "label_context": "supporting",
         "cited_label": "supporting",
         "symbol_mismatch": "blocking",
+        "backend_verified": "certifying",
+        "backend_counterexample": "blocking",
+        "backend_unknown": "diagnostic",
+        "backend_not_encodable": "diagnostic",
+        "backend_unavailable": "diagnostic",
     }
     for index, item in enumerate(evidence):
         kind = item.get("kind")

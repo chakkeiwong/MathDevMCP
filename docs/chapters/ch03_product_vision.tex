@@ -12,6 +12,7 @@ At a practical level, MathDevMCP should enable the following:
   \item drafting long technical sections from indexed local sources rather than from free-form memory;
   \item deriving and checking intermediate mathematical steps in project notation before the agent makes categorical claims;
   \item verifying symbolic identities, intermediate derivation steps, and change-of-variable relationships with external algebra systems;
+  \item decomposing long derivations into bounded proof obligations whose assumptions, backend evidence, and unresolved gaps remain explicit;
   \item detecting drift between code and documentation;
   \item auditing mathematical claims with repeatable verdicts and measurable evidence quality;
   \item generating code from mathematical specifications subject to explicit acceptance tests;
@@ -29,6 +30,7 @@ Version 1 should focus on a disciplined, high-value subset of capabilities.
   \item Symbolic checks via SymPy and SymEngine, with SageMath and Maxima as richer or independent fallback backends.
   \item Numeric falsification and sanity checks via mpmath or related Python tooling.
   \item Constraint and consistency checks for suitably encodable cases via Z3.
+  \item Proof-obligation orchestration that routes small extracted claims to the lightest suitable backend and records assumptions, provenance, and inconclusive states.
   \item MCP exposure of these capabilities to Claude Code through stable, structured tools.
   \item Audit-oriented composite workflows such as claim verification, gap localization, counterexample search, and code--document consistency review.
 \end{enumerate}
@@ -36,6 +38,7 @@ Version 1 should focus on a disciplined, high-value subset of capabilities.
 \subsection*{Out of scope for version 1}
 \begin{enumerate}[label=\alph*.]
   \item general theorem proving over arbitrary monograph content;
+  \item automatic conversion of long informal derivations into complete formal proofs;
   \item automatic translation of unrestricted prose into formal logic;
   \item fully autonomous production of correct long-form chapters without human review;
   \item universal symbolic support for every mathematical domain equally well;

@@ -129,8 +129,17 @@ def compare_files(doc_path: str, code_path: str, required_terms: list[str] | Non
 
 
 
-def compare_label_to_code(doc_root: str, label: str, code_path: str, before: int = 0, after: int = 0, paragraph_context: bool = False, required_terms: list[str] | None = None) -> dict:
-    index = build_index(Path(doc_root))
+def compare_label_to_code(
+    doc_root: str,
+    label: str,
+    code_path: str,
+    before: int = 0,
+    after: int = 0,
+    paragraph_context: bool = False,
+    required_terms: list[str] | None = None,
+    index: dict | None = None,
+) -> dict:
+    index = index or build_index(Path(doc_root))
     doc_context = (
         extract_paragraph_context_for_label(index, label, before=before, after=after)
         if paragraph_context

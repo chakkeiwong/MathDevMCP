@@ -53,6 +53,35 @@ def test_call_mcp_tool_implementation_brief_returns_consistent_result():
     assert result["ok"] is True
 
 
+def test_call_mcp_tool_implementation_brief_reuses_cache(tmp_path):
+    cache = tmp_path / "mcp_workflow_cache.json"
+
+    cold = call_mcp_tool(
+        "implementation_brief",
+        {
+            "root": str(FIXTURES),
+            "query": "transport log-determinant identity",
+            "code": str(FIXTURES / "doc_consistency_good.py"),
+            "required_terms": ["logdet"],
+            "cache": str(cache),
+        },
+    )
+    warm = call_mcp_tool(
+        "implementation_brief",
+        {
+            "root": str(FIXTURES),
+            "query": "transport log-determinant identity",
+            "code": str(FIXTURES / "doc_consistency_good.py"),
+            "required_terms": ["logdet"],
+            "cache": str(cache),
+        },
+    )
+
+    assert cold["cache"] == {"path": str(cache), "hit": False}
+    assert warm["cache"] == {"path": str(cache), "hit": True}
+    assert warm["status"] == "consistent"
+
+
 
 def test_call_mcp_tool_run_benchmarks_aggregates_results():
     result = call_mcp_tool("run_benchmarks", {"root": str(ROOT)})

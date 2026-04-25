@@ -26,8 +26,8 @@ TOOL_MATRIX: tuple[ToolRecommendation, ...] = (
     ),
     ToolRecommendation(
         problem="derivation_backed_claims",
-        v1_tools=["derive_step", "verify_identity", "extract_latex_context"],
-        later_tools=["proof_step_localizer", "citation_linker", "sage_fallback"],
+        v1_tools=["derive_step", "check_proof_obligation", "verify_identity", "extract_latex_context"],
+        later_tools=["proof_step_localizer", "citation_linker", "sage_fallback", "z3_obligation_encoder"],
         success_metric="categorical claims are accompanied by derivations or explicit cited equations with logical justification",
     ),
     ToolRecommendation(

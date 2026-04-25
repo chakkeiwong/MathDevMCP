@@ -88,8 +88,17 @@ def derive_step_from_files(doc_path: str, lhs: str, rhs: str) -> dict:
 
 
 
-def derive_step_for_label(doc_root: str, label: str, lhs: str, rhs: str, before: int = 0, after: int = 0, paragraph_context: bool = False) -> dict:
-    index = build_index(Path(doc_root))
+def derive_step_for_label(
+    doc_root: str,
+    label: str,
+    lhs: str,
+    rhs: str,
+    before: int = 0,
+    after: int = 0,
+    paragraph_context: bool = False,
+    index: dict | None = None,
+) -> dict:
+    index = index or build_index(Path(doc_root))
     doc_context = (
         extract_paragraph_context_for_label(index, label, before=before, after=after)
         if paragraph_context

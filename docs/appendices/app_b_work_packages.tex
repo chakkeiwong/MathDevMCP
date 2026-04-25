@@ -16,6 +16,8 @@ This appendix breaks the project into concrete work packages.
   \item Add mpmath numeric probing.
   \item Add SageMath and Maxima fallback wrappers.
   \item Add Z3-based consistency checks for encodable cases.
+  \item Define a proof-obligation schema with explicit assumptions, provenance, backend status, and evidence.
+  \item Add bounded proof-obligation adapters for SymPy first, with SageMath, Maxima, and Z3 fallback paths added only where obligations are encodable.
   \item Normalize outputs into structured result records.
 \end{itemize}
 
@@ -23,6 +25,7 @@ This appendix breaks the project into concrete work packages.
 \begin{itemize}
   \item Implement a local Python MCP server.
   \item Expose a small tool surface with structured schemas.
+  \item Expose proof-obligation checking as a bounded tool rather than as raw backend execution.
   \item Add project-local configuration for Claude Code.
   \item Create examples and smoke tests.
 \end{itemize}
@@ -30,6 +33,7 @@ This appendix breaks the project into concrete work packages.
 \section*{WP4: Audit and consistency workflows}
 \begin{itemize}
   \item Implement claim auditing and gap localization.
+  \item Emit proof obligations for unsupported local derivation steps and aggregate their statuses into audit reports.
   \item Implement code--document consistency checks.
   \item Produce batch reports and benchmark outputs.
 \end{itemize}

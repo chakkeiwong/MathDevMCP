@@ -17,6 +17,8 @@ Core subcomponents should include:
 
 This layer should rely on local tools already available to the group: SymPy, SymEngine, SageMath, Maxima, mpmath, and Z3. The implementation should prefer lightweight on-disk caches such as JSON and optionally SQLite for larger indexes, rather than introducing heavyweight infrastructure too early.
 
+A central abstraction in the verification layer should be the \emph{proof obligation}: a bounded claim extracted from a derivation or theorem context, together with its local provenance, normalized left- and right-hand sides, explicit assumptions, requested backend class, and result evidence. Long derivations should be decomposed into many such obligations rather than passed to a language model or algebra system as unconstrained prose. The proof-obligation runner should try exact normalization first, then escalate to SymPy, SageMath, Maxima, Z3, or numerical probing only when the obligation is suitable for that backend. Its output should distinguish \emph{proved}, \emph{disproved}, \emph{unknown}, \emph{not encodable}, \emph{unavailable}, and timeout states, while preserving the source label, line range, and assumptions used.
+
 \section{Layer 2: MCP server facade}
 
 The second layer should expose a carefully chosen subset of the implementation toolkit as MCP tools. Claude Code works best when tools have clear schemas and narrow semantics. Therefore, MathDevMCP should not start by exposing unrestricted shell access or large numbers of backend-specific entrypoints. Instead, it should provide structured tools such as:
@@ -26,13 +28,14 @@ The second layer should expose a carefully chosen subset of the implementation t
   \item \texttt{search\_document\_and\_code}
   \item \texttt{extract\_latex\_context}
   \item \texttt{verify\_identity}
+  \item \texttt{check\_proof\_obligation}
   \item \texttt{find\_numeric\_counterexample}
   \item \texttt{check\_logical\_consistency}
   \item \texttt{audit\_claim}
   \item \texttt{check\_code\_doc\_consistency}
 \end{itemize}
 
-These tools should hide most backend details while still allowing backend preference or fallback selection. For example, a single identity-verification tool can default to SymPy, optionally escalate to SageMath or Maxima, and record which backend produced the result. This reduces cognitive load for the agent and makes benchmarking easier.
+These tools should hide most backend details while still allowing backend preference or fallback selection. For example, a single identity-verification tool can default to SymPy, optionally escalate to SageMath or Maxima, and record which backend produced the result. This reduces cognitive load for the agent and makes benchmarking easier. Similarly, a proof-obligation tool should expose a bounded claim and assumptions rather than raw SageMath, Z3, or shell programs; backend-specific scripts should remain an implementation detail.
 
 \section{Layer 3: Workflow layer}
 

@@ -11,6 +11,7 @@ from .contracts import error_result, success_result
 from .derivation import derive_step_for_label
 from .doctor import doctor_report
 from .index_cache import load_or_build_index
+from .kalman_workflows import audit_kalman_recursion
 from .latex_index import build_index, extract_context_for_label, extract_paragraph_context_for_label, search_index
 from .proof_obligations import check_proof_obligation
 from .proof_audit import audit_derivation_for_label
@@ -149,6 +150,26 @@ def _tool_audit_derivation_label(args: dict[str, Any]) -> dict[str, Any]:
     )
 
 
+def _optional_operations(args: dict[str, Any]) -> list[str] | None:
+    operations = args.get("required_operations")
+    if operations is None:
+        operations = args.get("required_operation")
+    if operations is None:
+        return None
+    if isinstance(operations, str):
+        return [item.strip() for item in operations.split(",") if item.strip()]
+    if isinstance(operations, list) and all(isinstance(item, str) for item in operations):
+        return operations
+    raise ValueError("required_operations must be a comma-separated string or list of strings")
+
+
+def _tool_audit_kalman_recursion(args: dict[str, Any]) -> dict[str, Any]:
+    return audit_kalman_recursion(
+        _required_string(args, "code"),
+        required_operations=_optional_operations(args),
+    )
+
+
 def _tool_run_benchmarks(args: dict[str, Any]) -> dict[str, Any]:
     root = Path(_required_string(args, "root"))
     return build_benchmark_report(root)
@@ -181,6 +202,7 @@ TOOL_HANDLERS: dict[str, ToolHandler] = {
     "implementation_brief": _tool_implementation_brief,
     "check_proof_obligation": _tool_check_proof_obligation,
     "audit_derivation_label": _tool_audit_derivation_label,
+    "audit_kalman_recursion": _tool_audit_kalman_recursion,
     "run_benchmarks": _tool_run_benchmarks,
     "benchmark_gate": _tool_benchmark_gate,
     "tool_matrix": _tool_tool_matrix,
@@ -202,6 +224,7 @@ def list_mcp_tools() -> list[dict[str, Any]]:
             ("implementation_brief", "Build a document-grounded implementation brief."),
             ("check_proof_obligation", "Check a bounded derivation/proof obligation with optional backend assistance."),
             ("audit_derivation_label", "Audit proof obligations extracted from a labeled derivation block."),
+            ("audit_kalman_recursion", "Audit AST-level Kalman recursion structure in Python code."),
             ("run_benchmarks", "Run seeded consistency benchmarks."),
             ("benchmark_gate", "Return CI-friendly benchmark gate results."),
             ("tool_matrix", "Return the current MathDevMCP tool matrix."),

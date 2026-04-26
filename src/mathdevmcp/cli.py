@@ -16,6 +16,7 @@ from .code_search import search_files
 from .consistency import compare_files, compare_label_to_code
 from .derivation import derive_step_for_label, derive_step_from_files
 from .doctor import doctor_report
+from .kalman_workflows import audit_kalman_recursion
 from .latex_index import build_index, extract_context_for_label, extract_paragraph_context_for_label, search_index, write_index
 from .performance import index_performance_smoke
 from .parser_benchmark import compare_parser_backends
@@ -229,6 +230,13 @@ def _cmd_audit_derivation_label(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_audit_kalman_recursion(args: argparse.Namespace) -> int:
+    required_operations = [item.strip() for item in args.required_operation if item.strip()]
+    result = audit_kalman_recursion(args.code, required_operations=required_operations or None)
+    print(json.dumps(result, indent=2))
+    return 0
+
+
 
 def make_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="MathDevMCP development utilities")
@@ -372,6 +380,11 @@ def make_parser() -> argparse.ArgumentParser:
     p_audit.add_argument("--backend", choices=["auto", "sympy", "sage", "z3"], default="auto", help="Backend preference")
     p_audit.add_argument("--cache", default="", help="Optional cache JSON path for index reuse")
     p_audit.set_defaults(func=_cmd_audit_derivation_label)
+
+    p_kalman_recursion = sub.add_parser("audit-kalman-recursion", help="Audit AST-level Kalman recursion structure in Python code")
+    p_kalman_recursion.add_argument("code", help="Python code file path")
+    p_kalman_recursion.add_argument("--required-operation", action="append", default=[], help="Required AST operation; can be repeated")
+    p_kalman_recursion.set_defaults(func=_cmd_audit_kalman_recursion)
 
     return parser
 

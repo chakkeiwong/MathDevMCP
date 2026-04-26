@@ -109,6 +109,102 @@ Every new backend integration should include:
 
 Do not treat backend output as verified unless the backend itself provides deterministic evidence and the result passes MathDevMCP contract checks.
 
+## Current AST/Kalman-recursion request
+
+The next request is to repeat the industrial cycle for the latest gap assessment. The recommended next milestone is AST-level Python operation extraction plus a Kalman filter recursion audit. This should improve practical code/document review beyond operation-presence string matching while remaining conservative.
+
+This pass should:
+
+- update this reset memo before and after work,
+- write an execution plan and second-developer audit,
+- implement maintainable AST operation graph and Kalman recursion workflow slices,
+- test and benchmark-gate the work,
+- commit relevant files while excluding `.serena/`.
+
+Planning artifacts for this pass:
+
+- [ast-kalman-recursion-execution-plan.md](ast-kalman-recursion-execution-plan.md),
+- [ast-kalman-recursion-plan-audit.md](ast-kalman-recursion-plan-audit.md).
+
+## AST/Kalman-recursion checkpoint outcome
+
+This pass added an AST-level Python operation graph and a conservative Kalman recursion audit workflow. The slice improves code/document review beyond string operation matching, while still treating matches as structural review evidence rather than mathematical proof.
+
+### Changes implemented
+
+Added planning/audit docs:
+
+- `docs/plans/ast-kalman-recursion-execution-plan.md`,
+- `docs/plans/ast-kalman-recursion-plan-audit.md`.
+
+Added `src/mathdevmcp/ast_operation_graph.py` with:
+
+- Python AST parsing for assignments, calls, returns, matrix multiplications, loops, assertions, comparisons, and subscripts,
+- operation classification for logdet, inverse/solve, Cholesky, quadratic forms, prediction updates, innovation updates, innovation covariance, Kalman gain, state update, and covariance update,
+- line/column evidence for extracted operations,
+- structured `inconclusive` results for Python syntax errors.
+
+Extended `src/mathdevmcp/kalman_workflows.py` with:
+
+- `audit_kalman_recursion(...)`,
+- required Kalman recursion operation checks,
+- AST-backed shape/covariance guard diagnostics,
+- recommended actions for missing recursion operations and missing guards.
+
+Added agent/benchmark surfaces:
+
+- CLI command: `python -m mathdevmcp.cli audit-kalman-recursion CODE.py`,
+- MCP facade/FastMCP tool: `audit_kalman_recursion`,
+- benchmark category: `kalman_recursion`,
+- fixtures `doc_kalman_recursion_good.py` and `doc_kalman_recursion_bad.py`.
+
+Added tests covering:
+
+- AST operation graph extraction,
+- syntax-error abstention,
+- Kalman recursion missing-operation detection,
+- explicit shape/covariance guard diagnostics,
+- CLI/MCP wrappers,
+- benchmark gate accounting for the new category.
+
+### Verification completed
+
+Targeted AST/Kalman/MCP/benchmark tests passed:
+
+```text
+41 passed
+```
+
+Lean-backed tests initially failed under sandboxed network restrictions because `elan` attempted to resolve `release.lean-lang.org`. Re-running the Lean-dependent tests with approved network access passed:
+
+```text
+17 passed
+```
+
+Full suite passed with the same Lean-capable environment:
+
+```text
+154 passed
+```
+
+Benchmark gate passed:
+
+```text
+passed=true, total=19, passed_count=19, failed_count=0, expected_abstentions=8, policy=all_benchmarks_must_pass
+```
+
+Diff hygiene passed:
+
+```text
+git diff --check
+```
+
+### Audit notes
+
+This is not a full Kalman filter verifier. The AST graph provides structured operation evidence and source locations; it does not prove semantic equivalence, update ordering, numerical stability, or stochastic assumptions. Shape and covariance guards are detected only when explicitly present in code. Missing guards keep otherwise plausible recursion code in `unverified` status. Missing required recursion operations, such as the covariance update, produce `mismatch`.
+
+The next industrial step should add realistic sanitized department snippets for state-space implementations across NumPy/JAX/PyTorch styles and broaden AST recognition for common linear algebra wrappers without weakening the abstention policy.
+
 ## Kalman industrialization checkpoint outcome
 
 This pass added a Kalman likelihood vertical workflow as the next realistic department-facing milestone.

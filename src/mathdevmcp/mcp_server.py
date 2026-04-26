@@ -164,6 +164,17 @@ def audit_derivation_label(
     )
 
 
+@mcp.tool(description="Audit AST-level Kalman recursion structure in Python code.", structured_output=False)
+def audit_kalman_recursion(code: str, required_operations: Sequence[str] | None = None) -> dict:
+    return call_mcp_tool(
+        "audit_kalman_recursion",
+        {
+            "code": code,
+            "required_operations": list(required_operations) if required_operations is not None else None,
+        },
+    )
+
+
 @mcp.tool(description="Run seeded consistency benchmarks.", structured_output=False)
 def run_benchmarks(root: str) -> dict:
     return call_mcp_tool("run_benchmarks", {"root": root})

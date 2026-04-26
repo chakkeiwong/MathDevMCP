@@ -14,6 +14,7 @@ def test_list_mcp_tools_includes_implementation_brief():
     assert "implementation_brief" in names
     assert "compare_label_code" in names
     assert "benchmark_gate" in names
+    assert "audit_kalman_recursion" in names
 
 
 
@@ -80,6 +81,18 @@ def test_call_mcp_tool_implementation_brief_reuses_cache(tmp_path):
     assert cold["cache"] == {"path": str(cache), "hit": False}
     assert warm["cache"] == {"path": str(cache), "hit": True}
     assert warm["status"] == "consistent"
+
+
+def test_call_mcp_tool_audit_kalman_recursion_returns_ast_evidence():
+    result = call_mcp_tool(
+        "audit_kalman_recursion",
+        {"code": str(FIXTURES / "doc_kalman_recursion_bad.py")},
+    )
+
+    assert result["status"] == "mismatch"
+    assert result["missing_operations"] == ["covariance_update"]
+    assert result["ast_operation_graph"]["metadata"] == {"schema_version": "1.0", "contract": "ast_operation_graph"}
+    assert result["ok"] is True
 
 
 

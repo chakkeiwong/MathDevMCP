@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from mathdevmcp.kalman_workflows import audit_kalman_likelihood, build_kalman_review_packet
+from mathdevmcp.kalman_workflows import audit_kalman_likelihood, audit_kalman_recursion, build_kalman_review_packet
 from mathdevmcp.notation import infer_symbol_hints
 
 
@@ -53,3 +53,80 @@ def test_build_kalman_review_packet_includes_actions_and_diagnostics(tmp_path):
     kinds = {action["kind"] for action in packet["recommended_actions"]}
     assert "fix_or_explain_missing_operation" in kinds
     assert "synthetic_logdet_likelihood_test" in kinds
+
+
+def test_audit_kalman_recursion_reports_unverified_without_shape_guards(tmp_path):
+    code = tmp_path / "kalman_recursion.py"
+    code.write_text(
+        """
+def step(F, H, Q, R, x, P, y):
+    x_pred = F @ x
+    P_pred = F @ P @ F.T + Q
+    innovation = y - H @ x_pred
+    S = H @ P_pred @ H.T + R
+    K = P_pred @ H.T @ solve(S, eye(S.shape[0]))
+    x_filt = x_pred + K @ innovation
+    P_filt = P_pred - K @ H @ P_pred
+    return x_filt, P_filt
+""",
+        encoding="utf-8",
+    )
+
+    result = audit_kalman_recursion(str(code))
+
+    assert result["status"] == "unverified"
+    assert result["missing_operations"] == []
+    assert result["shape_diagnostics"]["status"] == "missing_guards"
+    assert "shape_guard" in result["shape_diagnostics"]["missing_guards"]
+    assert result["metadata"] == {"schema_version": "1.0", "contract": "kalman_recursion_audit"}
+    assert "ast_operation_graph" in result
+
+
+def test_audit_kalman_recursion_detects_missing_covariance_update(tmp_path):
+    code = tmp_path / "kalman_recursion_bad.py"
+    code.write_text(
+        """
+def step(F, H, Q, R, x, P, y):
+    x_pred = F @ x
+    P_pred = F @ P @ F.T + Q
+    innovation = y - H @ x_pred
+    S = H @ P_pred @ H.T + R
+    K = P_pred @ H.T @ solve(S, eye(S.shape[0]))
+    x_filt = x_pred + K @ innovation
+    return x_filt, P_pred
+""",
+        encoding="utf-8",
+    )
+
+    result = audit_kalman_recursion(str(code))
+
+    assert result["status"] == "mismatch"
+    assert result["missing_operations"] == ["covariance_update"]
+    assert any(action["target"] == "covariance_update" for action in result["recommended_actions"])
+
+
+def test_audit_kalman_recursion_uses_explicit_shape_and_covariance_guards(tmp_path):
+    code = tmp_path / "kalman_recursion_guarded.py"
+    code.write_text(
+        """
+def step(F, H, Q, R, x, P, y):
+    assert F.shape[0] == F.shape[1]
+    assert P.shape[0] == P.shape[1]
+    assert is_symmetric(P) and is_positive_semidefinite(P)
+    x_pred = F @ x
+    P_pred = F @ P @ F.T + Q
+    innovation = y - H @ x_pred
+    S = H @ P_pred @ H.T + R
+    K = P_pred @ H.T @ solve(S, eye(S.shape[0]))
+    x_filt = x_pred + K @ innovation
+    P_filt = P_pred - K @ H @ P_pred
+    return x_filt, P_filt
+""",
+        encoding="utf-8",
+    )
+
+    result = audit_kalman_recursion(str(code))
+
+    assert result["status"] == "consistent"
+    assert result["shape_diagnostics"]["missing_guards"] == []
+    assert {item["operation"] for item in result["shape_diagnostics"]["evidence"]} >= {"shape_guard", "covariance_guard"}

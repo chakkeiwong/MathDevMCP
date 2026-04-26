@@ -7,10 +7,11 @@ from typing import Literal
 from .consistency import compare_files, compare_label_to_code
 from .contracts import contract_metadata, success_result
 from .derivation import derive_step_for_label
+from .kalman_workflows import audit_kalman_recursion
 from .proof_audit import audit_derivation_for_label
 from .workflow import build_implementation_brief
 
-BenchmarkCategory = Literal["consistency", "derivation", "workflow", "proof_audit"]
+BenchmarkCategory = Literal["consistency", "derivation", "workflow", "proof_audit", "kalman_recursion"]
 
 
 @dataclass(frozen=True)
@@ -347,9 +348,35 @@ def _proof_audit_cases(root: Path) -> list[dict]:
     ]
 
 
+def _kalman_recursion_cases(root: Path) -> list[dict]:
+    fixtures = root / "benchmarks" / "fixtures"
+    return [
+        {
+            "id": "kalman_recursion_structural_unverified",
+            "category": "kalman_recursion",
+            "evaluation_focus": "ast_recursion_abstention",
+            "code": str(fixtures / "doc_kalman_recursion_good.py"),
+            "expected_status": "unverified",
+            "expected_abstention": True,
+            "expected_missing_operations": [],
+            "expected_missing_guards": ["shape_guard", "covariance_guard"],
+        },
+        {
+            "id": "kalman_recursion_missing_covariance_update",
+            "category": "kalman_recursion",
+            "evaluation_focus": "false_confidence_control",
+            "code": str(fixtures / "doc_kalman_recursion_bad.py"),
+            "expected_status": "mismatch",
+            "expected_abstention": False,
+            "expected_missing_operations": ["covariance_update"],
+            "expected_missing_guards": ["shape_guard", "covariance_guard"],
+        },
+    ]
+
+
 
 def benchmark_cases(root: Path) -> list[dict]:
-    return _consistency_cases(root) + _derivation_cases(root) + _workflow_cases(root) + _proof_audit_cases(root)
+    return _consistency_cases(root) + _derivation_cases(root) + _workflow_cases(root) + _proof_audit_cases(root) + _kalman_recursion_cases(root)
 
 
 
@@ -547,6 +574,42 @@ def run_proof_audit_benchmark(root: Path) -> list[dict]:
     return results
 
 
+def run_kalman_recursion_benchmark(root: Path) -> list[dict]:
+    results: list[dict] = []
+    for case in _kalman_recursion_cases(root):
+        result = audit_kalman_recursion(case["code"])
+        status_ok = result["status"] == case["expected_status"]
+        missing_ops_ok = result["missing_operations"] == case["expected_missing_operations"]
+        missing_guards_ok = result["shape_diagnostics"]["missing_guards"] == case["expected_missing_guards"]
+        ast_contract_ok = result["ast_operation_graph"].get("metadata", {}).get("contract") == "ast_operation_graph"
+        abstention_ok = result["status"] in {"inconclusive", "unverified"} if case.get("expected_abstention", False) else result["status"] not in {"inconclusive", "unverified"}
+        results.append(
+            _benchmark_result(
+                benchmark_id=case["id"],
+                category=case["category"],
+                evaluation_focus=case["evaluation_focus"],
+                expected_status=case["expected_status"],
+                observed_status=result["status"],
+                passed=status_ok and missing_ops_ok and missing_guards_ok and ast_contract_ok and abstention_ok,
+                quality_checks={
+                    "status_match": status_ok,
+                    "missing_operations_match": missing_ops_ok,
+                    "missing_guards_match": missing_guards_ok,
+                    "ast_contract_match": ast_contract_ok,
+                    "expected_abstention_match": abstention_ok,
+                },
+                details={
+                    "code": case["code"],
+                    "missing_operations": result["missing_operations"],
+                    "shape_diagnostics": result["shape_diagnostics"],
+                    "observed_operations": result["observed_operations"],
+                },
+                expected_abstention=case.get("expected_abstention", False),
+            )
+        )
+    return results
+
+
 
 def summarize_benchmark_results(results: list[dict]) -> dict:
     category_totals: dict[str, dict[str, int]] = {}
@@ -583,6 +646,7 @@ def build_benchmark_report(root: Path) -> dict:
         + run_derivation_benchmark(root)
         + run_workflow_benchmark(root)
         + run_proof_audit_benchmark(root)
+        + run_kalman_recursion_benchmark(root)
     )
     passed_count = sum(1 for result in results if result["passed"])
     return asdict(

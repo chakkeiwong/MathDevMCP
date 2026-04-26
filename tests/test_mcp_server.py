@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from mathdevmcp.mcp_server import audit_derivation_label, benchmark_gate, compare_label_code, extract_latex_context, get_tool_matrix, implementation_brief, run_benchmarks
+from mathdevmcp.mcp_server import audit_derivation_label, audit_kalman_recursion, benchmark_gate, compare_label_code, extract_latex_context, get_tool_matrix, implementation_brief, run_benchmarks
+from test_context_and_fixtures import EXPECTED_BENCHMARK_TOTAL
 
 
 FIXTURES = Path(__file__).resolve().parent.parent / "benchmarks" / "fixtures"
@@ -45,8 +46,8 @@ def test_mcp_server_run_benchmarks_returns_structured_report():
     result = run_benchmarks(str(ROOT))
 
     assert result["metadata"] == {"schema_version": "1.0", "contract": "benchmark_results"}
-    assert result["total"] == 17
-    assert result["passed"] == 17
+    assert result["total"] == EXPECTED_BENCHMARK_TOTAL
+    assert result["passed"] == EXPECTED_BENCHMARK_TOTAL
 
 
 
@@ -55,6 +56,14 @@ def test_mcp_server_audit_derivation_label_returns_proof_audit_result():
 
     assert result["metadata"] == {"schema_version": "1.0", "contract": "proof_audit_result"}
     assert result["status"] == "verified"
+
+
+def test_mcp_server_audit_kalman_recursion_returns_ast_result():
+    result = audit_kalman_recursion(str(FIXTURES / "doc_kalman_recursion_bad.py"))
+
+    assert result["metadata"] == {"schema_version": "1.0", "contract": "kalman_recursion_audit"}
+    assert result["status"] == "mismatch"
+    assert result["missing_operations"] == ["covariance_update"]
 
 
 

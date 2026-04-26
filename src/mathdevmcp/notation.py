@@ -45,10 +45,16 @@ def infer_symbol_hints(symbols: list[str], context_text: str = "") -> dict:
     for symbol in symbols:
         role = "unknown"
         shape = "unknown"
-        if symbol.startswith("S") or "covariance" in context:
+        if symbol.startswith("S") or ("covariance" in context and symbol.lower().startswith(("sigma", "cov"))):
             role = "covariance_candidate"
             shape = "matrix_candidate"
-        elif symbol.startswith("v") or "residual" in context:
+        elif symbol.startswith(("A", "F", "T")) or ("transition" in context and symbol.lower().startswith(("a", "f", "t"))):
+            role = "transition_matrix_candidate"
+            shape = "matrix_candidate"
+        elif symbol.startswith(("H", "Z")) or ("observation" in context and symbol.lower().startswith(("h", "z"))):
+            role = "observation_matrix_candidate"
+            shape = "matrix_candidate"
+        elif symbol.startswith("v") or "residual" in context or "innovation" in context:
             role = "residual_candidate"
             shape = "vector_candidate"
         elif symbol.endswith("_t"):

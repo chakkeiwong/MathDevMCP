@@ -109,6 +109,80 @@ Every new backend integration should include:
 
 Do not treat backend output as verified unless the backend itself provides deterministic evidence and the result passes MathDevMCP contract checks.
 
+## Kalman industrialization checkpoint outcome
+
+This pass added a Kalman likelihood vertical workflow as the next realistic department-facing milestone.
+
+### Changes implemented
+
+Added planning/audit docs:
+
+- `docs/plans/kalman-industrialization-execution-plan.md`,
+- `docs/plans/kalman-industrialization-plan-audit.md`.
+
+Updated `src/mathdevmcp/notation.py` so symbol hints distinguish common Kalman/state-space candidates:
+
+- `S_t`: covariance/matrix candidate,
+- `v_t`: residual/vector candidate,
+- `F_t`/`A_t`/`T_t`: transition-matrix candidate,
+- `H_t`/`Z_t`: observation-matrix candidate.
+
+Added `src/mathdevmcp/kalman_workflows.py` with:
+
+- `audit_kalman_likelihood(...)`, combining likelihood audit, Kalman operation requirements, symbol hints, and diagnostic suggestions,
+- `build_kalman_review_packet(...)`, producing an agent-facing Kalman review packet with severity-ranked actions and diagnostics.
+
+Added `tests/test_kalman_workflows.py`, covering:
+
+- candidate-not-assumption status for symbol hints,
+- missing logdet/solve detection,
+- unverified status when operations are present but assumptions/proof remain incomplete,
+- review packet action and diagnostic suggestion propagation.
+
+### Verification completed
+
+Targeted Kalman workflow tests passed:
+
+```text
+4 passed
+```
+
+Full suite passed:
+
+```text
+144 passed
+```
+
+Benchmark gate passed:
+
+```text
+passed=true, total=17, passed_count=17, failed_count=0, expected_abstentions=7, policy=all_benchmarks_must_pass
+```
+
+Diff hygiene passed:
+
+```text
+git diff --check
+```
+
+### Audit notes
+
+This is not a full Kalman filter verifier. It is a maintainable operation/assumption/provenance review workflow. It can detect missing likelihood operations such as logdet and inverse/solve, preserve Kalman-style symbol hints as non-proof candidate metadata, surface missing assumptions, and produce review-packet actions for coding agents.
+
+The next industrial step should be AST-level code operation graphs and shape/dimension diagnostics for a realistic state-space implementation.
+
+## Current Kalman-industrialization request
+
+The next request is to repeat the industrial cycle for the latest remaining-gap assessment. The practical next milestone is a realistic Kalman likelihood/filter audit workflow because it exercises parsing, notation, assumptions, matrix operations, likelihood code, missing logdet/solve/shape bugs, diagnostic suggestions, and review packets.
+
+This pass should:
+
+- update this reset memo before and after work,
+- write an execution plan and second-developer audit,
+- implement maintainable slices rather than claiming full industrial completion,
+- run tests and benchmark gate,
+- commit relevant files while excluding `.serena/`.
+
 ## Frontier industrialization checkpoint outcome
 
 The latest pass added an agent-facing frontier-industrialization layer on top of the prior scaffolding.

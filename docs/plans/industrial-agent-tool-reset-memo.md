@@ -109,6 +109,90 @@ Every new backend integration should include:
 
 Do not treat backend output as verified unless the backend itself provides deterministic evidence and the result passes MathDevMCP contract checks.
 
+## Frontier industrialization checkpoint outcome
+
+The latest pass added an agent-facing frontier-industrialization layer on top of the prior scaffolding.
+
+### Changes implemented
+
+Added planning/audit docs:
+
+- `docs/plans/frontier-industrialization-execution-plan.md`,
+- `docs/plans/frontier-industrialization-plan-audit.md`.
+
+Added new modules:
+
+- `src/mathdevmcp/review_packet.py`: builds compact likelihood review packets from nested audit evidence,
+- `src/mathdevmcp/notation.py`: extracts explicit notation records and candidate symbol hints,
+- `src/mathdevmcp/diagnostic_tests.py`: suggests diagnostic tests from audit findings,
+- `src/mathdevmcp/benchmark_manifest.py`: records benchmark corpus categories and private-corpus policy,
+- `src/mathdevmcp/deployment.py`: records optional backend/dependency/deployment policy.
+
+Added `tests/test_frontier_industrialization.py`, covering:
+
+- high-severity review-packet actions for missing likelihood operations,
+- explicit notation extraction and candidate symbol hints,
+- diagnostic test suggestions for missing logdet/solve and derivative obligations,
+- private benchmark corpus manifest policy,
+- LeanDojo/backend isolation deployment policy.
+
+### Verification completed
+
+Targeted frontier-industrialization tests passed:
+
+```text
+5 passed
+```
+
+Full suite passed:
+
+```text
+140 passed
+```
+
+Benchmark gate passed:
+
+```text
+passed=true, total=17, passed_count=17, failed_count=0, expected_abstentions=7, policy=all_benchmarks_must_pass
+```
+
+Diff hygiene passed:
+
+```text
+git diff --check
+```
+
+### Audit notes
+
+This pass improves usability and governance rather than claiming full industrial completeness. The new review packet is the most important product-facing addition: it converts nested likelihood audit evidence into severity-ranked actions that coding agents can act on. Notation and symbol hints remain explicitly diagnostic and are not proof assumptions. Diagnostic test suggestions are plans, not generated files or long experiments. Benchmark and deployment metadata now make private-corpus and optional-backend policies machine-readable.
+
+### Remaining gaps
+
+The largest remaining gaps are still:
+
+- true LeanDojo `Dojo(entry)` interaction,
+- parser benchmarking on real/sanitized department documents,
+- typed/dimensional MathObligation semantics,
+- Sage-backed matrix/numeric checks,
+- AST-level code operation graphs,
+- real private benchmark corpora,
+- CI/deployment packaging for optional backend worker environments.
+
+## Current frontier-industrialization request
+
+The next request is to plan, audit, execute, test, tidy, update this memo, and commit another industrialization pass toward a department-scale tool for mathematical finance/economics developers working across computational econometrics, computational statistics, ML/LLMs, large-scale Bayesian learning, computational physics, and applied mathematics.
+
+The highest-value next pass should not claim full industrial completion. It should add maintainable scaffolding for:
+
+- parser/proof/code review packets,
+- typed/dimensional MathObligation improvements,
+- notation/assumption extraction,
+- generated diagnostic test suggestions,
+- benchmark corpus organization,
+- deployment/dependency documentation in machine-readable form.
+
+The work should keep the same safety invariant: no parser guess, inferred assumption, LLM claim, generated skeleton, backend timeout, or external-tool failure may become a verified mathematical claim.
+
 ## Remaining industrial gaps checkpoint outcome
 
 The latest request asked for a reset-memo update, an execution plan for the remaining industrial gaps, an independent audit of that plan, execution with the established cycle, verification, commit, and final reset-memo update.

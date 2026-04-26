@@ -142,6 +142,12 @@ def validate_derivation_evidence(evidence: list[dict]) -> list[str]:
         "backend_unknown": "diagnostic",
         "backend_not_encodable": "diagnostic",
         "backend_unavailable": "diagnostic",
+        "not_extracted": "diagnostic",
+        "lean_verified": "certifying",
+        "lean_failed": "blocking",
+        "lean_placeholder": "diagnostic",
+        "lean_unavailable": "diagnostic",
+        "lean_timeout": "diagnostic",
     }
     for index, item in enumerate(evidence):
         kind = item.get("kind")

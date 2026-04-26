@@ -2343,6 +2343,264 @@ The next best industrialization slice is derivation decomposition:
 - aggregate statuses into a proof-audit report,
 - add realistic Kalman/Hessian-style proof-obligation benchmark fixtures.
 
+## Narrow domain formalization outcome
+
+The next slice added a deliberately small domain-formalization layer for curated scalar identities. This is not a broad HMC/Kalman formal library; it is a guardrailed first domain bridge that demonstrates assumption visibility and machine-checked sub-identities.
+
+### Changes implemented
+
+Added [src/mathdevmcp/domain_formalization.py](../../src/mathdevmcp/domain_formalization.py) with:
+
+- `formalize_domain_obligation(...)`, which checks a curated scalar obligation against explicit symbol types,
+- `formalize_domain_label(...)`, which reuses proof-audit extraction and preserves LaTeX provenance,
+- conservative `missing_assumptions` status when a symbol lacks an explicit type,
+- conservative `unsupported_notation` status for Kalman/stochastic/matrix-style notation,
+- Lean-backed `domain_verified` status for the first Nat-valued scalar algebra slice.
+
+Added [benchmarks/fixtures/doc_domain_formalization.tex](../../benchmarks/fixtures/doc_domain_formalization.tex) and [tests/test_domain_formalization.py](../../tests/test_domain_formalization.py).
+
+### Verification completed
+
+Targeted domain formalization tests passed:
+
+```text
+5 passed
+```
+
+Full suite passed:
+
+```text
+110 passed
+```
+
+Benchmark gate still passed:
+
+```text
+passed=true, total=17, passed_count=17, failed_count=0, expected_abstentions=7, policy=all_benchmarks_must_pass
+```
+
+### Audit notes
+
+The first domain slice proves only what it can state precisely: Nat-valued scalar commutativity-style identities with explicit variable types. The tests also verify the negative cases that matter for reliability: missing type assumptions stop formalization, and Kalman-style notation abstains rather than receiving an invented formal meaning.
+
+### Remaining ambiguity
+
+Domain formalization is intentionally not yet in the benchmark gate or MCP/CLI surfaces. The library API establishes the behavior, but broader product exposure should wait until the domain vocabulary is less toy-like. Future work should decide whether to add a repository Lean/Lake project, Mathlib dependency, and curated formal vocabularies for scalar Hamiltonian or Kalman identities.
+
+## Lean checker outcome
+
+The next slice added a local Lean checker for explicit proof artifacts. This is separate from Lean export: skeletons still do not count as proof, while complete Lean source can now be machine-checked.
+
+### Changes implemented
+
+Added [src/mathdevmcp/lean_check.py](../../src/mathdevmcp/lean_check.py) with `check_lean_source(...)`, which:
+
+- writes supplied Lean source to a temporary file,
+- runs the local `lean` executable with a timeout,
+- records command, return code, stdout/stderr excerpts, Lean version, placeholder use, and source hash,
+- returns `verified` only when Lean accepts the source and no placeholder proof is present,
+- returns `mismatch` when Lean rejects an explicit proof artifact,
+- returns `inconclusive` for unavailable Lean, timeouts, or placeholder proofs.
+
+Updated [src/mathdevmcp/contracts.py](../../src/mathdevmcp/contracts.py) so Lean evidence kinds validate alongside proof-audit and backend evidence.
+
+Added [tests/test_lean_check.py](../../tests/test_lean_check.py), covering:
+
+- successful `Nat.add_comm` verification,
+- rejection of a false proof artifact,
+- rejection of `sorry` in certified mode,
+- non-certified handling of `sorry` when explicitly allowed,
+- unavailable-Lean and timeout paths,
+- reproducible evidence fields.
+
+### Verification completed
+
+Targeted Lean checker tests passed:
+
+```text
+7 passed
+```
+
+Full suite passed:
+
+```text
+105 passed
+```
+
+Lean version recorded during verification:
+
+```text
+Lean 4.30.0-rc2, x86_64-unknown-linux-gnu, commit 3dc1a088b6d2d8eafe25a7cd7ec7b58d731bd7cc, Release
+```
+
+### Audit notes
+
+This slice creates the first genuinely external proof-checking path. The checker is intentionally artifact-based: it does not autoformalize prose, infer assumptions, or convert LaTeX into Lean. It only verifies explicit Lean source and refuses to certify placeholder proofs. This preserves the core safety invariant: a machine-checked result must include reproducible evidence, while environment problems remain `inconclusive`.
+
+### Remaining ambiguity
+
+Lean checking is not yet integrated into benchmark categories or MCP/CLI surfaces, and there is no domain theorem library yet. That is acceptable for this slice because it establishes the local verification primitive before domain-specific formalization work.
+
+### Next slice
+
+The next best slice is narrow domain formalization:
+
+- add a small domain-formalization helper that classifies curated obligations,
+- begin with scalar/Hamiltonian-style arithmetic that Lean can check without Mathlib,
+- show that removing a required assumption or using unsupported stochastic/matrix notation prevents certification,
+- keep Kalman/matrix-calculus notation in abstention until a scoped formal vocabulary exists.
+
+## Lean candidate export outcome
+
+The next slice added a conservative Lean export layer. It does not claim Lean verification; it only turns safe proof-audit obligations into typed theorem skeletons and marks unsupported obligations as formalization work.
+
+### Changes implemented
+
+Added [src/mathdevmcp/lean_export.py](../../src/mathdevmcp/lean_export.py) with `export_lean_obligations(...)`, which:
+
+- emits stable Lean theorem names from proof-audit obligation IDs,
+- generates simple `Nat`/`Real` theorem skeletons for backend-safe algebraic obligations,
+- preserves source text and provenance metadata for each artifact,
+- marks raw/unknown target types as `missing_type_assumptions`,
+- marks Kalman/Hessian-style or unextracted obligations as `needs_human_formalization`,
+- always sets `certified=false` because skeletons contain placeholders.
+
+Added [tests/test_lean_export.py](../../tests/test_lean_export.py), covering:
+
+- stable Nat skeleton generation,
+- successful Lean compilation of a `sorry` skeleton without treating it as verified,
+- conservative handling of Kalman notation,
+- explicit missing type assumptions for raw targets,
+- theorem-name sanitization and provenance preservation.
+
+### Verification completed
+
+Targeted Lean export tests passed:
+
+```text
+5 passed
+```
+
+Full suite passed:
+
+```text
+98 passed
+```
+
+Lean skeleton smoke compile succeeded and produced only the expected placeholder warning:
+
+```text
+Skeleton.lean:3:8: warning: declaration uses `sorry`
+```
+
+### Audit notes
+
+This slice creates a bridge from proof-audit reports to Lean without weakening the proof boundary. A Lean skeleton is useful because it exposes the exact formal statement and missing assumptions, but it is not evidence of truth. Tests enforce that `skeleton_only` artifacts have `certified=false` and that the verified count remains zero.
+
+### Remaining ambiguity
+
+The exporter only handles very simple typed arithmetic skeletons. It does not infer semantic types, import Mathlib, generate proofs, or formalize domain notation. That is intentional: Phase 3 should add a separate Lean checker that can verify explicit proof artifacts and reject placeholders.
+
+### Next slice
+
+The next best slice is Lean checking for curated theorem families:
+
+- add a local `check_lean_source(...)` helper,
+- reject `sorry`/`admit` in certified mode,
+- verify a small `Nat.add_comm` theorem,
+- report false theorem/proof failures without overclaiming,
+- return `inconclusive` for unavailable Lean, timeout, or environment failure.
+
+## Proof-audit decomposition outcome
+
+The next slice implemented the first derivation-audit layer requested after the VS Code crash recovery audit.
+
+### Changes implemented
+
+Added [src/mathdevmcp/proof_audit.py](../../src/mathdevmcp/proof_audit.py) with `audit_derivation_for_label(...)`, which:
+
+- extracts simple labeled `equation` obligations,
+- extracts adjacent obligations from labeled `align` chains,
+- routes bounded algebraic obligations through `check_proof_obligation(...)`,
+- aggregates per-obligation statuses into a top-level proof-audit report,
+- preserves source label/file/line provenance for every obligation,
+- marks ambiguous multi-equality rows as `not_extracted`,
+- marks Kalman/Hessian-style notation as `human_review` / `backend_not_encodable` rather than pretending the bounded backend can prove it.
+
+Exposed the proof-audit workflow through:
+
+- [src/mathdevmcp/cli.py](../../src/mathdevmcp/cli.py): `audit-derivation-label`,
+- [src/mathdevmcp/mcp_facade.py](../../src/mathdevmcp/mcp_facade.py): `audit_derivation_label`,
+- [src/mathdevmcp/mcp_server.py](../../src/mathdevmcp/mcp_server.py): FastMCP wrapper,
+- [src/mathdevmcp/tool_matrix.py](../../src/mathdevmcp/tool_matrix.py): explicit derivation-audit recommendation.
+
+Updated [src/mathdevmcp/contracts.py](../../src/mathdevmcp/contracts.py) so `not_extracted` diagnostic evidence validates with existing derivation/backend evidence.
+
+Expanded [src/mathdevmcp/benchmarks.py](../../src/mathdevmcp/benchmarks.py) with a `proof_audit` benchmark category covering:
+
+- simple obligation routing/certification,
+- numeric false-identity detection,
+- Kalman-style conservative abstention.
+
+Added [benchmarks/fixtures/doc_proof_audit.tex](../../benchmarks/fixtures/doc_proof_audit.tex) and [tests/test_proof_audit.py](../../tests/test_proof_audit.py).
+
+### Verification completed
+
+Targeted proof-audit tests passed:
+
+```text
+10 passed
+```
+
+Proof-audit plus benchmark fixture tests passed:
+
+```text
+30 passed
+```
+
+Full suite passed:
+
+```text
+93 passed
+```
+
+Benchmark gate passed:
+
+```text
+passed=true, total=17, passed_count=17, failed_count=0, expected_abstentions=7, policy=all_benchmarks_must_pass
+```
+
+Audited CLI abstention behavior on the Kalman-style fixture:
+
+```text
+label=eq:proof-audit-kalman, status=inconclusive, classification=human_review, evidence.kind=backend_not_encodable
+```
+
+### Audit notes
+
+This slice directly addresses the earlier complaint that derivation/proving still relied on intrinsic LLM ability. It does not claim broad theorem proving. Instead, it makes proof work auditable: the tool now lists extracted obligations, records which small steps were backend-certified or refuted, and preserves conservative abstentions with source provenance.
+
+The most important false-confidence guardrails are now tested:
+
+- nearby context does not count as proof,
+- ambiguous multi-equality rows are not guessed,
+- numeric false identities are refuted,
+- Kalman/Hessian-style notation abstains rather than being forced into SymPy.
+
+### Remaining ambiguity
+
+The extraction grammar is intentionally narrow. It handles simple equation and align fixtures, but not general LaTeX derivation prose, nested environments, case splits, inequalities, assumptions, theorem dependencies, or semantic domain notation. That is appropriate for this slice because the next phases should add Lean export/checking without weakening the abstention boundary.
+
+### Next slice
+
+The next best slice is Lean candidate export:
+
+- create Lean theorem skeletons from safe extracted obligations,
+- preserve source obligation IDs and provenance in artifact metadata,
+- surface missing type assumptions explicitly,
+- ensure skeletons with `sorry` can never count as verified,
+- keep Kalman/Hessian notation in `needs_human_formalization` until a scoped formal vocabulary exists.
+
 ## Current status
 
 MathDevMCP now has:
@@ -2353,15 +2611,116 @@ MathDevMCP now has:
 4. a real FastMCP stdio server,
 5. a project-local `.mcp.json` wiring the server for Claude Code,
 6. normalized derivation-context support for lightweight LaTeX/plain-math notation,
-7. richer consistency findings that report extra implementation terms.
+7. richer consistency findings that report extra implementation terms,
+8. a benchmark/release-gate surface with 17 cases across consistency, derivation, workflow, and proof-audit behavior,
+9. explicit conservative abstention accounting for derivation, workflow, and proof-audit benchmarks,
+10. realistic synthetic Kalman/Hamiltonian fixtures for provenance, long-document retrieval, repeat-label stability, and false-confidence control,
+11. an opt-in LaTeX index cache used by performance, workflow, and MCP/facade paths,
+12. an advisory index-performance smoke path that reports cold build, repeated-query timing, and cache hit/miss metadata,
+13. a bounded proof-obligation checker with exact normalization and SymPy-backed algebraic evidence,
+14. CLI, MCP facade, FastMCP server, contract-validation, and tool-matrix exposure for proof-obligation checks,
+15. a proof-audit report surface that decomposes labeled derivation blocks into explicit obligations with backend evidence or conservative abstention.
+
+### Recovery audit after VS Code crash
+
+The reset memo was audited against the current codebase on 2026-04-26 after an unsaved-editor crash.
+
+Repository state at audit time:
+
+```text
+branch: main...origin/main [ahead 1]
+latest commit: 8591c5f Add proof obligation orchestration
+untracked: .serena/
+tracked working tree: clean
+```
+
+The full test suite passes when the local source tree is on `PYTHONPATH`:
+
+```bash
+PYTHONPATH=/home/chakwong/MathDevMCP/src pytest -q /home/chakwong/MathDevMCP/tests
+```
+
+Observed result:
+
+```text
+81 passed in 1.20s
+```
+
+Running `pytest` from `/home/chakwong` without `PYTHONPATH` fails during collection with `ModuleNotFoundError: No module named 'mathdevmcp'`. That is an invocation/environment issue rather than a regression in the package tests.
+
+The saved proof-obligation section above remains accurate, except that the suite has since grown from 78 to 81 passing tests. The remaining product gap is still derivation decomposition and proof-audit aggregation, not basic infrastructure.
 
 ## Recommended next work
 
-The highest-value next work is no longer infrastructure.
+The highest-value next work is no longer infrastructure. The next phase should turn the bounded proof-obligation primitive into a document-grounded derivation-audit workflow.
 
-Recommended priorities are:
+### Next slice: derivation decomposition and proof-audit reporting
 
-- improve code-document consistency beyond term overlap toward math-aware symbol normalization and structure-aware comparisons,
-- then extend derivation support from local heuristic evidence to cited-step chains built on the shared normalization layer,
-- add benchmark fixtures drawn from real monograph/code cases,
-- run real Claude Code sessions against the project MCP server and refine tool schemas/prompts based on observed behavior.
+Goal: given a labeled derivation block, extract small candidate obligations, route each obligation conservatively, and return an auditable report that separates certified algebra, unsupported steps, unencodable steps, and provenance evidence.
+
+Recommended implementation order:
+
+1. Add a derivation-audit module.
+   - Introduce a new `proof_audit.py` or similarly named module.
+   - Keep it separate from `proof_obligations.py`, which should remain the small backend-check primitive.
+   - Define a stable result shape with top-level status, obligations, aggregate counts, evidence, metadata, and provenance.
+
+2. Start with conservative extraction.
+   - Extract only obvious equation-like lines or aligned-equation rows from a labeled LaTeX context.
+   - Split candidate rows on a single equality when safe.
+   - Mark ambiguous rows as `not_extracted` or `not_encodable` rather than guessing.
+   - Preserve the source label, file, line range, and local context for every candidate.
+
+3. Add backend-suitability classification before backend calls.
+   - Classify each candidate as `normalization`, `sympy`, `z3_planned`, `sage_planned`, `numeric_probe_planned`, or `human_review`.
+   - For the first slice, route only normalization/SymPy-safe arithmetic obligations into `check_proof_obligation(...)`.
+   - Return conservative evidence for everything else.
+
+4. Aggregate obligation statuses into an audit report.
+   - Suggested top-level statuses:
+     - `verified` only if every extracted required obligation is certified,
+     - `mismatch` if any obligation is refuted,
+     - `unverified` if at least one obligation remains unsupported but no refutation is found,
+     - `inconclusive` if no safe obligations can be extracted.
+   - Report counts for verified, mismatched, unverified, inconclusive, not-encodable, and not-extracted obligations.
+
+5. Expose the audit workflow through the same surfaces as other tools.
+   - Library API: `audit_derivation_for_label(...)`.
+   - CLI command: likely `audit-derivation-label`.
+   - MCP facade/server tool: likely `audit_derivation_label`.
+   - Contract validator support for nested obligation evidence.
+   - Tool matrix entry that clearly distinguishes proof-obligation checking from full derivation auditing.
+
+6. Add focused fixtures and tests before broad benchmarks.
+   - Unit tests for extraction on small aligned-equation snippets.
+   - Tests that a simple algebraic chain yields certified obligations.
+   - Tests that Kalman/Hessian-style notation abstains conservatively rather than pretending SymPy can encode it.
+   - Tests that repeated labels and long-document fixtures preserve the selected label provenance.
+
+7. Extend benchmark coverage only after the small tests pass.
+   - Add proof-audit benchmark cases for:
+     - simple algebraic derivation certified by SymPy,
+     - numeric false identity refuted,
+     - Kalman/Hessian derivation abstention,
+     - long-document provenance stability.
+   - Keep the release gate all-pass, but count expected abstentions explicitly as the current benchmark layer does.
+
+### Success criteria for the next slice
+
+- The new derivation-audit API never upgrades heuristic text proximity into proof.
+- Every obligation reports source provenance and backend/evidence provenance.
+- Simple algebraic equalities can be certified through the existing proof-obligation checker.
+- Kalman/Hessian-style obligations remain conservative unless a safe encoding is implemented.
+- CLI and MCP outputs validate under the same contract discipline as current tools.
+- Full suite passes with the local source path on `PYTHONPATH`.
+
+### Deferred work
+
+These are still lower priority than derivation decomposition:
+
+- process-global or daemon-level index reuse across MCP calls,
+- content-hash cache fingerprints instead of size/mtime fingerprints,
+- real project-document benchmark ingestion beyond synthetic fixtures,
+- Sage/Z3 adapters for scoped theories,
+- math-aware code/document structural comparison beyond current term-level consistency checks,
+- fixing the local TeX environment so the proposal PDF build can run again.

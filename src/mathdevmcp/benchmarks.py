@@ -7,9 +7,10 @@ from typing import Literal
 from .consistency import compare_files, compare_label_to_code
 from .contracts import contract_metadata, success_result
 from .derivation import derive_step_for_label
+from .proof_audit import audit_derivation_for_label
 from .workflow import build_implementation_brief
 
-BenchmarkCategory = Literal["consistency", "derivation", "workflow"]
+BenchmarkCategory = Literal["consistency", "derivation", "workflow", "proof_audit"]
 
 
 @dataclass(frozen=True)
@@ -307,8 +308,48 @@ def _workflow_cases(root: Path) -> list[dict]:
 
 
 
+def _proof_audit_cases(root: Path) -> list[dict]:
+    fixtures = root / "benchmarks" / "fixtures"
+    return [
+        {
+            "id": "proof_audit_single_verified",
+            "category": "proof_audit",
+            "evaluation_focus": "proof_audit_routing",
+            "doc_root": str(fixtures),
+            "label": "eq:proof-audit-single",
+            "expected_status": "verified",
+            "expected_abstention": False,
+            "expected_counts": {"verified": 1, "mismatched": 0, "not_encodable": 0, "not_extracted": 0},
+            "expected_doc_context": {"file": "doc_proof_audit.tex", "label": "eq:proof-audit-single"},
+        },
+        {
+            "id": "proof_audit_false_mismatch",
+            "category": "proof_audit",
+            "evaluation_focus": "false_confidence_control",
+            "doc_root": str(fixtures),
+            "label": "eq:proof-audit-false",
+            "expected_status": "mismatch",
+            "expected_abstention": False,
+            "expected_counts": {"verified": 0, "mismatched": 1, "not_encodable": 0, "not_extracted": 0},
+            "expected_doc_context": {"file": "doc_proof_audit.tex", "label": "eq:proof-audit-false"},
+        },
+        {
+            "id": "proof_audit_kalman_abstention",
+            "category": "proof_audit",
+            "evaluation_focus": "proof_audit_abstention",
+            "doc_root": str(fixtures),
+            "label": "eq:proof-audit-kalman",
+            "expected_status": "inconclusive",
+            "expected_abstention": True,
+            "expected_counts": {"verified": 0, "mismatched": 0, "not_encodable": 1, "not_extracted": 0},
+            "expected_doc_context": {"file": "doc_proof_audit.tex", "label": "eq:proof-audit-kalman"},
+        },
+    ]
+
+
+
 def benchmark_cases(root: Path) -> list[dict]:
-    return _consistency_cases(root) + _derivation_cases(root) + _workflow_cases(root)
+    return _consistency_cases(root) + _derivation_cases(root) + _workflow_cases(root) + _proof_audit_cases(root)
 
 
 
@@ -470,6 +511,43 @@ def run_workflow_benchmark(root: Path) -> list[dict]:
 
 
 
+def run_proof_audit_benchmark(root: Path) -> list[dict]:
+    results: list[dict] = []
+    for case in _proof_audit_cases(root):
+        result = audit_derivation_for_label(case["doc_root"], case["label"], backend="sympy")
+        status_ok = result["status"] == case["expected_status"]
+        counts_ok = all(result["counts"].get(key) == value for key, value in case["expected_counts"].items())
+        provenance_ok = _doc_context_matches_expectation(result["doc_context"], case["expected_doc_context"])
+        abstention_ok = result["status"] in {"inconclusive", "unverified"} if case.get("expected_abstention", False) else result["status"] not in {"inconclusive", "unverified"}
+        evidence_ok = all(obligation.get("provenance", {}).get("label") == case["label"] for obligation in result["obligations"])
+        results.append(
+            _benchmark_result(
+                benchmark_id=case["id"],
+                category=case["category"],
+                evaluation_focus=case["evaluation_focus"],
+                expected_status=case["expected_status"],
+                observed_status=result["status"],
+                passed=status_ok and counts_ok and provenance_ok and abstention_ok and evidence_ok,
+                quality_checks={
+                    "status_match": status_ok,
+                    "counts_match": counts_ok,
+                    "provenance_match": provenance_ok,
+                    "expected_abstention_match": abstention_ok,
+                    "obligation_provenance_match": evidence_ok,
+                },
+                details={
+                    "label": case["label"],
+                    "counts": result["counts"],
+                    "doc_context": result["doc_context"],
+                    "obligations": result["obligations"],
+                },
+                expected_abstention=case.get("expected_abstention", False),
+            )
+        )
+    return results
+
+
+
 def summarize_benchmark_results(results: list[dict]) -> dict:
     category_totals: dict[str, dict[str, int]] = {}
     focus_totals: dict[str, dict[str, int]] = {}
@@ -504,6 +582,7 @@ def build_benchmark_report(root: Path) -> dict:
         + run_label_consistency_benchmark(root)
         + run_derivation_benchmark(root)
         + run_workflow_benchmark(root)
+        + run_proof_audit_benchmark(root)
     )
     passed_count = sum(1 for result in results if result["passed"])
     return asdict(

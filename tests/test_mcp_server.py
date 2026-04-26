@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from mathdevmcp.mcp_server import benchmark_gate, compare_label_code, extract_latex_context, get_tool_matrix, implementation_brief, run_benchmarks
+from mathdevmcp.mcp_server import audit_derivation_label, benchmark_gate, compare_label_code, extract_latex_context, get_tool_matrix, implementation_brief, run_benchmarks
 
 
 FIXTURES = Path(__file__).resolve().parent.parent / "benchmarks" / "fixtures"
@@ -45,8 +45,16 @@ def test_mcp_server_run_benchmarks_returns_structured_report():
     result = run_benchmarks(str(ROOT))
 
     assert result["metadata"] == {"schema_version": "1.0", "contract": "benchmark_results"}
-    assert result["total"] == 14
-    assert result["passed"] == 14
+    assert result["total"] == 17
+    assert result["passed"] == 17
+
+
+
+def test_mcp_server_audit_derivation_label_returns_proof_audit_result():
+    result = audit_derivation_label(str(FIXTURES), "eq:proof-audit-single", backend="sympy")
+
+    assert result["metadata"] == {"schema_version": "1.0", "contract": "proof_audit_result"}
+    assert result["status"] == "verified"
 
 
 

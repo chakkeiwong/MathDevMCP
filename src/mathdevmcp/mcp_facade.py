@@ -9,9 +9,11 @@ from .code_search import search_files
 from .consistency import compare_files, compare_label_to_code
 from .contracts import error_result, success_result
 from .derivation import derive_step_for_label
+from .doctor import doctor_report
 from .index_cache import load_or_build_index
 from .latex_index import build_index, extract_context_for_label, extract_paragraph_context_for_label, search_index
 from .proof_obligations import check_proof_obligation
+from .proof_audit import audit_derivation_for_label
 from .tool_matrix import tool_matrix
 from .workflow import build_implementation_brief
 
@@ -135,6 +137,18 @@ def _tool_check_proof_obligation(args: dict[str, Any]) -> dict[str, Any]:
     )
 
 
+def _tool_audit_derivation_label(args: dict[str, Any]) -> dict[str, Any]:
+    return audit_derivation_for_label(
+        _required_string(args, "root"),
+        _required_string(args, "label"),
+        before=int(args.get("before", 0)),
+        after=int(args.get("after", 0)),
+        paragraph_context=bool(args.get("paragraph_context", False)),
+        backend=str(args.get("backend", "auto")),
+        cache_path=args.get("cache") or None,
+    )
+
+
 def _tool_run_benchmarks(args: dict[str, Any]) -> dict[str, Any]:
     root = Path(_required_string(args, "root"))
     return build_benchmark_report(root)
@@ -150,6 +164,12 @@ def _tool_tool_matrix(args: dict[str, Any]) -> list[dict[str, Any]]:
     return tool_matrix()
 
 
+
+def _tool_doctor(args: dict[str, Any]) -> dict[str, Any]:
+    _ = args
+    return doctor_report()
+
+
 TOOL_HANDLERS: dict[str, ToolHandler] = {
     "search_latex": _tool_search_latex,
     "extract_latex_context": _tool_extract_latex_context,
@@ -160,9 +180,11 @@ TOOL_HANDLERS: dict[str, ToolHandler] = {
     "derive_label_step": _tool_derive_label_step,
     "implementation_brief": _tool_implementation_brief,
     "check_proof_obligation": _tool_check_proof_obligation,
+    "audit_derivation_label": _tool_audit_derivation_label,
     "run_benchmarks": _tool_run_benchmarks,
     "benchmark_gate": _tool_benchmark_gate,
     "tool_matrix": _tool_tool_matrix,
+    "doctor": _tool_doctor,
 }
 
 
@@ -179,9 +201,11 @@ def list_mcp_tools() -> list[dict[str, Any]]:
             ("derive_label_step", "Check a derivation step against labeled document context."),
             ("implementation_brief", "Build a document-grounded implementation brief."),
             ("check_proof_obligation", "Check a bounded derivation/proof obligation with optional backend assistance."),
+            ("audit_derivation_label", "Audit proof obligations extracted from a labeled derivation block."),
             ("run_benchmarks", "Run seeded consistency benchmarks."),
             ("benchmark_gate", "Return CI-friendly benchmark gate results."),
             ("tool_matrix", "Return the current MathDevMCP tool matrix."),
+            ("doctor", "Report external backend capabilities and environment diagnostics."),
         ]
     ]
 

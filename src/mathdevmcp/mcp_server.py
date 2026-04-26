@@ -140,6 +140,30 @@ def check_proof_obligation(
     )
 
 
+@mcp.tool(description="Audit proof obligations extracted from a labeled derivation block.", structured_output=False)
+def audit_derivation_label(
+    root: str,
+    label: str,
+    before: int = 0,
+    after: int = 0,
+    paragraph_context: bool = False,
+    backend: str = "auto",
+    cache: str | None = None,
+) -> dict:
+    return call_mcp_tool(
+        "audit_derivation_label",
+        {
+            "root": root,
+            "label": label,
+            "before": before,
+            "after": after,
+            "paragraph_context": paragraph_context,
+            "backend": backend,
+            "cache": cache,
+        },
+    )
+
+
 @mcp.tool(description="Run seeded consistency benchmarks.", structured_output=False)
 def run_benchmarks(root: str) -> dict:
     return call_mcp_tool("run_benchmarks", {"root": root})
@@ -153,6 +177,11 @@ def benchmark_gate(root: str) -> dict:
 @mcp.tool(description="Return the current MathDevMCP tool matrix.", structured_output=False)
 def get_tool_matrix() -> list[dict]:
     return call_mcp_tool("tool_matrix", {})
+
+
+@mcp.tool(description="Report external backend capabilities and environment diagnostics.", structured_output=False)
+def doctor() -> dict:
+    return call_mcp_tool("doctor", {})
 
 
 def main(argv: list[str] | None = None) -> int:

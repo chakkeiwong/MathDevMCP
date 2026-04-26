@@ -15,9 +15,12 @@ from .benchmarks import (
 from .code_search import search_files
 from .consistency import compare_files, compare_label_to_code
 from .derivation import derive_step_for_label, derive_step_from_files
+from .doctor import doctor_report
 from .latex_index import build_index, extract_context_for_label, extract_paragraph_context_for_label, search_index, write_index
 from .performance import index_performance_smoke
+from .parser_benchmark import compare_parser_backends
 from .proof_obligations import check_proof_obligation
+from .proof_audit import audit_derivation_for_label
 from .tool_matrix import tool_matrix
 from .workflow import build_implementation_brief
 
@@ -94,6 +97,19 @@ def _cmd_compare_label(args: argparse.Namespace) -> int:
 
 def _cmd_tool_matrix(args: argparse.Namespace) -> int:
     print(json.dumps(tool_matrix(), indent=2))
+    return 0
+
+
+
+def _cmd_doctor(args: argparse.Namespace) -> int:
+    print(json.dumps(doctor_report(), indent=2))
+    return 0
+
+
+
+def _cmd_parser_benchmark(args: argparse.Namespace) -> int:
+    result = compare_parser_backends(Path(args.root), backends=args.backend or None)
+    print(json.dumps(result, indent=2))
     return 0
 
 
@@ -199,6 +215,21 @@ def _cmd_check_proof_obligation(args: argparse.Namespace) -> int:
 
 
 
+def _cmd_audit_derivation_label(args: argparse.Namespace) -> int:
+    result = audit_derivation_for_label(
+        args.root,
+        args.label,
+        before=args.before,
+        after=args.after,
+        paragraph_context=args.paragraph_context,
+        backend=args.backend,
+        cache_path=Path(args.cache) if args.cache else None,
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+
 def make_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="MathDevMCP development utilities")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -255,6 +286,14 @@ def make_parser() -> argparse.ArgumentParser:
 
     p_matrix = sub.add_parser("tool-matrix", help="Print the current tool matrix")
     p_matrix.set_defaults(func=_cmd_tool_matrix)
+
+    p_doctor = sub.add_parser("doctor", help="Report external backend capabilities and environment diagnostics")
+    p_doctor.set_defaults(func=_cmd_doctor)
+
+    p_parser_benchmark = sub.add_parser("parser-benchmark", help="Compare LaTeX parser backends on a corpus")
+    p_parser_benchmark.add_argument("--root", default=".", help="Root directory containing LaTeX files")
+    p_parser_benchmark.add_argument("--backend", action="append", choices=["current", "latexml", "pandoc"], help="Parser backend to run; can be repeated")
+    p_parser_benchmark.set_defaults(func=_cmd_parser_benchmark)
 
     p_derive = sub.add_parser("derive-step", help="Evaluate whether a derivation step is justified")
     p_derive.add_argument("doc", help="Document path used for provenance")
@@ -323,6 +362,16 @@ def make_parser() -> argparse.ArgumentParser:
     p_obligation.add_argument("--assumption", action="append", default=[], help="Assumption attached to the obligation; can be repeated")
     p_obligation.add_argument("--backend", choices=["auto", "sympy", "sage", "z3"], default="auto", help="Backend preference")
     p_obligation.set_defaults(func=_cmd_check_proof_obligation)
+
+    p_audit = sub.add_parser("audit-derivation-label", help="Audit derivation obligations extracted from a labeled document block")
+    p_audit.add_argument("label", help="LaTeX label to audit")
+    p_audit.add_argument("--root", default=".", help="Root directory containing LaTeX files")
+    p_audit.add_argument("--before", type=int, default=0, help="Context units before")
+    p_audit.add_argument("--after", type=int, default=0, help="Context units after")
+    p_audit.add_argument("--paragraph-context", action="store_true", help="Use paragraph neighborhood instead of line excerpt")
+    p_audit.add_argument("--backend", choices=["auto", "sympy", "sage", "z3"], default="auto", help="Backend preference")
+    p_audit.add_argument("--cache", default="", help="Optional cache JSON path for index reuse")
+    p_audit.set_defaults(func=_cmd_audit_derivation_label)
 
     return parser
 

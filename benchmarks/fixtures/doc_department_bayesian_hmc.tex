@@ -1,0 +1,21 @@
+\section{Sanitized Bayesian computation audit slice}
+
+\newcommand{\logpost}{\log \pi(\theta \mid y)}
+
+\begin{assumption}\label{assump:dept-hmc-regularity}
+The log posterior is differentiable on the support of the prior, and the mass matrix is positive definite.
+\end{assumption}
+
+\begin{equation}\label{eq:dept-log-posterior}
+\logpost = \log p(y\mid \theta) + \log p(\theta) - \log p(y).
+\end{equation}
+
+\begin{align}\label{eq:dept-hmc-leapfrog}
+p_{n+1/2} &= p_n + \frac{\epsilon}{2}\nabla_\theta \logpost \\
+\theta_{n+1} &= \theta_n + \epsilon M^{-1}p_{n+1/2} \\
+p_{n+1} &= p_{n+1/2} + \frac{\epsilon}{2}\nabla_\theta \logpost
+\end{align}
+
+\begin{equation}\label{eq:dept-hmc-hamiltonian}
+H(\theta,p)= -\logpost + \frac{1}{2}p'M^{-1}p.
+\end{equation}

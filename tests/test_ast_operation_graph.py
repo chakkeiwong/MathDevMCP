@@ -1,4 +1,10 @@
-from mathdevmcp.ast_operation_graph import build_ast_operation_graph
+from pathlib import Path
+
+from mathdevmcp.ast_operation_graph import build_ast_operation_graph, build_ast_operation_graph_for_file
+
+
+ROOT = Path(__file__).resolve().parent.parent
+FIXTURES = ROOT / "benchmarks" / "fixtures"
 
 
 def test_ast_operation_graph_detects_likelihood_linear_algebra():
@@ -48,3 +54,24 @@ def test_ast_operation_graph_reports_syntax_errors_as_inconclusive():
     assert graph["status"] == "inconclusive"
     assert graph["operations"] == []
     assert graph["diagnostics"][0]["kind"] == "python_syntax_error"
+
+
+def test_ast_operation_graph_detects_department_jax_state_space_fixture():
+    graph = build_ast_operation_graph_for_file(FIXTURES / "doc_department_state_space_jax.py")
+
+    operations = set(graph["operations"])
+    assert {"scan_loop", "logdet", "inverse_or_solve", "shape_guard", "covariance_guard", "prediction_update", "covariance_update"}.issubset(operations)
+
+
+def test_ast_operation_graph_detects_department_hmc_fixture():
+    graph = build_ast_operation_graph_for_file(FIXTURES / "doc_department_hmc_jax.py")
+
+    operations = set(graph["operations"])
+    assert {"gradient", "leapfrog_update", "posterior_or_likelihood", "hamiltonian_energy", "quadratic_form"}.issubset(operations)
+
+
+def test_ast_operation_graph_detects_department_particle_filter_fixture():
+    graph = build_ast_operation_graph_for_file(FIXTURES / "doc_department_particle_filter.py")
+
+    operations = set(graph["operations"])
+    assert {"logsumexp", "particle_normalization", "posterior_or_likelihood"}.issubset(operations)

@@ -18,6 +18,14 @@ def test_parser_backend_current_preserves_labels_and_provenance():
     assert "eq:proof-audit-single" in result["labels"]
 
 
+def test_parser_backend_current_preserves_department_corpus_labels():
+    result = run_parser_backend(FIXTURES, "current")
+
+    assert "eq:dept-state-space-recursion" in result["labels"]
+    assert "eq:dept-hmc-leapfrog" in result["labels"]
+    assert result["details"]["missing_expected_labels"] == []
+
+
 def test_parser_backend_latexml_runs_or_reports_inconclusive():
     result = run_parser_backend(FIXTURES, "latexml")
 

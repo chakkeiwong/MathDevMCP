@@ -205,6 +205,101 @@ This is not a full Kalman filter verifier. The AST graph provides structured ope
 
 The next industrial step should add realistic sanitized department snippets for state-space implementations across NumPy/JAX/PyTorch styles and broaden AST recognition for common linear algebra wrappers without weakening the abstention policy.
 
+## Current department-corpus/parser-AST request
+
+The next request is to repeat the industrial cycle for the latest gap assessment. The recommended next milestone is a realistic sanitized department-style corpus plus parser/AST benchmark expansion. This should test the existing parser, AST operation graph, and Kalman/likelihood scaffolding against more realistic mathematical finance/economics materials without claiming full industrial completion.
+
+This pass should:
+
+- update this reset memo before and after work,
+- write an execution plan and second-developer audit,
+- add sanitized department-style LaTeX/Python fixtures,
+- harden AST recognition for common scientific-computing idioms,
+- add parser/AST benchmark coverage and false-confidence cases,
+- test and benchmark-gate the work,
+- commit relevant files while excluding `.serena/` and unrelated local files.
+
+Planning artifacts for this pass:
+
+- [department-corpus-parser-ast-execution-plan.md](department-corpus-parser-ast-execution-plan.md),
+- [department-corpus-parser-ast-plan-audit.md](department-corpus-parser-ast-plan-audit.md).
+
+## Department corpus/parser-AST checkpoint outcome
+
+This pass added a small sanitized department-style corpus and expanded parser/AST benchmark coverage. The slice tests the existing parser, AST graph, and benchmark gate against more realistic mathematical finance/economics materials without adding heavyweight runtime dependencies or claiming semantic proof.
+
+### Changes implemented
+
+Added planning/audit docs:
+
+- `docs/plans/department-corpus-parser-ast-execution-plan.md`,
+- `docs/plans/department-corpus-parser-ast-plan-audit.md`.
+
+Added sanitized LaTeX fixtures:
+
+- `benchmarks/fixtures/doc_department_state_space.tex`, covering state-space assumptions, Kalman recursion, and likelihood labels,
+- `benchmarks/fixtures/doc_department_bayesian_hmc.tex`, covering posterior, leapfrog, and Hamiltonian labels.
+
+Added sanitized Python fixtures:
+
+- `benchmarks/fixtures/doc_department_state_space_jax.py`, a JAX-style state-space scan with shape/covariance guards, slogdet, solve, and Kalman updates,
+- `benchmarks/fixtures/doc_department_state_space_missing_solve.py`, a seeded false-confidence case missing the solve/inverse operation,
+- `benchmarks/fixtures/doc_department_hmc_jax.py`, an HMC/leapfrog-style kernel with gradient, log probability, and Hamiltonian energy structure,
+- `benchmarks/fixtures/doc_department_particle_filter.py`, a particle-filter-style logsumexp normalization slice.
+
+Hardened `src/mathdevmcp/ast_operation_graph.py` so AST structural evidence now recognizes:
+
+- JAX/scientific-computing calls such as `grad`, `scan`, `vmap`, `slogdet`, and `logsumexp`,
+- posterior/log-likelihood calls,
+- leapfrog/Hamiltonian update patterns,
+- particle normalization patterns,
+- vectorized-loop evidence.
+
+Extended `src/mathdevmcp/benchmarks.py` with:
+
+- `parser_corpus` benchmark coverage for the realistic LaTeX fixture labels,
+- `ast_corpus` benchmark coverage for realistic state-space, HMC, particle-filter, and missing-solve cases.
+
+Added tests covering:
+
+- department fixture label and section-path preservation,
+- current parser preservation of department corpus labels,
+- AST recognition over JAX-style state-space, HMC, and particle-filter fixtures,
+- benchmark gate accounting for parser/AST corpus categories,
+- false-confidence control for the missing-solve state-space fixture.
+
+### Verification completed
+
+Targeted parser/AST/corpus tests passed:
+
+```text
+35 passed
+```
+
+Full suite passed:
+
+```text
+161 passed
+```
+
+Benchmark gate passed:
+
+```text
+passed=true, total=24, passed_count=24, failed_count=0, expected_abstentions=8, policy=all_benchmarks_must_pass
+```
+
+Diff hygiene passed:
+
+```text
+git diff --check
+```
+
+### Audit notes
+
+This is still a corpus and structural-audit milestone, not full industrial completion. The new AST recognizers provide line-level operation evidence for realistic code idioms, but they do not execute JAX/PyTorch/NumPyro code, prove semantic equivalence, or verify stochastic assumptions. The current parser is now gated on the new realistic labels; LaTeXML/Pandoc remain measured optional backends rather than required production parsers. The seeded missing-solve case protects false-confidence behavior for realistic-looking state-space code.
+
+The next industrial step should broaden private/sanitized corpus collection and add stronger typed/dimensional `MathObligation` semantics for matrix shapes, random variables, stochastic processes, and likelihood/posterior objects.
+
 ## Kalman industrialization checkpoint outcome
 
 This pass added a Kalman likelihood vertical workflow as the next realistic department-facing milestone.

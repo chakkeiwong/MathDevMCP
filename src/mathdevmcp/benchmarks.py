@@ -4,14 +4,16 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Literal
 
+from .ast_operation_graph import build_ast_operation_graph_for_file
 from .consistency import compare_files, compare_label_to_code
 from .contracts import contract_metadata, success_result
 from .derivation import derive_step_for_label
 from .kalman_workflows import audit_kalman_recursion
+from .parser_benchmark import run_parser_backend
 from .proof_audit import audit_derivation_for_label
 from .workflow import build_implementation_brief
 
-BenchmarkCategory = Literal["consistency", "derivation", "workflow", "proof_audit", "kalman_recursion"]
+BenchmarkCategory = Literal["consistency", "derivation", "workflow", "proof_audit", "kalman_recursion", "parser_corpus", "ast_corpus"]
 
 
 @dataclass(frozen=True)
@@ -374,9 +376,79 @@ def _kalman_recursion_cases(root: Path) -> list[dict]:
     ]
 
 
+def _parser_corpus_cases(root: Path) -> list[dict]:
+    fixtures = root / "benchmarks" / "fixtures"
+    return [
+        {
+            "id": "parser_corpus_department_current",
+            "category": "parser_corpus",
+            "evaluation_focus": "realistic_parser_provenance",
+            "doc_root": str(fixtures),
+            "backend": "current",
+            "expected_status": "parsed",
+            "expected_labels": [
+                "assump:dept-state-space-guards",
+                "eq:dept-state-space-recursion",
+                "eq:dept-state-space-likelihood",
+                "assump:dept-hmc-regularity",
+                "eq:dept-log-posterior",
+                "eq:dept-hmc-leapfrog",
+                "eq:dept-hmc-hamiltonian",
+            ],
+        }
+    ]
+
+
+def _ast_corpus_cases(root: Path) -> list[dict]:
+    fixtures = root / "benchmarks" / "fixtures"
+    return [
+        {
+            "id": "ast_corpus_state_space_jax",
+            "category": "ast_corpus",
+            "evaluation_focus": "realistic_ast_operation_coverage",
+            "code": str(fixtures / "doc_department_state_space_jax.py"),
+            "expected_status": "consistent",
+            "expected_operations": ["logdet", "inverse_or_solve", "scan_loop", "shape_guard", "covariance_guard", "prediction_update", "covariance_update"],
+        },
+        {
+            "id": "ast_corpus_hmc_jax",
+            "category": "ast_corpus",
+            "evaluation_focus": "realistic_ast_operation_coverage",
+            "code": str(fixtures / "doc_department_hmc_jax.py"),
+            "expected_status": "consistent",
+            "expected_operations": ["gradient", "leapfrog_update", "posterior_or_likelihood", "hamiltonian_energy", "quadratic_form"],
+        },
+        {
+            "id": "ast_corpus_particle_filter",
+            "category": "ast_corpus",
+            "evaluation_focus": "realistic_ast_operation_coverage",
+            "code": str(fixtures / "doc_department_particle_filter.py"),
+            "expected_status": "consistent",
+            "expected_operations": ["logsumexp", "particle_normalization", "posterior_or_likelihood"],
+        },
+        {
+            "id": "ast_corpus_state_space_missing_solve",
+            "category": "ast_corpus",
+            "evaluation_focus": "false_confidence_control",
+            "code": str(fixtures / "doc_department_state_space_missing_solve.py"),
+            "expected_status": "mismatch",
+            "required_operations": ["logdet", "inverse_or_solve", "quadratic_form"],
+            "expected_missing_operations": ["inverse_or_solve"],
+        },
+    ]
+
+
 
 def benchmark_cases(root: Path) -> list[dict]:
-    return _consistency_cases(root) + _derivation_cases(root) + _workflow_cases(root) + _proof_audit_cases(root) + _kalman_recursion_cases(root)
+    return (
+        _consistency_cases(root)
+        + _derivation_cases(root)
+        + _workflow_cases(root)
+        + _proof_audit_cases(root)
+        + _kalman_recursion_cases(root)
+        + _parser_corpus_cases(root)
+        + _ast_corpus_cases(root)
+    )
 
 
 
@@ -610,6 +682,83 @@ def run_kalman_recursion_benchmark(root: Path) -> list[dict]:
     return results
 
 
+def run_parser_corpus_benchmark(root: Path) -> list[dict]:
+    results: list[dict] = []
+    for case in _parser_corpus_cases(root):
+        result = run_parser_backend(case["doc_root"], case["backend"])
+        labels = set(result.get("labels", []))
+        expected_labels = set(case["expected_labels"])
+        status_ok = result["status"] == case["expected_status"]
+        labels_ok = expected_labels.issubset(labels)
+        provenance_ok = result["quality_checks"].get("provenance_available", False)
+        results.append(
+            _benchmark_result(
+                benchmark_id=case["id"],
+                category=case["category"],
+                evaluation_focus=case["evaluation_focus"],
+                expected_status=case["expected_status"],
+                observed_status=result["status"],
+                passed=status_ok and labels_ok and provenance_ok,
+                quality_checks={
+                    "status_match": status_ok,
+                    "expected_labels_preserved": labels_ok,
+                    "provenance_available": provenance_ok,
+                },
+                details={
+                    "backend": case["backend"],
+                    "expected_labels": sorted(expected_labels),
+                    "missing_expected_labels": sorted(expected_labels - labels),
+                    "parser_result": result,
+                },
+            )
+        )
+    return results
+
+
+def run_ast_corpus_benchmark(root: Path) -> list[dict]:
+    results: list[dict] = []
+    for case in _ast_corpus_cases(root):
+        graph = build_ast_operation_graph_for_file(case["code"])
+        observed = set(graph.get("operations", []))
+        if "required_operations" in case:
+            missing = [operation for operation in case["required_operations"] if operation not in observed]
+            observed_status = "mismatch" if missing else graph["status"]
+            expected_missing = case.get("expected_missing_operations", [])
+            missing_ok = missing == expected_missing
+            operations_ok = missing_ok
+        else:
+            missing = []
+            observed_status = graph["status"]
+            expected_operations = set(case["expected_operations"])
+            operations_ok = expected_operations.issubset(observed)
+            expected_missing = []
+        status_ok = observed_status == case["expected_status"]
+        graph_contract_ok = graph.get("metadata", {}).get("contract") == "ast_operation_graph"
+        results.append(
+            _benchmark_result(
+                benchmark_id=case["id"],
+                category=case["category"],
+                evaluation_focus=case["evaluation_focus"],
+                expected_status=case["expected_status"],
+                observed_status=observed_status,
+                passed=status_ok and operations_ok and graph_contract_ok,
+                quality_checks={
+                    "status_match": status_ok,
+                    "operations_match": operations_ok,
+                    "graph_contract_match": graph_contract_ok,
+                },
+                details={
+                    "code": case["code"],
+                    "expected_operations": case.get("expected_operations", case.get("required_operations", [])),
+                    "observed_operations": sorted(observed),
+                    "missing_operations": missing,
+                    "expected_missing_operations": expected_missing,
+                },
+            )
+        )
+    return results
+
+
 
 def summarize_benchmark_results(results: list[dict]) -> dict:
     category_totals: dict[str, dict[str, int]] = {}
@@ -647,6 +796,8 @@ def build_benchmark_report(root: Path) -> dict:
         + run_workflow_benchmark(root)
         + run_proof_audit_benchmark(root)
         + run_kalman_recursion_benchmark(root)
+        + run_parser_corpus_benchmark(root)
+        + run_ast_corpus_benchmark(root)
     )
     passed_count = sum(1 for result in results if result["passed"])
     return asdict(

@@ -5,8 +5,10 @@ from mathdevmcp.benchmarks import (
     benchmark_cases,
     build_benchmark_report,
     run_derivation_benchmark,
+    run_ast_corpus_benchmark,
     run_kalman_recursion_benchmark,
     run_label_consistency_benchmark,
+    run_parser_corpus_benchmark,
     run_proof_audit_benchmark,
     run_seeded_mismatch_benchmark,
     run_workflow_benchmark,
@@ -26,12 +28,14 @@ EXPECTED_BENCHMARK_SUMMARY = {
         "workflow": {"total": 3, "passed": 3, "expected_abstentions": 1},
         "proof_audit": {"total": 3, "passed": 3, "expected_abstentions": 1},
         "kalman_recursion": {"total": 2, "passed": 2, "expected_abstentions": 1},
+        "parser_corpus": {"total": 1, "passed": 1, "expected_abstentions": 0},
+        "ast_corpus": {"total": 4, "passed": 4, "expected_abstentions": 0},
     },
     "by_focus": {
         "status_regression": {"total": 2, "passed": 2, "expected_abstentions": 0},
         "provenance_correctness": {"total": 2, "passed": 2, "expected_abstentions": 0},
         "abstention_quality": {"total": 1, "passed": 1, "expected_abstentions": 1},
-        "false_confidence_control": {"total": 3, "passed": 3, "expected_abstentions": 0},
+        "false_confidence_control": {"total": 4, "passed": 4, "expected_abstentions": 0},
         "realistic_fixture": {"total": 1, "passed": 1, "expected_abstentions": 0},
         "realistic_abstention": {"total": 1, "passed": 1, "expected_abstentions": 1},
         "multilabel_provenance": {"total": 1, "passed": 1, "expected_abstentions": 1},
@@ -41,11 +45,13 @@ EXPECTED_BENCHMARK_SUMMARY = {
         "proof_audit_routing": {"total": 1, "passed": 1, "expected_abstentions": 0},
         "proof_audit_abstention": {"total": 1, "passed": 1, "expected_abstentions": 1},
         "ast_recursion_abstention": {"total": 1, "passed": 1, "expected_abstentions": 1},
+        "realistic_parser_provenance": {"total": 1, "passed": 1, "expected_abstentions": 0},
+        "realistic_ast_operation_coverage": {"total": 3, "passed": 3, "expected_abstentions": 0},
     },
     "expected_abstentions": 8,
 }
 
-EXPECTED_BENCHMARK_TOTAL = 19
+EXPECTED_BENCHMARK_TOTAL = 24
 
 
 def test_extract_context_for_label_returns_local_excerpt():
@@ -123,6 +129,18 @@ def test_repeat_label_kalman_fixture_preserves_target_score_provenance():
     assert index["n_labels"] >= 18
     repeated = search_index(index, "repeat kalman covariance smoothing", limit=8)
     assert any((block.get("label") or "").startswith("eq:repeat-kalman-covariance-") for block in repeated)
+
+
+def test_department_corpus_fixtures_preserve_labels_and_sections():
+    index = build_index(FIXTURES)
+
+    state = extract_context_for_label(index, "eq:dept-state-space-recursion", before=0, after=0)
+    hmc = extract_context_for_label(index, "eq:dept-hmc-leapfrog", before=0, after=0)
+
+    assert state["file"] == "doc_department_state_space.tex"
+    assert state["section_path"] == ["Sanitized state-space audit slice"]
+    assert hmc["file"] == "doc_department_bayesian_hmc.tex"
+    assert hmc["section_path"] == ["Sanitized Bayesian computation audit slice"]
 
 
 
@@ -286,7 +304,7 @@ def test_benchmark_cases_cover_consistency_derivation_workflow_and_proof_audit_c
     cases = benchmark_cases(root)
 
     assert len(cases) == EXPECTED_BENCHMARK_TOTAL
-    assert {case["category"] for case in cases} == {"consistency", "derivation", "workflow", "proof_audit", "kalman_recursion"}
+    assert {case["category"] for case in cases} == {"consistency", "derivation", "workflow", "proof_audit", "kalman_recursion", "parser_corpus", "ast_corpus"}
 
 
 
@@ -327,6 +345,36 @@ def test_kalman_recursion_benchmark_runner_reports_ast_and_abstention_checks():
         "kalman_recursion_structural_unverified": True,
         "kalman_recursion_missing_covariance_update": False,
     }
+
+
+def test_parser_corpus_benchmark_runner_reports_department_fixture_labels():
+    root = FIXTURES.parent.parent
+
+    results = run_parser_corpus_benchmark(root)
+
+    assert {result["id"] for result in results} == {"parser_corpus_department_current"}
+    assert all(result["category"] == "parser_corpus" for result in results)
+    assert all(result["quality_checks"]["expected_labels_preserved"] for result in results)
+    assert all(result["passed"] for result in results)
+
+
+def test_ast_corpus_benchmark_runner_reports_realistic_operation_coverage():
+    root = FIXTURES.parent.parent
+
+    results = run_ast_corpus_benchmark(root)
+
+    assert {result["id"] for result in results} == {
+        "ast_corpus_state_space_jax",
+        "ast_corpus_hmc_jax",
+        "ast_corpus_particle_filter",
+        "ast_corpus_state_space_missing_solve",
+    }
+    assert all(result["category"] == "ast_corpus" for result in results)
+    assert all(result["quality_checks"]["graph_contract_match"] for result in results)
+    assert all(result["passed"] for result in results)
+    missing = next(result for result in results if result["id"] == "ast_corpus_state_space_missing_solve")
+    assert missing["observed_status"] == "mismatch"
+    assert missing["details"]["missing_operations"] == ["inverse_or_solve"]
 
 
 
@@ -388,6 +436,8 @@ def test_summarize_benchmark_results_groups_by_category_and_focus():
         + run_workflow_benchmark(root)
         + run_proof_audit_benchmark(root)
         + run_kalman_recursion_benchmark(root)
+        + run_parser_corpus_benchmark(root)
+        + run_ast_corpus_benchmark(root)
     )
     summary = summarize_benchmark_results(results)
 

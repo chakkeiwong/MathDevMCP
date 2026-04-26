@@ -1,0 +1,23 @@
+\section{Sanitized state-space audit slice}
+
+\newcommand{\PredCov}{P^{\mathrm{pred}}_t}
+\newcommand{\Innov}{\nu_t}
+\newcommand{\InnovCov}{S_t}
+
+\begin{assumption}\label{assump:dept-state-space-guards}
+The covariance matrices are square, symmetric, and positive semidefinite. The observation matrix maps the latent state dimension to the observed dimension.
+\end{assumption}
+
+\begin{align}\label{eq:dept-state-space-recursion}
+x^{\mathrm{pred}}_t &= F_t x_{t-1} \\
+\PredCov &= F_t P_{t-1}F_t' + Q_t \\
+\Innov &= y_t - H_t x^{\mathrm{pred}}_t \\
+\InnovCov &= H_t \PredCov H_t' + R_t \\
+K_t &= \PredCov H_t' \InnovCov^{-1} \\
+x_t &= x^{\mathrm{pred}}_t + K_t \Innov \\
+P_t &= \PredCov - K_t H_t \PredCov
+\end{align}
+
+\begin{equation}\label{eq:dept-state-space-likelihood}
+\ell_t = -\frac{1}{2}\left(\log\det \InnovCov + \Innov' \InnovCov^{-1}\Innov\right).
+\end{equation}

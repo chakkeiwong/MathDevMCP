@@ -32,6 +32,9 @@ class AstOperationGraph:
 _LOGDET_NAMES = {"slogdet", "logdet"}
 _SOLVE_NAMES = {"solve", "inv", "inverse"}
 _CHOLESKY_NAMES = {"cholesky", "chol"}
+_GRADIENT_NAMES = {"grad", "value_and_grad", "jacobian", "jacfwd", "jacrev"}
+_LOGSUMEXP_NAMES = {"logsumexp"}
+_VECTORIZE_NAMES = {"vmap", "scan"}
 
 
 def _unparse(node: ast.AST | None) -> str:
@@ -89,6 +92,17 @@ def _classify_call(node: ast.Call) -> set[str]:
         operations.add("inverse_or_solve")
     if short in _CHOLESKY_NAMES or "cholesky" in full:
         operations.add("cholesky")
+    if short in _GRADIENT_NAMES or full.endswith(".grad") or "value_and_grad" in full:
+        operations.add("gradient")
+    if short in _LOGSUMEXP_NAMES or "logsumexp" in full:
+        operations.add("logsumexp")
+        operations.add("particle_normalization")
+    if short in _VECTORIZE_NAMES or full.endswith(".scan") or full.endswith(".vmap"):
+        operations.add("vectorized_loop")
+        if short == "scan" or full.endswith(".scan"):
+            operations.add("scan_loop")
+    if "log_prob" in full or "log_likelihood" in full or "logposterior" in full or "log_posterior" in full:
+        operations.add("posterior_or_likelihood")
     if short in {"dot", "einsum", "matmul"}:
         operations.add("quadratic_form")
     return operations
@@ -118,6 +132,18 @@ def _classify_assignment(targets: list[str], value: ast.AST) -> set[str]:
         operations.add("state_update")
     if _name_contains(target_text, ("p", "cov", "sigma")) and _name_contains(expression, ("gain", " k", "p_pred", "cov_pred", "sigma_pred")):
         operations.add("covariance_update")
+    if _name_contains(all_text, ("grad", "nabla", "score", "jacobian")):
+        operations.add("gradient")
+    if _name_contains(all_text, ("log_prob", "logp", "log_post", "logpost", "log_likelihood", "likelihood")):
+        operations.add("posterior_or_likelihood")
+    if _name_contains(target_text, ("p_half", "momentum", "theta_next", "p_next")) and _name_contains(all_text, ("step_size", "grad", "mass_inv", "momentum")):
+        operations.add("leapfrog_update")
+    if _name_contains(all_text, ("hamiltonian", "potential_energy", "kinetic_energy")):
+        operations.add("hamiltonian_energy")
+    if _name_contains(all_text, ("logsumexp", "normalizer", "normalized_log_weights", "log_weight")):
+        operations.add("particle_normalization")
+    if _name_contains(all_text, ("vmap", "scan", "lax.scan")):
+        operations.add("vectorized_loop")
     if ".shape" in expression or ".shape" in target_text:
         operations.add("shape_reference")
     return operations

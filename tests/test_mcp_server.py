@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from mathdevmcp.mcp_server import audit_derivation_label, audit_kalman_recursion, benchmark_gate, compare_label_code, extract_latex_context, get_tool_matrix, implementation_brief, run_benchmarks, typed_obligation_label
+from mathdevmcp.mcp_server import audit_derivation_label, audit_kalman_recursion, benchmark_gate, compare_label_code, extract_latex_context, get_tool_matrix, governance_policy, implementation_brief, release_readiness, run_benchmarks, typed_obligation_label, validate_release_corpus
 from test_context_and_fixtures import EXPECTED_BENCHMARK_TOTAL
 
 
@@ -82,6 +82,18 @@ def test_mcp_server_benchmark_gate_returns_ci_result():
     assert result["passed"] is True
     assert result["failed_count"] == 0
     assert result["policy"]["name"] == "all_benchmarks_must_pass"
+
+
+def test_mcp_server_release_policy_tools_return_contracts():
+    corpus = validate_release_corpus(str(FIXTURES))
+    governance = governance_policy()
+    release = release_readiness(str(ROOT))
+
+    assert corpus["metadata"] == {"schema_version": "1.0", "contract": "release_corpus_validation_report"}
+    assert corpus["status"] == "consistent"
+    assert governance["metadata"] == {"schema_version": "1.0", "contract": "governance_policy"}
+    assert release["metadata"] == {"schema_version": "1.0", "contract": "release_readiness_report"}
+    assert release["benchmark_gate"]["passed"] is True
 
 
 

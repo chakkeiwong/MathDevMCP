@@ -13,10 +13,12 @@ from .industrial_review import build_industrial_review_packet
 from .parser_benchmark import run_parser_backend
 from .proof_audit import audit_derivation_for_label
 from .proof_audit_v2 import audit_derivation_v2_for_label
+from .release_corpus import validate_release_corpus_manifest
+from .release_policy import release_readiness_report
 from .typed_workflows import typed_obligation_for_label
 from .workflow import build_implementation_brief
 
-BenchmarkCategory = Literal["consistency", "derivation", "workflow", "proof_audit", "proof_audit_v2", "kalman_recursion", "parser_corpus", "ast_corpus", "typed_ir", "industrial_review"]
+BenchmarkCategory = Literal["consistency", "derivation", "workflow", "proof_audit", "proof_audit_v2", "kalman_recursion", "parser_corpus", "ast_corpus", "typed_ir", "industrial_review", "release_corpus", "release_policy"]
 
 
 @dataclass(frozen=True)
@@ -522,9 +524,46 @@ def _industrial_review_cases(root: Path) -> list[dict]:
     ]
 
 
+def _release_corpus_cases(root: Path) -> list[dict]:
+    fixtures = root / "benchmarks" / "fixtures"
+    return [
+        {
+            "id": "release_corpus_manifest_privacy_gate",
+            "category": "release_corpus",
+            "evaluation_focus": "release_corpus_manifest",
+            "root": str(fixtures),
+            "expected_status": "consistent",
+            "expected_domains": [
+                "kalman_state_space",
+                "hmc_nuts",
+                "particle_filter",
+                "dsge_macro_finance",
+                "stochastic_volatility",
+                "sde_pde_numerics",
+                "ml_llm_objective",
+                "bayesian_elbo_vi",
+                "computational_physics_mcmc",
+            ],
+        }
+    ]
 
-def benchmark_cases(root: Path) -> list[dict]:
-    return (
+
+def _release_policy_cases(root: Path) -> list[dict]:
+    return [
+        {
+            "id": "release_policy_readiness_report",
+            "category": "release_policy",
+            "evaluation_focus": "release_readiness_contract",
+            "root": str(root),
+            "expected_statuses": ["ready", "ready_with_caveats"],
+            "expected_contract": "release_readiness_report",
+        }
+    ]
+
+
+
+def benchmark_cases(root: Path, *, include_release_policy: bool = True) -> list[dict]:
+    cases = (
         _consistency_cases(root)
         + _derivation_cases(root)
         + _workflow_cases(root)
@@ -535,7 +574,11 @@ def benchmark_cases(root: Path) -> list[dict]:
         + _ast_corpus_cases(root)
         + _typed_ir_cases(root)
         + _industrial_review_cases(root)
+        + _release_corpus_cases(root)
     )
+    if include_release_policy:
+        cases += _release_policy_cases(root)
+    return cases
 
 
 
@@ -960,6 +1003,63 @@ def run_industrial_review_benchmark(root: Path) -> list[dict]:
     return results
 
 
+def run_release_corpus_benchmark(root: Path) -> list[dict]:
+    results: list[dict] = []
+    for case in _release_corpus_cases(root):
+        result = validate_release_corpus_manifest(case["root"])
+        domains = {entry["domain"] for entry in result["manifest"]["entries"]}
+        status_ok = result["status"] == case["expected_status"]
+        domains_ok = set(case["expected_domains"]).issubset(domains)
+        privacy_ok = all(entry["document_root"] is None for entry in result["manifest"]["entries"] if entry["privacy_class"] == "private_external")
+        contract_ok = result.get("metadata", {}).get("contract") == "release_corpus_validation_report"
+        results.append(
+            _benchmark_result(
+                benchmark_id=case["id"],
+                category=case["category"],
+                evaluation_focus=case["evaluation_focus"],
+                expected_status=case["expected_status"],
+                observed_status=result["status"],
+                passed=status_ok and domains_ok and privacy_ok and contract_ok,
+                quality_checks={
+                    "status_match": status_ok,
+                    "domains_match": domains_ok,
+                    "private_entries_external": privacy_ok,
+                    "contract_match": contract_ok,
+                },
+                details={"domains": sorted(domains), "findings": result["findings"]},
+            )
+        )
+    return results
+
+
+def run_release_policy_benchmark(root: Path) -> list[dict]:
+    results: list[dict] = []
+    for case in _release_policy_cases(root):
+        result = release_readiness_report(case["root"])
+        status_ok = result["status"] in case["expected_statuses"]
+        contract_ok = result.get("metadata", {}).get("contract") == case["expected_contract"]
+        gate_ok = result["benchmark_gate"]["passed"] is True
+        governance_ok = result["governance_policy"].get("metadata", {}).get("contract") == "governance_policy"
+        results.append(
+            _benchmark_result(
+                benchmark_id=case["id"],
+                category=case["category"],
+                evaluation_focus=case["evaluation_focus"],
+                expected_status="ready_or_ready_with_caveats",
+                observed_status=result["status"],
+                passed=status_ok and contract_ok and gate_ok and governance_ok,
+                quality_checks={
+                    "status_allowed": status_ok,
+                    "contract_match": contract_ok,
+                    "benchmark_gate_passed": gate_ok,
+                    "governance_contract_match": governance_ok,
+                },
+                details={"status": result["status"], "caveats": result["caveats"], "blockers": result["blockers"]},
+            )
+        )
+    return results
+
+
 
 def summarize_benchmark_results(results: list[dict]) -> dict:
     category_totals: dict[str, dict[str, int]] = {}
@@ -989,7 +1089,7 @@ def summarize_benchmark_results(results: list[dict]) -> dict:
 
 
 
-def build_benchmark_report(root: Path) -> dict:
+def build_benchmark_report(root: Path, *, include_release_policy: bool = True) -> dict:
     results = (
         run_seeded_mismatch_benchmark(root)
         + run_label_consistency_benchmark(root)
@@ -1002,7 +1102,10 @@ def build_benchmark_report(root: Path) -> dict:
         + run_ast_corpus_benchmark(root)
         + run_typed_ir_benchmark(root)
         + run_industrial_review_benchmark(root)
+        + run_release_corpus_benchmark(root)
     )
+    if include_release_policy:
+        results += run_release_policy_benchmark(root)
     passed_count = sum(1 for result in results if result["passed"])
     return asdict(
         BenchmarkReport(
@@ -1017,8 +1120,8 @@ def build_benchmark_report(root: Path) -> dict:
 
 
 
-def benchmark_gate_report(root: Path) -> dict:
-    report = build_benchmark_report(root)
+def benchmark_gate_report(root: Path, *, include_release_policy: bool = True) -> dict:
+    report = build_benchmark_report(root, include_release_policy=include_release_policy)
     total = report["total"]
     passed_count = report["passed"]
     return asdict(
@@ -1036,7 +1139,7 @@ def benchmark_gate_report(root: Path) -> dict:
 
 
 
-def write_benchmark_report(root: Path, output_path: Path) -> dict:
-    report = build_benchmark_report(root)
+def write_benchmark_report(root: Path, output_path: Path, *, include_release_policy: bool = True) -> dict:
+    report = build_benchmark_report(root, include_release_policy=include_release_policy)
     output_path.write_text(__import__('json').dumps(report, indent=2), encoding='utf-8')
     return success_result({"output": str(output_path), "report": report}, contract="benchmark_report")

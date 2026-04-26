@@ -38,3 +38,17 @@ def test_cli_benchmark_gate_module_command_passes():
     assert result.returncode == 0, result.stderr
     assert '"failed_count": 0' in result.stdout
     assert '"name": "all_benchmarks_must_pass"' in result.stdout
+
+
+def test_release_smoke_script_passes():
+    result = subprocess.run(
+        [str(ROOT / "scripts" / "release_smoke.sh"), str(ROOT)],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert '"contract": "doctor_report"' in result.stdout
+    assert '"contract": "parser_benchmark_report"' in result.stdout
+    assert '"contract": "release_readiness_report"' in result.stdout

@@ -671,6 +671,144 @@ The safe numeric runner only accepts explicit arrays or callables supplied by co
 
 The next highest-value release step is to run proof-audit v2 on larger sanitized/private department corpora and expand parser/AST/shape coverage for the recurring frontier domains before declaring a colleague-wide release.
 
+## Current industrial release gap-closure request
+
+The next request is to execute the nine-gap industrial release closure plan:
+
+- [industrial-release-gap-closure-execution-plan.md](industrial-release-gap-closure-execution-plan.md)
+
+This pass should address the remaining industrial release gaps after proof-audit v2:
+
+1. real corpus validation,
+2. parser production hardening,
+3. true optional LeanDojo backend boundary,
+4. executed numeric diagnostics integration,
+5. richer shape/dimension semantics,
+6. code-document semantic matching,
+7. deployment and CI hardening,
+8. security/governance,
+9. formal release policy.
+
+The implementation should remain conservative. The goal is a stronger internal release candidate surface, not a claim that arbitrary frontier mathematical finance/economics research is automatically verified.
+
+Planning/audit artifacts for this pass:
+
+- [industrial-release-gap-closure-execution-plan.md](industrial-release-gap-closure-execution-plan.md),
+- [industrial-release-gap-closure-plan-audit.md](industrial-release-gap-closure-plan-audit.md).
+
+Safety invariant for this pass: no parser output, AST match, inferred type, dimension hint, route hint, shape guard, numeric diagnostic, generated Lean skeleton, LeanDojo tactic result, benchmark pass, release checklist, or review packet may become a verified mathematical claim unless a deterministic backend verifies the claim under explicit assumptions and MathDevMCP records reproducible evidence.
+
+## Industrial release gap-closure checkpoint outcome
+
+This pass executed the nine-gap release-closure slice as a conservative internal-release-candidate checkpoint. It strengthened the release surface, benchmark accounting, CLI/MCP access, and governance/readiness reporting without claiming arbitrary frontier mathematics is now automatically verified.
+
+### Changes implemented
+
+Added planning and second-developer audit artifacts:
+
+- `docs/plans/industrial-release-gap-closure-execution-plan.md`,
+- `docs/plans/industrial-release-gap-closure-plan-audit.md`.
+
+Implemented or tightened release surfaces:
+
+- `src/mathdevmcp/release_corpus.py` with a machine-readable corpus manifest covering public fixture entries and private external stubs for Kalman/state-space, HMC/NUTS, particle filters, DSGE/macro-finance, stochastic volatility, SDE/PDE numerics, ML/LLM objectives, ELBO/VI, and computational-physics MCMC.
+- `src/mathdevmcp/parser_benchmark.py` now reports expected-label precision/recall, generated-like labels, source-span and section-path quality, macro visibility, duplicate-label findings, multi-file coverage, warnings, and fatal errors.
+- `src/mathdevmcp/parser_policy.py` now returns `selected_for_proof_audit`, `selected_for_context_only`, `measured_optional`, or `blocked` style statuses while preserving `legacy_status` for compatibility.
+- `src/mathdevmcp/numeric_runner.py` now supports bounded numeric diagnostic plans with explicit safety metadata, matrix-size limits, timeout propagation, and fixture-import allowlist behavior.
+- `src/mathdevmcp/proof_audit_v2.py` can attach executed numeric diagnostics when safe artifacts are supplied, while keeping the obligation status diagnostic-only unless deterministic scoped proof evidence exists.
+- `src/mathdevmcp/shape_semantics.py` adds diagnostic shape semantics for batch-axis policy, broadcasting policy, and SPD/invertibility guard evidence.
+- `src/mathdevmcp/semantic_alignment.py` adds narrow document-to-code operation alignment for state-space likelihood, HMC, and particle-filter style workflows.
+- `src/mathdevmcp/governance.py` adds machine-readable safety/governance policy.
+- `src/mathdevmcp/release_policy.py` adds release-readiness reporting with package/version, git, benchmark, doctor, parser, governance, blocker, caveat, and schema fields.
+
+Added operational docs and scripts:
+
+- `docs/mathdevmcp-deployment-guide.md`,
+- `docs/mathdevmcp-security-governance.md`,
+- `docs/mathdevmcp-release-policy.md`,
+- `scripts/doctor_smoke.sh`,
+- `scripts/parser_benchmark_smoke.sh`,
+- `scripts/release_smoke.sh`.
+
+Extended agent surfaces:
+
+- CLI commands: `release-corpus-manifest`, `validate-release-corpus`, `governance-policy`, `release-readiness`.
+- MCP facade and FastMCP tools for release corpus validation, governance policy, and release readiness.
+- Benchmark categories: `release_corpus` and `release_policy`.
+
+### Audit fixes during this pass
+
+The second-developer audit found and fixed a release-readiness recursion bug: the full benchmark gate includes a release-policy benchmark, and the release-policy benchmark calls release-readiness. `release_readiness_report(...)` now uses a non-recursive gate view with `include_release_policy=False`; the full benchmark gate still includes the release-policy case.
+
+The audit also tightened two smaller gaps:
+
+- duplicate-label reporting is now computed before parser-label deduplication,
+- numeric diagnostic plan timeouts are recorded and passed to executed diagnostic checks.
+
+### Verification completed
+
+Focused release-gap tests after final audit polish passed:
+
+```text
+44 passed
+```
+
+Full test suite passed:
+
+```text
+204 passed in 77.57s
+```
+
+Benchmark gate passed:
+
+```text
+passed=true, total=32, passed_count=32, failed_count=0, expected_abstentions=12, policy=all_benchmarks_must_pass
+```
+
+Current-parser benchmark on public fixtures passed:
+
+```text
+current: parsed, labels_found=48, environments_found=48, align_like_found=3,
+expected_label_recall=1.0, expected_label_precision=1.0,
+generated_label_count=0, duplicate_label_findings=[]
+```
+
+Release readiness completed:
+
+```text
+status=ready_with_caveats
+non_recursive_benchmark_gate=true, total=31, passed_count=31, failed_count=0
+parser_policy=selected_for_proof_audit
+```
+
+Release smoke passed:
+
+```text
+scripts/release_smoke.sh /home/chakwong/MathDevMCP
+```
+
+Diff hygiene passed:
+
+```text
+git diff --check
+```
+
+### Environment caveats recorded
+
+Doctor/release-readiness reported:
+
+- LaTeXML available: `/usr/bin/latexml`, LaTeXML 0.8.6.
+- Pandoc available: `/usr/bin/pandoc`, Pandoc 2.9.2.1.
+- Sage available: `/usr/bin/sage`, SageMath 9.5.
+- LeanDojo import available: `lean-dojo` 4.20.0.
+- SymPy available: 1.14.0.
+- Lean executable found at `/home/chakwong/.elan/bin/lean`, but `lean --version` returned `error: error during download`, so Lean remains a release caveat in this environment.
+- `magic-pdf 1.3.12` declares `pydantic<2.11`, while active pydantic is 2.13.3; keep LeanDojo isolated if that conflict matters.
+
+### Remaining limitations
+
+This is still not a full mathematical verification platform. The release corpus has public fixture coverage plus private placeholders, not validated private department corpora. LeanDojo remains a conservative optional backend boundary rather than a real `Dojo(entry)` proof-search loop. Parser, AST, shape, semantic-alignment, and numeric outputs are diagnostic unless deterministic backend evidence certifies a scoped claim under explicit assumptions.
+
 ## Kalman industrialization checkpoint outcome
 
 This pass added a Kalman likelihood vertical workflow as the next realistic department-facing milestone.

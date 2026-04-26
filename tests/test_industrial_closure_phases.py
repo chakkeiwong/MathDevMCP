@@ -71,7 +71,8 @@ def test_parser_policy_selects_current_parser_when_labels_and_provenance_are_pre
     policy = decide_parser_policy(str(FIXTURES), backends=["current"])
 
     assert policy["metadata"] == {"schema_version": "1.0", "contract": "parser_policy_decision"}
-    assert policy["status"] == "selected"
+    assert policy["status"] == "selected_for_proof_audit"
+    assert policy["legacy_status"] == "selected"
     assert policy["selected_backend"] == "current"
     assert policy["benchmark_report"]["summary"]["label_preserving"] == 1
 

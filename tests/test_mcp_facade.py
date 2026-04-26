@@ -16,6 +16,10 @@ def test_list_mcp_tools_includes_implementation_brief():
     assert "benchmark_gate" in names
     assert "audit_kalman_recursion" in names
     assert "typed_obligation_label" in names
+    assert "release_corpus_manifest" in names
+    assert "validate_release_corpus" in names
+    assert "governance_policy" in names
+    assert "release_readiness" in names
 
 
 
@@ -139,6 +143,19 @@ def test_call_mcp_tool_benchmark_gate_returns_ci_shape():
         },
         "metadata": {"schema_version": "1.0", "contract": "benchmark_gate"},
     }
+
+
+def test_call_mcp_tool_release_surfaces_return_contracts():
+    corpus = call_mcp_tool("validate_release_corpus", {"root": str(FIXTURES)})
+    governance = call_mcp_tool("governance_policy", {})
+    release = call_mcp_tool("release_readiness", {"root": str(ROOT)})
+
+    assert corpus["metadata"] == {"schema_version": "1.0", "contract": "release_corpus_validation_report"}
+    assert corpus["status"] == "consistent"
+    assert governance["metadata"] == {"schema_version": "1.0", "contract": "governance_policy"}
+    assert release["metadata"] == {"schema_version": "1.0", "contract": "release_readiness_report"}
+    assert release["benchmark_gate"]["passed"] is True
+    assert release["ok"] is True
 
 
 

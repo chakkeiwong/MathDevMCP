@@ -10,12 +10,15 @@ from .consistency import compare_files, compare_label_to_code
 from .contracts import error_result, success_result
 from .derivation import derive_step_for_label
 from .doctor import doctor_report
+from .governance import governance_policy
 from .index_cache import load_or_build_index
 from .kalman_workflows import audit_kalman_recursion
 from .latex_index import build_index, extract_context_for_label, extract_paragraph_context_for_label, search_index
 from .proof_obligations import check_proof_obligation
 from .proof_audit import audit_derivation_for_label
 from .proof_audit_v2 import audit_derivation_v2_for_label
+from .release_corpus import release_corpus_manifest, validate_release_corpus_manifest
+from .release_policy import release_readiness_report
 from .typed_workflows import typed_obligation_for_label
 from .tool_matrix import tool_matrix
 from .workflow import build_implementation_brief
@@ -216,6 +219,25 @@ def _tool_doctor(args: dict[str, Any]) -> dict[str, Any]:
     return doctor_report()
 
 
+def _tool_release_corpus_manifest(args: dict[str, Any]) -> dict[str, Any]:
+    root = args.get("root")
+    return release_corpus_manifest(root if isinstance(root, str) else None)
+
+
+def _tool_validate_release_corpus(args: dict[str, Any]) -> dict[str, Any]:
+    root = args.get("root")
+    return validate_release_corpus_manifest(root if isinstance(root, str) else None)
+
+
+def _tool_governance_policy(args: dict[str, Any]) -> dict[str, Any]:
+    _ = args
+    return governance_policy()
+
+
+def _tool_release_readiness(args: dict[str, Any]) -> dict[str, Any]:
+    return release_readiness_report(Path(_required_string(args, "root")))
+
+
 TOOL_HANDLERS: dict[str, ToolHandler] = {
     "search_latex": _tool_search_latex,
     "extract_latex_context": _tool_extract_latex_context,
@@ -234,6 +256,10 @@ TOOL_HANDLERS: dict[str, ToolHandler] = {
     "benchmark_gate": _tool_benchmark_gate,
     "tool_matrix": _tool_tool_matrix,
     "doctor": _tool_doctor,
+    "release_corpus_manifest": _tool_release_corpus_manifest,
+    "validate_release_corpus": _tool_validate_release_corpus,
+    "governance_policy": _tool_governance_policy,
+    "release_readiness": _tool_release_readiness,
 }
 
 
@@ -258,6 +284,10 @@ def list_mcp_tools() -> list[dict[str, Any]]:
             ("benchmark_gate", "Return CI-friendly benchmark gate results."),
             ("tool_matrix", "Return the current MathDevMCP tool matrix."),
             ("doctor", "Report external backend capabilities and environment diagnostics."),
+            ("release_corpus_manifest", "Return the release corpus manifest."),
+            ("validate_release_corpus", "Validate release corpus privacy and gate metadata."),
+            ("governance_policy", "Return security and governance policy."),
+            ("release_readiness", "Return an auditable release-readiness report."),
         ]
     ]
 

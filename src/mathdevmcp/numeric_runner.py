@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import importlib.util
 import math
+from pathlib import Path
 import time
 from typing import Callable
 
@@ -14,6 +16,21 @@ class NumericRunnerResult:
     reason: str
     diagnostic: str
     evidence: dict
+
+
+@dataclass(frozen=True)
+class NumericDiagnosticPlan:
+    kind: str
+    artifact: dict
+    safety: dict
+
+
+@dataclass(frozen=True)
+class NumericDiagnosticPlanResult:
+    status: str
+    reason: str
+    results: list[dict]
+    safety: dict
 
 
 def _finish(status: str, reason: str, diagnostic: str, evidence: dict) -> dict:
@@ -128,3 +145,68 @@ def check_finite_difference_gradient(
         "finite_difference_gradient_check",
         {"point": point, "numerical": numerical, "analytic": analytic, "absolute_error": error, "tolerance": tolerance},
     )
+
+
+def run_numeric_diagnostic_plan(plan: dict, *, allow_fixture_imports: bool = False) -> dict:
+    kind = plan.get("kind")
+    artifact = plan.get("artifact", {})
+    safety = {
+        "allow_fixture_imports": allow_fixture_imports,
+        "max_matrix_size": plan.get("max_matrix_size", 8),
+        "timeout_seconds": plan.get("timeout_seconds", 1.0),
+        "executes_latex_generated_code": False,
+    }
+    if kind == "logdet_domain_check":
+        matrix = artifact.get("matrix")
+        if not isinstance(matrix, list):
+            result = _finish("inconclusive", "Logdet diagnostic requires an explicit matrix artifact.", kind, {})
+        elif len(matrix) > safety["max_matrix_size"]:
+            result = _finish("inconclusive", "Matrix exceeds numeric diagnostic size bound.", kind, {"shape": [len(matrix), len(matrix[0]) if matrix else 0]})
+        else:
+            result = check_logdet_domain(matrix, timeout_seconds=float(safety["timeout_seconds"]))
+    elif kind == "linear_solve_residual_check":
+        matrix = artifact.get("matrix")
+        vector = artifact.get("vector")
+        if not isinstance(matrix, list) or not isinstance(vector, list):
+            result = _finish("inconclusive", "Solve diagnostic requires explicit matrix and vector artifacts.", kind, {})
+        else:
+            result = check_solve_residual(matrix, vector, timeout_seconds=float(safety["timeout_seconds"]))
+    elif kind == "finite_difference_gradient_check":
+        if "module_path" in artifact:
+            result = _run_fixture_gradient_artifact(artifact, allow_fixture_imports=allow_fixture_imports)
+        else:
+            result = _finish("inconclusive", "Gradient diagnostic requires explicit callables or an allowed fixture artifact.", kind, {})
+    else:
+        result = _finish("inconclusive", f"Unknown numeric diagnostic kind: {kind}", str(kind), {})
+    status = result["status"]
+    return attach_contract(
+        asdict(
+            NumericDiagnosticPlanResult(
+                status=status,
+                reason="Numeric diagnostic plan executed." if status != "inconclusive" else "Numeric diagnostic plan could not be fully executed.",
+                results=[result],
+                safety=safety,
+            )
+        ),
+        "numeric_diagnostic_plan_result",
+    )
+
+
+def _run_fixture_gradient_artifact(artifact: dict, *, allow_fixture_imports: bool) -> dict:
+    module_path = Path(str(artifact.get("module_path", ""))).resolve()
+    fixture_root = Path(__file__).resolve().parents[2] / "benchmarks" / "fixtures"
+    try:
+        module_path.relative_to(fixture_root.resolve())
+    except ValueError:
+        return _finish("inconclusive", "Fixture gradient artifact is outside the allowed benchmark fixture root.", "finite_difference_gradient_check", {"module_path": str(module_path)})
+    if not allow_fixture_imports:
+        return _finish("inconclusive", "Fixture imports are disabled for this numeric diagnostic plan.", "finite_difference_gradient_check", {"module_path": str(module_path)})
+    spec = importlib.util.spec_from_file_location("mathdevmcp_numeric_fixture", module_path)
+    if spec is None or spec.loader is None:
+        return _finish("inconclusive", "Could not load numeric fixture module.", "finite_difference_gradient_check", {"module_path": str(module_path)})
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    func = getattr(module, str(artifact.get("function", "")), None)
+    grad = getattr(module, str(artifact.get("gradient", "")), None)
+    point = float(artifact.get("point", 0.0))
+    return check_finite_difference_gradient(func, grad, point)

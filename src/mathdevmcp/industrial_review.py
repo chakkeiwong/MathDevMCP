@@ -30,7 +30,7 @@ def _actions(route: dict, shape: dict, numeric: dict, parser: dict, dojo: dict) 
         actions.append({"kind": "review_shape_dimension_assumptions", "target": "typed_obligation", "severity": "medium"})
     for suggestion in numeric.get("suggestions", []):
         actions.append({"kind": suggestion["kind"], "target": suggestion["target"], "severity": suggestion["priority"]})
-    if parser.get("status") != "selected":
+    if parser.get("status") not in {"selected", "selected_for_proof_audit"}:
         actions.append({"kind": "fix_parser_provenance_before_routing", "target": "parser_policy", "severity": "high"})
     if dojo.get("status") == "inconclusive":
         actions.append({"kind": "treat_leandojo_as_unavailable_for_certification", "target": "leandojo", "severity": "medium"})

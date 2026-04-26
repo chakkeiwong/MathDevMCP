@@ -56,7 +56,7 @@ def _quality(labels: list[str], environments: int, align_like: int, provenance_q
         "environment_recognition": environments > 0,
         "align_detection": align_like > 0,
         "provenance_available": provenance_quality in {"line", "file", "source"},
-    }
+}
 
 
 def _provenance_score(provenance_quality: str) -> float:
@@ -64,11 +64,15 @@ def _provenance_score(provenance_quality: str) -> float:
 
 
 def _result(backend: str, status: str, reason: str, *, expected_labels: set[str] | None = None, labels: list[str] | None = None, environments: int = 0, align_like: int = 0, provenance_quality: str = "none", runtime_seconds: float = 0.0, details: dict | None = None) -> dict:
-    label_list = sorted(set(labels or []))
+    raw_labels = labels or []
+    label_list = sorted(set(raw_labels))
     expected = expected_labels or set()
     generated_like = sorted(label for label in label_list if label.startswith(("ltxid", "autopage", "auto:", "generated:")))
     missing = sorted(expected - set(label_list))
     recall = (len(expected - set(missing)) / len(expected)) if expected else 0.0
+    precision = (len(expected & set(label_list)) / len(label_list)) if label_list else 0.0
+    duplicate_labels = sorted(label for label in set(raw_labels) if raw_labels.count(label) > 1)
+    environment_types = sorted((details or {}).get("environment_types", []))
     payload = ParserBackendResult(
         backend=backend,
         status=status,
@@ -86,7 +90,17 @@ def _result(backend: str, status: str, reason: str, *, expected_labels: set[str]
             "missing_expected_labels": missing,
             "generated_like_labels": generated_like,
             "expected_label_recall": recall,
+            "expected_label_precision": precision,
             "provenance_score": _provenance_score(provenance_quality),
+            "generated_label_count": len(generated_like),
+            "source_span_quality": provenance_quality,
+            "section_path_quality": "available" if provenance_quality == "line" else "unknown",
+            "macro_visibility": "textual" if backend == "current" else "backend_dependent",
+            "environment_types": environment_types,
+            "duplicate_label_findings": (details or {}).get("duplicate_label_findings", duplicate_labels),
+            "multi_file_coverage": len(_tex_files(Path(details["root"]))) if details and "root" in details else None,
+            "fatal_errors": (details or {}).get("errors", []),
+            "warnings": (details or {}).get("warnings", []),
             "environment_count": environments,
             "align_like_count": align_like,
         },
@@ -96,8 +110,10 @@ def _result(backend: str, status: str, reason: str, *, expected_labels: set[str]
 
 def _current_parser(root: Path, started: float, expected_labels: set[str]) -> dict:
     index = build_index(root)
-    labels = list(index.get("labels", {}).keys())
-    environments = sum(1 for block in index.get("blocks", []) if block.get("kind") in {"equation", "align", "alignat", "gather", "multline", "theorem", "proposition", "lemma"})
+    blocks = index.get("blocks", [])
+    labels = [block.get("label") for block in blocks if block.get("label")]
+    environment_types = sorted({block.get("kind") for block in index.get("blocks", []) if block.get("kind")})
+    environments = sum(1 for block in index.get("blocks", []) if block.get("kind") in {"equation", "align", "alignat", "gather", "multline", "theorem", "proposition", "lemma", "assumption"})
     align_like = sum(1 for block in index.get("blocks", []) if block.get("kind") in {"align", "alignat"})
     return _result(
         "current",
@@ -109,7 +125,7 @@ def _current_parser(root: Path, started: float, expected_labels: set[str]) -> di
         align_like=align_like,
         provenance_quality="line",
         runtime_seconds=time.perf_counter() - started,
-        details={"n_blocks": index.get("n_blocks"), "n_labels": index.get("n_labels")},
+        details={"n_blocks": index.get("n_blocks"), "n_labels": index.get("n_labels"), "environment_types": environment_types, "root": str(root)},
     )
 
 
@@ -147,7 +163,7 @@ def _latexml_parser(root: Path, started: float, expected_labels: set[str]) -> di
         align_like=align_like,
         provenance_quality="source",
         runtime_seconds=time.perf_counter() - started,
-        details={"errors": errors[:5]},
+        details={"errors": errors[:5], "root": str(root)},
     )
 
 
@@ -184,7 +200,7 @@ def _pandoc_parser(root: Path, started: float, expected_labels: set[str]) -> dic
         align_like=align_like,
         provenance_quality="source",
         runtime_seconds=time.perf_counter() - started,
-        details={"errors": errors[:5]},
+        details={"errors": errors[:5], "root": str(root)},
     )
 
 

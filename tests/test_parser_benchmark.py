@@ -59,3 +59,25 @@ def test_compare_parser_backends_returns_ci_friendly_summary():
     assert result["summary"]["total"] == 3
     assert result["summary"]["parsed"] >= 1
     assert result["summary"]["label_preserving"] >= 1
+
+
+def test_parser_backend_reports_duplicate_labels(tmp_path):
+    (tmp_path / "duplicate.tex").write_text(
+        r"""
+\begin{equation}
+a = a
+\label{eq:duplicate}
+\end{equation}
+
+\begin{equation}
+b = b
+\label{eq:duplicate}
+\end{equation}
+""",
+        encoding="utf-8",
+    )
+
+    result = run_parser_backend(tmp_path, "current")
+
+    assert result["status"] == "parsed"
+    assert result["details"]["duplicate_label_findings"] == ["eq:duplicate"]

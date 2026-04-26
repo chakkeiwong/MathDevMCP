@@ -12,6 +12,8 @@ from mathdevmcp.benchmarks import (
     run_parser_corpus_benchmark,
     run_proof_audit_benchmark,
     run_proof_audit_v2_benchmark,
+    run_release_corpus_benchmark,
+    run_release_policy_benchmark,
     run_seeded_mismatch_benchmark,
     run_typed_ir_benchmark,
     run_workflow_benchmark,
@@ -36,6 +38,8 @@ EXPECTED_BENCHMARK_SUMMARY = {
         "ast_corpus": {"total": 4, "passed": 4, "expected_abstentions": 0},
         "typed_ir": {"total": 2, "passed": 2, "expected_abstentions": 2},
         "industrial_review": {"total": 1, "passed": 1, "expected_abstentions": 1},
+        "release_corpus": {"total": 1, "passed": 1, "expected_abstentions": 0},
+        "release_policy": {"total": 1, "passed": 1, "expected_abstentions": 0},
     },
     "by_focus": {
         "status_regression": {"total": 2, "passed": 2, "expected_abstentions": 0},
@@ -58,11 +62,13 @@ EXPECTED_BENCHMARK_SUMMARY = {
         "typed_dimension_diagnostics": {"total": 1, "passed": 1, "expected_abstentions": 1},
         "typed_stochastic_diagnostics": {"total": 1, "passed": 1, "expected_abstentions": 1},
         "agent_review_packet": {"total": 1, "passed": 1, "expected_abstentions": 1},
+        "release_corpus_manifest": {"total": 1, "passed": 1, "expected_abstentions": 0},
+        "release_readiness_contract": {"total": 1, "passed": 1, "expected_abstentions": 0},
     },
     "expected_abstentions": 12,
 }
 
-EXPECTED_BENCHMARK_TOTAL = 30
+EXPECTED_BENCHMARK_TOTAL = 32
 
 
 def test_extract_context_for_label_returns_local_excerpt():
@@ -315,7 +321,7 @@ def test_benchmark_cases_cover_consistency_derivation_workflow_and_proof_audit_c
     cases = benchmark_cases(root)
 
     assert len(cases) == EXPECTED_BENCHMARK_TOTAL
-    assert {case["category"] for case in cases} == {"consistency", "derivation", "workflow", "proof_audit", "proof_audit_v2", "kalman_recursion", "parser_corpus", "ast_corpus", "typed_ir", "industrial_review"}
+    assert {case["category"] for case in cases} == {"consistency", "derivation", "workflow", "proof_audit", "proof_audit_v2", "kalman_recursion", "parser_corpus", "ast_corpus", "typed_ir", "industrial_review", "release_corpus", "release_policy"}
 
 
 
@@ -438,6 +444,29 @@ def test_industrial_review_benchmark_runner_reports_agent_packet_actions():
     assert all(result["passed"] for result in results)
 
 
+def test_release_corpus_benchmark_runner_reports_privacy_gate():
+    root = FIXTURES.parent.parent
+
+    results = run_release_corpus_benchmark(root)
+
+    assert {result["id"] for result in results} == {"release_corpus_manifest_privacy_gate"}
+    assert all(result["category"] == "release_corpus" for result in results)
+    assert all(result["quality_checks"]["private_entries_external"] for result in results)
+    assert all(result["passed"] for result in results)
+
+
+def test_release_policy_benchmark_runner_reports_readiness_contract():
+    root = FIXTURES.parent.parent
+
+    results = run_release_policy_benchmark(root)
+
+    assert {result["id"] for result in results} == {"release_policy_readiness_report"}
+    assert all(result["category"] == "release_policy" for result in results)
+    assert all(result["quality_checks"]["benchmark_gate_passed"] for result in results)
+    assert all(result["quality_checks"]["governance_contract_match"] for result in results)
+    assert all(result["passed"] for result in results)
+
+
 
 def test_build_benchmark_report_returns_contract_and_typed_results():
     root = FIXTURES.parent.parent
@@ -449,6 +478,18 @@ def test_build_benchmark_report_returns_contract_and_typed_results():
     assert report["total"] == EXPECTED_BENCHMARK_TOTAL
     assert report["passed"] == EXPECTED_BENCHMARK_TOTAL
     assert all("details" in result for result in report["results"])
+
+
+def test_release_readiness_uses_non_recursive_gate():
+    root = FIXTURES.parent.parent
+
+    report = build_benchmark_report(root, include_release_policy=False)
+    gate = benchmark_gate_report(root, include_release_policy=False)
+
+    assert report["total"] == EXPECTED_BENCHMARK_TOTAL - 1
+    assert "release_policy" not in report["summary"]["by_category"]
+    assert gate["passed"] is True
+    assert gate["total"] == EXPECTED_BENCHMARK_TOTAL - 1
 
 
 
@@ -502,6 +543,8 @@ def test_summarize_benchmark_results_groups_by_category_and_focus():
         + run_ast_corpus_benchmark(root)
         + run_typed_ir_benchmark(root)
         + run_industrial_review_benchmark(root)
+        + run_release_corpus_benchmark(root)
+        + run_release_policy_benchmark(root)
     )
     summary = summarize_benchmark_results(results)
 

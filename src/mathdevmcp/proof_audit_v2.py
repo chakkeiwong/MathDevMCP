@@ -6,10 +6,14 @@ from pathlib import Path
 from .contracts import attach_contract, contract_metadata
 from .math_ir import diagnose_typed_obligation
 from .numeric_diagnostics import suggest_numeric_diagnostics
+from .numeric_runner import run_numeric_diagnostic_plan
 from .parser_policy import decide_parser_policy
 from .proof_audit import audit_derivation_for_label
 from .routing import route_typed_diagnostic
 from .shape_diagnostics import diagnose_shape_constraints
+
+
+_CERTIFYING_PARSER_STATUSES = {"selected", "selected_for_proof_audit"}
 
 
 @dataclass(frozen=True)
@@ -82,7 +86,7 @@ def _actions(
     status: str,
 ) -> list[dict]:
     actions: list[dict] = []
-    if parser_policy.get("status") != "selected":
+    if parser_policy.get("status") not in _CERTIFYING_PARSER_STATUSES:
         actions.append(
             {
                 "kind": "fix_parser_provenance_before_certification",
@@ -143,7 +147,7 @@ def _obligation_status_and_reason(
     shape: dict,
 ) -> tuple[str, str]:
     base_status = base_obligation.get("status", "inconclusive")
-    if parser_policy.get("status") != "selected":
+    if parser_policy.get("status") not in _CERTIFYING_PARSER_STATUSES:
         return "inconclusive", "Parser policy did not select a provenance-preserving backend for certification."
     if base_status == "mismatch":
         return "mismatch", base_obligation.get("reason", "A backend refuted the obligation.")
@@ -205,6 +209,7 @@ def audit_derivation_v2_for_label(
     backend: str = "sympy",
     cache_path: str | Path | None = None,
     parser_backends: list[str] | None = None,
+    numeric_artifacts: dict[str, dict] | None = None,
     summary_only: bool = False,
 ) -> dict:
     base = audit_derivation_for_label(
@@ -225,6 +230,14 @@ def audit_derivation_v2_for_label(
         route = route_typed_diagnostic(typed, label=label)
         shape = diagnose_shape_constraints(typed)
         numeric = suggest_numeric_diagnostics(typed)
+        if numeric_artifacts:
+            executed = []
+            for suggestion in numeric.get("suggestions", []):
+                artifact = numeric_artifacts.get(suggestion.get("kind"))
+                if artifact is not None:
+                    executed.append(run_numeric_diagnostic_plan({"kind": suggestion.get("kind"), "artifact": artifact}))
+            if executed:
+                numeric = {**numeric, "executed": executed}
         status, reason = _obligation_status_and_reason(
             base_obligation=base_obligation,
             parser_policy=parser,

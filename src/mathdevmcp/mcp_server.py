@@ -234,6 +234,26 @@ def doctor() -> dict:
     return call_mcp_tool("doctor", {})
 
 
+@mcp.tool(description="Return the release corpus manifest.", structured_output=False)
+def release_corpus_manifest(root: str | None = None) -> dict:
+    return call_mcp_tool("release_corpus_manifest", {"root": root})
+
+
+@mcp.tool(description="Validate release corpus privacy and gate metadata.", structured_output=False)
+def validate_release_corpus(root: str | None = None) -> dict:
+    return call_mcp_tool("validate_release_corpus", {"root": root})
+
+
+@mcp.tool(description="Return security and governance policy.", structured_output=False)
+def governance_policy() -> dict:
+    return call_mcp_tool("governance_policy", {})
+
+
+@mcp.tool(description="Return an auditable release-readiness report.", structured_output=False)
+def release_readiness(root: str) -> dict:
+    return call_mcp_tool("release_readiness", {"root": root})
+
+
 def main(argv: list[str] | None = None) -> int:
     _ = argv
     mcp.run(transport="stdio")

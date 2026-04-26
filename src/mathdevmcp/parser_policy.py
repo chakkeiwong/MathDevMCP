@@ -21,8 +21,12 @@ def decide_parser_policy(root: str, *, backends: list[str] | None = None) -> dic
     current = next((item for item in report["results"] if item["backend"] == "current"), None)
     if current and current["quality_checks"]["label_preservation"] and current["quality_checks"]["provenance_available"]:
         selected = "current"
-        status = "selected"
+        status = "selected_for_proof_audit"
         reason = "Current parser preserves expected labels and line provenance for this corpus."
+    elif current and current["quality_checks"]["provenance_available"]:
+        selected = "current"
+        status = "selected_for_context_only"
+        reason = "Current parser has provenance, but expected label preservation is incomplete; certification should remain blocked."
     else:
         selected = None
         status = "blocked"
@@ -33,4 +37,6 @@ def decide_parser_policy(root: str, *, backends: list[str] | None = None) -> dic
         if not result["quality_checks"]["provenance_available"]:
             blocking.append({"backend": result["backend"], "kind": "provenance_unavailable"})
     decision = ParserPolicyDecision(status, reason, selected, blocking, report)
-    return attach_contract(asdict(decision), "parser_policy_decision")
+    payload = attach_contract(asdict(decision), "parser_policy_decision")
+    payload["legacy_status"] = "selected" if status == "selected_for_proof_audit" else status
+    return payload

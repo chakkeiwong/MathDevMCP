@@ -22,6 +22,7 @@ from .performance import index_performance_smoke
 from .parser_benchmark import compare_parser_backends
 from .proof_obligations import check_proof_obligation
 from .proof_audit import audit_derivation_for_label
+from .proof_audit_v2 import audit_derivation_v2_for_label
 from .typed_workflows import typed_obligation_for_label
 from .tool_matrix import tool_matrix
 from .workflow import build_implementation_brief
@@ -231,6 +232,21 @@ def _cmd_audit_derivation_label(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_audit_derivation_v2_label(args: argparse.Namespace) -> int:
+    result = audit_derivation_v2_for_label(
+        args.root,
+        args.label,
+        before=args.before,
+        after=args.after,
+        paragraph_context=args.paragraph_context,
+        backend=args.backend,
+        cache_path=Path(args.cache) if args.cache else None,
+        summary_only=args.summary_only,
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
 def _cmd_audit_kalman_recursion(args: argparse.Namespace) -> int:
     required_operations = [item.strip() for item in args.required_operation if item.strip()]
     result = audit_kalman_recursion(args.code, required_operations=required_operations or None)
@@ -387,6 +403,17 @@ def make_parser() -> argparse.ArgumentParser:
     p_audit.add_argument("--backend", choices=["auto", "sympy", "sage", "z3"], default="auto", help="Backend preference")
     p_audit.add_argument("--cache", default="", help="Optional cache JSON path for index reuse")
     p_audit.set_defaults(func=_cmd_audit_derivation_label)
+
+    p_audit_v2 = sub.add_parser("audit-derivation-v2-label", help="Audit a labeled derivation with typed routing and release evidence")
+    p_audit_v2.add_argument("label", help="LaTeX label to audit")
+    p_audit_v2.add_argument("--root", default=".", help="Root directory containing LaTeX files")
+    p_audit_v2.add_argument("--before", type=int, default=0, help="Context units before")
+    p_audit_v2.add_argument("--after", type=int, default=0, help="Context units after")
+    p_audit_v2.add_argument("--paragraph-context", action="store_true", help="Use paragraph neighborhood instead of line excerpt")
+    p_audit_v2.add_argument("--backend", choices=["auto", "sympy", "sage", "z3"], default="sympy", help="Backend preference")
+    p_audit_v2.add_argument("--cache", default="", help="Optional cache JSON path for index reuse")
+    p_audit_v2.add_argument("--summary-only", action="store_true", help="Return compact per-obligation summaries")
+    p_audit_v2.set_defaults(func=_cmd_audit_derivation_v2_label)
 
     p_kalman_recursion = sub.add_parser("audit-kalman-recursion", help="Audit AST-level Kalman recursion structure in Python code")
     p_kalman_recursion.add_argument("code", help="Python code file path")

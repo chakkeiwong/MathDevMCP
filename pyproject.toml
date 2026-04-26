@@ -11,6 +11,10 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = ["pytest"]
+symbolic = ["sympy"]
+mcp = ["mcp"]
+leandojo = ["lean-dojo"]
+all = ["sympy", "mcp", "lean-dojo"]
 
 [project.scripts]
 mathdevmcp = "mathdevmcp.cli:main"

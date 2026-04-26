@@ -24,6 +24,10 @@ def test_parser_backend_current_preserves_department_corpus_labels():
     assert "eq:dept-state-space-recursion" in result["labels"]
     assert "eq:dept-hmc-leapfrog" in result["labels"]
     assert result["details"]["missing_expected_labels"] == []
+    assert result["details"]["expected_label_recall"] == 1.0
+    assert result["details"]["generated_like_labels"] == []
+    assert result["details"]["provenance_score"] == 1.0
+    assert result["details"]["environment_count"] >= 1
 
 
 def test_parser_backend_latexml_runs_or_reports_inconclusive():

@@ -59,9 +59,16 @@ def _quality(labels: list[str], environments: int, align_like: int, provenance_q
     }
 
 
+def _provenance_score(provenance_quality: str) -> float:
+    return {"line": 1.0, "file": 0.75, "source": 0.5, "none": 0.0}.get(provenance_quality, 0.0)
+
+
 def _result(backend: str, status: str, reason: str, *, expected_labels: set[str] | None = None, labels: list[str] | None = None, environments: int = 0, align_like: int = 0, provenance_quality: str = "none", runtime_seconds: float = 0.0, details: dict | None = None) -> dict:
     label_list = sorted(set(labels or []))
     expected = expected_labels or set()
+    generated_like = sorted(label for label in label_list if label.startswith(("ltxid", "autopage", "auto:", "generated:")))
+    missing = sorted(expected - set(label_list))
+    recall = (len(expected - set(missing)) / len(expected)) if expected else 0.0
     payload = ParserBackendResult(
         backend=backend,
         status=status,
@@ -73,7 +80,16 @@ def _result(backend: str, status: str, reason: str, *, expected_labels: set[str]
         runtime_seconds=runtime_seconds,
         labels=label_list,
         quality_checks=_quality(label_list, environments, align_like, provenance_quality, expected),
-        details={**(details or {}), "expected_labels": sorted(expected), "missing_expected_labels": sorted(expected - set(label_list))},
+        details={
+            **(details or {}),
+            "expected_labels": sorted(expected),
+            "missing_expected_labels": missing,
+            "generated_like_labels": generated_like,
+            "expected_label_recall": recall,
+            "provenance_score": _provenance_score(provenance_quality),
+            "environment_count": environments,
+            "align_like_count": align_like,
+        },
     )
     return attach_contract(asdict(payload), "parser_backend_result")
 

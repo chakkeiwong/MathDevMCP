@@ -12,10 +12,11 @@ from .kalman_workflows import audit_kalman_recursion
 from .industrial_review import build_industrial_review_packet
 from .parser_benchmark import run_parser_backend
 from .proof_audit import audit_derivation_for_label
+from .proof_audit_v2 import audit_derivation_v2_for_label
 from .typed_workflows import typed_obligation_for_label
 from .workflow import build_implementation_brief
 
-BenchmarkCategory = Literal["consistency", "derivation", "workflow", "proof_audit", "kalman_recursion", "parser_corpus", "ast_corpus", "typed_ir", "industrial_review"]
+BenchmarkCategory = Literal["consistency", "derivation", "workflow", "proof_audit", "proof_audit_v2", "kalman_recursion", "parser_corpus", "ast_corpus", "typed_ir", "industrial_review"]
 
 
 @dataclass(frozen=True)
@@ -352,6 +353,45 @@ def _proof_audit_cases(root: Path) -> list[dict]:
     ]
 
 
+def _proof_audit_v2_cases(root: Path) -> list[dict]:
+    fixtures = root / "benchmarks" / "fixtures"
+    return [
+        {
+            "id": "proof_audit_v2_scalar_verified",
+            "category": "proof_audit_v2",
+            "evaluation_focus": "release_spine_verified",
+            "doc_root": str(fixtures),
+            "label": "eq:proof-audit-single",
+            "expected_status": "verified",
+            "expected_abstention": False,
+            "expected_route": "symbolic",
+            "expected_high_priority_actions": [],
+        },
+        {
+            "id": "proof_audit_v2_false_mismatch",
+            "category": "proof_audit_v2",
+            "evaluation_focus": "false_confidence_control",
+            "doc_root": str(fixtures),
+            "label": "eq:proof-audit-false",
+            "expected_status": "mismatch",
+            "expected_abstention": False,
+            "expected_route": "symbolic",
+            "expected_high_priority_action_kinds": ["investigate_backend_refutation"],
+        },
+        {
+            "id": "proof_audit_v2_state_space_abstention",
+            "category": "proof_audit_v2",
+            "evaluation_focus": "release_spine_abstention",
+            "doc_root": str(fixtures),
+            "label": "eq:dept-state-space-likelihood",
+            "expected_status": "unverified",
+            "expected_abstention": True,
+            "expected_route": "human_review",
+            "expected_high_priority_action_kinds": ["state_or_verify_missing_constraint", "human_formalization_or_review", "logdet_domain_check", "linear_solve_residual_check"],
+        },
+    ]
+
+
 def _kalman_recursion_cases(root: Path) -> list[dict]:
     fixtures = root / "benchmarks" / "fixtures"
     return [
@@ -489,6 +529,7 @@ def benchmark_cases(root: Path) -> list[dict]:
         + _derivation_cases(root)
         + _workflow_cases(root)
         + _proof_audit_cases(root)
+        + _proof_audit_v2_cases(root)
         + _kalman_recursion_cases(root)
         + _parser_corpus_cases(root)
         + _ast_corpus_cases(root)
@@ -685,6 +726,50 @@ def run_proof_audit_benchmark(root: Path) -> list[dict]:
                     "counts": result["counts"],
                     "doc_context": result["doc_context"],
                     "obligations": result["obligations"],
+                },
+                expected_abstention=case.get("expected_abstention", False),
+            )
+        )
+    return results
+
+
+def run_proof_audit_v2_benchmark(root: Path) -> list[dict]:
+    results: list[dict] = []
+    for case in _proof_audit_v2_cases(root):
+        result = audit_derivation_v2_for_label(case["doc_root"], case["label"], backend="sympy")
+        routes = {obligation.get("route_decision", {}).get("route") for obligation in result.get("obligations", [])}
+        action_kinds = {action.get("kind") for action in result.get("high_priority_actions", [])}
+        status_ok = result["status"] == case["expected_status"]
+        route_ok = case["expected_route"] in routes
+        contract_ok = result.get("metadata", {}).get("contract") == "proof_audit_v2_result"
+        obligation_contract_ok = all(
+            obligation.get("metadata", {}).get("contract") == "proof_audit_v2_obligation"
+            for obligation in result.get("obligations", [])
+        )
+        expected_actions = set(case.get("expected_high_priority_action_kinds", case.get("expected_high_priority_actions", [])))
+        actions_ok = expected_actions.issubset(action_kinds)
+        abstention_ok = result["status"] in {"inconclusive", "unverified"} if case.get("expected_abstention", False) else result["status"] not in {"inconclusive", "unverified"}
+        results.append(
+            _benchmark_result(
+                benchmark_id=case["id"],
+                category=case["category"],
+                evaluation_focus=case["evaluation_focus"],
+                expected_status=case["expected_status"],
+                observed_status=result["status"],
+                passed=status_ok and route_ok and contract_ok and obligation_contract_ok and actions_ok and abstention_ok,
+                quality_checks={
+                    "status_match": status_ok,
+                    "route_match": route_ok,
+                    "contract_match": contract_ok,
+                    "obligation_contract_match": obligation_contract_ok,
+                    "actions_match": actions_ok,
+                    "expected_abstention_match": abstention_ok,
+                },
+                details={
+                    "label": case["label"],
+                    "counts": result["counts"],
+                    "routes": sorted(route for route in routes if route),
+                    "high_priority_action_kinds": sorted(kind for kind in action_kinds if kind),
                 },
                 expected_abstention=case.get("expected_abstention", False),
             )
@@ -911,6 +996,7 @@ def build_benchmark_report(root: Path) -> dict:
         + run_derivation_benchmark(root)
         + run_workflow_benchmark(root)
         + run_proof_audit_benchmark(root)
+        + run_proof_audit_v2_benchmark(root)
         + run_kalman_recursion_benchmark(root)
         + run_parser_corpus_benchmark(root)
         + run_ast_corpus_benchmark(root)

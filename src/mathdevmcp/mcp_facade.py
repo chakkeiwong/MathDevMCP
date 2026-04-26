@@ -15,6 +15,7 @@ from .kalman_workflows import audit_kalman_recursion
 from .latex_index import build_index, extract_context_for_label, extract_paragraph_context_for_label, search_index
 from .proof_obligations import check_proof_obligation
 from .proof_audit import audit_derivation_for_label
+from .proof_audit_v2 import audit_derivation_v2_for_label
 from .typed_workflows import typed_obligation_for_label
 from .tool_matrix import tool_matrix
 from .workflow import build_implementation_brief
@@ -151,6 +152,19 @@ def _tool_audit_derivation_label(args: dict[str, Any]) -> dict[str, Any]:
     )
 
 
+def _tool_audit_derivation_v2_label(args: dict[str, Any]) -> dict[str, Any]:
+    return audit_derivation_v2_for_label(
+        _required_string(args, "root"),
+        _required_string(args, "label"),
+        before=int(args.get("before", 0)),
+        after=int(args.get("after", 0)),
+        paragraph_context=bool(args.get("paragraph_context", False)),
+        backend=str(args.get("backend", "sympy")),
+        cache_path=args.get("cache") or None,
+        summary_only=bool(args.get("summary_only", False)),
+    )
+
+
 def _optional_operations(args: dict[str, Any]) -> list[str] | None:
     operations = args.get("required_operations")
     if operations is None:
@@ -213,6 +227,7 @@ TOOL_HANDLERS: dict[str, ToolHandler] = {
     "implementation_brief": _tool_implementation_brief,
     "check_proof_obligation": _tool_check_proof_obligation,
     "audit_derivation_label": _tool_audit_derivation_label,
+    "audit_derivation_v2_label": _tool_audit_derivation_v2_label,
     "audit_kalman_recursion": _tool_audit_kalman_recursion,
     "typed_obligation_label": _tool_typed_obligation_label,
     "run_benchmarks": _tool_run_benchmarks,
@@ -236,6 +251,7 @@ def list_mcp_tools() -> list[dict[str, Any]]:
             ("implementation_brief", "Build a document-grounded implementation brief."),
             ("check_proof_obligation", "Check a bounded derivation/proof obligation with optional backend assistance."),
             ("audit_derivation_label", "Audit proof obligations extracted from a labeled derivation block."),
+            ("audit_derivation_v2_label", "Audit a labeled derivation with typed routing and release-readiness evidence."),
             ("audit_kalman_recursion", "Audit AST-level Kalman recursion structure in Python code."),
             ("typed_obligation_label", "Build typed/dimensional diagnostics for a labeled math obligation."),
             ("run_benchmarks", "Run seeded consistency benchmarks."),

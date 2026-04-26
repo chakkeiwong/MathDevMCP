@@ -164,6 +164,32 @@ def audit_derivation_label(
     )
 
 
+@mcp.tool(description="Audit a labeled derivation with typed routing and release-readiness evidence.", structured_output=False)
+def audit_derivation_v2_label(
+    root: str,
+    label: str,
+    before: int = 0,
+    after: int = 0,
+    paragraph_context: bool = False,
+    backend: str = "sympy",
+    cache: str | None = None,
+    summary_only: bool = False,
+) -> dict:
+    return call_mcp_tool(
+        "audit_derivation_v2_label",
+        {
+            "root": root,
+            "label": label,
+            "before": before,
+            "after": after,
+            "paragraph_context": paragraph_context,
+            "backend": backend,
+            "cache": cache,
+            "summary_only": summary_only,
+        },
+    )
+
+
 @mcp.tool(description="Audit AST-level Kalman recursion structure in Python code.", structured_output=False)
 def audit_kalman_recursion(code: str, required_operations: Sequence[str] | None = None) -> dict:
     return call_mcp_tool(

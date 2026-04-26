@@ -14,6 +14,40 @@ MathDevMCP is designed for five recurring tasks:
 
 It is intentionally conservative. It helps surface support and mismatches, but it does **not** prove arbitrary algebraic equivalence.
 
+## Installation Modes
+
+The base package is intentionally small. Heavy mathematical tools are optional and detected at runtime.
+
+Base development install:
+```bash
+python -m pip install -e ".[dev]"
+```
+
+MCP-facing install:
+```bash
+python -m pip install -e ".[dev,mcp]"
+```
+
+Symbolic/LeanDojo extras:
+```bash
+python -m pip install -e ".[dev,symbolic]"
+python -m pip install -e ".[dev,leandojo]"
+```
+
+System tools are not pulled in by Python packaging. Install and pin them separately when needed:
+- `latexml`
+- `pandoc`
+- `lean`
+- `lake`
+- `sage`
+
+Before choosing a workflow, run:
+```bash
+PYTHONPATH=/home/chakwong/MathDevMCP/src python -m mathdevmcp.cli doctor
+```
+
+Treat unavailable optional tools as normal. A release-quality workflow should return `inconclusive` or a diagnostic warning, not crash.
+
 ## Core status meanings
 
 Across the tools, treat statuses as follows:
@@ -101,6 +135,33 @@ Important limitation:
 - nearby notation support does **not** mean the transformation is mathematically proved.
 - if the result is `unverified`, do not claim the step is justified unless you also have a real derivation or explicit cited step chain.
 
+### 4b. Audit a labeled derivation with release evidence
+Use `audit-derivation-v2-label` or MCP `audit_derivation_v2_label` when you want the strongest current release-readiness report for a labeled equation or derivation block.
+
+CLI:
+```bash
+PYTHONPATH=/home/chakwong/MathDevMCP/src python -m mathdevmcp.cli \
+  audit-derivation-v2-label eq:dept-state-space-likelihood \
+  --root /path/to/docs --summary-only
+```
+
+The v2 report combines:
+- parser policy,
+- typed `MathObligation` diagnostics,
+- route decision,
+- shape/dimension diagnostics,
+- numeric diagnostic suggestions,
+- backend evidence or explicit abstention,
+- high-priority actions.
+
+Interpretation:
+- `verified` means every extracted obligation has deterministic backend evidence.
+- `mismatch` means at least one backend-refuted obligation needs investigation.
+- `unverified` means the report found obligations but some evidence is diagnostic-only or assumptions are missing.
+- `inconclusive` means extraction, parser evidence, or backend evidence was insufficient.
+
+This is the preferred audit surface for colleague-facing mathematical review because it explains why an obligation is not certified.
+
 ### 5. Build one end-to-end grounded brief
 Use `implementation-brief` or MCP `implementation_brief` when you want one structured object that pulls together retrieval, code comparison, and optional derivation checking.
 
@@ -167,6 +228,10 @@ The MCP server exposes these tools:
 - `compare_doc_code`
 - `compare_label_code`
 - `derive_label_step`
+- `audit_derivation_label`
+- `audit_derivation_v2_label`
+- `audit_kalman_recursion`
+- `typed_obligation_label`
 - `implementation_brief`
 - `run_benchmarks`
 - `benchmark_gate`
@@ -183,6 +248,7 @@ MathDevMCP includes a fixture-scale benchmark program for the main product surfa
 - `consistency`: document/code term and provenance checks,
 - `derivation`: conservative derivation-status and evidence checks,
 - `workflow`: end-to-end implementation-brief checks.
+- `proof_audit_v2`: release-spine proof-audit checks with typed routing and evidence summaries.
 
 Each benchmark result has:
 
@@ -225,5 +291,6 @@ If another agent is reading a scientific paper and needs help staying grounded, 
 
 Best practice is:
 - use it to collect local evidence,
+- use `audit-derivation-v2-label` when a mathematical claim needs per-obligation routing and abstention reasons,
 - use `implementation_brief` before making a strong recommendation,
 - treat `unverified` as a stop sign for categorical mathematical claims.

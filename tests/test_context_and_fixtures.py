@@ -11,6 +11,7 @@ from mathdevmcp.benchmarks import (
     run_label_consistency_benchmark,
     run_parser_corpus_benchmark,
     run_proof_audit_benchmark,
+    run_proof_audit_v2_benchmark,
     run_seeded_mismatch_benchmark,
     run_typed_ir_benchmark,
     run_workflow_benchmark,
@@ -29,6 +30,7 @@ EXPECTED_BENCHMARK_SUMMARY = {
         "derivation": {"total": 6, "passed": 6, "expected_abstentions": 5},
         "workflow": {"total": 3, "passed": 3, "expected_abstentions": 1},
         "proof_audit": {"total": 3, "passed": 3, "expected_abstentions": 1},
+        "proof_audit_v2": {"total": 3, "passed": 3, "expected_abstentions": 1},
         "kalman_recursion": {"total": 2, "passed": 2, "expected_abstentions": 1},
         "parser_corpus": {"total": 1, "passed": 1, "expected_abstentions": 0},
         "ast_corpus": {"total": 4, "passed": 4, "expected_abstentions": 0},
@@ -39,7 +41,7 @@ EXPECTED_BENCHMARK_SUMMARY = {
         "status_regression": {"total": 2, "passed": 2, "expected_abstentions": 0},
         "provenance_correctness": {"total": 2, "passed": 2, "expected_abstentions": 0},
         "abstention_quality": {"total": 1, "passed": 1, "expected_abstentions": 1},
-        "false_confidence_control": {"total": 4, "passed": 4, "expected_abstentions": 0},
+        "false_confidence_control": {"total": 5, "passed": 5, "expected_abstentions": 0},
         "realistic_fixture": {"total": 1, "passed": 1, "expected_abstentions": 0},
         "realistic_abstention": {"total": 1, "passed": 1, "expected_abstentions": 1},
         "multilabel_provenance": {"total": 1, "passed": 1, "expected_abstentions": 1},
@@ -48,6 +50,8 @@ EXPECTED_BENCHMARK_SUMMARY = {
         "workflow_contract": {"total": 3, "passed": 3, "expected_abstentions": 1},
         "proof_audit_routing": {"total": 1, "passed": 1, "expected_abstentions": 0},
         "proof_audit_abstention": {"total": 1, "passed": 1, "expected_abstentions": 1},
+        "release_spine_verified": {"total": 1, "passed": 1, "expected_abstentions": 0},
+        "release_spine_abstention": {"total": 1, "passed": 1, "expected_abstentions": 1},
         "ast_recursion_abstention": {"total": 1, "passed": 1, "expected_abstentions": 1},
         "realistic_parser_provenance": {"total": 1, "passed": 1, "expected_abstentions": 0},
         "realistic_ast_operation_coverage": {"total": 3, "passed": 3, "expected_abstentions": 0},
@@ -55,10 +59,10 @@ EXPECTED_BENCHMARK_SUMMARY = {
         "typed_stochastic_diagnostics": {"total": 1, "passed": 1, "expected_abstentions": 1},
         "agent_review_packet": {"total": 1, "passed": 1, "expected_abstentions": 1},
     },
-    "expected_abstentions": 11,
+    "expected_abstentions": 12,
 }
 
-EXPECTED_BENCHMARK_TOTAL = 27
+EXPECTED_BENCHMARK_TOTAL = 30
 
 
 def test_extract_context_for_label_returns_local_excerpt():
@@ -311,7 +315,7 @@ def test_benchmark_cases_cover_consistency_derivation_workflow_and_proof_audit_c
     cases = benchmark_cases(root)
 
     assert len(cases) == EXPECTED_BENCHMARK_TOTAL
-    assert {case["category"] for case in cases} == {"consistency", "derivation", "workflow", "proof_audit", "kalman_recursion", "parser_corpus", "ast_corpus", "typed_ir", "industrial_review"}
+    assert {case["category"] for case in cases} == {"consistency", "derivation", "workflow", "proof_audit", "proof_audit_v2", "kalman_recursion", "parser_corpus", "ast_corpus", "typed_ir", "industrial_review"}
 
 
 
@@ -332,6 +336,29 @@ def test_proof_audit_benchmark_runner_reports_routing_and_abstention_checks():
         "proof_audit_single_verified": False,
         "proof_audit_false_mismatch": False,
         "proof_audit_kalman_abstention": True,
+    }
+
+
+def test_proof_audit_v2_benchmark_runner_reports_release_spine_checks():
+    root = FIXTURES.parent.parent
+
+    results = run_proof_audit_v2_benchmark(root)
+
+    assert {result["id"] for result in results} == {
+        "proof_audit_v2_scalar_verified",
+        "proof_audit_v2_false_mismatch",
+        "proof_audit_v2_state_space_abstention",
+    }
+    assert all(result["category"] == "proof_audit_v2" for result in results)
+    assert all(result["quality_checks"]["contract_match"] for result in results)
+    assert all(result["quality_checks"]["obligation_contract_match"] for result in results)
+    assert all(result["quality_checks"]["route_match"] for result in results)
+    assert all(result["passed"] for result in results)
+    expected_abstention = {result["id"]: result["expected_abstention"] for result in results}
+    assert expected_abstention == {
+        "proof_audit_v2_scalar_verified": False,
+        "proof_audit_v2_false_mismatch": False,
+        "proof_audit_v2_state_space_abstention": True,
     }
 
 
@@ -469,6 +496,7 @@ def test_summarize_benchmark_results_groups_by_category_and_focus():
         + run_derivation_benchmark(root)
         + run_workflow_benchmark(root)
         + run_proof_audit_benchmark(root)
+        + run_proof_audit_v2_benchmark(root)
         + run_kalman_recursion_benchmark(root)
         + run_parser_corpus_benchmark(root)
         + run_ast_corpus_benchmark(root)

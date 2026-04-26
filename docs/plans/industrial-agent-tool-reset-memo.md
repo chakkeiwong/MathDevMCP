@@ -514,6 +514,163 @@ This checkpoint makes the seven-phase roadmap executable and measurable, but it 
 
 The next highest-value implementation step is proof-audit v2: every extracted proof-audit obligation should carry typed diagnostics, route decisions, and backend evidence or abstention in the primary proof-audit report.
 
+## Current industrial release-readiness request
+
+The next request is to execute the industrial release-readiness plan:
+
+- [industrial-release-readiness-execution-plan.md](industrial-release-readiness-execution-plan.md)
+
+The goal is to turn the existing scaffold into a release-quality vertical path for colleagues:
+
+```text
+source label or code path
+→ parser/provenance evidence
+→ typed MathObligation diagnostics
+→ route decision
+→ shape/dimension diagnostics
+→ backend evidence or explicit abstention
+→ compact colleague-facing report
+→ benchmark/release artifact
+```
+
+This pass should update the reset memo, audit the plan as a second developer, execute the phases with tests and audit notes, commit relevant files, and update this memo again upon completion.
+
+The primary implementation target is proof-audit v2 as the release spine. The later release-readiness phases should attach conservative, measurable increments around that spine:
+
+1. proof-audit v2 report with per-obligation typed diagnostics, route decisions, shape diagnostics, numeric suggestions, backend evidence, and actions,
+2. CLI/MCP exposure for proof-audit v2,
+3. parser evidence hardening on realistic sanitized fixtures,
+4. safe executable numeric diagnostics for explicit encodings,
+5. truthful optional LeanDojo backend boundary,
+6. benchmark/release-gate expansion,
+7. packaging/dependency isolation metadata,
+8. colleague-facing operator documentation,
+9. release-candidate audit.
+
+Safety invariant for this pass: no parser output, AST match, inferred type, dimension hint, route hint, shape guard, numeric diagnostic, generated Lean skeleton, LeanDojo readiness result, benchmark pass, or review packet may become a verified mathematical claim unless a deterministic backend verifies the claim under explicit assumptions and MathDevMCP records reproducible evidence.
+
+Planning/audit artifacts for this pass:
+
+- [industrial-release-readiness-execution-plan.md](industrial-release-readiness-execution-plan.md),
+- [industrial-release-readiness-plan-audit.md](industrial-release-readiness-plan-audit.md).
+
+### Industrial release-readiness mid-pass checkpoint
+
+Phases 1-7 have been implemented as conservative release-readiness increments rather than as a claim of full industrial completion.
+
+Implemented so far:
+
+- `src/mathdevmcp/proof_audit_v2.py`, an additive proof-audit v2 release spine that combines the existing proof audit with parser policy, typed `MathObligation` diagnostics, route decisions, shape diagnostics, numeric diagnostic suggestions, backend attempts, per-obligation actions, and high-priority report actions.
+- CLI command `audit-derivation-v2-label`.
+- MCP facade/FastMCP tool `audit_derivation_v2_label`.
+- Parser benchmark hardening fields for expected-label recall, generated-like labels, provenance score, environment count, and align-like count.
+- `src/mathdevmcp/numeric_runner.py`, a safe explicit-encoding numeric diagnostic runner for logdet domain checks, linear solve residual checks, and finite-difference gradient checks.
+- `src/mathdevmcp/leandojo_backend.py`, a conservative LeanDojo attempt boundary that records environment/toolchain evidence and keeps real Dojo interaction inconclusive unless explicitly configured.
+- Benchmark category `proof_audit_v2` with scalar verification, false-claim mismatch, and state-space abstention cases.
+- Optional dependency metadata in `pyproject.toml`.
+- Operator-guide coverage for installation modes and proof-audit v2.
+
+Focused release-readiness tests passed:
+
+```text
+68 passed
+```
+
+Audit note: proof-audit v2 is intentionally additive. The old proof-audit command remains stable. Numeric execution is limited to explicit safe encodings; it does not execute code generated from LaTeX. LeanDojo remains a truthful boundary, not a default real proof-search backend.
+
+## Industrial release-readiness checkpoint outcome
+
+This pass executed the industrial release-readiness plan as a conservative checkpoint. It does not claim full industrial completion for arbitrary frontier mathematics. It creates a stronger internal release spine that colleagues and coding agents can use to see parser evidence, typed diagnostics, route decisions, shape/dimension issues, backend evidence, numeric suggestions, and abstention reasons in one primary report.
+
+### Changes implemented
+
+Added planning/audit docs:
+
+- `docs/plans/industrial-release-readiness-execution-plan.md`,
+- `docs/plans/industrial-release-readiness-plan-audit.md`.
+
+Added proof-audit v2:
+
+- `src/mathdevmcp/proof_audit_v2.py`,
+- `audit_derivation_v2_for_label(...)`,
+- per-obligation contract `proof_audit_v2_obligation`,
+- top-level contract `proof_audit_v2_result`,
+- per-obligation parser policy, typed diagnostics, route decision, shape diagnostics, numeric suggestions, backend attempts, status, reason, provenance, and actions,
+- compact `summary_only` mode for agent-facing output.
+
+Exposed proof-audit v2 through:
+
+- CLI command `audit-derivation-v2-label`,
+- MCP facade tool `audit_derivation_v2_label`,
+- FastMCP server tool `audit_derivation_v2_label`.
+
+Added release-readiness backend scaffolding:
+
+- parser benchmark hardening fields for expected-label recall, generated-like labels, provenance score, environment count, and align-like count,
+- `src/mathdevmcp/numeric_runner.py` with explicit safe-encoding checks for logdet domains, linear solve residuals, and finite-difference gradients,
+- `src/mathdevmcp/leandojo_backend.py` with a conservative LeanDojo attempt boundary that stays `inconclusive` unless a real traced repo/theorem target is explicitly configured.
+
+Updated release surfaces:
+
+- benchmark category `proof_audit_v2`,
+- benchmark total increased to 30 cases,
+- expected abstentions increased to 12,
+- optional dependency groups in `pyproject.toml` for `symbolic`, `mcp`, `leandojo`, and `all`,
+- operator guide installation-mode and proof-audit v2 sections.
+
+Added tests:
+
+- proof-audit v2 scalar verification, false-claim mismatch, state-space abstention, compact summary, CLI, MCP facade, and FastMCP paths,
+- safe numeric runner diagnostics,
+- LeanDojo boundary behavior,
+- parser hardening fields,
+- optional dependency metadata,
+- benchmark accounting for `proof_audit_v2`.
+
+### Verification completed
+
+Focused release-readiness tests passed:
+
+```text
+60 passed
+```
+
+Full suite passed:
+
+```text
+188 passed
+```
+
+Benchmark gate passed:
+
+```text
+passed=true, total=30, passed_count=30, failed_count=0, expected_abstentions=12, policy=all_benchmarks_must_pass
+```
+
+Doctor command passed and reported:
+
+- LaTeXML available,
+- Pandoc available,
+- Sage available,
+- LeanDojo import available,
+- SymPy available,
+- Lean executable present, but the version command returned `error: error during download` in this environment,
+- existing `magic-pdf` / `pydantic` conflict warning remains visible.
+
+Diff hygiene passed:
+
+```text
+git diff --check
+```
+
+### Audit notes
+
+Proof-audit v2 is now the preferred release spine, but it remains additive. The existing proof-audit command is preserved. Verified status is still reserved for deterministic bounded backend evidence. Shape evidence, parser policy, route decisions, numeric suggestions, and LeanDojo readiness do not certify mathematical claims.
+
+The safe numeric runner only accepts explicit arrays or callables supplied by code/tests. It intentionally does not parse arbitrary LaTeX into executable code. The LeanDojo backend boundary records readiness and final-check evidence, but real `Dojo(entry)` interaction still requires a pinned traced repository target and remains future work.
+
+The next highest-value release step is to run proof-audit v2 on larger sanitized/private department corpora and expand parser/AST/shape coverage for the recurring frontier domains before declaring a colleague-wide release.
+
 ## Kalman industrialization checkpoint outcome
 
 This pass added a Kalman likelihood vertical workflow as the next realistic department-facing milestone.

@@ -394,6 +394,126 @@ This is not dependent typing or formal matrix calculus. Typed roles, shape class
 
 The next industrial step should connect typed IR more deeply into proof-audit routing and symbolic/Sage numeric diagnostics, so suitable obligations can be routed automatically while unsupported stochastic/matrix notation continues to abstain with actionable missing-assumption reports.
 
+## Current seven-phase industrial closure request
+
+The next request is to plan, audit, execute, test, tidy, commit, and update this memo for the seven-phase roadmap after typed/dimensional `MathObligation`:
+
+1. make typed IR the proof-audit routing spine,
+2. add shape/dimension reasoning,
+3. harden symbolic/Sage/numeric diagnostics,
+4. expand department corpus strategy,
+5. define parser adapter v2 policy,
+6. clarify the LeanDojo backend boundary,
+7. package agent workflows plus deployment/governance.
+
+This pass should implement conservative, maintainable scaffolding across all seven phases. It should not claim full industrial completion.
+
+Planning artifacts for this pass:
+
+- [seven-phase-industrial-closure-execution-plan.md](seven-phase-industrial-closure-execution-plan.md),
+- [seven-phase-industrial-closure-plan-audit.md](seven-phase-industrial-closure-plan-audit.md).
+
+## Seven-phase industrial closure checkpoint outcome
+
+This pass implemented conservative scaffolding across the seven requested industrial phases. It does not claim full industrial completion; it makes typed routing, shape diagnostics, numeric diagnostic suggestions, corpus strategy, parser policy, LeanDojo readiness boundaries, deployment policy, and agent review packets measurable and contract-backed.
+
+### Changes implemented
+
+Added planning/audit docs:
+
+- `docs/plans/seven-phase-industrial-closure-execution-plan.md`,
+- `docs/plans/seven-phase-industrial-closure-plan-audit.md`.
+
+Phase 1, typed IR routing spine:
+
+- Added `src/mathdevmcp/routing.py`.
+- Added `route_typed_diagnostic(...)` and `route_label_obligation(...)`.
+- Routes backend-ready scalar obligations to symbolic candidates.
+- Routes missing assumptions and unsupported stochastic/matrix notation to human review.
+- Preserves missing constraints and typed diagnostics in the route decision.
+
+Phase 2, shape/dimension reasoning:
+
+- Added `src/mathdevmcp/shape_diagnostics.py`.
+- Added `diagnose_shape_constraints(...)`.
+- Reports missing typed constraints, explicitly satisfied constraints, and AST shape/covariance guard evidence as diagnostic support only.
+
+Phase 3, symbolic/Sage/numeric diagnostics:
+
+- Added `src/mathdevmcp/numeric_diagnostics.py`.
+- Suggests logdet domain checks, linear solve residual checks, finite-difference gradient checks, and trace shape checks from typed unresolved constructs.
+- Does not run unsafe numeric encodings or upgrade diagnostic suggestions to proof.
+
+Phase 4, department corpus roadmap:
+
+- Added `src/mathdevmcp/corpus_roadmap.py`.
+- Records corpus categories, privacy policy, public fixture status, required false-confidence seeds, and expected abstention policy for Kalman/state-space, HMC/NUTS, particle filters, DSGE/macro-finance, stochastic volatility, SDE/PDE numerics, ML/LLM objectives, Bayesian ELBO/VI, and computational-physics algorithms.
+
+Phase 5, parser adapter v2 policy:
+
+- Added `src/mathdevmcp/parser_policy.py`.
+- Selects current parser for proof-audit routing when expected labels and provenance are preserved.
+- Records blocking findings for missing labels or unavailable provenance.
+- Keeps external parser failures measured rather than fatal.
+
+Phase 6, LeanDojo backend boundary:
+
+- Added `src/mathdevmcp/leandojo_policy.py`.
+- Separates import/API smoke readiness from true `Dojo(entry)` readiness.
+- Requires pinned Lean/Lake toolchain, traced repository target, theorem entry, bounded tactic script, and direct Lean final check artifact.
+- Allows policy-only checks without importing LeanDojo during benchmark-gate paths.
+
+Phase 7, agent workflow and deployment packaging:
+
+- Added `src/mathdevmcp/industrial_review.py`.
+- Builds an industrial review packet combining typed obligation diagnostics, route decision, shape diagnostics, numeric suggestions, parser policy, LeanDojo policy, corpus roadmap, and deployment policy.
+- Extended `src/mathdevmcp/deployment.py` with optional worker recommendations for parser, Sage, Lean, and LeanDojo workers plus sandboxing policy.
+- Added benchmark category `industrial_review` for the state-space review packet.
+
+Added tests covering:
+
+- typed route decisions,
+- shape diagnostic AST guard support,
+- numeric diagnostic suggestions,
+- corpus roadmap privacy and false-confidence policy,
+- parser policy selection,
+- LeanDojo backend boundary,
+- industrial review packet actions,
+- deployment worker isolation policy,
+- benchmark-gate accounting for the new `industrial_review` category.
+
+### Verification completed
+
+Focused industrial closure and benchmark tests passed:
+
+```text
+35 passed
+```
+
+Full suite passed:
+
+```text
+178 passed
+```
+
+Benchmark gate passed:
+
+```text
+passed=true, total=27, passed_count=27, failed_count=0, expected_abstentions=11, policy=all_benchmarks_must_pass
+```
+
+Diff hygiene passed:
+
+```text
+git diff --check
+```
+
+### Audit notes
+
+This checkpoint makes the seven-phase roadmap executable and measurable, but it remains scaffolding. Route decisions are not proof, shape evidence is not dependent typing, numeric diagnostics are suggestions unless safely executed and checked, parser policy depends on measured corpus behavior, and LeanDojo remains inconclusive until a traced repository theorem target is available. The industrial review packet is an agent-facing prioritization layer, not a certificate.
+
+The next highest-value implementation step is proof-audit v2: every extracted proof-audit obligation should carry typed diagnostics, route decisions, and backend evidence or abstention in the primary proof-audit report.
+
 ## Kalman industrialization checkpoint outcome
 
 This pass added a Kalman likelihood vertical workflow as the next realistic department-facing milestone.

@@ -6,6 +6,7 @@ from mathdevmcp.benchmarks import (
     build_benchmark_report,
     run_derivation_benchmark,
     run_ast_corpus_benchmark,
+    run_industrial_review_benchmark,
     run_kalman_recursion_benchmark,
     run_label_consistency_benchmark,
     run_parser_corpus_benchmark,
@@ -32,6 +33,7 @@ EXPECTED_BENCHMARK_SUMMARY = {
         "parser_corpus": {"total": 1, "passed": 1, "expected_abstentions": 0},
         "ast_corpus": {"total": 4, "passed": 4, "expected_abstentions": 0},
         "typed_ir": {"total": 2, "passed": 2, "expected_abstentions": 2},
+        "industrial_review": {"total": 1, "passed": 1, "expected_abstentions": 1},
     },
     "by_focus": {
         "status_regression": {"total": 2, "passed": 2, "expected_abstentions": 0},
@@ -51,11 +53,12 @@ EXPECTED_BENCHMARK_SUMMARY = {
         "realistic_ast_operation_coverage": {"total": 3, "passed": 3, "expected_abstentions": 0},
         "typed_dimension_diagnostics": {"total": 1, "passed": 1, "expected_abstentions": 1},
         "typed_stochastic_diagnostics": {"total": 1, "passed": 1, "expected_abstentions": 1},
+        "agent_review_packet": {"total": 1, "passed": 1, "expected_abstentions": 1},
     },
-    "expected_abstentions": 10,
+    "expected_abstentions": 11,
 }
 
-EXPECTED_BENCHMARK_TOTAL = 26
+EXPECTED_BENCHMARK_TOTAL = 27
 
 
 def test_extract_context_for_label_returns_local_excerpt():
@@ -308,7 +311,7 @@ def test_benchmark_cases_cover_consistency_derivation_workflow_and_proof_audit_c
     cases = benchmark_cases(root)
 
     assert len(cases) == EXPECTED_BENCHMARK_TOTAL
-    assert {case["category"] for case in cases} == {"consistency", "derivation", "workflow", "proof_audit", "kalman_recursion", "parser_corpus", "ast_corpus", "typed_ir"}
+    assert {case["category"] for case in cases} == {"consistency", "derivation", "workflow", "proof_audit", "kalman_recursion", "parser_corpus", "ast_corpus", "typed_ir", "industrial_review"}
 
 
 
@@ -396,6 +399,18 @@ def test_typed_ir_benchmark_runner_reports_missing_dimension_diagnostics():
     assert all(result["passed"] for result in results)
 
 
+def test_industrial_review_benchmark_runner_reports_agent_packet_actions():
+    root = FIXTURES.parent.parent
+
+    results = run_industrial_review_benchmark(root)
+
+    assert {result["id"] for result in results} == {"industrial_review_state_space_packet"}
+    assert all(result["category"] == "industrial_review" for result in results)
+    assert all(result["expected_abstention"] for result in results)
+    assert all(result["quality_checks"]["actions_match"] for result in results)
+    assert all(result["passed"] for result in results)
+
+
 
 def test_build_benchmark_report_returns_contract_and_typed_results():
     root = FIXTURES.parent.parent
@@ -458,6 +473,7 @@ def test_summarize_benchmark_results_groups_by_category_and_focus():
         + run_parser_corpus_benchmark(root)
         + run_ast_corpus_benchmark(root)
         + run_typed_ir_benchmark(root)
+        + run_industrial_review_benchmark(root)
     )
     summary = summarize_benchmark_results(results)
 

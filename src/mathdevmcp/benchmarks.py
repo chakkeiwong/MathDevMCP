@@ -9,12 +9,13 @@ from .consistency import compare_files, compare_label_to_code
 from .contracts import contract_metadata, success_result
 from .derivation import derive_step_for_label
 from .kalman_workflows import audit_kalman_recursion
+from .industrial_review import build_industrial_review_packet
 from .parser_benchmark import run_parser_backend
 from .proof_audit import audit_derivation_for_label
 from .typed_workflows import typed_obligation_for_label
 from .workflow import build_implementation_brief
 
-BenchmarkCategory = Literal["consistency", "derivation", "workflow", "proof_audit", "kalman_recursion", "parser_corpus", "ast_corpus", "typed_ir"]
+BenchmarkCategory = Literal["consistency", "derivation", "workflow", "proof_audit", "kalman_recursion", "parser_corpus", "ast_corpus", "typed_ir", "industrial_review"]
 
 
 @dataclass(frozen=True)
@@ -465,6 +466,22 @@ def _typed_ir_cases(root: Path) -> list[dict]:
     ]
 
 
+def _industrial_review_cases(root: Path) -> list[dict]:
+    fixtures = root / "benchmarks" / "fixtures"
+    return [
+        {
+            "id": "industrial_review_state_space_packet",
+            "category": "industrial_review",
+            "evaluation_focus": "agent_review_packet",
+            "doc_root": str(fixtures),
+            "label": "eq:dept-state-space-likelihood",
+            "expected_status": "unverified",
+            "expected_severity": "high",
+            "expected_action_kinds": ["state_or_verify_missing_constraint", "logdet_domain_check", "linear_solve_residual_check"],
+        }
+    ]
+
+
 
 def benchmark_cases(root: Path) -> list[dict]:
     return (
@@ -476,6 +493,7 @@ def benchmark_cases(root: Path) -> list[dict]:
         + _parser_corpus_cases(root)
         + _ast_corpus_cases(root)
         + _typed_ir_cases(root)
+        + _industrial_review_cases(root)
     )
 
 
@@ -823,6 +841,40 @@ def run_typed_ir_benchmark(root: Path) -> list[dict]:
     return results
 
 
+def run_industrial_review_benchmark(root: Path) -> list[dict]:
+    results: list[dict] = []
+    for case in _industrial_review_cases(root):
+        packet = build_industrial_review_packet(case["doc_root"], case["label"])
+        action_kinds = {action["kind"] for action in packet.get("recommended_actions", [])}
+        status_ok = packet["status"] == case["expected_status"]
+        severity_ok = packet["severity"] == case["expected_severity"]
+        actions_ok = set(case["expected_action_kinds"]).issubset(action_kinds)
+        contract_ok = packet.get("metadata", {}).get("contract") == "industrial_review_packet"
+        results.append(
+            _benchmark_result(
+                benchmark_id=case["id"],
+                category=case["category"],
+                evaluation_focus=case["evaluation_focus"],
+                expected_status=case["expected_status"],
+                observed_status=packet["status"],
+                passed=status_ok and severity_ok and actions_ok and contract_ok,
+                quality_checks={
+                    "status_match": status_ok,
+                    "severity_match": severity_ok,
+                    "actions_match": actions_ok,
+                    "contract_match": contract_ok,
+                },
+                details={
+                    "label": case["label"],
+                    "severity": packet["severity"],
+                    "action_kinds": sorted(action_kinds),
+                },
+                expected_abstention=True,
+            )
+        )
+    return results
+
+
 
 def summarize_benchmark_results(results: list[dict]) -> dict:
     category_totals: dict[str, dict[str, int]] = {}
@@ -863,6 +915,7 @@ def build_benchmark_report(root: Path) -> dict:
         + run_parser_corpus_benchmark(root)
         + run_ast_corpus_benchmark(root)
         + run_typed_ir_benchmark(root)
+        + run_industrial_review_benchmark(root)
     )
     passed_count = sum(1 for result in results if result["passed"])
     return asdict(

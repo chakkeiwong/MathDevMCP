@@ -11,9 +11,10 @@ from .derivation import derive_step_for_label
 from .kalman_workflows import audit_kalman_recursion
 from .parser_benchmark import run_parser_backend
 from .proof_audit import audit_derivation_for_label
+from .typed_workflows import typed_obligation_for_label
 from .workflow import build_implementation_brief
 
-BenchmarkCategory = Literal["consistency", "derivation", "workflow", "proof_audit", "kalman_recursion", "parser_corpus", "ast_corpus"]
+BenchmarkCategory = Literal["consistency", "derivation", "workflow", "proof_audit", "kalman_recursion", "parser_corpus", "ast_corpus", "typed_ir"]
 
 
 @dataclass(frozen=True)
@@ -438,6 +439,32 @@ def _ast_corpus_cases(root: Path) -> list[dict]:
     ]
 
 
+def _typed_ir_cases(root: Path) -> list[dict]:
+    fixtures = root / "benchmarks" / "fixtures"
+    return [
+        {
+            "id": "typed_ir_state_space_likelihood",
+            "category": "typed_ir",
+            "evaluation_focus": "typed_dimension_diagnostics",
+            "doc_root": str(fixtures),
+            "label": "eq:dept-state-space-likelihood",
+            "expected_status": "unverified",
+            "expected_diagnostic_status": "needs_assumptions",
+            "expected_missing_constraints": ["invertibility_required", "square_matrix_required", "conformable_product_required"],
+        },
+        {
+            "id": "typed_ir_hmc_leapfrog",
+            "category": "typed_ir",
+            "evaluation_focus": "typed_stochastic_diagnostics",
+            "doc_root": str(fixtures),
+            "label": "eq:dept-hmc-leapfrog",
+            "expected_status": "unverified",
+            "expected_diagnostic_status": "needs_assumptions",
+            "expected_missing_constraints": ["differentiability_required"],
+        },
+    ]
+
+
 
 def benchmark_cases(root: Path) -> list[dict]:
     return (
@@ -448,6 +475,7 @@ def benchmark_cases(root: Path) -> list[dict]:
         + _kalman_recursion_cases(root)
         + _parser_corpus_cases(root)
         + _ast_corpus_cases(root)
+        + _typed_ir_cases(root)
     )
 
 
@@ -759,6 +787,42 @@ def run_ast_corpus_benchmark(root: Path) -> list[dict]:
     return results
 
 
+def run_typed_ir_benchmark(root: Path) -> list[dict]:
+    results: list[dict] = []
+    for case in _typed_ir_cases(root):
+        result = typed_obligation_for_label(case["doc_root"], case["label"])
+        diagnostic = result["typed_diagnostic"]
+        missing_kinds = [item["kind"] for item in diagnostic.get("missing_constraints", [])]
+        status_ok = result["status"] == case["expected_status"]
+        diagnostic_ok = diagnostic["status"] == case["expected_diagnostic_status"]
+        missing_ok = missing_kinds == case["expected_missing_constraints"]
+        contract_ok = diagnostic.get("metadata", {}).get("contract") == "typed_math_obligation_diagnostic"
+        results.append(
+            _benchmark_result(
+                benchmark_id=case["id"],
+                category=case["category"],
+                evaluation_focus=case["evaluation_focus"],
+                expected_status=case["expected_status"],
+                observed_status=result["status"],
+                passed=status_ok and diagnostic_ok and missing_ok and contract_ok,
+                quality_checks={
+                    "status_match": status_ok,
+                    "diagnostic_status_match": diagnostic_ok,
+                    "missing_constraints_match": missing_ok,
+                    "contract_match": contract_ok,
+                },
+                details={
+                    "label": case["label"],
+                    "diagnostic_status": diagnostic["status"],
+                    "missing_constraints": diagnostic.get("missing_constraints", []),
+                    "backend_route_hints": diagnostic["obligation"].get("backend_route_hints", []),
+                },
+                expected_abstention=True,
+            )
+        )
+    return results
+
+
 
 def summarize_benchmark_results(results: list[dict]) -> dict:
     category_totals: dict[str, dict[str, int]] = {}
@@ -798,6 +862,7 @@ def build_benchmark_report(root: Path) -> dict:
         + run_kalman_recursion_benchmark(root)
         + run_parser_corpus_benchmark(root)
         + run_ast_corpus_benchmark(root)
+        + run_typed_ir_benchmark(root)
     )
     passed_count = sum(1 for result in results if result["passed"])
     return asdict(

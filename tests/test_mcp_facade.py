@@ -15,6 +15,7 @@ def test_list_mcp_tools_includes_implementation_brief():
     assert "compare_label_code" in names
     assert "benchmark_gate" in names
     assert "audit_kalman_recursion" in names
+    assert "typed_obligation_label" in names
 
 
 
@@ -92,6 +93,18 @@ def test_call_mcp_tool_audit_kalman_recursion_returns_ast_evidence():
     assert result["status"] == "mismatch"
     assert result["missing_operations"] == ["covariance_update"]
     assert result["ast_operation_graph"]["metadata"] == {"schema_version": "1.0", "contract": "ast_operation_graph"}
+    assert result["ok"] is True
+
+
+def test_call_mcp_tool_typed_obligation_label_returns_dimension_diagnostics():
+    result = call_mcp_tool(
+        "typed_obligation_label",
+        {"root": str(FIXTURES), "label": "eq:dept-state-space-likelihood"},
+    )
+
+    assert result["status"] == "unverified"
+    assert result["metadata"] == {"schema_version": "1.0", "contract": "typed_obligation_label_diagnostic"}
+    assert result["typed_diagnostic"]["metadata"] == {"schema_version": "1.0", "contract": "typed_math_obligation_diagnostic"}
     assert result["ok"] is True
 
 

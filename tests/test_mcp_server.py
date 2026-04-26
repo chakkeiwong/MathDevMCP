@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from mathdevmcp.mcp_server import audit_derivation_label, audit_kalman_recursion, benchmark_gate, compare_label_code, extract_latex_context, get_tool_matrix, implementation_brief, run_benchmarks
+from mathdevmcp.mcp_server import audit_derivation_label, audit_kalman_recursion, benchmark_gate, compare_label_code, extract_latex_context, get_tool_matrix, implementation_brief, run_benchmarks, typed_obligation_label
 from test_context_and_fixtures import EXPECTED_BENCHMARK_TOTAL
 
 
@@ -64,6 +64,14 @@ def test_mcp_server_audit_kalman_recursion_returns_ast_result():
     assert result["metadata"] == {"schema_version": "1.0", "contract": "kalman_recursion_audit"}
     assert result["status"] == "mismatch"
     assert result["missing_operations"] == ["covariance_update"]
+
+
+def test_mcp_server_typed_obligation_label_returns_diagnostic_result():
+    result = typed_obligation_label(str(FIXTURES), "eq:dept-hmc-leapfrog")
+
+    assert result["metadata"] == {"schema_version": "1.0", "contract": "typed_obligation_label_diagnostic"}
+    assert result["status"] == "unverified"
+    assert result["typed_diagnostic"]["status"] == "needs_assumptions"
 
 
 

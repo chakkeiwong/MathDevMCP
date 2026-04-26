@@ -11,6 +11,7 @@ from mathdevmcp.benchmarks import (
     run_parser_corpus_benchmark,
     run_proof_audit_benchmark,
     run_seeded_mismatch_benchmark,
+    run_typed_ir_benchmark,
     run_workflow_benchmark,
     summarize_benchmark_results,
     write_benchmark_report,
@@ -30,6 +31,7 @@ EXPECTED_BENCHMARK_SUMMARY = {
         "kalman_recursion": {"total": 2, "passed": 2, "expected_abstentions": 1},
         "parser_corpus": {"total": 1, "passed": 1, "expected_abstentions": 0},
         "ast_corpus": {"total": 4, "passed": 4, "expected_abstentions": 0},
+        "typed_ir": {"total": 2, "passed": 2, "expected_abstentions": 2},
     },
     "by_focus": {
         "status_regression": {"total": 2, "passed": 2, "expected_abstentions": 0},
@@ -47,11 +49,13 @@ EXPECTED_BENCHMARK_SUMMARY = {
         "ast_recursion_abstention": {"total": 1, "passed": 1, "expected_abstentions": 1},
         "realistic_parser_provenance": {"total": 1, "passed": 1, "expected_abstentions": 0},
         "realistic_ast_operation_coverage": {"total": 3, "passed": 3, "expected_abstentions": 0},
+        "typed_dimension_diagnostics": {"total": 1, "passed": 1, "expected_abstentions": 1},
+        "typed_stochastic_diagnostics": {"total": 1, "passed": 1, "expected_abstentions": 1},
     },
-    "expected_abstentions": 8,
+    "expected_abstentions": 10,
 }
 
-EXPECTED_BENCHMARK_TOTAL = 24
+EXPECTED_BENCHMARK_TOTAL = 26
 
 
 def test_extract_context_for_label_returns_local_excerpt():
@@ -304,7 +308,7 @@ def test_benchmark_cases_cover_consistency_derivation_workflow_and_proof_audit_c
     cases = benchmark_cases(root)
 
     assert len(cases) == EXPECTED_BENCHMARK_TOTAL
-    assert {case["category"] for case in cases} == {"consistency", "derivation", "workflow", "proof_audit", "kalman_recursion", "parser_corpus", "ast_corpus"}
+    assert {case["category"] for case in cases} == {"consistency", "derivation", "workflow", "proof_audit", "kalman_recursion", "parser_corpus", "ast_corpus", "typed_ir"}
 
 
 
@@ -377,6 +381,21 @@ def test_ast_corpus_benchmark_runner_reports_realistic_operation_coverage():
     assert missing["details"]["missing_operations"] == ["inverse_or_solve"]
 
 
+def test_typed_ir_benchmark_runner_reports_missing_dimension_diagnostics():
+    root = FIXTURES.parent.parent
+
+    results = run_typed_ir_benchmark(root)
+
+    assert {result["id"] for result in results} == {
+        "typed_ir_state_space_likelihood",
+        "typed_ir_hmc_leapfrog",
+    }
+    assert all(result["category"] == "typed_ir" for result in results)
+    assert all(result["expected_abstention"] for result in results)
+    assert all(result["quality_checks"]["contract_match"] for result in results)
+    assert all(result["passed"] for result in results)
+
+
 
 def test_build_benchmark_report_returns_contract_and_typed_results():
     root = FIXTURES.parent.parent
@@ -438,6 +457,7 @@ def test_summarize_benchmark_results_groups_by_category_and_focus():
         + run_kalman_recursion_benchmark(root)
         + run_parser_corpus_benchmark(root)
         + run_ast_corpus_benchmark(root)
+        + run_typed_ir_benchmark(root)
     )
     summary = summarize_benchmark_results(results)
 

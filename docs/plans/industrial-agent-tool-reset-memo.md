@@ -300,6 +300,100 @@ This is still a corpus and structural-audit milestone, not full industrial compl
 
 The next industrial step should broaden private/sanitized corpus collection and add stronger typed/dimensional `MathObligation` semantics for matrix shapes, random variables, stochastic processes, and likelihood/posterior objects.
 
+## Current typed/dimensional MathObligation request
+
+The next request is to repeat the industrial cycle for the latest gap assessment. The recommended next milestone is typed/dimensional `MathObligation` semantics for matrix shapes, random variables, stochastic processes, likelihood/posterior objects, derivatives, and backend route diagnostics.
+
+This pass should:
+
+- plan the typed/dimensional IR slice,
+- update this reset memo before and after work,
+- write a second-developer audit,
+- extend `MathObligation` conservatively without replacing existing contracts,
+- expose typed obligation diagnostics through CLI/MCP,
+- add benchmark-gate coverage,
+- test, tidy, and commit relevant files while excluding `.serena/` and unrelated local files.
+
+Planning artifacts for this pass:
+
+- [typed-dimensional-ir-execution-plan.md](typed-dimensional-ir-execution-plan.md),
+- [typed-dimensional-ir-plan-audit.md](typed-dimensional-ir-plan-audit.md).
+
+## Typed/dimensional MathObligation checkpoint outcome
+
+This pass added conservative typed/dimensional `MathObligation` metadata and exposed typed obligation diagnostics to coding agents. The slice improves routing and review for matrix, stochastic, likelihood/posterior, derivative, and HMC-style obligations without treating inferred roles or shapes as proof assumptions.
+
+### Changes implemented
+
+Added planning/audit docs:
+
+- `docs/plans/typed-dimensional-ir-execution-plan.md`,
+- `docs/plans/typed-dimensional-ir-plan-audit.md`.
+
+Extended `src/mathdevmcp/math_ir.py` with:
+
+- typed symbol candidates for scalar, vector, matrix, covariance matrix, transition matrix, observation matrix, stochastic process, likelihood, posterior, gradient, and Hamiltonian roles,
+- dimension constraints for inverse/invertibility, determinant/logdet square-matrix requirements, trace square-matrix requirements, derivative differentiability requirements, and conformable product requirements,
+- stochastic object candidates for time-indexed symbols, expectations, and conditional/posterior expressions,
+- backend route hints for symbolic, Sage/numeric diagnostic, Lean formalization, and human-review paths,
+- `diagnostic_status` values that distinguish `ready_for_backend`, `typed_review`, and `needs_assumptions`,
+- `diagnose_typed_obligation(...)` for compact typed diagnostics.
+
+Added `src/mathdevmcp/typed_workflows.py` with:
+
+- `typed_obligation_for_label(...)`, which audits a labeled equation and returns typed/dimensional diagnostics with provenance.
+
+Exposed typed diagnostics through:
+
+- CLI: `python -m mathdevmcp.cli typed-obligation-label LABEL --root ROOT`,
+- MCP facade/FastMCP tool: `typed_obligation_label`.
+
+Extended benchmark coverage with:
+
+- `typed_ir_state_space_likelihood`, checking missing invertibility, square-matrix, and conformable-product diagnostics,
+- `typed_ir_hmc_leapfrog`, checking missing differentiability diagnostics for HMC/posterior notation.
+
+Added tests covering:
+
+- backward-compatible `MathObligation` validation,
+- typed symbol extraction for state-space likelihoods,
+- explicit assumption context reducing missing constraints,
+- HMC/posterior typed diagnostics,
+- CLI/MCP/FastMCP wrappers,
+- benchmark-gate accounting for the new `typed_ir` category.
+
+### Verification completed
+
+Focused typed-IR, benchmark, MCP, server, and CLI tests passed:
+
+```text
+51 passed
+```
+
+Full suite passed:
+
+```text
+168 passed
+```
+
+Benchmark gate passed:
+
+```text
+passed=true, total=26, passed_count=26, failed_count=0, expected_abstentions=10, policy=all_benchmarks_must_pass
+```
+
+Diff hygiene passed:
+
+```text
+git diff --check
+```
+
+### Audit notes
+
+This is not dependent typing or formal matrix calculus. Typed roles, shape classes, stochastic objects, and backend route hints are diagnostic metadata. They remain `candidate_not_assumption` unless explicit context or a deterministic backend establishes more. The new diagnostics make missing assumptions visible to agents and benchmark gates, but they do not upgrade any mathematical claim to `verified`.
+
+The next industrial step should connect typed IR more deeply into proof-audit routing and symbolic/Sage numeric diagnostics, so suitable obligations can be routed automatically while unsupported stochastic/matrix notation continues to abstain with actionable missing-assumption reports.
+
 ## Kalman industrialization checkpoint outcome
 
 This pass added a Kalman likelihood vertical workflow as the next realistic department-facing milestone.

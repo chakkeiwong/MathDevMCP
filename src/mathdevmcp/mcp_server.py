@@ -175,6 +175,19 @@ def audit_kalman_recursion(code: str, required_operations: Sequence[str] | None 
     )
 
 
+@mcp.tool(description="Build typed/dimensional diagnostics for a labeled math obligation.", structured_output=False)
+def typed_obligation_label(root: str, label: str, backend: str = "sympy", context_text: str | None = None) -> dict:
+    return call_mcp_tool(
+        "typed_obligation_label",
+        {
+            "root": root,
+            "label": label,
+            "backend": backend,
+            "context_text": context_text,
+        },
+    )
+
+
 @mcp.tool(description="Run seeded consistency benchmarks.", structured_output=False)
 def run_benchmarks(root: str) -> dict:
     return call_mcp_tool("run_benchmarks", {"root": root})

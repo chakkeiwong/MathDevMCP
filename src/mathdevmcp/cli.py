@@ -22,6 +22,7 @@ from .performance import index_performance_smoke
 from .parser_benchmark import compare_parser_backends
 from .proof_obligations import check_proof_obligation
 from .proof_audit import audit_derivation_for_label
+from .typed_workflows import typed_obligation_for_label
 from .tool_matrix import tool_matrix
 from .workflow import build_implementation_brief
 
@@ -237,6 +238,12 @@ def _cmd_audit_kalman_recursion(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_typed_obligation_label(args: argparse.Namespace) -> int:
+    result = typed_obligation_for_label(args.root, args.label, backend=args.backend, context_text=args.context_text or "")
+    print(json.dumps(result, indent=2))
+    return 0
+
+
 
 def make_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="MathDevMCP development utilities")
@@ -385,6 +392,13 @@ def make_parser() -> argparse.ArgumentParser:
     p_kalman_recursion.add_argument("code", help="Python code file path")
     p_kalman_recursion.add_argument("--required-operation", action="append", default=[], help="Required AST operation; can be repeated")
     p_kalman_recursion.set_defaults(func=_cmd_audit_kalman_recursion)
+
+    p_typed_obligation = sub.add_parser("typed-obligation-label", help="Build typed/dimensional diagnostics for a labeled math obligation")
+    p_typed_obligation.add_argument("label", help="LaTeX label to inspect")
+    p_typed_obligation.add_argument("--root", default=".", help="Root directory containing LaTeX files")
+    p_typed_obligation.add_argument("--backend", choices=["auto", "sympy", "sage", "z3"], default="sympy", help="Backend preference for source proof audit")
+    p_typed_obligation.add_argument("--context-text", default="", help="Optional explicit context/assumption text")
+    p_typed_obligation.set_defaults(func=_cmd_typed_obligation_label)
 
     return parser
 

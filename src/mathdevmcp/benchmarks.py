@@ -439,6 +439,21 @@ def _parser_corpus_cases(root: Path) -> list[dict]:
                 "eq:dept-hmc-leapfrog",
                 "eq:dept-hmc-hamiltonian",
             ],
+        },
+        {
+            "id": "parser_corpus_macro_filter_multifile",
+            "category": "parser_corpus",
+            "evaluation_focus": "multifile_macro_parser_provenance",
+            "doc_root": str(fixtures),
+            "backend": "current",
+            "expected_status": "parsed",
+            "expected_labels": [
+                "assump:macro-filter-dimensions",
+                "eq:macro-filter-transition",
+                "eq:macro-filter-innovation",
+                "eq:macro-filter-likelihood",
+                "prop:macro-filter-repeat-notation",
+            ],
         }
     ]
 
@@ -478,6 +493,15 @@ def _ast_corpus_cases(root: Path) -> list[dict]:
             "expected_status": "mismatch",
             "required_operations": ["logdet", "inverse_or_solve", "quadratic_form"],
             "expected_missing_operations": ["inverse_or_solve"],
+        },
+        {
+            "id": "ast_corpus_macro_filter_missing_gain",
+            "category": "ast_corpus",
+            "evaluation_focus": "false_confidence_control",
+            "code": str(fixtures / "doc_macro_filter_missing_gain.py"),
+            "expected_status": "mismatch",
+            "required_operations": ["logdet", "inverse_or_solve", "quadratic_form", "kalman_gain", "state_update", "covariance_update"],
+            "expected_missing_operations": ["kalman_gain", "state_update", "covariance_update"],
         },
     ]
 
@@ -537,6 +561,7 @@ def _release_corpus_cases(root: Path) -> list[dict]:
                 "kalman_state_space",
                 "hmc_nuts",
                 "particle_filter",
+                "macro_filter_state_space",
                 "dsge_macro_finance",
                 "stochastic_volatility",
                 "sde_pde_numerics",

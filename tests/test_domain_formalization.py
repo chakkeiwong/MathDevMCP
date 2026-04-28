@@ -1,5 +1,8 @@
 from pathlib import Path
 
+import pytest
+
+from mathdevmcp.doctor import doctor_report
 from mathdevmcp.domain_formalization import formalize_domain_obligation, formalize_domain_label
 
 
@@ -7,7 +10,13 @@ ROOT = Path(__file__).resolve().parent.parent
 FIXTURES = ROOT / "benchmarks" / "fixtures"
 
 
+def _requires_lean():
+    if not doctor_report()["capabilities"]["lean"]["available"]:
+        pytest.skip("Lean executable is unavailable")
+
+
 def test_formalize_domain_obligation_verifies_curated_hamiltonian_scalar_identity():
+    _requires_lean()
     result = formalize_domain_obligation("U + K", "K + U", domain="hamiltonian_scalar", variables={"U": "Nat", "K": "Nat"})
 
     assert result["status"] == "domain_verified"
@@ -33,6 +42,7 @@ def test_formalize_domain_obligation_abstains_on_unsupported_kalman_notation():
 
 
 def test_formalize_domain_label_preserves_latex_provenance_and_verifies():
+    _requires_lean()
     result = formalize_domain_label(
         str(FIXTURES),
         "eq:domain-hamiltonian-commute",

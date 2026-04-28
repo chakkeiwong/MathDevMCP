@@ -1,15 +1,16 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from pathlib import Path
 import json
 import re
-import shutil
 import subprocess
 import tempfile
 import time
 import xml.etree.ElementTree as ET
 
+from .backend_env import backend_bin, backend_subprocess_env
 from .contracts import attach_contract, contract_metadata
 from .latex_index import build_index
 
@@ -45,7 +46,9 @@ def _read_all_tex(root: Path) -> str:
     return "\n".join(path.read_text(encoding="utf-8") for path in _tex_files(root))
 
 
-def _expected_labels(root: Path) -> set[str]:
+def _expected_labels(root: Path, expected_labels: Iterable[str] | None = None) -> set[str]:
+    if expected_labels is not None:
+        return set(expected_labels)
     return set(build_index(root).get("labels", {}).keys())
 
 
@@ -130,7 +133,7 @@ def _current_parser(root: Path, started: float, expected_labels: set[str]) -> di
 
 
 def _latexml_parser(root: Path, started: float, expected_labels: set[str]) -> dict:
-    latexml = shutil.which("latexml")
+    latexml = backend_bin("latexml")
     if latexml is None:
         return _result("latexml", "inconclusive", "latexml executable is unavailable.", runtime_seconds=time.perf_counter() - started)
     labels: set[str] = set()
@@ -140,7 +143,7 @@ def _latexml_parser(root: Path, started: float, expected_labels: set[str]) -> di
     with tempfile.TemporaryDirectory(prefix="mathdevmcp-latexml-") as tmp:
         for tex in _tex_files(root):
             output = Path(tmp) / f"{tex.stem}.xml"
-            completed = subprocess.run([latexml, "--quiet", f"--dest={output}", str(tex)], check=False, capture_output=True, text=True, timeout=60)
+            completed = subprocess.run([latexml, "--quiet", f"--dest={output}", str(tex)], check=False, capture_output=True, text=True, timeout=60, env=backend_subprocess_env())
             if completed.returncode != 0:
                 errors.append(f"{tex.name}: {completed.stderr[-500:]}")
                 continue
@@ -168,7 +171,7 @@ def _latexml_parser(root: Path, started: float, expected_labels: set[str]) -> di
 
 
 def _pandoc_parser(root: Path, started: float, expected_labels: set[str]) -> dict:
-    pandoc = shutil.which("pandoc")
+    pandoc = backend_bin("pandoc")
     if pandoc is None:
         return _result("pandoc", "inconclusive", "pandoc executable is unavailable.", runtime_seconds=time.perf_counter() - started)
     labels: set[str] = set()
@@ -176,7 +179,7 @@ def _pandoc_parser(root: Path, started: float, expected_labels: set[str]) -> dic
     align_like = 0
     errors: list[str] = []
     for tex in _tex_files(root):
-        completed = subprocess.run([pandoc, "-f", "latex", "-t", "json", str(tex)], check=False, capture_output=True, text=True, timeout=30)
+        completed = subprocess.run([pandoc, "-f", "latex", "-t", "json", str(tex)], check=False, capture_output=True, text=True, timeout=30, env=backend_subprocess_env())
         if completed.returncode != 0:
             errors.append(f"{tex.name}: {completed.stderr[-500:]}")
             continue
@@ -204,25 +207,25 @@ def _pandoc_parser(root: Path, started: float, expected_labels: set[str]) -> dic
     )
 
 
-def run_parser_backend(root: str | Path, backend: str) -> dict:
+def run_parser_backend(root: str | Path, backend: str, *, expected_labels: Iterable[str] | None = None) -> dict:
     root = Path(root)
     started = time.perf_counter()
-    expected_labels = _expected_labels(root)
+    expected_label_set = _expected_labels(root, expected_labels)
     try:
         if backend == "current":
-            return _current_parser(root, started, expected_labels)
+            return _current_parser(root, started, expected_label_set)
         if backend == "latexml":
-            return _latexml_parser(root, started, expected_labels)
+            return _latexml_parser(root, started, expected_label_set)
         if backend == "pandoc":
-            return _pandoc_parser(root, started, expected_labels)
+            return _pandoc_parser(root, started, expected_label_set)
     except Exception as exc:
-        return _result(backend, "inconclusive", f"{backend} parser failed: {exc}", expected_labels=expected_labels, runtime_seconds=time.perf_counter() - started)
-    return _result(backend, "inconclusive", f"Unknown parser backend: {backend}", expected_labels=expected_labels, runtime_seconds=time.perf_counter() - started)
+        return _result(backend, "inconclusive", f"{backend} parser failed: {exc}", expected_labels=expected_label_set, runtime_seconds=time.perf_counter() - started)
+    return _result(backend, "inconclusive", f"Unknown parser backend: {backend}", expected_labels=expected_label_set, runtime_seconds=time.perf_counter() - started)
 
 
-def compare_parser_backends(root: str | Path, backends: list[str] | None = None) -> dict:
+def compare_parser_backends(root: str | Path, backends: list[str] | None = None, *, expected_labels: Iterable[str] | None = None) -> dict:
     backend_list = backends or ["current", "latexml", "pandoc"]
-    results = [run_parser_backend(root, backend) for backend in backend_list]
+    results = [run_parser_backend(root, backend, expected_labels=expected_labels) for backend in backend_list]
     summary = {
         "total": len(results),
         "parsed": sum(1 for result in results if result["status"] == "parsed"),

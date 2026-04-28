@@ -1,8 +1,10 @@
 from pathlib import Path
-import os
-import shutil
 import subprocess
 
+import pytest
+
+from mathdevmcp.backend_env import backend_bin, backend_subprocess_env
+from mathdevmcp.doctor import doctor_report
 from mathdevmcp.lean_export import export_lean_obligations
 from mathdevmcp.proof_audit import audit_derivation_for_label
 
@@ -31,16 +33,23 @@ def test_export_lean_obligations_builds_stable_nat_skeleton():
 
 
 def test_lean_skeleton_with_sorry_compiles_but_is_not_verified(tmp_path):
+    if not doctor_report()["capabilities"]["lean"]["available"]:
+        pytest.skip("Lean executable is unavailable")
     result = export_lean_obligations(_single_obligation(), namespace="MathDevMCP", target="Nat")
     source = result["artifacts"][0]["lean_source"]
     lean_file = tmp_path / "Skeleton.lean"
     lean_file.write_text(source, encoding="utf-8")
 
-    env = dict(os.environ)
-    env["PATH"] = f"{Path.home() / '.elan' / 'bin'}:{env.get('PATH', '')}"
-    lean = shutil.which("lean", path=env["PATH"])
+    lean = backend_bin("lean")
     assert lean is not None
-    completed = subprocess.run([lean, str(lean_file)], check=False, capture_output=True, text=True, env=env)
+    completed = subprocess.run(
+        [lean, str(lean_file)],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=backend_subprocess_env(),
+    )
 
     assert completed.returncode == 0, completed.stderr
     assert result["artifacts"][0]["certified"] is False

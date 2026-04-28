@@ -25,7 +25,7 @@ def test_release_corpus_manifest_covers_required_domains_without_private_roots()
 
     assert report["metadata"] == {"schema_version": "1.0", "contract": "release_corpus_validation_report"}
     assert report["status"] == "consistent"
-    assert {"kalman_state_space", "hmc_nuts", "particle_filter", "dsge_macro_finance", "ml_llm_objective"}.issubset(domains)
+    assert {"kalman_state_space", "hmc_nuts", "particle_filter", "macro_filter_state_space", "dsge_macro_finance", "ml_llm_objective"}.issubset(domains)
     assert private_entries
     assert all(entry["document_root"] is None for entry in private_entries)
     assert all(entry["expected_abstentions"] or entry["seeded_false_confidence_cases"] for entry in manifest["entries"])
@@ -132,9 +132,11 @@ def test_release_readiness_report_contains_non_recursive_gate_and_caveats():
     assert result["metadata"] == {"schema_version": "1.0", "contract": "release_readiness_report"}
     assert result["status"] in {"ready", "ready_with_caveats"}
     assert result["benchmark_gate"]["passed"] is True
-    assert result["benchmark_gate"]["total"] == 31
+    assert result["benchmark_gate"]["total"] == 33
     assert result["parser_policy"]["status"] == "selected_for_proof_audit"
     assert result["governance_policy"]["metadata"]["contract"] == "governance_policy"
+    assert result["governance_validation"]["status"] == "consistent"
+    assert result["release_corpus_validation"]["status"] == "consistent"
     assert isinstance(result["dirty_worktree"], bool)
     assert result["schema_version"] == "1.0"
 

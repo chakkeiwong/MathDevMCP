@@ -41,9 +41,22 @@ System tools are not pulled in by Python packaging. Install and pin them separat
 - `lake`
 - `sage`
 
+For Lean/LeanDojo, prefer an isolated backend environment:
+
+```bash
+scripts/setup_backend_env.sh
+export MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends
+export MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.20.0
+export MATHDEVMCP_LEAN_PATH="$HOME/.elan/bin/lean"
+```
+
+This keeps LeanDojo's Ray/Pydantic dependency stack away from the main working environment. The Lean toolchain pin is passed to `elan` through `ELAN_TOOLCHAIN` for MathDevMCP subprocesses, so the user's global Lean default can differ. The base tool remains usable without that env; optional backend tools should report unavailable or inconclusive rather than crashing.
+
+LaTeXML is optional for the current release candidate. If it is absent, parser benchmarking records an optional caveat and proof-audit routing uses the current provenance-preserving parser. Install the OS package or set `MATHDEVMCP_LATEXML_PATH` only when LaTeXML-backed parser evidence is needed.
+
 Before choosing a workflow, run:
 ```bash
-PYTHONPATH=/home/chakwong/MathDevMCP/src python -m mathdevmcp.cli doctor
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli doctor
 ```
 
 Treat unavailable optional tools as normal. A release-quality workflow should return `inconclusive` or a diagnostic warning, not crash.
@@ -70,7 +83,7 @@ Use `search-latex` or MCP `search_latex` when you know the topic but not the exa
 
 CLI:
 ```bash
-PYTHONPATH=/home/chakwong/MathDevMCP/src python -m mathdevmcp.cli \
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
   search-latex "transport log-determinant identity" \
   --root /path/to/docs
 ```
@@ -84,7 +97,7 @@ Use `extract-latex-neighborhood` or MCP `extract_latex_neighborhood` when you al
 
 CLI:
 ```bash
-PYTHONPATH=/home/chakwong/MathDevMCP/src python -m mathdevmcp.cli \
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
   extract-latex-neighborhood prop:transport-logdet \
   --root /path/to/docs --before 1 --after 1
 ```
@@ -100,7 +113,7 @@ Use `compare-label-code` or MCP `compare_label_code` when you have a labeled sta
 
 CLI:
 ```bash
-PYTHONPATH=/home/chakwong/MathDevMCP/src python -m mathdevmcp.cli \
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
   compare-label-code prop:transport-logdet src/example.py \
   --root /path/to/docs --required-terms logdet --paragraph-context
 ```
@@ -121,7 +134,7 @@ Use `derive-label-step` or MCP `derive_label_step` for a concrete expression-to-
 
 CLI:
 ```bash
-PYTHONPATH=/home/chakwong/MathDevMCP/src python -m mathdevmcp.cli \
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
   derive-label-step prop:transport-logdet "log_pi + logdet" "logdet + log_pi" \
   --root /path/to/docs --paragraph-context
 ```
@@ -140,7 +153,7 @@ Use `audit-derivation-v2-label` or MCP `audit_derivation_v2_label` when you want
 
 CLI:
 ```bash
-PYTHONPATH=/home/chakwong/MathDevMCP/src python -m mathdevmcp.cli \
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
   audit-derivation-v2-label eq:dept-state-space-likelihood \
   --root /path/to/docs --summary-only
 ```
@@ -167,7 +180,7 @@ Use `implementation-brief` or MCP `implementation_brief` when you want one struc
 
 CLI:
 ```bash
-PYTHONPATH=/home/chakwong/MathDevMCP/src python -m mathdevmcp.cli \
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
   implementation-brief "transport log-determinant identity" src/example.py \
   --root /path/to/docs --required-terms logdet \
   --lhs "log_pi + logdet" --rhs "logdet + log_pi"
@@ -264,13 +277,23 @@ An `expected_abstention` means `unverified` is the correct conservative result f
 
 CLI:
 ```bash
-PYTHONPATH=/home/chakwong/MathDevMCP/src python -m mathdevmcp.cli \
-  benchmark-gate --root /home/chakwong/MathDevMCP
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
+  benchmark-gate --root /path/to/MathDevMCP
 ```
+
+Release-candidate profile:
+
+```bash
+scripts/validate_backend_install.sh /path/to/MathDevMCP
+scripts/release_smoke.sh /path/to/MathDevMCP
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli release-readiness --root /path/to/MathDevMCP
+```
+
+Treat `ready_with_caveats` as acceptable for an internal pilot only when caveats are understood, such as LaTeXML being optional or the worktree being dirty during development. Treat `not_ready` as a blocker.
 
 Local smoke script:
 ```bash
-/home/chakwong/MathDevMCP/scripts/benchmark_gate_smoke.sh /home/chakwong/MathDevMCP
+scripts/benchmark_gate_smoke.sh /path/to/MathDevMCP
 ```
 
 The gate output includes:

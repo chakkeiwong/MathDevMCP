@@ -1,0 +1,14 @@
+\section{Macro filter release fixture}
+
+This public sanitized fixture imitates a small project split across files. It uses
+local macros and repeated notation so parser policy can be checked without private
+department material.
+
+\newcommand{\state}{x_t}
+\newcommand{\meas}{y_t}
+\newcommand{\trans}{F_t}
+\newcommand{\obs}{H_t}
+\newcommand{\innov}{v_t}
+\newcommand{\cov}{S_t}
+
+\input{doc_macro_filter_model}

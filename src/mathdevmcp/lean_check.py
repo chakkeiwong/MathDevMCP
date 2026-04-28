@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import tempfile
 
+from .backend_env import backend_bin, backend_subprocess_env
 from .contracts import attach_contract
 
 
@@ -22,6 +23,9 @@ _PLACEHOLDER_MARKERS = ("sorry", "admit")
 
 
 def _lean_path() -> str | None:
+    configured = backend_bin("lean")
+    if configured is not None:
+        return configured
     env_path = os.environ.get("PATH", "")
     elan_bin = str(Path.home() / ".elan" / "bin")
     path = f"{elan_bin}:{env_path}"
@@ -38,7 +42,7 @@ def _uses_placeholder(source: str) -> bool:
 
 def _lean_version(lean: str) -> str:
     try:
-        completed = subprocess.run([lean, "--version"], check=False, capture_output=True, text=True, timeout=5)
+        completed = subprocess.run([lean, "--version"], check=False, capture_output=True, text=True, timeout=5, env=backend_subprocess_env())
     except Exception:
         return "unavailable"
     return (completed.stdout or completed.stderr).strip()
@@ -92,7 +96,7 @@ def check_lean_source(source: str, *, timeout_seconds: int = 10, allow_sorry: bo
         lean_file.write_text(source, encoding="utf-8")
         command = [lean, str(lean_file)]
         try:
-            completed = subprocess.run(command, check=False, capture_output=True, text=True, timeout=timeout_seconds)
+            completed = subprocess.run(command, check=False, capture_output=True, text=True, timeout=timeout_seconds, env=backend_subprocess_env())
         except FileNotFoundError:
             evidence = _evidence(
                 "lean_unavailable",

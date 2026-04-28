@@ -6,8 +6,9 @@ from pathlib import Path
 
 from .contracts import attach_contract
 from .doctor import doctor_report
-from .governance import governance_policy
+from .governance import governance_policy, validate_governance
 from .parser_policy import decide_parser_policy
+from .release_corpus import validate_release_corpus_manifest
 
 
 def release_readiness_report(root: str | Path) -> dict:
@@ -18,6 +19,8 @@ def release_readiness_report(root: str | Path) -> dict:
     doctor = doctor_report()
     parser = decide_parser_policy(str(root_path / "benchmarks" / "fixtures"), backends=["current"])
     governance = governance_policy()
+    governance_validation = validate_governance(root_path)
+    release_corpus_validation = validate_release_corpus_manifest(root_path / "benchmarks" / "fixtures")
     dirty = bool(_git(root_path, ["status", "--short"]).strip())
     commit = _git(root_path, ["rev-parse", "--short", "HEAD"]).strip() or "unknown"
     blockers: list[dict] = []
@@ -33,6 +36,18 @@ def release_readiness_report(root: str | Path) -> dict:
         caveats.append({"kind": "lean_version_or_toolchain_caveat", "severity": "medium", "detail": lean.get("detail"), "version": lean.get("version")})
     if doctor.get("conflicts"):
         caveats.append({"kind": "dependency_conflicts", "severity": "medium", "conflicts": doctor["conflicts"]})
+    latexml = doctor["capabilities"].get("latexml", {})
+    if not latexml.get("available"):
+        caveats.append(
+            {
+                "kind": "latexml_optional_backend_unavailable",
+                "severity": "medium",
+                "detail": latexml.get("detail"),
+                "install_hint": "Install OS package latexml or set MATHDEVMCP_LATEXML_PATH.",
+            }
+        )
+    if governance_validation.get("status") == "mismatch":
+        blockers.append({"kind": "governance_validation_failed", "severity": "high", "findings": governance_validation.get("findings", [])})
     if blockers:
         recommendation = "not_ready"
         reason = "Release readiness has blocking findings."
@@ -53,6 +68,8 @@ def release_readiness_report(root: str | Path) -> dict:
             "doctor_summary": doctor,
             "parser_policy": parser,
             "governance_policy": governance,
+            "governance_validation": governance_validation,
+            "release_corpus_validation": release_corpus_validation,
             "schema_version": "1.0",
             "blockers": blockers,
             "caveats": caveats,

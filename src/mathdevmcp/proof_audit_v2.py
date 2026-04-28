@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from collections.abc import Iterable
 from pathlib import Path
 
 from .contracts import attach_contract, contract_metadata
@@ -209,6 +210,7 @@ def audit_derivation_v2_for_label(
     backend: str = "sympy",
     cache_path: str | Path | None = None,
     parser_backends: list[str] | None = None,
+    parser_expected_labels: Iterable[str] | None = None,
     numeric_artifacts: dict[str, dict] | None = None,
     summary_only: bool = False,
 ) -> dict:
@@ -221,7 +223,7 @@ def audit_derivation_v2_for_label(
         backend=backend,
         cache_path=cache_path,
     )
-    parser = decide_parser_policy(root, backends=parser_backends or ["current"])
+    parser = decide_parser_policy(root, backends=parser_backends or ["current"], expected_labels=parser_expected_labels)
     selected_backend = parser.get("selected_backend") or "current"
     context = _context_text(base.get("doc_context", {}))
     obligations: list[dict] = []

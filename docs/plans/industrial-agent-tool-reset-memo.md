@@ -1,5 +1,196 @@
 # Reset memo: industrial agent-tool direction
 
+## Current release-candidate gap-closure request
+
+The next execution request is to turn the newly written industrial release-candidate gap-closure plan into a committed implementation pass.
+
+The required cycle is:
+
+```text
+plan for the phase
+-> execute
+-> test
+-> audit
+-> tidy up
+-> update this reset memo
+```
+
+The work must:
+
+- update this reset memo at kickoff and completion,
+- add a second-developer audit of the release-candidate plan,
+- execute every phase in `industrial-release-candidate-gap-closure-execution-plan.md`,
+- preserve unrelated local files such as `.codex`,
+- run final full tests, backend-configured tests, doctor, release smoke, and diff hygiene,
+- commit the coherent modified files.
+
+The implementation should remain conservative. The expected target is still an internal release candidate or controlled departmental pilot unless every release-candidate criterion is satisfied. In particular, LaTeXML is currently unavailable on this machine, and LeanDojo import readiness must not be overstated as a verified real `Dojo(entry)` proof-search loop.
+
+## Release-candidate gap-closure completion outcome
+
+This pass executed the release-candidate gap-closure plan with a plan, execute, test, audit, tidy, and reset-memo cycle for each phase. The resulting state is an internal release candidate with caveats. It is not a claim that MathDevMCP proves arbitrary mathematics.
+
+### Phase outcomes
+
+- Phase 1, installation reproducibility: added `environment-backends.yml`, backend environment helpers, setup/doctor/validation scripts, and tests for backend Python, executable overrides, Lean toolchain forwarding, and missing backend behavior.
+- Phase 2, LaTeXML release decision: LaTeXML is explicitly optional for this release candidate. Release readiness reports `latexml_optional_backend_unavailable` as a caveat, not a blocker, and docs name `MATHDEVMCP_LATEXML_PATH`.
+- Phase 3, clean-machine install proof: added `scripts/clean_install_smoke.sh` with a safe target directory check, `git archive` copy path, base editable install, focused tests, and optional backend setup controlled by `MATHDEVMCP_INSTALL_BACKENDS=1`.
+- Phase 4, LeanDojo theorem interaction boundary: added timeout/target metadata and environment variables for a future traced `Dojo(entry)` target. The current result remains `inconclusive` unless a pinned traced repository is configured; any proof artifact still requires direct Lean checking.
+- Phase 5, realistic release corpus: added public sanitized multi-file macro fixtures and a plausible missing-operation code fixture; release corpus now distinguishes public fixtures, private placeholders, expected labels, expected operations, expected abstentions, false-confidence seeds, and release-gated entries.
+- Phase 6, parser policy hardening: parser policy now distinguishes `selected_for_proof_audit`, `selected_for_context_only`, `measured_optional`, and `blocked`, and proof-audit v2 downgrades certification when selected-parser evidence is blocked.
+- Phase 7, security/privacy/command governance: governance validation now checks release corpus privacy/gate policy, command allowlist, and source subprocess timeout policy; release readiness includes governance validation.
+- Phase 8, colleague-facing release profile: operator and deployment docs now describe base install, backend env setup, Lean pinning, LaTeXML optional status, release-readiness interpretation, clean-install smoke, and core commands.
+- Phase 9, final gate: final test, doctor, smoke, and validation gates passed with the caveats below.
+
+### Files changed
+
+New release/setup artifacts:
+
+- `environment-backends.yml`,
+- `scripts/setup_backend_env.sh`,
+- `scripts/backend_env_doctor.sh`,
+- `scripts/validate_backend_install.sh`,
+- `scripts/clean_install_smoke.sh`,
+- `src/mathdevmcp/backend_env.py`.
+
+New planning/audit artifacts:
+
+- `docs/plans/industrial-release-candidate-gap-closure-execution-plan.md`,
+- `docs/plans/industrial-release-candidate-gap-closure-plan-audit.md`.
+
+New public sanitized fixtures:
+
+- `benchmarks/fixtures/doc_macro_filter_main.tex`,
+- `benchmarks/fixtures/doc_macro_filter_model.tex`,
+- `benchmarks/fixtures/doc_macro_filter_missing_gain.py`.
+
+Main implementation and docs updated:
+
+- `.gitignore`,
+- `docs/mathdevmcp-deployment-guide.md`,
+- `docs/mathdevmcp-operator-guide.md`,
+- `docs/plans/industrial-agent-tool-reset-memo.md`,
+- `scripts/release_smoke.sh`,
+- `src/mathdevmcp/benchmarks.py`,
+- `src/mathdevmcp/cli.py`,
+- `src/mathdevmcp/doctor.py`,
+- `src/mathdevmcp/governance.py`,
+- `src/mathdevmcp/lean_check.py`,
+- `src/mathdevmcp/leandojo_backend.py`,
+- `src/mathdevmcp/parser_benchmark.py`,
+- `src/mathdevmcp/parser_policy.py`,
+- `src/mathdevmcp/proof_audit_v2.py`,
+- `src/mathdevmcp/release_corpus.py`,
+- `src/mathdevmcp/release_policy.py`.
+
+Tests updated or added:
+
+- `tests/test_context_and_fixtures.py`,
+- `tests/test_doctor.py`,
+- `tests/test_domain_formalization.py`,
+- `tests/test_industrial_release_gap_closure.py`,
+- `tests/test_lean_check.py`,
+- `tests/test_lean_export.py`,
+- `tests/test_parser_benchmark.py`,
+- `tests/test_parser_policy.py`,
+- `tests/test_proof_audit_v2.py`,
+- `tests/test_release_candidate_installation.py`.
+
+`.codex` was preserved as an unrelated local file and ignored in `.gitignore`; it was not committed as project content.
+
+### Verification completed
+
+Focused phase tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_parser_benchmark.py tests/test_parser_policy.py tests/test_context_and_fixtures.py tests/test_industrial_release_gap_closure.py tests/test_proof_audit_v2.py tests/test_release_candidate_installation.py
+65 passed
+
+PYTHONPATH=src pytest -q tests/test_parser_policy.py tests/test_release_candidate_installation.py tests/test_context_and_fixtures.py tests/test_industrial_closure_phases.py tests/test_release_smoke.py
+52 passed
+
+PYTHONPATH=src pytest -q tests/test_lean_export.py tests/test_release_candidate_installation.py tests/test_lean_check.py tests/test_doctor.py
+24 passed, 1 skipped
+```
+
+Final gates:
+
+```text
+git diff --check
+passed
+
+PYTHONPATH=src pytest -q
+217 passed, 1 skipped
+
+PYTHONPATH=src MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.20.0 MATHDEVMCP_LEAN_PATH=/home/chakwong/.elan/bin/lean pytest -q
+217 passed, 1 skipped
+
+scripts/release_smoke.sh /home/chakwong/python/MathDevMCP
+passed
+
+scripts/backend_env_doctor.sh /home/chakwong/python/MathDevMCP
+passed
+
+scripts/validate_backend_install.sh /home/chakwong/python/MathDevMCP
+passed with optional backend caveat: latexml
+
+scripts/clean_install_smoke.sh --help
+passed
+
+scripts/clean_install_smoke.sh /tmp/mathdevmcp-clean-76199e0
+passed from committed HEAD after installing [dev,symbolic] in a disposable conda env: 10 passed; benchmark gate 34/34 passed
+```
+
+Benchmark gate:
+
+```text
+full benchmark gate: passed=true, total=34, passed_count=34, failed_count=0, expected_abstentions=12
+release-readiness non-recursive gate: passed=true, total=33, passed_count=33, failed_count=0, expected_abstentions=12
+```
+
+Doctor summaries:
+
+```text
+base doctor:
+LaTeXML unavailable
+Pandoc available: /usr/bin/pandoc, pandoc 2.9.2.1
+Lean available: /home/chakwong/.elan/bin/lean, Lean 4.20.0 through MathDevMCP backend helper
+Sage available: /usr/bin/sage, SageMath 9.5
+LeanDojo unavailable in the base Python env
+SymPy available: 1.14.0
+
+backend-configured doctor:
+LaTeXML unavailable
+Pandoc available: /usr/bin/pandoc, pandoc 2.9.2.1
+Lean available: /home/chakwong/.elan/bin/lean, Lean 4.20.0
+Sage available: /usr/bin/sage, SageMath 9.5
+LeanDojo available in conda env mathdevmcp-backends: 4.20.0
+SymPy available in conda env mathdevmcp-backends: 1.14.0
+```
+
+### Audit notes
+
+The plan audit remains approved with its mitigation stance: execute every phase without converting aspirational capabilities into false `verified` claims. That was preserved.
+
+Important caveats:
+
+- LaTeXML is not installed on this machine. It remains an optional measured parser backend for this release candidate.
+- LeanDojo import/API readiness is available only in the isolated backend env. A real traced `Dojo(entry)` theorem interaction is not yet validated.
+- Clean-install automation passed from committed `HEAD` with the base symbolic profile. Backend install inside the clean copy remains opt-in through `MATHDEVMCP_INSTALL_BACKENDS=1`.
+- The public corpus is broader and more realistic, but private department corpora remain manifest placeholders only.
+- Parser, AST, shape, routing, and numeric diagnostics remain evidence-routing tools unless deterministic backend evidence certifies a scoped obligation.
+
+### Next recommended slice
+
+The next highest-value slice is a pinned local LeanDojo fixture:
+
+1. create a tiny Lean project with `lakefile.lean`, `lean-toolchain`, one true theorem, and one false theorem,
+2. trace it in a way compatible with `lean-dojo==4.20.0`,
+3. run bounded `Dojo(entry)` interaction,
+4. reconstruct the final Lean proof script,
+5. direct-check the proof with MathDevMCP Lean checking,
+6. keep false or unsupported theorem attempts as `mismatch` or `inconclusive`.
+
 ## Why this memo exists
 
 The project direction changed after evaluating the early proof-audit and Lean scaffolding work. The original instinct was to add more custom MathDevMCP parsing, proof decomposition, Lean export, Lean checking, and domain formalization code. After discussion, that is too much bespoke infrastructure for a one-person-maintained departmental tool.
@@ -8,28 +199,29 @@ The new direction is to build MathDevMCP as a thin industrial orchestration laye
 
 ## Current environment observations
 
-The following tools are now available at smoke-test level in the active environment:
+The following tools are now available at smoke-test level in the configured environment:
 
 ```text
-LaTeXML: /usr/bin/latexml, version 0.8.6
+LaTeXML: not currently on PATH; apt candidate is 0.8.6-3 and conda-forge has no latexml package
 Pandoc: /usr/bin/pandoc, version 2.9.2.1
-Lean: /home/chakwong/.elan/bin/lean, version 4.30.0-rc2
-LeanDojo: Python package lean_dojo, version 4.20.0
+Lean: /home/chakwong/.elan/bin/lean with MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.20.0
+LeanDojo: Python package lean_dojo, version 4.20.0 in conda env mathdevmcp-backends
+Sage: /usr/bin/sage, version 9.5
+SymPy: version 1.14.0
 ```
 
 Smoke tests completed:
 
-- LaTeXML converted a tiny LaTeX document to XML and preserved label `eq:one`.
 - Pandoc converted a tiny LaTeX snippet to JSON and preserved label `eq:one`.
 - Lean compiled a tiny `Nat.add_comm` theorem.
-- LeanDojo imported successfully and exposed `LeanGitRepo`, `Theorem`, and `Dojo`.
+- LeanDojo imports from the isolated backend env.
 - MathDevMCP Lean-related tests passed:
 
 ```text
-12 passed
+29 passed, 1 skipped
 ```
 
-Important caveat: LeanDojo has only been import/API smoke-tested. A real Dojo theorem interaction loop has not yet been validated.
+Important caveat: LeanDojo has only been import/API smoke-tested. A real Dojo theorem interaction loop has not yet been validated. LaTeXML remains a system-package installation gap on this machine unless installed with apt or supplied through `MATHDEVMCP_LATEXML_PATH`.
 
 ## Decision
 
@@ -797,17 +989,100 @@ git diff --check
 
 Doctor/release-readiness reported:
 
-- LaTeXML available: `/usr/bin/latexml`, LaTeXML 0.8.6.
+- LaTeXML unavailable: not on PATH; `apt-cache policy latexml` reports Ubuntu candidate 0.8.6-3, `sudo apt-get install -y latexml` requires a password, conda-forge has no `latexml` package, and `tlmgr` does not provide the executable.
 - Pandoc available: `/usr/bin/pandoc`, Pandoc 2.9.2.1.
 - Sage available: `/usr/bin/sage`, SageMath 9.5.
-- LeanDojo import available: `lean-dojo` 4.20.0.
+- Lean available through `/home/chakwong/.elan/bin/lean` with `MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.20.0`; global elan default remains `leanprover/lean4:stable` resolving to Lean 4.30.0-rc2.
+- LeanDojo import available in backend env `mathdevmcp-backends`: `lean-dojo` 4.20.0.
 - SymPy available: 1.14.0.
-- Lean executable found at `/home/chakwong/.elan/bin/lean`, but `lean --version` returned `error: error during download`, so Lean remains a release caveat in this environment.
-- `magic-pdf 1.3.12` declares `pydantic<2.11`, while active pydantic is 2.13.3; keep LeanDojo isolated if that conflict matters.
+- LeanDojo pulls Ray and Pydantic 2.13.3 into the backend env, so the isolated env should remain the recommended setup for colleagues.
 
 ### Remaining limitations
 
 This is still not a full mathematical verification platform. The release corpus has public fixture coverage plus private placeholders, not validated private department corpora. LeanDojo remains a conservative optional backend boundary rather than a real `Dojo(entry)` proof-search loop. Parser, AST, shape, semantic-alignment, and numeric outputs are diagnostic unless deterministic backend evidence certifies a scoped claim under explicit assumptions.
+
+## Backend installation checkpoint outcome
+
+This pass turned backend setup into an explicit, diagnosable installation path instead of relying on whichever packages happen to be importable in the active shell.
+
+### Changes implemented
+
+Added `src/mathdevmcp/backend_env.py` with helpers for:
+
+- `MATHDEVMCP_BACKEND_CONDA_ENV`,
+- `MATHDEVMCP_BACKEND_PREFIX`,
+- `MATHDEVMCP_BACKEND_PYTHON`,
+- executable overrides such as `MATHDEVMCP_LEAN_PATH` and `MATHDEVMCP_LATEXML_PATH`,
+- `MATHDEVMCP_LEAN_TOOLCHAIN` forwarding to `ELAN_TOOLCHAIN` for Lean subprocesses.
+
+Updated diagnostics and backends:
+
+- `doctor_report()` checks Python backend modules inside the configured backend env and does not silently fall back to the main env when a backend env was explicitly requested.
+- executable capabilities are unavailable when the executable wrapper exists but the version command fails.
+- `lean_check.py` uses the configured Lean path and Lean toolchain environment.
+- parser benchmarking honors executable overrides for LaTeXML and Pandoc.
+
+Added setup/operator scripts:
+
+- `scripts/setup_backend_env.sh`,
+- `scripts/backend_env_doctor.sh`.
+
+Updated operator/deployment docs with the isolated backend-env workflow.
+
+### Installed and verified
+
+Created conda env `mathdevmcp-backends` and installed:
+
+```text
+lean-dojo 4.20.0
+sympy 1.14.0
+pydantic 2.13.3 inside the backend env
+```
+
+Installed Lean toolchain:
+
+```text
+leanprover/lean4:v4.20.0
+```
+
+The global elan default remains `leanprover/lean4:stable`, currently resolving to Lean 4.30.0-rc2, so MathDevMCP should use:
+
+```bash
+export MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.20.0
+```
+
+### Verification completed
+
+Base full suite:
+
+```text
+205 passed, 1 skipped
+```
+
+Backend-configured full suite:
+
+```text
+205 passed, 1 skipped
+```
+
+Focused parser/doctor/Lean tests after final override wiring:
+
+```text
+29 passed, 1 skipped
+```
+
+Release smoke passed and release readiness reports `ready_with_caveats` because the worktree is dirty during this setup pass.
+
+### Remaining installation gap
+
+LaTeXML remains unavailable on this machine:
+
+- `which latexml` finds nothing,
+- `conda search -c conda-forge latexml` reports no package,
+- `tlmgr` does not provide the executable,
+- Ubuntu apt has candidate `latexml 0.8.6-3`, but `sudo apt-get install -y latexml` requires a password.
+
+The designed path is to install it as an OS package when root access is available or set `MATHDEVMCP_LATEXML_PATH=/path/to/latexml` if a local executable is provided.
 
 ## Kalman industrialization checkpoint outcome
 

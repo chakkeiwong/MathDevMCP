@@ -122,3 +122,22 @@ def test_leandojo_backend_boundary_stays_inconclusive_without_real_dojo_request(
     assert result["status"] == "inconclusive"
     assert "direct Lean final check artifact" in result["required_artifacts"]
     assert result["final_lean_check"] is None or result["final_lean_check"]["metadata"]["contract"] == "lean_check_result"
+
+
+def test_leandojo_backend_boundary_records_configured_target_and_timeout(monkeypatch, tmp_path):
+    monkeypatch.setenv("MATHDEVMCP_LEANDOJO_FIXTURE", str(tmp_path))
+    monkeypatch.setenv("MATHDEVMCP_LEANDOJO_THEOREM", "MathDevMCP.Tiny")
+    monkeypatch.setenv("MATHDEVMCP_LEANDOJO_TIMEOUT_SECONDS", "2")
+
+    result = attempt_leandojo_tiny_theorem(
+        lean_source="theorem t : True := by trivial\n",
+        tactic_script=["trivial"],
+        run_dojo=True,
+    )
+
+    assert result["metadata"] == {"schema_version": "1.0", "contract": "leandojo_attempt_result"}
+    assert result["status"] == "inconclusive"
+    assert result["dojo_requested"] is True
+    assert result["timeout_seconds"] == 2.0
+    assert result["traced_repo_target"] == {"path": str(tmp_path), "theorem": "MathDevMCP.Tiny"}
+    assert result["final_lean_check"] is None or result["final_lean_check"]["metadata"]["contract"] == "lean_check_result"

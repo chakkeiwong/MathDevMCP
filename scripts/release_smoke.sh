@@ -9,4 +9,5 @@ python -m mathdevmcp.cli parser-benchmark --root "$ROOT/benchmarks/fixtures" --b
 python -m mathdevmcp.cli benchmark-gate --root "$ROOT"
 python -m mathdevmcp.cli validate-release-corpus --root "$ROOT/benchmarks/fixtures"
 python -m mathdevmcp.cli governance-policy
+python -m mathdevmcp.cli validate-governance --root "$ROOT"
 python -m mathdevmcp.cli release-readiness --root "$ROOT"

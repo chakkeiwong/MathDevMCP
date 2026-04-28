@@ -1,9 +1,18 @@
 import subprocess
 
+import pytest
+
+from mathdevmcp.doctor import doctor_report
 from mathdevmcp.lean_check import check_lean_source
 
 
+def _requires_lean():
+    if not doctor_report()["capabilities"]["lean"]["available"]:
+        pytest.skip("Lean executable is unavailable")
+
+
 def test_check_lean_source_verifies_nat_add_comm():
+    _requires_lean()
     source = """
 theorem add_comm_smoke (a b : Nat) : a + b = b + a := by
   exact Nat.add_comm a b
@@ -19,6 +28,7 @@ theorem add_comm_smoke (a b : Nat) : a + b = b + a := by
 
 
 def test_check_lean_source_rejects_false_proof():
+    _requires_lean()
     source = """
 theorem bad (a b : Nat) : a + b = a := by
   exact Nat.add_comm a b
@@ -32,6 +42,7 @@ theorem bad (a b : Nat) : a + b = a := by
 
 
 def test_check_lean_source_rejects_sorry_in_certified_mode():
+    _requires_lean()
     source = """
 theorem placeholder (a b : Nat) : a + b = b + a := by
   sorry
@@ -45,6 +56,7 @@ theorem placeholder (a b : Nat) : a + b = b + a := by
 
 
 def test_check_lean_source_allows_sorry_without_certification():
+    _requires_lean()
     source = """
 theorem placeholder (a b : Nat) : a + b = b + a := by
   sorry
@@ -70,6 +82,7 @@ def test_check_lean_source_reports_unavailable_lean_as_inconclusive(monkeypatch)
 
 
 def test_check_lean_source_reports_timeout_as_inconclusive(monkeypatch):
+    _requires_lean()
     def timeout_run(*args, **kwargs):
         raise subprocess.TimeoutExpired(cmd=["lean"], timeout=1)
 
@@ -82,6 +95,7 @@ def test_check_lean_source_reports_timeout_as_inconclusive(monkeypatch):
 
 
 def test_check_lean_source_returns_reproducible_evidence():
+    _requires_lean()
     result = check_lean_source("theorem t : True := by trivial")
 
     evidence = result["evidence"][0]

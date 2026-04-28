@@ -23,7 +23,7 @@ from .parser_benchmark import compare_parser_backends
 from .proof_obligations import check_proof_obligation
 from .proof_audit import audit_derivation_for_label
 from .proof_audit_v2 import audit_derivation_v2_for_label
-from .governance import governance_policy
+from .governance import governance_policy, validate_governance
 from .release_corpus import release_corpus_manifest, validate_release_corpus_manifest
 from .release_policy import release_readiness_report
 from .typed_workflows import typed_obligation_for_label
@@ -280,6 +280,12 @@ def _cmd_governance_policy(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_validate_governance(args: argparse.Namespace) -> int:
+    result = validate_governance(args.root)
+    print(json.dumps(result, indent=2))
+    return 0 if result["status"] != "mismatch" else 1
+
+
 def _cmd_release_readiness(args: argparse.Namespace) -> int:
     result = release_readiness_report(args.root)
     print(json.dumps(result, indent=2))
@@ -463,6 +469,10 @@ def make_parser() -> argparse.ArgumentParser:
 
     p_governance = sub.add_parser("governance-policy", help="Print security and governance policy")
     p_governance.set_defaults(func=_cmd_governance_policy)
+
+    p_validate_governance = sub.add_parser("validate-governance", help="Validate security and governance release checks")
+    p_validate_governance.add_argument("--root", default=".", help="Project root")
+    p_validate_governance.set_defaults(func=_cmd_validate_governance)
 
     p_release = sub.add_parser("release-readiness", help="Build a release-readiness report")
     p_release.add_argument("--root", default=".", help="Project root")

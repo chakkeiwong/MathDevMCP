@@ -23,6 +23,7 @@ def test_parser_backend_current_preserves_department_corpus_labels():
 
     assert "eq:dept-state-space-recursion" in result["labels"]
     assert "eq:dept-hmc-leapfrog" in result["labels"]
+    assert "eq:macro-filter-likelihood" in result["labels"]
     assert result["details"]["missing_expected_labels"] == []
     assert result["details"]["expected_label_recall"] == 1.0
     assert result["details"]["generated_like_labels"] == []
@@ -38,6 +39,24 @@ def test_parser_backend_latexml_runs_or_reports_inconclusive():
     if result["status"] == "parsed":
         assert result["quality_checks"]["label_preservation"] is True
         assert result["labels_found"] >= 1
+
+
+def test_parser_backend_latexml_honors_executable_override(monkeypatch, tmp_path):
+    fake_latexml = tmp_path / "latexml"
+    fake_latexml.write_text(
+        "#!/usr/bin/env sh\n"
+        "echo fake latexml >&2\n"
+        "exit 2\n",
+        encoding="utf-8",
+    )
+    fake_latexml.chmod(0o755)
+    monkeypatch.setenv("MATHDEVMCP_LATEXML_PATH", str(fake_latexml))
+
+    result = run_parser_backend(FIXTURES, "latexml")
+
+    assert result["metadata"] == {"schema_version": "1.0", "contract": "parser_backend_result"}
+    assert result["status"] == "inconclusive"
+    assert result["details"]["fatal_errors"]
 
 
 def test_parser_backend_pandoc_runs_or_reports_inconclusive():
@@ -81,3 +100,21 @@ b = b
 
     assert result["status"] == "parsed"
     assert result["details"]["duplicate_label_findings"] == ["eq:duplicate"]
+
+
+def test_parser_backend_missing_expected_labels_do_not_get_rescued_by_generated_labels(tmp_path):
+    (tmp_path / "generated.tex").write_text(
+        r"""
+\begin{equation}
+a = a
+\label{generated:eq:required}
+\end{equation}
+""",
+        encoding="utf-8",
+    )
+
+    result = run_parser_backend(tmp_path, "current", expected_labels=["eq:required"])
+
+    assert result["details"]["missing_expected_labels"] == ["eq:required"]
+    assert result["details"]["generated_like_labels"] == ["generated:eq:required"]
+    assert result["quality_checks"]["label_preservation"] is False

@@ -34,8 +34,8 @@ EXPECTED_BENCHMARK_SUMMARY = {
         "proof_audit": {"total": 3, "passed": 3, "expected_abstentions": 1},
         "proof_audit_v2": {"total": 3, "passed": 3, "expected_abstentions": 1},
         "kalman_recursion": {"total": 2, "passed": 2, "expected_abstentions": 1},
-        "parser_corpus": {"total": 1, "passed": 1, "expected_abstentions": 0},
-        "ast_corpus": {"total": 4, "passed": 4, "expected_abstentions": 0},
+        "parser_corpus": {"total": 2, "passed": 2, "expected_abstentions": 0},
+        "ast_corpus": {"total": 5, "passed": 5, "expected_abstentions": 0},
         "typed_ir": {"total": 2, "passed": 2, "expected_abstentions": 2},
         "industrial_review": {"total": 1, "passed": 1, "expected_abstentions": 1},
         "release_corpus": {"total": 1, "passed": 1, "expected_abstentions": 0},
@@ -45,7 +45,7 @@ EXPECTED_BENCHMARK_SUMMARY = {
         "status_regression": {"total": 2, "passed": 2, "expected_abstentions": 0},
         "provenance_correctness": {"total": 2, "passed": 2, "expected_abstentions": 0},
         "abstention_quality": {"total": 1, "passed": 1, "expected_abstentions": 1},
-        "false_confidence_control": {"total": 5, "passed": 5, "expected_abstentions": 0},
+        "false_confidence_control": {"total": 6, "passed": 6, "expected_abstentions": 0},
         "realistic_fixture": {"total": 1, "passed": 1, "expected_abstentions": 0},
         "realistic_abstention": {"total": 1, "passed": 1, "expected_abstentions": 1},
         "multilabel_provenance": {"total": 1, "passed": 1, "expected_abstentions": 1},
@@ -58,6 +58,7 @@ EXPECTED_BENCHMARK_SUMMARY = {
         "release_spine_abstention": {"total": 1, "passed": 1, "expected_abstentions": 1},
         "ast_recursion_abstention": {"total": 1, "passed": 1, "expected_abstentions": 1},
         "realistic_parser_provenance": {"total": 1, "passed": 1, "expected_abstentions": 0},
+        "multifile_macro_parser_provenance": {"total": 1, "passed": 1, "expected_abstentions": 0},
         "realistic_ast_operation_coverage": {"total": 3, "passed": 3, "expected_abstentions": 0},
         "typed_dimension_diagnostics": {"total": 1, "passed": 1, "expected_abstentions": 1},
         "typed_stochastic_diagnostics": {"total": 1, "passed": 1, "expected_abstentions": 1},
@@ -68,7 +69,7 @@ EXPECTED_BENCHMARK_SUMMARY = {
     "expected_abstentions": 12,
 }
 
-EXPECTED_BENCHMARK_TOTAL = 32
+EXPECTED_BENCHMARK_TOTAL = 34
 
 
 def test_extract_context_for_label_returns_local_excerpt():
@@ -153,11 +154,14 @@ def test_department_corpus_fixtures_preserve_labels_and_sections():
 
     state = extract_context_for_label(index, "eq:dept-state-space-recursion", before=0, after=0)
     hmc = extract_context_for_label(index, "eq:dept-hmc-leapfrog", before=0, after=0)
+    macro_filter = extract_context_for_label(index, "eq:macro-filter-likelihood", before=0, after=0)
 
     assert state["file"] == "doc_department_state_space.tex"
     assert state["section_path"] == ["Sanitized state-space audit slice"]
     assert hmc["file"] == "doc_department_bayesian_hmc.tex"
     assert hmc["section_path"] == ["Sanitized Bayesian computation audit slice"]
+    assert macro_filter["file"] == "doc_macro_filter_model.tex"
+    assert macro_filter["section_path"] == ["State equations"]
 
 
 
@@ -392,7 +396,7 @@ def test_parser_corpus_benchmark_runner_reports_department_fixture_labels():
 
     results = run_parser_corpus_benchmark(root)
 
-    assert {result["id"] for result in results} == {"parser_corpus_department_current"}
+    assert {result["id"] for result in results} == {"parser_corpus_department_current", "parser_corpus_macro_filter_multifile"}
     assert all(result["category"] == "parser_corpus" for result in results)
     assert all(result["quality_checks"]["expected_labels_preserved"] for result in results)
     assert all(result["passed"] for result in results)
@@ -408,6 +412,7 @@ def test_ast_corpus_benchmark_runner_reports_realistic_operation_coverage():
         "ast_corpus_hmc_jax",
         "ast_corpus_particle_filter",
         "ast_corpus_state_space_missing_solve",
+        "ast_corpus_macro_filter_missing_gain",
     }
     assert all(result["category"] == "ast_corpus" for result in results)
     assert all(result["quality_checks"]["graph_contract_match"] for result in results)
@@ -415,6 +420,9 @@ def test_ast_corpus_benchmark_runner_reports_realistic_operation_coverage():
     missing = next(result for result in results if result["id"] == "ast_corpus_state_space_missing_solve")
     assert missing["observed_status"] == "mismatch"
     assert missing["details"]["missing_operations"] == ["inverse_or_solve"]
+    macro_missing = next(result for result in results if result["id"] == "ast_corpus_macro_filter_missing_gain")
+    assert macro_missing["observed_status"] == "mismatch"
+    assert macro_missing["details"]["missing_operations"] == ["kalman_gain", "state_update", "covariance_update"]
 
 
 def test_typed_ir_benchmark_runner_reports_missing_dimension_diagnostics():

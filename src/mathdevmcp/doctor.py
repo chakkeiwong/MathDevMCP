@@ -5,10 +5,10 @@ import importlib.metadata
 import importlib.util
 import os
 from pathlib import Path
-import shutil
 import subprocess
 import sys
 
+from .backend_env import backend_bin, backend_python, backend_python_requested, backend_subprocess_env, run_backend_python
 from .contracts import contract_metadata
 
 
@@ -45,18 +45,25 @@ def _run_version(command: list[str], *, env: dict[str, str] | None = None, timeo
 
 
 def _executable_capability(name: str, executable: str, version_args: list[str]) -> Capability:
-    path = shutil.which(executable)
+    path = backend_bin(executable)
     if path is None and executable == "lean":
         elan_path = Path.home() / ".elan" / "bin" / "lean"
         if elan_path.exists():
             path = str(elan_path)
     if path is None:
         return Capability(name, False, "executable", None, None, "unavailable", f"{executable} was not found on PATH")
-    version, detail = _run_version([path, *version_args])
+    version, detail = _run_version([path, *version_args], env=backend_subprocess_env())
+    if detail != "available":
+        return Capability(name, False, "executable", path, version, "unavailable", detail)
     return Capability(name, True, "executable", path, version, "available", detail)
 
 
 def _python_capability(name: str, module: str, package: str | None = None) -> Capability:
+    backend = run_backend_python(module, package=package)
+    if backend[0]:
+        return Capability(name, True, "python", backend_python(), backend[1], "available", backend[2])
+    if backend_python_requested():
+        return Capability(name, False, "python", backend_python(), None, "unavailable", backend[2])
     if importlib.util.find_spec(module) is None:
         return Capability(name, False, "python", None, None, "unavailable", f"Python module {module} is not importable")
     version = None

@@ -6,6 +6,7 @@ __pycache__/
 build/
 dist/
 .codex
+artifacts/release-evidence/
 
 # LaTeX build artifacts
 *.aux

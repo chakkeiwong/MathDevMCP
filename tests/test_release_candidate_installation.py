@@ -29,9 +29,12 @@ def test_backend_install_scripts_expose_release_candidate_controls():
     assert "MATHDEVMCP_LEAN_TOOLCHAIN" in setup
     assert "MATHDEVMCP_LATEXML_PATH" in setup
     assert "backend_env_doctor.sh" in setup
+    assert "toolchain already installed" in setup
+    assert "toolchain list" in setup
     assert "elan\" default" not in setup
     assert "Optional backend caveats" in validate
     assert "latexml" in validate
+    assert (ROOT / "scripts" / "validate_latexml_backend.sh").exists()
 
 
 def test_clean_install_smoke_help_is_lightweight():
@@ -44,6 +47,7 @@ def test_clean_install_smoke_help_is_lightweight():
 
     assert result.returncode == 0
     assert "MATHDEVMCP_INSTALL_BACKENDS=1" in result.stdout
+    assert "MATHDEVMCP_CLEAN_ARTIFACT_DIR" in result.stdout
     assert "TARGET_DIR" in result.stdout
 
 

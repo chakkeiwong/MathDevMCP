@@ -54,6 +54,16 @@ This keeps LeanDojo's Ray/Pydantic dependency stack away from the main working e
 
 LaTeXML is optional for the current release candidate. If it is absent, parser benchmarking records an optional caveat and proof-audit routing uses the current provenance-preserving parser. Install the OS package or set `MATHDEVMCP_LATEXML_PATH` only when LaTeXML-backed parser evidence is needed.
 
+Validate optional LaTeXML explicitly with:
+
+```bash
+scripts/validate_latexml_backend.sh /path/to/MathDevMCP
+```
+
+By default this reports missing LaTeXML as an optional caveat. Set `MATHDEVMCP_REQUIRE_LATEXML=1` only for a local profile where LaTeXML is a required backend.
+
+LeanDojo proof search remains optional. The committed tiny Lean fixture under `tests/fixtures/leandojo_tiny_project` is used to separate fixture readiness and direct Lean certificate checking from real `Dojo(entry)` proof-search readiness. A LeanDojo tactic trace is not a certificate unless the reconstructed Lean proof also passes direct Lean checking with placeholders disallowed.
+
 Before choosing a workflow, run:
 ```bash
 PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli doctor
@@ -175,6 +185,20 @@ Interpretation:
 
 This is the preferred audit surface for colleague-facing mathematical review because it explains why an obligation is not certified.
 
+### 4c. Evaluate private corpora locally
+
+Private department documents should not be committed. To evaluate them locally, provide an external manifest:
+
+```bash
+export MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/secure/local/path/corpus.json
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli validate-release-corpus \
+  --root /path/to/MathDevMCP/benchmarks/fixtures
+```
+
+Manifest entries use the same fields as the public release corpus entries: `id`, `domain`, `privacy_class`, `document_root`, `code_roots`, `expected_labels`, `expected_operations`, `expected_abstentions`, `seeded_false_confidence_cases`, `required_parser_backends`, `release_gate_enabled`, and `notes`.
+
+Default reports redact private paths. A release-gated private entry must include expected labels and either expected abstentions or false-confidence seeds.
+
 ### 5. Build one end-to-end grounded brief
 Use `implementation-brief` or MCP `implementation_brief` when you want one structured object that pulls together retrieval, code comparison, and optional derivation checking.
 
@@ -209,6 +233,16 @@ Use this order:
    - produce a compact grounded summary before making recommendations.
 
 This order reduces the chance of inventing a plausible but unsupported interpretation.
+
+## Release evidence
+
+For a release review, collect machine-readable evidence with:
+
+```bash
+scripts/collect_release_evidence.sh /tmp/mathdevmcp-release-evidence
+```
+
+This writes doctor, parser benchmark, benchmark gate, release-readiness, governance, backend validation, and LaTeXML validation outputs. Generated evidence is for review storage and is not normally committed.
 
 ## Good use cases
 

@@ -116,6 +116,7 @@ def _current_parser(root: Path, started: float, expected_labels: set[str]) -> di
     blocks = index.get("blocks", [])
     labels = [block.get("label") for block in blocks if block.get("label")]
     environment_types = sorted({block.get("kind") for block in index.get("blocks", []) if block.get("kind")})
+    environment_type_counts = {kind: sum(1 for block in blocks if block.get("kind") == kind) for kind in environment_types}
     environments = sum(1 for block in index.get("blocks", []) if block.get("kind") in {"equation", "align", "alignat", "gather", "multline", "theorem", "proposition", "lemma", "assumption"})
     align_like = sum(1 for block in index.get("blocks", []) if block.get("kind") in {"align", "alignat"})
     return _result(
@@ -128,7 +129,14 @@ def _current_parser(root: Path, started: float, expected_labels: set[str]) -> di
         align_like=align_like,
         provenance_quality="line",
         runtime_seconds=time.perf_counter() - started,
-        details={"n_blocks": index.get("n_blocks"), "n_labels": index.get("n_labels"), "environment_types": environment_types, "root": str(root)},
+        details={
+            "n_blocks": index.get("n_blocks"),
+            "n_labels": index.get("n_labels"),
+            "environment_types": environment_types,
+            "environment_type_counts": environment_type_counts,
+            "tex_files_scanned": [str(path.relative_to(root)) for path in _tex_files(root)],
+            "root": str(root),
+        },
     )
 
 

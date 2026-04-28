@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import json
+import os
 from pathlib import Path
+import subprocess
 
 from .contracts import attach_contract
 
@@ -22,9 +25,85 @@ class ReleaseCorpusEntry:
     notes: str
 
 
-def release_corpus_manifest(root: str | Path | None = None) -> dict:
+def _repo_root(start: Path) -> Path:
+    try:
+        completed = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=start if start.exists() else Path.cwd(),
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except Exception:
+        return Path.cwd().resolve()
+    if completed.returncode != 0:
+        return Path.cwd().resolve()
+    return Path(completed.stdout.strip()).resolve()
+
+
+def _is_relative_to(path: Path, parent: Path) -> bool:
+    try:
+        path.resolve().relative_to(parent.resolve())
+    except ValueError:
+        return False
+    return True
+
+
+def _private_manifest_path(private_manifest: str | Path | None = None) -> Path | None:
+    configured = private_manifest or os.environ.get("MATHDEVMCP_PRIVATE_CORPUS_MANIFEST", "").strip()
+    return Path(configured).expanduser().resolve() if configured else None
+
+
+def _entry_from_mapping(item: dict) -> ReleaseCorpusEntry:
+    fields = set(ReleaseCorpusEntry.__dataclass_fields__)
+    missing = sorted(field for field in fields if field not in item)
+    if missing:
+        raise ValueError(f"Private corpus manifest entry is missing required fields: {', '.join(missing)}")
+    return ReleaseCorpusEntry(**{field: item[field] for field in fields})
+
+
+def _load_private_entries(private_manifest: str | Path | None = None) -> tuple[list[ReleaseCorpusEntry], dict]:
+    path = _private_manifest_path(private_manifest)
+    if path is None:
+        return [], {"configured": False, "path": None, "status": "not_configured"}
+    if not path.exists():
+        return [], {"configured": True, "path": "<redacted-private-manifest>", "status": "missing"}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    raw_entries = data if isinstance(data, list) else data.get("entries", [])
+    if not isinstance(raw_entries, list):
+        raise ValueError("Private corpus manifest must be a list or an object with an entries list.")
+    entries = [_entry_from_mapping(item) for item in raw_entries]
+    return entries, {"configured": True, "path": "<redacted-private-manifest>", "status": "loaded", "entries": len(entries)}
+
+
+def _redact_private_entry(entry: ReleaseCorpusEntry) -> ReleaseCorpusEntry:
+    if not entry.privacy_class.startswith("private"):
+        return entry
+    return ReleaseCorpusEntry(
+        id=entry.id,
+        domain=entry.domain,
+        privacy_class=entry.privacy_class,
+        document_root=None if entry.document_root else None,
+        code_roots=["<redacted-private-path>"] if entry.code_roots else [],
+        expected_labels=entry.expected_labels,
+        expected_operations=entry.expected_operations,
+        expected_abstentions=entry.expected_abstentions,
+        seeded_false_confidence_cases=entry.seeded_false_confidence_cases,
+        required_parser_backends=entry.required_parser_backends,
+        release_gate_enabled=entry.release_gate_enabled,
+        notes=entry.notes,
+    )
+
+
+def release_corpus_manifest(
+    root: str | Path | None = None,
+    *,
+    private_manifest: str | Path | None = None,
+    include_private_paths: bool = False,
+) -> dict:
     base = Path(root) if root is not None else Path("benchmarks/fixtures")
-    entries = [
+    entries: list[ReleaseCorpusEntry] = [
         ReleaseCorpusEntry(
             "kalman_state_space_extended",
             "kalman_state_space",
@@ -172,19 +251,41 @@ def release_corpus_manifest(root: str | Path | None = None) -> dict:
             "Private/sanitized fixture still needed.",
         ),
     ]
-    return attach_contract({"entries": [asdict(entry) for entry in entries]}, "release_corpus_manifest")
+    private_entries, private_source = _load_private_entries(private_manifest)
+    entries.extend(private_entries)
+    public_entries = entries if include_private_paths else [_redact_private_entry(entry) for entry in entries]
+    return attach_contract(
+        {
+            "entries": [asdict(entry) for entry in public_entries],
+            "private_manifest": private_source,
+            "private_paths_redacted": not include_private_paths,
+        },
+        "release_corpus_manifest",
+    )
 
 
-def validate_release_corpus_manifest(root: str | Path | None = None) -> dict:
-    manifest = release_corpus_manifest(root)
+def validate_release_corpus_manifest(root: str | Path | None = None, *, private_manifest: str | Path | None = None) -> dict:
+    root_path = Path(root) if root is not None else Path("benchmarks/fixtures")
+    manifest = release_corpus_manifest(root_path, private_manifest=private_manifest)
+    full_manifest = release_corpus_manifest(root_path, private_manifest=private_manifest, include_private_paths=True)
+    repo_root = _repo_root(root_path)
     findings: list[dict] = []
-    for entry in manifest["entries"]:
-        if entry["privacy_class"] == "private_external" and entry["document_root"] is not None:
-            findings.append({"entry": entry["id"], "severity": "high", "kind": "private_document_root_committed"})
+    if full_manifest.get("private_manifest", {}).get("status") == "missing":
+        findings.append({"severity": "medium", "kind": "private_manifest_missing"})
+    for entry in full_manifest["entries"]:
+        if entry["privacy_class"].startswith("private"):
+            private_paths = [entry["document_root"]] if entry["document_root"] else []
+            private_paths.extend(entry["code_roots"])
+            for configured in private_paths:
+                path = Path(configured).expanduser()
+                if _is_relative_to(path, repo_root):
+                    findings.append({"entry": entry["id"], "severity": "high", "kind": "private_path_inside_checkout"})
         if entry["release_gate_enabled"] and not entry["expected_labels"]:
             findings.append({"entry": entry["id"], "severity": "high", "kind": "missing_expected_labels"})
         if not entry["expected_abstentions"] and not entry["seeded_false_confidence_cases"]:
             findings.append({"entry": entry["id"], "severity": "medium", "kind": "missing_abstention_or_false_confidence_seed"})
+        if entry["release_gate_enabled"] and entry["privacy_class"].startswith("private") and not entry["document_root"]:
+            findings.append({"entry": entry["id"], "severity": "high", "kind": "release_gated_private_document_root_missing"})
     status = "consistent" if not any(item["severity"] == "high" for item in findings) else "mismatch"
     reason = "Release corpus manifest satisfies privacy and release-gate checks." if status == "consistent" else "Release corpus manifest has blocking findings."
     return attach_contract({"status": status, "reason": reason, "findings": findings, "manifest": manifest}, "release_corpus_validation_report")

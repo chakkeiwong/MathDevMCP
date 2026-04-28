@@ -29,6 +29,7 @@ def test_release_corpus_manifest_covers_required_domains_without_private_roots()
     assert private_entries
     assert all(entry["document_root"] is None for entry in private_entries)
     assert all(entry["expected_abstentions"] or entry["seeded_false_confidence_cases"] for entry in manifest["entries"])
+    assert manifest["private_paths_redacted"] is True
 
 
 def test_run_numeric_diagnostic_plan_executes_safe_artifacts_and_rejects_unsafe_imports():

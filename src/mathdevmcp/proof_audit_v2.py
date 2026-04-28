@@ -34,6 +34,10 @@ class ProofAuditV2Obligation:
     backend_attempts: list[dict]
     status: str
     reason: str
+    evidence_kind: str
+    diagnostic_only: bool
+    certificate: dict | None
+    verification_boundary: str
     actions: list[dict]
     provenance: dict
     metadata: dict[str, str]
@@ -75,6 +79,17 @@ def _backend_attempts(base_obligation: dict) -> list[dict]:
             }
         )
     return attempts
+
+
+def _evidence_boundary(status: str, attempts: list[dict], reason: str) -> tuple[str, bool, dict | None, str]:
+    has_certifying = any(attempt.get("evidence", {}).get("severity") == "certifying" for attempt in attempts)
+    has_blocking = any(attempt.get("evidence", {}).get("severity") == "blocking" for attempt in attempts)
+    if status == "verified" and has_certifying:
+        certificate = next((attempt.get("evidence") for attempt in attempts if attempt.get("evidence", {}).get("severity") == "certifying"), None)
+        return "deterministic_backend", False, certificate, "Deterministic backend evidence certified the scoped obligation."
+    if status == "mismatch" and has_blocking:
+        return "deterministic_backend", False, None, "Deterministic backend evidence refuted the scoped obligation."
+    return "diagnostic_bundle", True, None, f"{reason} A deterministic backend certificate is required before this can become verified."
 
 
 def _actions(
@@ -192,6 +207,9 @@ def _compact_obligation(obligation: dict) -> dict:
         "label": obligation["label"],
         "status": obligation["status"],
         "reason": obligation["reason"],
+        "evidence_kind": obligation["evidence_kind"],
+        "diagnostic_only": obligation["diagnostic_only"],
+        "verification_boundary": obligation["verification_boundary"],
         "route": obligation["route_decision"].get("route"),
         "missing_constraints": obligation["shape_diagnostic"].get("missing_constraints", []),
         "actions": obligation["actions"],
@@ -254,6 +272,8 @@ def audit_derivation_v2_for_label(
             numeric=numeric,
             status=status,
         )
+        backend_attempts = _backend_attempts(base_obligation)
+        evidence_kind, diagnostic_only, certificate, verification_boundary = _evidence_boundary(status, backend_attempts, reason)
         obligation = ProofAuditV2Obligation(
             id=str(base_obligation.get("id", "")),
             label=label,
@@ -267,9 +287,13 @@ def audit_derivation_v2_for_label(
             route_decision=route,
             shape_diagnostic=shape,
             numeric_diagnostics=numeric,
-            backend_attempts=_backend_attempts(base_obligation),
+            backend_attempts=backend_attempts,
             status=status,
             reason=reason,
+            evidence_kind=evidence_kind,
+            diagnostic_only=diagnostic_only,
+            certificate=certificate,
+            verification_boundary=verification_boundary,
             actions=actions,
             provenance=base_obligation.get("provenance", {}),
             metadata=contract_metadata("proof_audit_v2_obligation"),

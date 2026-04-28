@@ -58,6 +58,14 @@ LaTeXML is still a system package on this machine rather than a Python package. 
 export MATHDEVMCP_LATEXML_PATH=/path/to/latexml
 ```
 
+Validate the optional LaTeXML backend with:
+
+```bash
+scripts/validate_latexml_backend.sh /path/to/MathDevMCP
+```
+
+This command exits successfully with an `unavailable` caveat by default. Set `MATHDEVMCP_REQUIRE_LATEXML=1` only for deployments that intentionally require LaTeXML.
+
 For a clean checkout smoke after committing release changes:
 
 ```bash
@@ -66,6 +74,16 @@ scripts/clean_install_smoke.sh /tmp/mathdevmcp-clean
 
 This copies `HEAD` with `git archive`, installs the base package in a disposable conda env, and runs doctor, focused parser tests, and the benchmark gate. Set `MATHDEVMCP_INSTALL_BACKENDS=1` only when backend installation should be tested explicitly.
 
+Use release evidence collection for review artifacts:
+
+```bash
+scripts/collect_release_evidence.sh /tmp/mathdevmcp-release-evidence
+```
+
+Generated evidence should be stored outside git by default. The committed scripts and schemas are the reproducible release mechanism; routine evidence directories should be treated as review artifacts.
+
 ## Release Caveats
 
 External commands must have timeouts and structured `inconclusive` failures. Private corpora should not be committed; only manifest stubs and expected labels belong in git.
+
+Private corpus evaluation can be supplied through `MATHDEVMCP_PRIVATE_CORPUS_MANIFEST`. Default reports redact private paths and governance validation rejects private roots inside the checkout.

@@ -29,6 +29,8 @@ def test_parser_backend_current_preserves_department_corpus_labels():
     assert result["details"]["generated_like_labels"] == []
     assert result["details"]["provenance_score"] == 1.0
     assert result["details"]["environment_count"] >= 1
+    assert result["details"]["environment_type_counts"]["equation"] >= 1
+    assert "doc_macro_filter_main.tex" in result["details"]["tex_files_scanned"]
 
 
 def test_parser_backend_latexml_runs_or_reports_inconclusive():

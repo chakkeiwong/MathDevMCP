@@ -23,7 +23,11 @@ if [[ ! -x "$HOME/.elan/bin/elan" ]]; then
   rm -f "$tmp_script"
 fi
 
-"$HOME/.elan/bin/elan" toolchain install "$LEAN_TOOLCHAIN"
+if "$HOME/.elan/bin/elan" toolchain list | awk '{print $1}' | grep -qx "$LEAN_TOOLCHAIN"; then
+  echo "Lean toolchain already installed: $LEAN_TOOLCHAIN"
+else
+  "$HOME/.elan/bin/elan" toolchain install "$LEAN_TOOLCHAIN"
+fi
 
 echo "Backend env: $ENV_NAME"
 echo "Lean toolchain: $LEAN_TOOLCHAIN"

@@ -62,6 +62,10 @@ def _evidence(kind: str, *, command: list[str], source: str, uses_sorry: bool, l
         "source_sha256": _source_hash(source),
         "lean_version": lean_version,
         "severity": "certifying" if kind == "lean_verified" else ("blocking" if kind == "lean_failed" else "diagnostic"),
+        "evidence_kind": "deterministic_backend",
+        "diagnostic_only": kind not in {"lean_verified", "lean_failed"},
+        "certificate": {"backend": "lean", "source_sha256": _source_hash(source)} if kind == "lean_verified" else None,
+        "verification_boundary": "Lean accepted the source without placeholders." if kind == "lean_verified" else reason,
     }
 
 

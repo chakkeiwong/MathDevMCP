@@ -1,5 +1,154 @@
 # Reset memo: industrial agent-tool direction
 
+## Current remaining-gap closure request
+
+The active request is to execute the newly added remaining-gap plan:
+
+```text
+docs/plans/industrial-release-remaining-gap-closure-execution-plan.md
+```
+
+Starting commit: `2b8dbb6`.
+
+Initial working tree state:
+
+```text
+?? docs/plans/industrial-release-remaining-gap-closure-execution-plan.md
+```
+
+Initial checks:
+
+```text
+Base doctor:
+- LaTeXML unavailable.
+- Pandoc available at /usr/bin/pandoc, version 2.9.2.1.
+- Lean available at /home/chakwong/.elan/bin/lean, version 4.20.0.
+- Sage available at /usr/bin/sage, version 9.5.
+- LeanDojo unavailable in the base Python env.
+- SymPy available, version 1.14.0.
+
+Backend-configured doctor:
+- LaTeXML unavailable.
+- Pandoc available at /usr/bin/pandoc, version 2.9.2.1.
+- Lean available at /home/chakwong/.elan/bin/lean, version 4.20.0.
+- Sage available at /usr/bin/sage, version 9.5.
+- LeanDojo available in conda env mathdevmcp-backends, version 4.20.0.
+- SymPy available in conda env mathdevmcp-backends, version 1.14.0.
+
+Release readiness:
+- status: ready_with_caveats
+- git_commit: 2b8dbb6
+- dirty_worktree: true, due to the new plan file
+- blockers: none
+- caveats: dirty_worktree, latexml_optional_backend_unavailable
+```
+
+Required cycle for this pass:
+
+```text
+plan for the phase
+-> execute
+-> test
+-> audit
+-> tidy up
+-> update this reset memo
+```
+
+The pass must:
+
+- create a sibling plan-audit file before broad implementation,
+- execute all seven phases in the remaining-gap plan,
+- keep optional backends optional by default,
+- preserve the invariant that diagnostic evidence is not proof,
+- record exact verification commands and caveats,
+- commit the resulting coherent changes,
+- update this reset memo again upon completion.
+
+## Remaining-gap closure mid-pass checkpoint
+
+The plan audit was added as:
+
+```text
+docs/plans/industrial-release-remaining-gap-closure-plan-audit.md
+```
+
+Audit result: approved with constraints. Key audit findings were that LeanDojo must remain final-Lean-check dominated, LaTeXML must stay optional by default, backend clean install may have environmental blockers, private corpus paths must be redacted, parser metrics must not become proof, and release evidence should be generated outside git by default.
+
+Phase execution outcomes so far:
+
+- Phase 1, LeanDojo fixture and bounded Dojo loop:
+  - Added a committed tiny Lean project under `tests/fixtures/leandojo_tiny_project`.
+  - Extended `src/mathdevmcp/leandojo_backend.py` with separate readiness fields for `import_available`, `fixture_available`, `trace_available`, `dojo_entered`, `tactics_executed`, and `final_lean_check_passed`.
+  - Added an opt-in real `Dojo(entry)` path guarded by `MATHDEVMCP_RUN_LEANDOJO_INTEGRATION` in tests. Normal tests validate the boundary without requiring real tracing.
+  - Direct Lean final checking remains the only certifying path; a direct-checked proof without real Dojo remains `inconclusive` for proof-search readiness, and a false proof artifact returns `mismatch`.
+- Phase 2, LaTeXML validation:
+  - Added `scripts/validate_latexml_backend.sh`.
+  - Default absent-LaTeXML behavior returns a structured `latexml_backend_validation` payload with status `unavailable` and exit code 0.
+  - Strict mode through `MATHDEVMCP_REQUIRE_LATEXML=1` returns exit code 1 when LaTeXML is unavailable.
+- Phase 3, backend clean-install hardening:
+  - Updated `scripts/clean_install_smoke.sh` with phase logging, explicit `MATHDEVMCP_CLEAN_SKIP_NETWORK_HEAVY=1`, and optional `MATHDEVMCP_CLEAN_ARTIFACT_DIR`.
+  - Backend mode still invokes backend setup unless the explicit partial-smoke skip flag is set.
+- Phase 4, private/sanitized corpus workflow:
+  - Extended `src/mathdevmcp/release_corpus.py` to load `MATHDEVMCP_PRIVATE_CORPUS_MANIFEST` or an explicit private manifest path.
+  - Default manifests redact private document/code paths and validation rejects private paths inside the checkout.
+- Phase 5, parser evidence:
+  - Extended parser benchmark details with environment type counts and scanned TeX file lists while preserving existing label/provenance scoring.
+- Phase 6, diagnostic evidence boundary:
+  - Added `evidence_kind`, `diagnostic_only`, `certificate`, and `verification_boundary` fields to proof-audit v2 obligations.
+  - Added deterministic-backend certificate metadata to Lean check evidence.
+- Phase 7, release evidence and CI profile:
+  - Added `src/mathdevmcp/release_evidence.py`.
+  - Added `scripts/collect_release_evidence.sh` for doctor, parser benchmark, benchmark gate, release-readiness, governance, backend validation, LaTeXML validation, and optional clean-install summaries.
+  - Added `artifacts/release-evidence/` to `.gitignore`.
+
+Focused tests passed:
+
+```text
+PYTHONPATH=src pytest -q tests/test_remaining_release_gaps.py
+12 passed, 1 skipped
+
+PYTHONPATH=src pytest -q tests/test_proof_audit_v2.py tests/test_parser_benchmark.py tests/test_industrial_release_gap_closure.py tests/test_release_candidate_installation.py
+32 passed
+
+scripts/validate_latexml_backend.sh /home/chakwong/python/MathDevMCP
+passed with status unavailable, strict=false
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root /home/chakwong/python/MathDevMCP
+status ready_with_caveats; caveats dirty_worktree and latexml_optional_backend_unavailable
+
+bash -n scripts/validate_latexml_backend.sh scripts/collect_release_evidence.sh scripts/clean_install_smoke.sh
+passed
+```
+
+Mid-pass audit notes:
+
+- Real LeanDojo `Dojo(entry)` remains opt-in and may still be `inconclusive` in this local fixture path if LeanDojo tracing cannot complete without additional repository metadata. This is recorded as readiness evidence, not hidden.
+- LaTeXML remains unavailable on this machine and optional for the current release profile.
+- Generated release evidence is ignored by default and should not be committed unless explicitly curated after privacy review.
+
+## Remaining-gap closure finalization checkpoint
+
+After commit `ca59ab7`, the base clean-install smoke from committed `HEAD` passed:
+
+```text
+scripts/clean_install_smoke.sh /tmp/mathdevmcp-clean-remaining-ca59ab7
+10 passed
+benchmark gate: 34/34 passed
+```
+
+The first backend-enabled clean-install smoke found a script idempotency defect rather than a backend dependency blocker:
+
+```text
+MATHDEVMCP_INSTALL_BACKENDS=1 scripts/clean_install_smoke.sh /tmp/mathdevmcp-clean-backends-ca59ab7
+failed during scripts/setup_backend_env.sh
+error: 'leanprover/lean4:v4.20.0' is already installed
+```
+
+Fix applied before final amend:
+
+- `scripts/setup_backend_env.sh` now checks `elan toolchain list` and treats the pinned Lean toolchain already being installed as success.
+- `tests/test_release_candidate_installation.py` now checks for this idempotency guard.
+
 ## Current release-candidate gap-closure request
 
 The next execution request is to turn the newly written industrial release-candidate gap-closure plan into a committed implementation pass.

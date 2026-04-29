@@ -7,14 +7,25 @@ name = "mathdevmcp"
 version = "0.1.0"
 description = "Mathematical development MCP tools for large docs and code-doc consistency"
 requires-python = ">=3.10"
+readme = "README.md"
+license = {text = "Proprietary internal release candidate; public release license pending"}
+authors = [{name = "MathDevMCP maintainers"}]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest"]
+dev = ["pytest", "build", "twine"]
+quality = ["build", "twine"]
 symbolic = ["sympy"]
 mcp = ["mcp"]
 leandojo = ["lean-dojo"]
-all = ["sympy", "mcp", "lean-dojo"]
+all = ["sympy", "mcp", "lean-dojo", "build", "twine"]
 
 [project.scripts]
 mathdevmcp = "mathdevmcp.cli:main"

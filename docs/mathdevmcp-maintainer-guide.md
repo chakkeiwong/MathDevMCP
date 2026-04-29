@@ -19,6 +19,8 @@ the whole codebase.
   privacy validation.
 - `src/mathdevmcp/release_policy.py`: release profiles, blockers, caveats, and
   evidence command list.
+- `src/mathdevmcp/public_release.py`: public industrial release product-surface
+  checks for CI, packaging, MCP docs, support matrix, and redaction evidence.
 - `src/mathdevmcp/doctor.py`: runtime capability diagnostics.
 - `src/mathdevmcp/backend_env.py`: isolated backend environment selection.
 - `src/mathdevmcp/mcp_facade.py`: in-process MCP tool facade.
@@ -36,6 +38,8 @@ the whole codebase.
 - Keep LeanDojo in the backend environment.
 - Never commit private documents or populated private manifests.
 - Run focused tests after each behavior change, then the full suite.
+- Treat `full` as strict internal/deployment evidence and `public` as the
+  public industrial release product-surface gate.
 
 ## Adding a Benchmark Case
 
@@ -72,6 +76,22 @@ Regenerate evidence:
 MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/secure/local/path/corpus.json \
 scripts/generate_release_report_evidence.sh docs/generated/release_report
 ```
+
+## Public Industrial Release Checks
+
+Before any public industrial release claim, run:
+
+```bash
+scripts/quality_gate.sh
+PYTHONPATH=src python -m mathdevmcp.cli public-release-check --root "$PWD"
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile public
+```
+
+The public gate checks that CI, packaging metadata, MCP surface documentation,
+support matrix coverage, documentation boundary language, quality checks, and
+generated-evidence redaction all agree. It does not certify arbitrary
+mathematics; it certifies that the public product surface is coherent enough
+for release review.
 
 Scan for path leaks:
 

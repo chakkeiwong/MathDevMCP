@@ -12,11 +12,14 @@ def test_optional_dependency_groups_keep_base_package_small():
     optional = data["project"]["optional-dependencies"]
 
     assert data["project"]["dependencies"] == []
-    assert optional["dev"] == ["pytest"]
+    assert "pytest" in optional["dev"]
+    assert "build" in optional["dev"]
+    assert "twine" in optional["dev"]
+    assert optional["quality"] == ["build", "twine"]
     assert "sympy" in optional["symbolic"]
     assert "mcp" in optional["mcp"]
     assert "lean-dojo" in optional["leandojo"]
-    assert {"sympy", "mcp", "lean-dojo"}.issubset(set(optional["all"]))
+    assert {"sympy", "mcp", "lean-dojo", "build", "twine"}.issubset(set(optional["all"]))
 
 
 def test_release_readiness_report_records_policy_fields():
@@ -28,3 +31,11 @@ def test_release_readiness_report_records_policy_fields():
     assert report["benchmark_gate"]["summary"]["expected_abstentions"] >= 1
     assert report["schema_version"] == "1.0"
     assert report["status"] in {"ready", "ready_with_caveats", "not_ready"}
+
+
+def test_public_profile_is_available_and_distinct_from_full():
+    report = release_readiness_report(ROOT, profile="public")
+
+    assert report["profile"] == "public"
+    assert "ci_release_gate" in report["required_capabilities"]
+    assert "private_corpus_manifest" in report["optional_capabilities"]

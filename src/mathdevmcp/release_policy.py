@@ -20,8 +20,8 @@ from .parser_policy import decide_parser_policy
 from .release_corpus import validate_release_corpus_manifest
 
 
-RELEASE_PROFILES = {"base", "backend", "latexml", "private-corpus", "full"}
-PROFILE_POLICY_VERSION = "2026-04-caveat-closure"
+RELEASE_PROFILES = {"base", "backend", "latexml", "private-corpus", "full", "public"}
+PROFILE_POLICY_VERSION = "2026-04-public-surface"
 
 
 def release_readiness_report(root: str | Path, *, profile: str = "base") -> dict:
@@ -120,6 +120,20 @@ def release_readiness_report(root: str | Path, *, profile: str = "base") -> dict
         )
     if governance_validation.get("status") == "mismatch":
         blockers.append({"kind": "governance_validation_failed", "severity": "high", "findings": governance_validation.get("findings", [])})
+    if profile_policy["requires_public_surface"]:
+        from .public_release import public_release_check
+
+        public_surface = public_release_check(root_path)
+        if public_surface["status"] == "mismatch":
+            for finding in public_surface["blockers"]:
+                blockers.append(
+                    {
+                        "kind": finding["kind"],
+                        "severity": "high",
+                        "check": finding.get("check"),
+                        "detail": finding.get("detail", finding.get("path", "")),
+                    }
+                )
     if blockers:
         recommendation = "not_ready"
         reason = "Release readiness has blocking findings."
@@ -179,6 +193,7 @@ def _profile_policy(profile: str) -> dict:
     requires_backend = profile in {"backend", "full"}
     requires_latexml = profile in {"latexml", "full"}
     requires_private = profile in {"private-corpus", "full"}
+    requires_public_surface = profile == "public"
     required = ["benchmark_gate", "current_parser_policy", "governance_validation", "release_corpus_manifest"]
     optional = ["latexml", "lean_dojo_backend_env", "private_corpus_manifest"]
     if requires_backend:
@@ -190,11 +205,14 @@ def _profile_policy(profile: str) -> dict:
     if requires_private:
         required.append("private_corpus_manifest")
         optional = [item for item in optional if item != "private_corpus_manifest"]
+    if requires_public_surface:
+        required.extend(["mcp_surface_consistency", "packaging_support_matrix", "documentation_sync", "ci_release_gate", "quality_gate"])
     return {
         "profile": profile,
         "requires_backend": requires_backend,
         "requires_latexml": requires_latexml,
         "requires_private_corpus": requires_private,
+        "requires_public_surface": requires_public_surface,
         "required_capabilities": required,
         "optional_capabilities": optional,
     }
@@ -216,6 +234,9 @@ def _evidence_commands(profile: str) -> list[str]:
         commands.append('scripts/validate_latexml_backend.sh "$PWD"')
     if profile in {"private-corpus", "full"}:
         commands.append('MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/secure/local/path/corpus.json scripts/validate_private_corpus.sh "$PWD"')
+    if profile == "public":
+        commands.append('PYTHONPATH=src python -m mathdevmcp.cli public-release-check --root "$PWD"')
+        commands.append('scripts/quality_gate.sh')
     return commands
 
 

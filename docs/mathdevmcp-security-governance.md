@@ -10,6 +10,7 @@ MathDevMCP handles mathematical documents and source code that may be private. R
 - keep expected abstention as a quality signal,
 - preserve benchmark and doctor outputs for release review.
 - generate only redacted report snippets for committed release documentation.
+- require the public industrial release gate before public release claims.
 
 The machine-readable policy is available through:
 

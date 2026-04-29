@@ -1,10 +1,10 @@
 # MathDevMCP
 
 MathDevMCP is an internal release candidate for mathematical development
-agents. It gives colleagues local tools for LaTeX/document indexing,
-code-document consistency checks, derivation audit, benchmark gates, optional
-math backends, MCP integration, and privacy-preserving private corpus
-validation.
+agents with an explicit public industrial release gate. It gives colleagues
+local tools for LaTeX/document indexing, code-document consistency checks,
+derivation audit, benchmark gates, optional math backends, MCP integration,
+and privacy-preserving private corpus validation.
 
 The primary product document is:
 
@@ -15,6 +15,7 @@ The primary product document is:
 - [Security and governance](docs/mathdevmcp-security-governance.md)
 - [Private corpus manifest guide](docs/private-corpus-manifest-guide.md)
 - [Maintainer guide](docs/mathdevmcp-maintainer-guide.md)
+- [Support matrix](docs/mathdevmcp-support-matrix.md)
 
 ## Install
 
@@ -50,6 +51,9 @@ LaTeXML is a system tool. Validate it with:
 ```bash
 MATHDEVMCP_REQUIRE_LATEXML=1 scripts/validate_latexml_backend.sh "$PWD"
 ```
+
+The supported install and validation modes are summarized in the
+[support matrix](docs/mathdevmcp-support-matrix.md).
 
 ## Common Workflows
 
@@ -119,6 +123,7 @@ backend          base + isolated LeanDojo backend env
 latexml          base + strict LaTeXML validation
 private-corpus   base + external private/sanitized manifest
 full             all required release evidence
+public           public industrial release product-surface gate
 ```
 
 Run:
@@ -126,7 +131,12 @@ Run:
 ```bash
 PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile base
 PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile full
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile public
 ```
+
+`full` is the strict internal/deployment profile. `public` adds CI,
+packaging, MCP surface consistency, documentation synchronization, quality
+gate, and redaction checks before a public industrial release claim.
 
 ## Build the Release Report
 
@@ -150,6 +160,7 @@ report.
 
 ```bash
 PYTHONPATH=src pytest -q
+scripts/quality_gate.sh
 scripts/release_smoke.sh "$PWD"
 scripts/release_matrix.sh "$PWD"
 ```

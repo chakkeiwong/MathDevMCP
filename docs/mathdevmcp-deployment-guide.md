@@ -2,6 +2,8 @@
 
 MathDevMCP is deployed as a small base package with optional external workers.
 The base package must import without LaTeXML, Pandoc, Lean, Sage, or LeanDojo.
+The public industrial release gate is separate from internal deployment
+profiles and is checked with `public-release-check`.
 
 ## Local Smoke
 
@@ -117,6 +119,20 @@ For a local profile matrix:
 ```bash
 scripts/release_matrix.sh /path/to/MathDevMCP
 ```
+
+For public industrial release surface validation:
+
+```bash
+scripts/quality_gate.sh
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli public-release-check \
+  --root /path/to/MathDevMCP
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli release-readiness \
+  --root /path/to/MathDevMCP --profile public
+```
+
+This public gate validates CI, packaging metadata, MCP surface consistency,
+support matrix coverage, documentation boundary language, quality checks, and
+generated-evidence redaction. It does not require private corpus material.
 
 For no-intervention sanitized validation outside git:
 

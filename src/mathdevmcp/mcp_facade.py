@@ -8,6 +8,7 @@ same report-producing functions used by tests and release scripts.
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -31,6 +32,21 @@ from .tool_matrix import tool_matrix
 from .workflow import build_implementation_brief
 
 ToolHandler = Callable[[dict[str, Any]], dict[str, Any] | list[dict[str, Any]]]
+
+
+@dataclass(frozen=True)
+class MCPToolSpec:
+    name: str
+    handler: ToolHandler
+    description: str
+    output_contract: str
+    stability: str = "stable"
+    server_name: str | None = None
+    optional_capability: str | None = None
+
+    @property
+    def exposed_server_name(self) -> str:
+        return self.server_name or self.name
 
 
 def _required_string(args: dict[str, Any], name: str) -> str:
@@ -247,57 +263,68 @@ def _tool_release_readiness(args: dict[str, Any]) -> dict[str, Any]:
     return release_readiness_report(Path(_required_string(args, "root")), profile=str(args.get("profile", "base")))
 
 
-TOOL_HANDLERS: dict[str, ToolHandler] = {
-    "search_latex": _tool_search_latex,
-    "extract_latex_context": _tool_extract_latex_context,
-    "extract_latex_neighborhood": _tool_extract_latex_neighborhood,
-    "search_code_docs": _tool_search_code_docs,
-    "compare_doc_code": _tool_compare_doc_code,
-    "compare_label_code": _tool_compare_label_code,
-    "derive_label_step": _tool_derive_label_step,
-    "implementation_brief": _tool_implementation_brief,
-    "check_proof_obligation": _tool_check_proof_obligation,
-    "audit_derivation_label": _tool_audit_derivation_label,
-    "audit_derivation_v2_label": _tool_audit_derivation_v2_label,
-    "audit_kalman_recursion": _tool_audit_kalman_recursion,
-    "typed_obligation_label": _tool_typed_obligation_label,
-    "run_benchmarks": _tool_run_benchmarks,
-    "benchmark_gate": _tool_benchmark_gate,
-    "tool_matrix": _tool_tool_matrix,
-    "doctor": _tool_doctor,
-    "release_corpus_manifest": _tool_release_corpus_manifest,
-    "validate_release_corpus": _tool_validate_release_corpus,
-    "governance_policy": _tool_governance_policy,
-    "release_readiness": _tool_release_readiness,
-}
+MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
+    MCPToolSpec("search_latex", _tool_search_latex, "Search indexed LaTeX blocks with provenance.", "latex_search_results"),
+    MCPToolSpec("extract_latex_context", _tool_extract_latex_context, "Extract line context around a LaTeX label.", "latex_context"),
+    MCPToolSpec(
+        "extract_latex_neighborhood",
+        _tool_extract_latex_neighborhood,
+        "Extract paragraph neighborhood around a LaTeX label.",
+        "latex_paragraph_context",
+    ),
+    MCPToolSpec("search_code_docs", _tool_search_code_docs, "Search code and document files together.", "code_doc_search_results"),
+    MCPToolSpec("compare_doc_code", _tool_compare_doc_code, "Compare document text against code text.", "doc_code_consistency_result"),
+    MCPToolSpec("compare_label_code", _tool_compare_label_code, "Compare a labeled document block against code.", "label_consistency_result"),
+    MCPToolSpec("derive_label_step", _tool_derive_label_step, "Check a derivation step against labeled document context.", "label_derivation_result"),
+    MCPToolSpec("implementation_brief", _tool_implementation_brief, "Build a document-grounded implementation brief.", "implementation_brief"),
+    MCPToolSpec(
+        "check_proof_obligation",
+        _tool_check_proof_obligation,
+        "Check a bounded derivation/proof obligation with optional backend assistance.",
+        "proof_obligation_result",
+        optional_capability="symbolic_backend",
+    ),
+    MCPToolSpec(
+        "audit_derivation_label",
+        _tool_audit_derivation_label,
+        "Audit proof obligations extracted from a labeled derivation block.",
+        "proof_audit_result",
+        optional_capability="symbolic_backend",
+    ),
+    MCPToolSpec(
+        "audit_derivation_v2_label",
+        _tool_audit_derivation_v2_label,
+        "Audit a labeled derivation with typed routing and release-readiness evidence.",
+        "proof_audit_v2_result",
+        optional_capability="symbolic_backend",
+    ),
+    MCPToolSpec("audit_kalman_recursion", _tool_audit_kalman_recursion, "Audit AST-level Kalman recursion structure in Python code.", "kalman_recursion_audit"),
+    MCPToolSpec("typed_obligation_label", _tool_typed_obligation_label, "Build typed/dimensional diagnostics for a labeled math obligation.", "typed_obligation_label_diagnostic"),
+    MCPToolSpec("run_benchmarks", _tool_run_benchmarks, "Run seeded consistency benchmarks.", "benchmark_results"),
+    MCPToolSpec("benchmark_gate", _tool_benchmark_gate, "Return CI-friendly benchmark gate results.", "benchmark_gate"),
+    MCPToolSpec("tool_matrix", _tool_tool_matrix, "Return the current MathDevMCP tool matrix.", "tool_matrix", server_name="get_tool_matrix"),
+    MCPToolSpec("doctor", _tool_doctor, "Report external backend capabilities and environment diagnostics.", "doctor_report"),
+    MCPToolSpec("release_corpus_manifest", _tool_release_corpus_manifest, "Return the release corpus manifest.", "release_corpus_manifest"),
+    MCPToolSpec("validate_release_corpus", _tool_validate_release_corpus, "Validate release corpus privacy and gate metadata.", "release_corpus_validation_report"),
+    MCPToolSpec("governance_policy", _tool_governance_policy, "Return security and governance policy.", "governance_policy"),
+    MCPToolSpec("release_readiness", _tool_release_readiness, "Return an auditable release-readiness report.", "release_readiness_report"),
+)
+
+
+TOOL_HANDLERS: dict[str, ToolHandler] = {spec.name: spec.handler for spec in MCP_TOOL_SPECS}
 
 
 def list_mcp_tools() -> list[dict[str, Any]]:
     return [
-        {"name": name, "description": description}
-        for name, description in [
-            ("search_latex", "Search indexed LaTeX blocks with provenance."),
-            ("extract_latex_context", "Extract line context around a LaTeX label."),
-            ("extract_latex_neighborhood", "Extract paragraph neighborhood around a LaTeX label."),
-            ("search_code_docs", "Search code and document files together."),
-            ("compare_doc_code", "Compare document text against code text."),
-            ("compare_label_code", "Compare a labeled document block against code."),
-            ("derive_label_step", "Check a derivation step against labeled document context."),
-            ("implementation_brief", "Build a document-grounded implementation brief."),
-            ("check_proof_obligation", "Check a bounded derivation/proof obligation with optional backend assistance."),
-            ("audit_derivation_label", "Audit proof obligations extracted from a labeled derivation block."),
-            ("audit_derivation_v2_label", "Audit a labeled derivation with typed routing and release-readiness evidence."),
-            ("audit_kalman_recursion", "Audit AST-level Kalman recursion structure in Python code."),
-            ("typed_obligation_label", "Build typed/dimensional diagnostics for a labeled math obligation."),
-            ("run_benchmarks", "Run seeded consistency benchmarks."),
-            ("benchmark_gate", "Return CI-friendly benchmark gate results."),
-            ("tool_matrix", "Return the current MathDevMCP tool matrix."),
-            ("doctor", "Report external backend capabilities and environment diagnostics."),
-            ("release_corpus_manifest", "Return the release corpus manifest."),
-            ("validate_release_corpus", "Validate release corpus privacy and gate metadata."),
-            ("governance_policy", "Return security and governance policy."),
-            ("release_readiness", "Return an auditable release-readiness report."),
-        ]
+        {
+            "name": spec.name,
+            "server_name": spec.exposed_server_name,
+            "description": spec.description,
+            "output_contract": spec.output_contract,
+            "stability": spec.stability,
+            "optional_capability": spec.optional_capability,
+        }
+        for spec in MCP_TOOL_SPECS
     ]
 
 
@@ -317,3 +344,7 @@ def call_mcp_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any] | list
         return _wrap_tool_result(handler(arguments))
     except ValueError as exc:
         return error_result("invalid_arguments", str(exc))
+    except Exception:
+        # MCP clients need a stable public envelope. Raw tracebacks and local
+        # paths belong in logs/debug sessions, not in default tool responses.
+        return error_result("tool_execution_error", f"MathDevMCP tool failed during execution: {name}")

@@ -2818,3 +2818,229 @@ MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-fina
 Expected post-commit caveat:
 
 - This memo update itself makes the worktree dirty until it is committed.
+
+## Public industrial release hardening kickoff
+
+Active execution plan:
+
+```text
+docs/plans/public-industrial-release-hardening-execution-plan.md
+```
+
+Independent plan audit:
+
+```text
+docs/plans/public-industrial-release-hardening-plan-audit.md
+```
+
+Starting commit: `4ad357c`.
+
+Initial worktree state:
+
+```text
+?? docs/plans/claude_audit.md
+?? docs/plans/public-industrial-release-hardening-execution-plan.md
+```
+
+Baseline checks:
+
+```text
+PYTHONPATH=src python -m mathdevmcp.cli doctor
+- ok: true
+- Python: /home/chakwong/miniconda3/envs/tfgpu/bin/python, version 3.11.15
+- LaTeXML: available, /usr/bin/latexml, version 0.8.6
+- Pandoc: available, /usr/bin/pandoc, version 2.9.2.1
+- Lean: available, /home/chakwong/.elan/bin/lean, version 4.20.0
+- Sage: available, /usr/bin/sage, version 9.5
+- LeanDojo: unavailable in the base Python env
+- SymPy: available, version 1.14.0
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root /home/chakwong/python/MathDevMCP --profile base
+- status: ready_with_caveats
+- blockers: none
+- caveats: dirty_worktree, private_corpus_not_configured
+- git_commit: 4ad357c
+
+scripts/release_smoke.sh /home/chakwong/python/MathDevMCP
+- passed
+- benchmark gate total: 41 passed / 41 total
+```
+
+Execution notes:
+
+- `docs/plans/claude_audit.md` is user-provided audit input and must remain
+  unstaged unless explicitly requested.
+- The release smoke generated root-level `*.latexml.log` files. They are
+  generated artifacts and should not be staged; this pass should add an ignore
+  rule or otherwise tidy them before commit.
+- Public hardening must preserve the existing internal `base` and `full`
+  profile semantics.
+
+## Public industrial release hardening Phases 1-3 checkpoint
+
+Plan:
+
+- Add a separate public release boundary without changing `base` or `full`
+  semantics.
+- Consolidate MCP tool metadata into one facade registry and make the server
+  alias explicit.
+- Normalize unexpected MCP execution failures into a stable public error
+  envelope.
+- Add product-surface tests so docs, registry, server exposure, packaging, and
+  support matrix cannot drift silently.
+
+Executed:
+
+- Added `src/mathdevmcp/public_release.py` with structured public release
+  checks for CI workflow presence, packaging metadata, MCP surface consistency,
+  support matrix coverage, docs boundary language, quality gate presence, and
+  generated-evidence path leaks.
+- Added `public` to `RELEASE_PROFILES` and wired
+  `release-readiness --profile public` to the public product-surface gate.
+- Added CLI command `public-release-check`.
+- Added `MCPToolSpec` and `MCP_TOOL_SPECS` in `mcp_facade.py`, deriving
+  `TOOL_HANDLERS` and `list_mcp_tools()` from the registry.
+- Added explicit `MCP_SERVER_EXPOSED_TOOLS` and alias mapping for facade
+  `tool_matrix` to FastMCP server `get_tool_matrix`.
+- Extended `ErrorEnvelope` with `tool_execution_error` and made
+  `call_mcp_tool()` catch unexpected exceptions without leaking raw paths or
+  tracebacks.
+- Added focused tests:
+  `tests/test_mcp_surface_sync.py`, `tests/test_public_release_check.py`, and
+  `tests/test_support_matrix_docs.py`.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_mcp_surface_sync.py tests/test_public_release_check.py tests/test_support_matrix_docs.py tests/test_packaging_release_policy.py tests/test_schema_contracts.py
+20 passed
+
+PYTHONPATH=src pytest -q tests/test_mcp_facade.py tests/test_mcp_server.py
+21 passed
+
+scripts/quality_gate.sh
+status: consistent; blockers: []
+```
+
+Audit/tidy notes:
+
+- The first focused run found a docs/test wording mismatch for the `full`
+  versus `public` boundary. The release-policy sentence now states exactly
+  that the `full` profile means every internal optional evidence source is
+  present and is not a public release claim.
+- The public gate does not import the optional `mcp` package; it inspects
+  `mcp_server.py` source for FastMCP tool wrappers so base CLI commands remain
+  usable without MCP installed.
+- The raw exception path-leak test uses a fake `/home/chakwong/...` exception
+  detail and verifies the default MCP response omits it.
+
+## Public industrial release hardening Phases 4-6 checkpoint
+
+Plan:
+
+- Add CI workflow files that call the local release gates.
+- Add packaging metadata and a support matrix that distinguish internal,
+  optional, full, and public profiles.
+- Add a conservative quality gate that is runnable in the current environment
+  without introducing another dependency conflict.
+
+Executed:
+
+- Added `.github/workflows/ci.yml` with Python 3.10/3.11/3.12 base release
+  jobs and a package build/twine-check job.
+- Added `scripts/quality_gate.sh`, using stdlib `compileall` and the structured
+  `public-release-check`.
+- Added `docs/mathdevmcp-support-matrix.md`.
+- Updated `pyproject.toml` with readme, license text, maintainer metadata,
+  Python classifiers, `quality` extras, and build/twine dev dependencies.
+- Updated `.gitignore` to ignore generated `*.latexml.log` artifacts.
+- Updated README, release policy, deployment guide, operator guide, maintainer
+  guide, security/governance guide, and MCP README to describe the public
+  industrial release gate and full MCP tool surface.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_mcp_surface_sync.py tests/test_public_release_check.py tests/test_support_matrix_docs.py tests/test_packaging_release_policy.py tests/test_schema_contracts.py
+20 passed
+
+scripts/quality_gate.sh
+status: consistent; blockers: []
+```
+
+Audit/tidy notes:
+
+- Ruff is not installed in the active environment, so this pass uses a
+  dependency-light quality gate rather than adding a new local package
+  requirement midstream.
+- CI installs `.[dev,mcp,symbolic]` for base release gates but does not install
+  LeanDojo into the base job or require private corpus data.
+- The support matrix explicitly says `full` is internal full-profile evidence,
+  while `public` is the public industrial release product-surface gate.
+
+## Public industrial release hardening Phases 7-9 checkpoint
+
+Plan:
+
+- Keep refactoring targeted around public interfaces and release invariants.
+- Synchronize public-facing docs and the release report with the new public
+  gate.
+- Rebuild the release report PDF and preserve the 80-to-100 page target.
+- Run release, report, and product-surface verification before final staging.
+
+Executed:
+
+- Added targeted invariant comments in the MCP facade around public error
+  normalization.
+- Updated `docs/mathdevmcp-release-report.tex` to document the `public`
+  profile and distinguish it from internal `full` evidence.
+- Rebuilt `docs/mathdevmcp-release-report.pdf`.
+- Kept the PDF at 100 pages.
+
+Tests and checks:
+
+```text
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root /home/chakwong/python/MathDevMCP --profile public
+- status: ready_with_caveats
+- blockers: none
+- caveats: dirty_worktree, private_corpus_not_configured
+
+scripts/release_matrix.sh /home/chakwong/python/MathDevMCP
+- base: ready_with_caveats
+- backend: skipped because MATHDEVMCP_BACKEND_CONDA_ENV is not set
+- latexml: skipped because MATHDEVMCP_REQUIRE_LATEXML=1 is not set
+- private-corpus: skipped because MATHDEVMCP_PRIVATE_CORPUS_MANIFEST is not set
+- full: skipped because strict optional profile flags are not set
+
+scripts/audit_release_report_substance.sh
+Release report substance audit passed.
+Chapters audited: 44
+Evidence snippets audited: 44
+
+PYTHONPATH=src pytest -q
+262 passed, 2 skipped in 58.95s
+
+pdflatex -interaction=nonstopmode -halt-on-error mathdevmcp-release-report.tex
+passed twice
+
+pdfinfo docs/mathdevmcp-release-report.pdf
+Pages: 100
+
+PYTHONPATH=src pytest -q tests/test_public_release_check.py tests/test_support_matrix_docs.py tests/test_mcp_surface_sync.py
+8 passed
+
+git diff --check
+passed
+```
+
+Audit/tidy notes:
+
+- A first `pdfinfo` command raced with the second `pdflatex` pass and reported
+  a transient PDF xref error while the file was being rewritten. After the
+  LaTeX process exited, `pdfinfo` succeeded and reported 100 pages.
+- Public release readiness is now executable and blocker-free, but it reports
+  expected caveats before commit because the tree is dirty and no private
+  corpus manifest is configured for the public profile.
+- The release report addition did not create a skeleton section; it is a
+  concise profile-boundary clarification inside the existing release-profile
+  chapter.

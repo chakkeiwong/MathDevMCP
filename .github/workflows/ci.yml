@@ -1,0 +1,52 @@
+name: MathDevMCP CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  base-release-gates:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev,mcp,symbolic]"
+      - name: Quality gate
+        run: scripts/quality_gate.sh
+      - name: Tests
+        run: PYTHONPATH=src pytest -q
+      - name: Release smoke
+        run: scripts/release_smoke.sh "$PWD"
+      - name: Release matrix
+        run: scripts/release_matrix.sh "$PWD"
+      - name: Release report substance
+        run: scripts/audit_release_report_substance.sh
+      - name: Public release surface check
+        run: PYTHONPATH=src python -m mathdevmcp.cli public-release-check --root "$PWD"
+
+  package-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build twine
+          python -m build
+          python -m twine check dist/*
+

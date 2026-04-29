@@ -6,7 +6,33 @@ from collections.abc import Sequence
 
 from mcp.server.fastmcp import FastMCP
 
-from .mcp_facade import call_mcp_tool, list_mcp_tools
+from .mcp_facade import call_mcp_tool
+
+
+MCP_SERVER_TOOL_ALIASES = {"tool_matrix": "get_tool_matrix"}
+MCP_SERVER_EXPOSED_TOOLS = {
+    "search_latex",
+    "extract_latex_context",
+    "extract_latex_neighborhood",
+    "search_code_docs",
+    "compare_doc_code",
+    "compare_label_code",
+    "derive_label_step",
+    "implementation_brief",
+    "check_proof_obligation",
+    "audit_derivation_label",
+    "audit_derivation_v2_label",
+    "audit_kalman_recursion",
+    "typed_obligation_label",
+    "run_benchmarks",
+    "benchmark_gate",
+    "get_tool_matrix",
+    "doctor",
+    "release_corpus_manifest",
+    "validate_release_corpus",
+    "governance_policy",
+    "release_readiness",
+}
 
 
 mcp = FastMCP(

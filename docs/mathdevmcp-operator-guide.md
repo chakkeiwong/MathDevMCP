@@ -379,6 +379,16 @@ scripts/release_smoke.sh /path/to/MathDevMCP
 PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli release-readiness --root /path/to/MathDevMCP
 ```
 
+Public industrial release profile:
+
+```bash
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli public-release-check --root /path/to/MathDevMCP
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli release-readiness --root /path/to/MathDevMCP --profile public
+```
+
+The public profile checks product-surface readiness. It does not upgrade
+diagnostic mathematical evidence into proof.
+
 Treat `ready_with_caveats` as acceptable for an internal pilot only when caveats are understood, such as LaTeXML being optional or the worktree being dirty during development. Treat `not_ready` as a blocker.
 
 Local smoke script:

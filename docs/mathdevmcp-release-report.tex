@@ -124,12 +124,24 @@ The release profiles are:
   \item[private-corpus] Base evidence plus an external private or sanitized
     private manifest.
   \item[full] All of the above.
+  \item[public] Product-surface release evidence: CI workflow presence,
+    packaging metadata, MCP registry and README consistency, support-matrix
+    coverage, documentation boundary language, quality-gate execution, and
+    generated-evidence redaction.
 \end{description}
 
 The profile split is important because colleagues may use the base product
 without every optional backend, while release managers can demand strict
 evidence before a broader deployment. Optional evidence is not silently ignored:
 strict profiles turn missing evidence into blocking findings.
+
+The \texttt{full} profile is deliberately an internal/deployment profile. It
+means that optional internal evidence sources are present; it is not by itself a
+public industrial release claim. The \texttt{public} profile adds the product
+surface checks needed before a public release statement: MCP documentation must
+match the registry and FastMCP wrappers, the support matrix must cover every
+release profile, CI must run the local gates, and default public error
+envelopes must be structured and free of raw private paths.
 
 \section{Full profile evidence}
 

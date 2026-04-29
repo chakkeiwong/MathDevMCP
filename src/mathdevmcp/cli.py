@@ -25,6 +25,7 @@ from .parser_benchmark import compare_parser_backends
 from .proof_obligations import check_proof_obligation
 from .proof_audit import audit_derivation_for_label
 from .proof_audit_v2 import audit_derivation_v2_for_label
+from .public_release import public_release_check
 from .governance import governance_policy, validate_governance
 from .release_corpus import release_corpus_manifest, validate_release_corpus_manifest
 from .release_policy import RELEASE_PROFILES, release_readiness_report
@@ -294,6 +295,12 @@ def _cmd_release_readiness(args: argparse.Namespace) -> int:
     return 0 if result["status"] in {"ready", "ready_with_caveats"} else 1
 
 
+def _cmd_public_release_check(args: argparse.Namespace) -> int:
+    result = public_release_check(args.root)
+    print(json.dumps(result, indent=2))
+    return 0 if result["status"] == "consistent" else 1
+
+
 
 def make_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="MathDevMCP development utilities")
@@ -482,6 +489,10 @@ def make_parser() -> argparse.ArgumentParser:
     p_release.add_argument("--root", default=".", help="Project root")
     p_release.add_argument("--profile", choices=sorted(RELEASE_PROFILES), default="base", help="Release profile to evaluate")
     p_release.set_defaults(func=_cmd_release_readiness)
+
+    p_public = sub.add_parser("public-release-check", help="Validate public release product-surface gates")
+    p_public.add_argument("--root", default=".", help="Project root")
+    p_public.set_defaults(func=_cmd_public_release_check)
 
     return parser
 

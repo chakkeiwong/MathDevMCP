@@ -34,6 +34,23 @@ def test_mcp_facade_returns_structured_invalid_arguments_error():
     }
 
 
+def test_mcp_facade_returns_structured_tool_execution_error(monkeypatch):
+    from mathdevmcp.mcp_facade import TOOL_HANDLERS
+
+    def broken_handler(_args):
+        raise RuntimeError("/home/chakwong/private/details")
+
+    monkeypatch.setitem(TOOL_HANDLERS, "doctor", broken_handler)
+    result = call_mcp_tool("doctor", {})
+
+    assert result == {
+        "ok": False,
+        "error": {"type": "tool_execution_error", "message": "MathDevMCP tool failed during execution: doctor"},
+        "metadata": {"schema_version": "1.0", "contract": "error"},
+    }
+    assert validate_contract_payload(result) == []
+
+
 
 def test_validate_contract_payload_accepts_success_and_error_envelopes():
     success = build_implementation_brief(

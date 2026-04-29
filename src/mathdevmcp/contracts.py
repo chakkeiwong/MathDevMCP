@@ -6,6 +6,7 @@ from dataclasses import asdict, dataclass
 from typing import Literal
 
 Status = Literal["consistent", "mismatch", "unverified", "inconclusive", "equivalent"]
+ErrorType = Literal["invalid_arguments", "unknown_tool", "tool_execution_error"]
 SCHEMA_VERSION = "1.0"
 
 
@@ -27,7 +28,7 @@ class ContractMetadata:
 
 @dataclass(frozen=True)
 class ErrorEnvelope:
-    type: Literal["invalid_arguments", "unknown_tool"]
+    type: ErrorType
     message: str
 
 
@@ -67,7 +68,7 @@ def attach_contract(result: dict, contract: str, doc_context: dict | None = None
     return result
 
 
-def error_result(error_type: Literal["invalid_arguments", "unknown_tool"], message: str, *, contract: str = "error") -> dict:
+def error_result(error_type: ErrorType, message: str, *, contract: str = "error") -> dict:
     return {
         "ok": False,
         "error": asdict(ErrorEnvelope(type=error_type, message=message)),
@@ -100,7 +101,7 @@ def validate_contract_payload(payload: dict) -> list[str]:
         if not isinstance(error, dict):
             errors.append("error payload missing error")
         else:
-            if error.get("type") not in {"invalid_arguments", "unknown_tool"}:
+            if error.get("type") not in {"invalid_arguments", "unknown_tool", "tool_execution_error"}:
                 errors.append("error.type is invalid")
             if not isinstance(error.get("message"), str) or not error.get("message"):
                 errors.append("error.message must be a non-empty string")

@@ -1,0 +1,9 @@
+Command: python -m mathdevmcp.cli search-latex stochastic volatility likelihood --root <repo>/benchmarks/fixtures --limit 3
+Query: stochastic volatility likelihood
+Results returned: 3
+Result 1: label=None file=doc_sanitized_stochastic_volatility.tex lines=1-1 score=3
+  \section{Sanitized stochastic-volatility likelihood}
+Result 2: label=eq:dept-sv-transition file=doc_sanitized_stochastic_volatility.tex lines=3-5 score=3
+  \begin{equation}\label{eq:dept-sv-transition} h_{t+1} = \mu + \phi(h_t-\mu) + \sigma_\eta \eta_{t+1}. \end{equation}
+Result 3: label=eq:dept-sv-likelihood file=doc_sanitized_stochastic_volatility.tex lines=7-9 score=3
+  \begin{equation}\label{eq:dept-sv-likelihood} \log p(y_t\mid h_t) = -\frac{1}{2}\left(h_t + y_t^2\exp(-h_t)\right) + C. \end{equation}

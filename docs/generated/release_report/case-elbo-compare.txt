@@ -1,0 +1,10 @@
+Command: python -m mathdevmcp.cli compare-label-code eq:dept-elbo <repo>/benchmarks/fixtures/doc_sanitized_bayesian_elbo_vi.py --root <repo>/benchmarks/fixtures --required-terms expectation,elbo --paragraph-context
+Label: eq:dept-elbo
+Code file: doc_sanitized_bayesian_elbo_vi.py
+Status: mismatch
+Reason: Some required document terms were not found in the code text.
+Required terms: expectation,elbo
+Matched terms: ['expectation']
+Missing terms: ['elbo']
+Provenance: doc_sanitized_bayesian_elbo_vi.tex:3-5
+Document excerpt: \begin{equation}\label{eq:dept-elbo} \mathcal L(\lambda)=E_{q_\lambda(z)}[\log p(y,z)-\log q_\lambda(z)]. \end{equation}

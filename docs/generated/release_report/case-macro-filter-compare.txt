@@ -1,0 +1,10 @@
+Command: python -m mathdevmcp.cli compare-label-code eq:macro-filter-likelihood <repo>/benchmarks/fixtures/doc_macro_filter_missing_gain.py --root <repo>/benchmarks/fixtures --required-terms logdet,solve,K_t --paragraph-context
+Label: eq:macro-filter-likelihood
+Code file: doc_macro_filter_missing_gain.py
+Status: mismatch
+Reason: Some required document terms were not found in the code text.
+Required terms: logdet,solve,K_t
+Matched terms: ['logdet', 'solve']
+Missing terms: ['K_t']
+Provenance: doc_macro_filter_model.tex:20-23
+Document excerpt: \begin{equation} \label{eq:macro-filter-likelihood} \ell_t = -\frac{1}{2}\log\det\cov - \frac{1}{2}\innov^\top \cov^{-1}\innov \end{equation}

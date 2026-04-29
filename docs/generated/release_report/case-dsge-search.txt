@@ -1,0 +1,9 @@
+Command: python -m mathdevmcp.cli search-latex Euler equation stochastic discount factor --root <repo>/benchmarks/fixtures --limit 3
+Query: Euler equation stochastic discount factor
+Results returned: 3
+Result 1: label=eq:dept-euler-equation file=doc_sanitized_dsge_macro_finance.tex lines=3-5 score=2
+  \begin{equation}\label{eq:dept-euler-equation} E_t[m_{t+1} R_{t+1}] - 1 = 0. \end{equation}
+Result 2: label=eq:dept-sdf file=doc_sanitized_dsge_macro_finance.tex lines=7-9 score=2
+  \begin{equation}\label{eq:dept-sdf} m_{t+1} = \beta \frac{u'(c_{t+1})}{u'(c_t)}. \end{equation}
+Result 3: label=eq:dept-euler-maruyama file=doc_sanitized_sde_pde_numerics.tex lines=3-5 score=2
+  \begin{equation}\label{eq:dept-euler-maruyama} X_{n+1} = X_n + b(X_n)\Delta t + \sigma(X_n)\sqrt{\Delta t}\xi_n. \end{equation}

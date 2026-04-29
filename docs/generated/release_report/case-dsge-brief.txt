@@ -1,0 +1,10 @@
+Command: python -m mathdevmcp.cli implementation-brief Euler equation stochastic discount factor <repo>/benchmarks/fixtures/doc_sanitized_dsge_macro_finance.py --root <repo>/benchmarks/fixtures --required-terms expectation,euler_residual --limit 2
+Query: Euler equation stochastic discount factor
+Selected label: eq:dept-euler-equation
+Brief status: consistent
+Brief reason: The selected document context is consistent with the checked code terms.
+Consistency status: consistent
+Consistency reason: All required document terms were found in the code text.
+Missing terms: []
+Provenance: doc_sanitized_dsge_macro_finance.tex:3-5
+Context excerpt: \section{Sanitized macro-finance Euler slice}

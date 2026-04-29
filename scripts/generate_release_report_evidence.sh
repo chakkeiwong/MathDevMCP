@@ -74,6 +74,115 @@ def _run_json(args: list[str], *, env: dict[str, str] | None = None) -> dict:
         return {"status": "non_json", "returncode": completed.returncode, "stdout": completed.stdout.strip()}
 
 
+def _command_text(command: list[str]) -> str:
+    return " ".join(command).replace(str(root), "<repo>")
+
+
+def _short_text(value: object, *, max_chars: int = 280) -> str:
+    text = str(value).replace("\n", " ").strip()
+    if len(text) <= max_chars:
+        return text
+    return text[: max_chars - 3].rstrip() + "..."
+
+
+def _case_search(filename: str, *, query: str) -> None:
+    command = [
+        "python",
+        "-m",
+        "mathdevmcp.cli",
+        "search-latex",
+        query,
+        "--root",
+        str(fixtures),
+        "--limit",
+        "3",
+    ]
+    payload = _run_json(command, env={**os.environ, "PYTHONPATH": str(root / "src")})
+    rows = payload if isinstance(payload, list) else []
+    lines = ["Command: " + _command_text(command), f"Query: {query}", f"Results returned: {len(rows)}"]
+    for index, item in enumerate(rows[:3], start=1):
+        lines.extend(
+            [
+                f"Result {index}: label={item.get('label')} file={item.get('file')} lines={item.get('line_start')}-{item.get('line_end')} score={item.get('score')}",
+                "  " + _short_text(item.get("text", "")),
+            ]
+        )
+    _write(filename, "\n".join(lines))
+
+
+def _case_compare(filename: str, *, label: str, code_file: str, required_terms: str) -> None:
+    code_path = fixtures / code_file
+    command = [
+        "python",
+        "-m",
+        "mathdevmcp.cli",
+        "compare-label-code",
+        label,
+        str(code_path),
+        "--root",
+        str(fixtures),
+        "--required-terms",
+        required_terms,
+        "--paragraph-context",
+    ]
+    payload = _run_json(command, env={**os.environ, "PYTHONPATH": str(root / "src")})
+    findings = payload.get("findings", []) if isinstance(payload, dict) else []
+    matched = [item.get("term") for item in findings if item.get("kind") == "matched_term"]
+    missing = payload.get("missing_in_code", []) if isinstance(payload, dict) else []
+    context = payload.get("doc_context", {}) if isinstance(payload, dict) else {}
+    paragraphs = context.get("paragraphs", []) if isinstance(context, dict) else []
+    lines = [
+        "Command: " + _command_text(command),
+        f"Label: {label}",
+        f"Code file: {code_file}",
+        f"Status: {payload.get('status') if isinstance(payload, dict) else 'unknown'}",
+        f"Reason: {payload.get('reason') if isinstance(payload, dict) else 'unknown'}",
+        f"Required terms: {required_terms}",
+        f"Matched terms: {matched}",
+        f"Missing terms: {missing}",
+        f"Provenance: {context.get('file')}:{context.get('line_start')}-{context.get('line_end')}",
+    ]
+    if paragraphs:
+        lines.append("Document excerpt: " + _short_text(paragraphs[0].get("text", ""), max_chars=420))
+    _write(filename, "\n".join(lines))
+
+
+def _case_brief(filename: str, *, query: str, code_file: str, required_terms: str) -> None:
+    code_path = fixtures / code_file
+    command = [
+        "python",
+        "-m",
+        "mathdevmcp.cli",
+        "implementation-brief",
+        query,
+        str(code_path),
+        "--root",
+        str(fixtures),
+        "--required-terms",
+        required_terms,
+        "--limit",
+        "2",
+    ]
+    payload = _run_json(command, env={**os.environ, "PYTHONPATH": str(root / "src")})
+    consistency = payload.get("checks", {}).get("consistency", {}) if isinstance(payload, dict) else {}
+    context = payload.get("doc_context", {}) if isinstance(payload, dict) else {}
+    paragraphs = context.get("paragraphs", []) if isinstance(context, dict) else []
+    lines = [
+        "Command: " + _command_text(command),
+        f"Query: {query}",
+        f"Selected label: {payload.get('selected_label') if isinstance(payload, dict) else 'unknown'}",
+        f"Brief status: {payload.get('status') if isinstance(payload, dict) else 'unknown'}",
+        f"Brief reason: {payload.get('reason') if isinstance(payload, dict) else 'unknown'}",
+        f"Consistency status: {consistency.get('status')}",
+        f"Consistency reason: {consistency.get('reason')}",
+        f"Missing terms: {consistency.get('missing_in_code', [])}",
+        f"Provenance: {context.get('file')}:{context.get('line_start')}-{context.get('line_end')}",
+    ]
+    if paragraphs:
+        lines.append("Context excerpt: " + _short_text(paragraphs[0].get("text", ""), max_chars=420))
+    _write(filename, "\n".join(lines))
+
+
 doctor = doctor_report()
 capabilities = doctor["capabilities"]
 _write(
@@ -112,7 +221,7 @@ _write(
         ]
     ),
 )
-_write_json_excerpt("benchmark-gate-json-excerpt.txt", gate, max_lines=260)
+_write_json_excerpt("benchmark-gate-json-excerpt.txt", gate, max_lines=120)
 
 parser = decide_parser_policy(str(fixtures), backends=["current"])
 parser_report = parser["benchmark_report"]["results"][0]
@@ -131,7 +240,7 @@ _write(
         ]
     ),
 )
-_write_json_excerpt("parser-policy-json-excerpt.txt", parser, max_lines=220)
+_write_json_excerpt("parser-policy-json-excerpt.txt", parser, max_lines=100)
 
 release_corpus = validate_release_corpus_manifest(fixtures)
 manifest = release_corpus["manifest"]
@@ -148,7 +257,7 @@ _write(
         ]
     ),
 )
-_write_json_excerpt("release-corpus-json-excerpt.txt", release_corpus, max_lines=220)
+_write_json_excerpt("release-corpus-json-excerpt.txt", release_corpus, max_lines=100)
 
 full = release_readiness_report(root, profile="full")
 _write(
@@ -165,7 +274,7 @@ _write(
         ]
     ),
 )
-_write_json_excerpt("release-readiness-full-json-excerpt.txt", full, max_lines=280)
+_write_json_excerpt("release-readiness-full-json-excerpt.txt", full, max_lines=120)
 
 if private_manifest:
     env = os.environ.copy()
@@ -184,7 +293,7 @@ if private_manifest:
             ]
         ),
     )
-    _write_json_excerpt("private-corpus-json-excerpt.txt", private, max_lines=260)
+    _write_json_excerpt("private-corpus-json-excerpt.txt", private, max_lines=100)
 else:
     _write(
         "private-corpus-summary.txt",
@@ -266,6 +375,87 @@ for filename, command in workflow_commands.items():
         text = "\n".join(text.splitlines()[:80] + ["... truncated for report ..."])
     _write(filename, "Command: " + " ".join(command).replace(str(root), "<repo>") + "\n" + text)
 
+case_specs = [
+    {
+        "prefix": "case-kalman",
+        "query": "state space likelihood",
+        "label": "eq:dept-state-space-likelihood",
+        "code": "doc_department_state_space_missing_solve.py",
+        "terms": "logdet,solve",
+    },
+    {
+        "prefix": "case-hmc",
+        "query": "Hamiltonian leapfrog",
+        "label": "eq:dept-hmc-leapfrog",
+        "code": "doc_department_hmc_jax.py",
+        "terms": "grad,hamiltonian",
+    },
+    {
+        "prefix": "case-macro-filter",
+        "query": "macro filter likelihood",
+        "label": "eq:macro-filter-likelihood",
+        "code": "doc_macro_filter_missing_gain.py",
+        "terms": "logdet,solve,K_t",
+    },
+    {
+        "prefix": "case-dsge",
+        "query": "Euler equation stochastic discount factor",
+        "label": "eq:dept-euler-equation",
+        "code": "doc_sanitized_dsge_macro_finance.py",
+        "terms": "expectation,euler_residual",
+    },
+    {
+        "prefix": "case-stochastic-volatility",
+        "query": "stochastic volatility likelihood",
+        "label": "eq:dept-sv-likelihood",
+        "code": "doc_sanitized_stochastic_volatility.py",
+        "terms": "innovation,posterior_or_likelihood",
+    },
+    {
+        "prefix": "case-sde-pde",
+        "query": "Euler Maruyama stability",
+        "label": "eq:dept-euler-maruyama",
+        "code": "doc_sanitized_sde_pde_numerics.py",
+        "terms": "drift,diffusion,stability_condition",
+    },
+    {
+        "prefix": "case-ml-objective",
+        "query": "ML objective gradient",
+        "label": "eq:dept-ml-gradient",
+        "code": "doc_sanitized_ml_llm_objective.py",
+        "terms": "gradient,loss",
+    },
+    {
+        "prefix": "case-elbo",
+        "query": "ELBO reparameterization gradient",
+        "label": "eq:dept-elbo",
+        "code": "doc_sanitized_bayesian_elbo_vi.py",
+        "terms": "expectation,elbo",
+    },
+    {
+        "prefix": "case-physics-mcmc",
+        "query": "acceptance ratio Hamiltonian",
+        "label": "eq:dept-acceptance-ratio",
+        "code": "doc_sanitized_computational_physics_mcmc.py",
+        "terms": "hamiltonian,gradient",
+    },
+]
+
+for spec in case_specs:
+    _case_search(f"{spec['prefix']}-search.txt", query=spec["query"])
+    _case_compare(
+        f"{spec['prefix']}-compare.txt",
+        label=spec["label"],
+        code_file=spec["code"],
+        required_terms=spec["terms"],
+    )
+    _case_brief(
+        f"{spec['prefix']}-brief.txt",
+        query=spec["query"],
+        code_file=spec["code"],
+        required_terms=spec["terms"],
+    )
+
 _write(
     "evidence-index.txt",
     "\n".join(
@@ -282,6 +472,33 @@ _write(
             "workflow-compare.txt",
             "workflow-audit.txt",
             "workflow-brief.txt",
+            "case-kalman-search.txt",
+            "case-kalman-compare.txt",
+            "case-kalman-brief.txt",
+            "case-hmc-search.txt",
+            "case-hmc-compare.txt",
+            "case-hmc-brief.txt",
+            "case-macro-filter-search.txt",
+            "case-macro-filter-compare.txt",
+            "case-macro-filter-brief.txt",
+            "case-dsge-search.txt",
+            "case-dsge-compare.txt",
+            "case-dsge-brief.txt",
+            "case-stochastic-volatility-search.txt",
+            "case-stochastic-volatility-compare.txt",
+            "case-stochastic-volatility-brief.txt",
+            "case-sde-pde-search.txt",
+            "case-sde-pde-compare.txt",
+            "case-sde-pde-brief.txt",
+            "case-ml-objective-search.txt",
+            "case-ml-objective-compare.txt",
+            "case-ml-objective-brief.txt",
+            "case-elbo-search.txt",
+            "case-elbo-compare.txt",
+            "case-elbo-brief.txt",
+            "case-physics-mcmc-search.txt",
+            "case-physics-mcmc-compare.txt",
+            "case-physics-mcmc-brief.txt",
             "benchmark-gate-json-excerpt.txt",
             "parser-policy-json-excerpt.txt",
             "release-corpus-json-excerpt.txt",

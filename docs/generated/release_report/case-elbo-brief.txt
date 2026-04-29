@@ -1,0 +1,10 @@
+Command: python -m mathdevmcp.cli implementation-brief ELBO reparameterization gradient <repo>/benchmarks/fixtures/doc_sanitized_bayesian_elbo_vi.py --root <repo>/benchmarks/fixtures --required-terms expectation,elbo --limit 2
+Query: ELBO reparameterization gradient
+Selected label: eq:dept-reparameterization-gradient
+Brief status: mismatch
+Brief reason: At least one document-grounded implementation check failed.
+Consistency status: mismatch
+Consistency reason: Some required document terms were not found in the code text.
+Missing terms: ['elbo']
+Provenance: doc_sanitized_bayesian_elbo_vi.tex:7-9
+Context excerpt: \begin{equation}\label{eq:dept-elbo} \mathcal L(\lambda)=E_{q_\lambda(z)}[\log p(y,z)-\log q_\lambda(z)]. \end{equation}

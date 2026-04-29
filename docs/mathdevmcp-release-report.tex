@@ -27,6 +27,16 @@ colleagues who work across long LaTeX documents, mathematical code, proofs,
 derivations, algorithms, and review workflows where unsupported claims are
 expensive.
 
+The product sells itself best in the situations where colleagues already feel
+friction. A model note says the likelihood uses a log determinant and a linear
+solve, while the implementation is moving quickly. A proof sketch relies on
+positive-definiteness, but the assumption is buried in another section. A new
+agent can search the repository, but it cannot be trusted unless it shows where
+the claim came from and where the boundary of verification lies. MathDevMCP is
+built for those moments. It turns local mathematical documents and code into
+structured evidence packets that a human reviewer can inspect, challenge, and
+reuse.
+
 The release claim is deliberately narrow and evidence based. MathDevMCP does
 not claim to prove arbitrary mathematical papers correct. It gives agents and
 humans structured access to local documents, labels, code, parser evidence,
@@ -45,8 +55,9 @@ department manifest can be substituted through the same environment variable.
 
 \begin{proposalbox}
 \textbf{Release status.} With an external sanitized private manifest supplied,
-the full profile has no blocking findings. During report generation the only
-remaining caveat is the dirty working tree caused by ongoing release edits.
+the full profile has no blocking findings. Generated report snippets may record
+a dirty working tree while the report is being edited; the post-commit release
+readiness gate should be rerun before a release tag is cut.
 \end{proposalbox}
 
 \chapter{Product Scope}
@@ -139,6 +150,12 @@ facade that presents stable tools to users and agents. The third layer is a
 workflow and documentation layer that explains how to combine tools for
 colleague tasks.
 
+The architecture is intentionally plain. The project does not hide release logic
+inside a server process or a notebook. A release manager can run the same Python
+library functions through the CLI, through MCP wrappers, and through tests. This
+is why the report can include command output instead of screenshots or manual
+claims: the system is designed around reproducible JSON contracts.
+
 \section{Implementation substrate}
 
 The Python package is organized around small report-producing functions. Each
@@ -149,14 +166,24 @@ docs can depend on stable shapes. For example, release readiness returns a
 \texttt{private\_corpus\_validation\_report}. This is the main compatibility
 discipline for future maintainers.
 
+The ownership map is practical:
+\path{release_policy.py} decides blockers and caveats;
+\path{release_corpus.py} owns public/private manifest assembly and path
+redaction; \path{parser_policy.py} chooses whether parser output is strong
+enough for proof-audit routing; \path{proof_audit_v2.py} carries the
+verification-boundary language; \path{mcp_facade.py} and \path{cli.py}
+expose the same library behavior to agents and humans. A maintainer changing a
+release claim should know which one of those files owns the claim before editing
+the report.
+
 \section{CLI and MCP facades}
 
 The CLI is the reproducible interface for humans and CI. The MCP facade wraps
 the same library functions so an agent can call them interactively. The facade
 does not grant unrestricted shell access. It exposes bounded tools such as
-\texttt{search\_latex}, \texttt{compare\_label\_code},
-\texttt{audit\_derivation\_v2\_label}, \texttt{benchmark\_gate}, and
-\texttt{release\_readiness}.
+\path{search_latex}, \path{compare_label_code},
+\path{audit_derivation_v2_label}, \path{benchmark_gate}, and
+\path{release_readiness}.
 
 \section{Backend isolation}
 
@@ -166,12 +193,25 @@ the backend environment when configured. This avoids dependency conflicts in
 the main Python environment while still allowing proof-search experiments and
 Lean fixture validation.
 
+This split matters operationally. Colleagues can use search, context extraction,
+consistency checks, and release-corpus validation in the main environment. A
+stricter release can then demand LaTeXML and LeanDojo evidence without forcing
+everyday users to import every optional backend. The release profiles make that
+distinction visible rather than relying on informal environment knowledge.
+
 \chapter{Core Data Contracts}
 
 Every user-facing workflow should be understood as a contract. A contract has a
 schema version, a name, a status or result payload, and where appropriate
 provenance. This is why downstream documentation, agents, and tests can
 interpret outputs without scraping prose.
+
+The contract discipline is also what makes MathDevMCP maintainable. The CLI can
+pretty-print JSON, the MCP facade can return the same dictionary to an agent,
+and the release report can include a shortened evidence file without each layer
+inventing its own vocabulary. When a colleague sees \texttt{mismatch} in a
+brief, that word means the same thing as it means in the benchmark gate and in
+the tests.
 
 \section{Status vocabulary}
 
@@ -199,6 +239,26 @@ preserves expected labels and line provenance. LaTeXML is also validated in the
 strict LaTeXML profile, but current release routing prefers the provenance and
 environment structure available through the current parser.
 
+The policy is deliberately conservative. Parser output becomes dangerous when an
+agent treats a nearby equation as if it were the exact source of a claim. The
+parser benchmark therefore checks label preservation, environment recognition,
+align-like block handling, source spans, include handling, macros, and duplicate
+labels. The parser selected for proof-audit routing must preserve the labels the
+benchmark expects and expose provenance that a colleague can inspect.
+
+LaTeXML remains valuable because it exercises an independent parser backend and
+is closer to a full LaTeX processing stack. In this release it is strict profile
+evidence rather than the default proof-audit parser, because the lightweight
+parser currently gives the line-oriented provenance and environment structure
+used by the downstream audit tools. A future release can change that policy, but
+only after benchmark evidence and report examples show that the backend supports
+the same workflow.
+
+The owner for this decision is \texttt{parser\_policy.py}, with benchmark
+measurements in \texttt{parser\_benchmark.py}. A maintainer should change those
+modules before editing this narrative, because the report is downstream of the
+policy evidence.
+
 \lstinputlisting[caption={Parser policy summary},basicstyle=\ttfamily\footnotesize]{generated/release_report/parser-policy-summary.txt}
 
 \chapter{Benchmark Gate}
@@ -209,149 +269,810 @@ industrial review, and release-corpus cases. The gate currently requires every
 benchmark case to pass; expected abstentions are counted as quality signals, not
 as failures.
 
+The gate is not just a CI badge. It is the release contract that stops the
+product from drifting into confident but unsupported behavior. Some benchmark
+cases are expected to return \emph{mismatch} or \emph{unverified}; those cases
+pass when the tool refuses to overclaim. This is why the report keeps expected
+abstentions visible. For a mathematical agent, abstention quality is a product
+feature: it tells colleagues that the tool can expose a gap without laundering
+the gap into a certificate.
+
+When a new domain is added, the benchmark gate should grow before the marketing
+claim grows. The new domain needs at least one parser preservation case, one
+operation or code-document consistency case, and one false-confidence or
+abstention case if the domain contains assumptions that are easy to miss.
+
+This makes the gate a product-management tool as well as an engineering tool:
+it tells the team which claims are backed by repeatable evidence and which
+claims still belong in the roadmap.
+
 \lstinputlisting[caption={Benchmark gate summary},basicstyle=\ttfamily\footnotesize]{generated/release_report/benchmark-gate-summary.txt}
 
 \part{Colleague Workflows}
 
 \chapter{Workflow 1: Find Mathematical Context}
 
-A colleague begins with a topic such as a likelihood, Hamiltonian flow, Euler
-equation, or stability condition. The first tool is usually
-\texttt{search-latex}. It returns document blocks with labels and provenance so
-the agent can ground a response in the source document.
+A colleague begins with a vague request: "Where is the likelihood formula?" or
+"Which note defines the Euler equation we used in that experiment?" This is the
+moment where an ordinary language model is most tempted to answer from memory.
+MathDevMCP's first move is different: search the local LaTeX tree and return
+labels, files, line spans, section paths, and text snippets.
+
+\section*{When to use it}
+
+Use \texttt{search-latex} when the colleague has a topic but not a label. It is
+especially useful at the beginning of a review, before asking the agent to
+compare code or audit a derivation. The search result gives the label that later
+commands use as an anchor.
+
+\section*{Command}
+
+The example below searches for the Kalman likelihood and returns the matching
+equation label with file and line provenance.
 
 \lstinputlisting[caption={Search workflow output},basicstyle=\ttfamily\scriptsize]{generated/release_report/workflow-search.txt}
 
+\section*{How to read the output}
+
+The important fields are the label, file, line span, score, and text. A high
+score is a useful retrieval signal, not a proof that the result is the only
+relevant statement. A colleague should inspect the returned section path and
+then move to the neighborhood extraction workflow if assumptions or notation are
+likely nearby.
+
+\section*{Failure mode}
+
+The main failure mode is semantic overreach. A search hit for "likelihood" may
+find the right formula but not the assumptions that make the formula valid. If
+the search returns no label, the agent should say so and ask for a narrower
+query or a document root, rather than fabricating a source.
+
+\section*{Agent handoff}
+
+An agent handoff should cite the label and provenance from the output rather
+than paraphrasing from memory. It should not summarize the equation as verified
+until later workflows check implementation terms or proof obligations.
+
 \chapter{Workflow 2: Read a Labeled Neighborhood}
 
-Once a label is known, the user can extract a paragraph neighborhood. This is
-more useful than a raw line excerpt when an agent needs nearby explanatory
-prose, assumptions, or notation.
+Once a label is known, the next question is context. Mathematical documents are
+rarely self-contained at a single line. A likelihood equation might depend on
+notation introduced in the preceding align block. A stability condition might
+depend on a boundary convention. A theorem might be harmless in one model class
+and false in another.
+
+\section*{When to use it}
+
+Use \texttt{extract-latex-neighborhood} after search and before proof or code
+claims. It is the right command when the colleague says, "Show me the surrounding
+assumptions" or "What notation does this equation rely on?"
+
+\section*{Command}
+
+The example extracts the neighborhood around the state-space likelihood label.
+It gives the selected block plus nearby paragraphs, line spans, and section
+metadata.
 
 \lstinputlisting[caption={Labeled neighborhood output},basicstyle=\ttfamily\scriptsize]{generated/release_report/workflow-context.txt}
 
+\section*{How to read the output}
+
+Read the neighborhood as a source packet. The label is the anchor, the file and
+line numbers are where a colleague should inspect the original document, and the
+paragraphs are the local assumptions or notation the agent may cite. If the
+neighborhood omits an assumption that the proof needs, that is a signal to route
+the claim to human review.
+
+\section*{Failure mode}
+
+Neighborhoods are local. They do not prove that a global assumption is present
+elsewhere in the document. The agent should use them to ground a claim, then say
+what is still missing.
+
+\section*{Agent handoff}
+
+A good handoff says: "I found this label and its immediate context; the next
+check is whether the implementation carries the required operations." That
+handoff sets up the comparison workflow without pretending the context alone is
+certification.
+
 \chapter{Workflow 3: Compare Document and Code}
 
-Code--document drift is one of the highest-value release use cases. The
-\texttt{compare-label-code} workflow checks whether required terms from a
-labeled document block are present in a code file. It is not a full proof of
-equivalence. It is a targeted drift detector.
+Code--document drift is one of the highest-value release use cases. A colleague
+may trust a derivation in a note while the code has silently changed. The
+\texttt{compare-label-code} workflow asks a smaller, sharper question: do the
+required operations from a labeled document block appear in a chosen code file?
+
+\section*{When to use it}
+
+Use this workflow when the review question has a concrete code target. It is not
+for broad semantic equivalence. It is for surfacing missing terms, suspicious
+renamings, or stale implementations that deserve human attention.
+
+\section*{Command}
+
+The example compares the state-space likelihood against a deliberately
+incomplete implementation. The document asks for log determinant and inverse or
+solve structure; the code has the log determinant but misses the solve term.
 
 \lstinputlisting[caption={Code--document comparison output},basicstyle=\ttfamily\scriptsize]{generated/release_report/workflow-compare.txt}
 
+\section*{How to read the output}
+
+The status is \texttt{mismatch}; that does not mean MathDevMCP proved the code
+wrong. It means the configured required term was not found in the inspected code
+text. The useful fields are \texttt{matched\_term}, \texttt{missing\_term},
+\texttt{code\_path}, and the document provenance. Those fields are enough to
+write a precise review ticket.
+
+\section*{Failure mode}
+
+A term check can miss semantic equivalents or be fooled by a misleading
+variable name. This is why the report calls it a drift detector, not a proof.
+The next step is to inspect the implementation and, if needed, add a benchmark
+that captures the intended operation more robustly.
+
+\section*{Agent handoff}
+
+The agent should say: "The document label requires \texttt{solve}; the selected
+implementation did not expose that term. Please review whether the quadratic
+form is implemented with a numerically appropriate solve or an equivalent
+operation." That is useful, bounded, and honest.
+
 \chapter{Workflow 4: Audit a Derivation}
 
-The v2 audit workflow combines parser policy, typed obligations, route
-decisions, shape diagnostics, numeric suggestions, backend evidence, and
-verification-boundary text. It is the most appropriate colleague-facing surface
-when a user asks whether a labeled mathematical statement is actually certified.
+The v2 audit workflow is the product's strongest guard against false confidence.
+It combines parser policy, typed obligations, shape diagnostics, numeric
+suggestions, backend evidence, and verification-boundary text. It is the right
+surface when the colleague asks, "Is this certified, or just plausible?"
+
+\section*{When to use it}
+
+Use \texttt{audit-derivation-v2-label} when the label contains a mathematical
+claim whose assumptions matter. Matrix inverses, log determinants, gradients,
+expectations, and stability conditions all carry hidden obligations. The audit
+exposes those obligations instead of burying them in prose.
+
+\section*{Command}
+
+The example audits the state-space likelihood. It finds high-priority actions:
+state or verify invertibility, square-matrix, conformability, log-det domain, and
+linear-solve residual constraints.
 
 \lstinputlisting[caption={Derivation audit output},basicstyle=\ttfamily\scriptsize]{generated/release_report/workflow-audit.txt}
 
+\section*{How to read the output}
+
+The key field is the verification boundary. If the status is \texttt{unverified}
+or \texttt{diagnostic\_only}, the tool is telling the agent not to claim a proof.
+The high-priority actions are the review checklist. A colleague can turn them
+into assumptions to state, tests to add, or formal obligations to discharge.
+
+\section*{Failure mode}
+
+The audit can be verbose. The danger is not verbosity; the danger is summarizing
+away the boundary. A release-quality agent must keep the words "unverified",
+"diagnostic", or "requires human review" visible when those statuses appear.
+
+\section*{Agent handoff}
+
+The handoff should separate evidence from certification: "The parser located the
+label and the audit identified missing matrix constraints. No deterministic
+backend certificate is present, so this remains a human-review item."
+
 \chapter{Workflow 5: Build an Implementation Brief}
 
-The implementation brief bundles search, label selection, context extraction,
-consistency checking, and optional derivation checking into one object. This is
-the recommended tool when another agent needs a document-grounded starting
-point for code review or implementation.
+The implementation brief is the handoff format for a busy colleague. It bundles
+search, label selection, context extraction, consistency checking, and optional
+derivation evidence into one object. It is the report a teammate can paste into
+a review thread before opening the code.
+
+\section*{When to use it}
+
+Use \texttt{implementation-brief} when another person or agent needs a grounded
+starting point. It is especially useful before a pull request review, a
+maintenance ticket, or a focused refactor of mathematical code.
+
+\section*{Command}
+
+The example asks for a state-space likelihood brief against the same incomplete
+implementation used above. The brief selects the relevant label, includes
+context, and reports the consistency mismatch.
 
 \lstinputlisting[caption={Implementation brief output},basicstyle=\ttfamily\scriptsize]{generated/release_report/workflow-brief.txt}
+
+\section*{How to read the output}
+
+The brief's \texttt{selected\_label} tells the reviewer what document claim was
+used. The \texttt{checks.consistency.status} field tells whether the required
+terms appeared. The context excerpt gives the exact mathematical block. This is
+enough for a reviewer to reproduce the check without trusting the agent's
+memory.
+
+\section*{Failure mode}
+
+The brief is only as good as the query and required terms. If the query selects
+the wrong label, or if the required terms are too weak, the brief can be
+uninformative. The right response is to rerun with a sharper query or a better
+term set, not to inflate the conclusion.
+
+\section*{Agent handoff}
+
+A good handoff reads like a compact review note: selected label, code file,
+status, missing terms, and next action. It should avoid broad claims such as
+"the implementation is wrong" unless a human review or stronger backend evidence
+supports that claim.
 
 \part{Case Studies}
 
 \chapter{Kalman State-Space Likelihood}
 
-The Kalman likelihood case checks whether implementation code carries the
-linear algebra structure described by the document. Missing solves, inverses,
-or log-determinant terms are important because they often indicate stale
-documentation or a numerically fragile implementation. MathDevMCP reports such
-cases as consistency findings rather than silently rationalizing them.
+\section*{Colleague scenario}
 
-For a colleague, the useful behavior is fast localization. The tool identifies
-the label, extracts the surrounding text, compares the implementation file, and
-reports missing required terms. The next action is human review of the
-likelihood implementation and associated tests.
+A colleague is reviewing a Kalman filter implementation before using it in a
+forecasting experiment. The note defines a Gaussian likelihood with
+\(\log\det S_t\) and \(S_t^{-1}\) terms. The implementation has been optimized
+with a scan loop, and the reviewer wants to know whether the code still exposes
+the solve-like operation implied by the derivation.
+
+\section*{Fixture and command}
+
+The public fixture uses the state-space document and a deliberately incomplete
+missing-solve implementation. The command compares the likelihood label against
+required terms \path{logdet,solve}.
+
+\lstinputlisting[caption={Kalman likelihood comparison evidence},basicstyle=\ttfamily\scriptsize]{generated/release_report/case-kalman-compare.txt}
+
+\section*{Output to inspect}
+
+The output is intentionally uncomfortable: status \texttt{mismatch}, matched
+term \texttt{logdet}, and missing term \texttt{solve}. That is exactly the kind of result that
+makes the product useful. It does not bury a missing numerical operation under a
+friendly summary. It gives a reviewer the label, file, line span, code path, and
+missing term.
+
+\section*{Interpretation}
+
+The mathematical issue is numerical, not merely textual. A likelihood written
+with \(S_t^{-1}\) should usually be implemented through a solve or factorization,
+not by casually dropping the quadratic solve. The tool cannot prove the code is
+wrong from the missing token alone, but it can make the review precise: inspect
+the innovation quadratic form and decide whether a stable solve is present under
+another name.
+
+\section*{Next action}
+
+The colleague should open the implementation, check how the quadratic form is
+computed, and add or fix a test that exercises conditioning of \(S_t\). If the
+code intentionally uses an equivalent factorization, the benchmark should be
+updated with an operation extractor or required term that recognizes the chosen
+idiom.
+
+\section*{Boundary}
+
+MathDevMCP reports a drift signal, not a theorem. It does not certify the
+Kalman likelihood, and it does not prove the implementation is invalid. It
+prevents an agent from saying "the code matches the document" when a required
+solve-like operation is not visible.
 
 \chapter{HMC Leapfrog and Hamiltonian Flow}
 
-Hamiltonian Monte Carlo code is sensitive to sign conventions, gradients,
-Metropolis corrections, and leapfrog ordering. MathDevMCP does not certify
-convergence. It checks that documented Hamiltonian and leapfrog structures are
-visible in the implementation and routes uncertified claims to abstention when
-regularity or ergodicity assumptions are not present.
+\section*{Colleague scenario}
+
+A Bayesian computation colleague is checking an HMC kernel. The document gives a
+leapfrog update and a Hamiltonian. The code has gradients, half-steps, kinetic
+energy, and a returned Hamiltonian value. The review question is not "does this
+sampler converge?" It is narrower: does the implementation visibly carry the
+documented leapfrog and Hamiltonian structure?
+
+\section*{Fixture and command}
+
+The fixture uses \path{doc_department_bayesian_hmc.tex} and
+\path{doc_department_hmc_jax.py}. The comparison asks for \path{grad}
+and \path{hamiltonian} under label \path{eq:dept-hmc-leapfrog}.
+
+\lstinputlisting[caption={HMC leapfrog comparison evidence},basicstyle=\ttfamily\scriptsize]{generated/release_report/case-hmc-compare.txt}
+
+\section*{Output to inspect}
+
+The status is \texttt{consistent}: both required terms appear. The output also keeps
+the provenance of the align block so a colleague can see the three leapfrog
+lines rather than trusting a paraphrase.
+
+\section*{Interpretation}
+
+This is a positive structural check. It says the obvious ingredients for the
+documented leapfrog are present in the inspected code. It is useful before a
+deeper review because it quickly rules out a stale file that lacks gradients or
+Hamiltonian energy entirely.
+
+\section*{Next action}
+
+The next review step is to inspect signs, step ordering, mass matrix semantics,
+and Metropolis correction. If the claim is about stationarity or convergence,
+route it to human review or a dedicated proof/audit workflow; do not treat a
+term match as a Markov-chain proof.
+
+For a release note or pull-request handoff, the useful sentence is: the code is
+not obviously stale with respect to the documented leapfrog structure, but the
+probabilistic correctness argument remains outside this check.
+
+\section*{Boundary}
+
+MathDevMCP does not certify HMC correctness, detailed balance, ergodicity, or
+acceptance-rate behavior here. It confirms that specific document-grounded
+operations are visible and keeps the remaining probabilistic claims outside the
+certificate boundary.
+
+Maintainers adding richer HMC coverage should add a seeded sign-error or missing
+Metropolis-correction case before changing the release claim.
 
 \chapter{Macro Filter Multi-File Corpus}
 
-The macro filter fixture exercises multi-file LaTeX inclusion, macro
-definitions, repeated notation, and a deliberately missing gain update. This is
-close to real colleague work: a main document includes a model file, macros are
-defined in one place, and code may omit a step that the exposition assumes.
+\section*{Colleague scenario}
+
+The macro-filter case resembles a real internal note: a main LaTeX file defines
+macros, includes a model file, and repeats notation across state equations. A
+colleague has an implementation that computes prediction and likelihood terms
+but may have omitted the Kalman gain update. The question is whether the tool
+can follow the included document and expose the omission.
+
+\section*{Fixture and command}
+
+The fixture uses a macro-filter main document, an included model file, and a
+deliberately incomplete missing-gain implementation. The comparison below
+checks the likelihood label for \path{logdet}, \path{solve}, and \path{K_t}.
+
+\lstinputlisting[caption={Macro filter comparison evidence},basicstyle=\ttfamily\scriptsize]{generated/release_report/case-macro-filter-compare.txt}
+
+\section*{Output to inspect}
+
+The output reports \texttt{mismatch}: \texttt{logdet} and \texttt{solve} are
+present, while \texttt{K\_t} is missing. The provenance points into the
+included model file, not only the main file, which matters because many real
+documents are modular.
+
+\section*{Interpretation}
+
+This case demonstrates two product behaviors at once. First, the parser handles
+the multi-file LaTeX structure well enough to locate the model equation. Second,
+the code comparison can distinguish a likelihood calculation that contains
+linear algebra terms from a complete filter update that carries the gain.
+
+That distinction is exactly where colleagues lose time in practice: a partial
+routine can look mathematically serious because it contains the log determinant
+and solve, while still omitting the update needed by the model description.
+
+\section*{Next action}
+
+The colleague should inspect whether the implementation intentionally returns a
+prediction-only likelihood or whether it should update state and covariance. If
+the implementation is intentionally partial, the document or function name
+should say so. If not, add the missing gain/update logic and a regression test.
+
+If this pattern recurs in a project, make \texttt{K\_t} or the chosen
+gain-update idiom part of the domain benchmark rather than relying on a one-off
+review comment.
+
+\section*{Boundary}
+
+The tool does not infer all macro semantics or prove the filter recursion. It
+surfaces a targeted mismatch in a realistic multi-file setting and leaves the
+modeling decision to the reviewer.
 
 \chapter{DSGE Euler Equation}
 
-The DSGE case checks Euler residual and stochastic discount factor structure.
-MathDevMCP helps a reviewer avoid claiming that a model is solved or calibrated
-unless the assumptions and implementation evidence are available. The expected
-abstention is part of the release quality signal.
+\section*{Colleague scenario}
+
+A macro-finance colleague has a compact Euler equation in the notes and a small
+residual function in code. The review question is whether the implementation
+still computes an expectation of a stochastic discount factor times a return,
+not whether the model is calibrated, solved, or empirically valid.
+
+\section*{Fixture and command}
+
+The fixture uses \path{doc_sanitized_dsge_macro_finance.tex} and
+\path{doc_sanitized_dsge_macro_finance.py}. The comparison checks
+\path{eq:dept-euler-equation} for \path{expectation} and
+\path{euler_residual}.
+
+\lstinputlisting[caption={DSGE Euler comparison evidence},basicstyle=\ttfamily\scriptsize]{generated/release_report/case-dsge-compare.txt}
+
+\section*{Output to inspect}
+
+The status is \texttt{consistent}, and the matched terms show that the implementation
+contains both the expectation operator and the residual concept. The provenance
+points to the Euler equation in the sanitized macro-finance fixture.
+
+\section*{Interpretation}
+
+This is the kind of small but valuable check that prevents stale glue code. It
+does not decide the economic model; it ensures that the code being reviewed at
+least carries the structural ingredients named in the document.
+
+The value is speed with restraint. The reviewer can quickly move past the
+"wrong file" and "missing residual" class of errors while keeping the economic
+interpretation under expert review.
+
+\section*{Next action}
+
+The colleague should next review calibration assumptions, timing conventions,
+state definitions, and units. If those are part of the release claim, add
+fixture labels and expected abstentions that force the tool to report missing
+assumptions.
+
+For production use, this is where a team should add project-specific labels for
+household timing, asset returns, and shock normalization if those conventions
+are common sources of errors.
+
+\section*{Boundary}
+
+MathDevMCP does not solve the DSGE model, estimate parameters, or validate an
+equilibrium. It gives document-grounded evidence that the inspected residual
+function has the expected structural terms.
 
 \chapter{Stochastic Volatility Likelihood}
 
-The stochastic volatility case checks transition and likelihood labels. The
-important release behavior is conservative handling of latent-volatility prior
-assumptions and Jacobian-like omissions. A diagnostic may expose a missing
-term, but the tool should not overstate proof.
+\section*{Colleague scenario}
+
+A colleague is reviewing a stochastic-volatility likelihood implementation. The
+document has a transition equation for latent volatility and a conditional
+likelihood for observations. The code computes an innovation-like likelihood
+term, and the reviewer wants to check that the expected likelihood structure is
+visible.
+
+\section*{Fixture and command}
+
+The fixture uses \path{doc_sanitized_stochastic_volatility.tex} and
+\path{doc_sanitized_stochastic_volatility.py}. The comparison checks
+\path{eq:dept-sv-likelihood} for \path{innovation} and
+\path{posterior_or_likelihood}.
+
+\lstinputlisting[caption={Stochastic volatility comparison evidence},basicstyle=\ttfamily\scriptsize]{generated/release_report/case-stochastic-volatility-compare.txt}
+
+\section*{Output to inspect}
+
+The status is \texttt{consistent}; both required terms are found. The output gives the
+document label, code file, matched terms, and the likelihood equation excerpt.
+
+\section*{Interpretation}
+
+This result is useful because it confirms the code has a likelihood-bearing path
+that corresponds to the document. It also tells the reviewer what remains out of
+scope: latent prior assumptions, filtering/inference strategy, Jacobians, and
+parameter constraints are not certified by this term check.
+
+The example is intentionally narrow. It is strong enough to catch a stale file
+with no likelihood path, but too weak to approve a full inference algorithm.
+
+\section*{Next action}
+
+The colleague should inspect whether the transition variance, parameter bounds,
+and inference algorithm match the intended model. If missing-Jacobian or prior
+review is a recurring issue, add a seeded false-confidence case to the benchmark
+corpus.
+
+Teams using particle filters, variational approximations, or MCMC for this
+model should add separate fixtures for those inference choices, because the
+likelihood term alone will not capture them.
+
+\section*{Boundary}
+
+MathDevMCP does not certify the stochastic-volatility likelihood or posterior
+inference. It confirms selected structure and keeps latent-model assumptions in
+the human-review lane unless more evidence is supplied.
 
 \chapter{SDE and PDE Numerics}
 
-The SDE/PDE numerics case covers Euler--Maruyama and residual/stability
-structure. A colleague can use the tool to locate the discretization formula,
-check whether code carries time-step and stability terms, and record a
-discretization-assumption review when the evidence is incomplete.
+\section*{Colleague scenario}
+
+A numerical methods colleague is checking whether a simulation step reflects the
+Euler--Maruyama update in the note and whether the code carries an explicit
+stability condition. The aim is to catch silent drift between mathematical
+discretization and implementation before experiments are trusted.
+
+\section*{Fixture and command}
+
+The fixture uses \path{doc_sanitized_sde_pde_numerics.tex} and
+\path{doc_sanitized_sde_pde_numerics.py}. The comparison checks
+\path{eq:dept-euler-maruyama} for \path{drift}, \path{diffusion}, and
+\path{stability_condition}.
+
+\lstinputlisting[caption={SDE/PDE numerics comparison evidence},basicstyle=\ttfamily\scriptsize]{generated/release_report/case-sde-pde-compare.txt}
+
+\section*{Output to inspect}
+
+The status is \texttt{consistent}: the implementation exposes drift, diffusion, and a
+stability-condition term. The provenance points to the Euler--Maruyama formula.
+
+\section*{Interpretation}
+
+This is a structural release check, not a numerical analysis proof. It tells the
+reviewer that the code carries the named pieces of the discretization. It does
+not tell the reviewer that the step size is appropriate for every SDE, that the
+PDE residual is stable, or that convergence assumptions hold.
+
+That boundary makes the check useful in a lab setting: it catches missing drift,
+diffusion, or stability hooks before anyone spends time interpreting simulated
+paths as evidence about the continuous model.
+
+\section*{Next action}
+
+The colleague should inspect the time-step bound, units, boundary conditions,
+and randomness convention. If a stability argument is important to the release,
+add a proof-audit or typed-obligation example that forces missing assumptions to
+surface.
+
+For code review, the best follow-up is often a small stress test near the
+documented stability limit, because such tests expose convention mismatches
+that token checks cannot see.
+
+\section*{Boundary}
+
+MathDevMCP does not prove convergence or stability. It keeps the implementation
+review anchored to the documented discretization and makes missing terms visible
+early.
 
 \chapter{ML and LLM Objective Functions}
 
-The ML objective case catches wrong-sign gradients and missing objective terms.
-This is useful for training and fine-tuning code where the prose can describe a
-loss while the implementation evolves quickly. MathDevMCP provides a structured
-way to ask whether the documented loss and gradient are visible in code.
+\section*{Colleague scenario}
+
+An ML colleague is reviewing objective code after several training-loop edits.
+The document states a negative log-likelihood loss and its gradient. The code
+uses an automatic differentiation function named \texttt{grad}, but the report
+is asked to check for the more explicit term \texttt{gradient}. This is a useful
+stress test for term-level review.
+
+\section*{Fixture and command}
+
+The fixture uses \path{doc_sanitized_ml_llm_objective.tex} and
+\path{doc_sanitized_ml_llm_objective.py}. The comparison checks
+\path{eq:dept-ml-gradient} for \path{gradient} and \path{loss}.
+
+\lstinputlisting[caption={ML objective comparison evidence},basicstyle=\ttfamily\scriptsize]{generated/release_report/case-ml-objective-compare.txt}
+
+\section*{Output to inspect}
+
+The status is \texttt{mismatch}: \texttt{loss} is present, but
+\texttt{gradient} is missing. The code does contain \texttt{grad} and
+\texttt{gradient\_value}, yet the configured required term is not present
+exactly. That is not a failure of honesty; it is a reminder that term checks are
+intentionally literal.
+
+\section*{Interpretation}
+
+This example is good for selling the product because it shows both value and
+limits. The tool catches that the configured review vocabulary does not line up
+with the code. A reviewer can decide whether to accept \texttt{grad} as the
+implementation idiom, change the required term list, or add operation extraction
+that recognizes automatic differentiation.
+
+\section*{Next action}
+
+The colleague should review sign conventions, reduction over the batch, and the
+automatic-differentiation call. If the code is correct, update the benchmark to
+look for the intended operation rather than a single English token.
+
+\section*{Boundary}
+
+MathDevMCP does not prove the training objective is correct, and it does not
+know that \texttt{grad} is semantically equivalent to the full documented
+gradient in all contexts. It reports the literal evidence and asks the reviewer
+to sharpen the contract.
 
 \chapter{Bayesian ELBO and Variational Inference}
 
-The ELBO case checks objective, expectation, entropy, and reparameterization
-structure. The release behavior emphasizes abstention around variational-family
-assumptions and support conditions. This keeps the agent from treating a
-surface-level match as a full variational proof.
+\section*{Colleague scenario}
+
+A Bayesian ML colleague is reviewing a variational-inference implementation. The
+document names the ELBO and a reparameterization gradient. The code computes an
+\texttt{elbo\_value}, but the configured term check asks for \texttt{elbo}
+exactly. This is
+another realistic review problem: naming conventions are close but not
+identical.
+
+\section*{Fixture and command}
+
+The fixture uses \path{doc_sanitized_bayesian_elbo_vi.tex} and
+\path{doc_sanitized_bayesian_elbo_vi.py}. The comparison checks
+\path{eq:dept-elbo} for \path{expectation} and \path{elbo}.
+
+\lstinputlisting[caption={ELBO comparison evidence},basicstyle=\ttfamily\scriptsize]{generated/release_report/case-elbo-compare.txt}
+
+\section*{Output to inspect}
+
+The status is \texttt{mismatch}: \texttt{expectation} is present while
+\texttt{elbo} is missing. The extra terms include \texttt{elbo\_value} and
+\texttt{reparameterization\_gradient}, which gives the reviewer a useful clue
+without silently converting that clue into a match.
+
+\section*{Interpretation}
+
+This is a disciplined false-confidence example. A loose agent might say "ELBO is
+there" because it sees \texttt{elbo\_value}. MathDevMCP reports the exact configured
+term result and leaves the interpretation visible. That lets the team decide
+whether token matching is enough or whether AST/operation extraction should be
+extended for this domain.
+
+The point is not to embarrass the checker for being literal. The point is to
+make the review contract visible enough that the team can improve it deliberately
+instead of accepting a fuzzy match.
+
+\section*{Next action}
+
+The colleague should inspect entropy terms, support assumptions, and whether
+the reparameterization path matches the document. If the naming convention is
+accepted, tune the release evidence so the benchmark captures the intended
+semantic operation.
+
+For future work, the natural extension is an operation extractor that recognizes
+ELBO assembly patterns rather than only the spelling of one variable.
+
+\section*{Boundary}
+
+MathDevMCP does not certify the ELBO derivation, variational-family support, or
+gradient estimator validity. It gives a reproducible review signal and keeps
+the proof boundary explicit.
 
 \chapter{Computational Physics MCMC}
 
-The computational physics case checks acceptance ratios, Hamiltonian energy,
-gradients, and leapfrog-like operations. The tool can surface a missing
-Metropolis correction or energy term, but it deliberately leaves convergence
-and ergodicity claims for expert review.
+\section*{Colleague scenario}
+
+A computational physics colleague is checking MCMC code that computes a
+Hamiltonian acceptance ratio. The document states an acceptance formula, and the
+code computes Hamiltonian energies and a log acceptance probability. The review
+question is whether those core ingredients are visible.
+
+\section*{Fixture and command}
+
+The fixture uses the sanitized computational-physics MCMC document and its
+paired code file. The comparison checks the acceptance-ratio label for
+\path{hamiltonian} and \path{gradient}.
+
+\lstinputlisting[caption={Computational physics MCMC comparison evidence},basicstyle=\ttfamily\scriptsize]{generated/release_report/case-physics-mcmc-compare.txt}
+
+\section*{Output to inspect}
+
+The status is \texttt{consistent}: Hamiltonian and gradient terms are found. The output
+also shows the acceptance-ratio label and document excerpt.
+
+\section*{Interpretation}
+
+This is a positive release-facing check. It confirms the implementation has the
+Hamiltonian energy and gradient structure expected by the note. It does not
+settle detailed balance, reversibility, or convergence. Those require stronger
+mathematical arguments and domain review.
+
+This is the right level of automation for an implementation-screening pass:
+reject obviously stale code early, then spend human time on the properties that
+actually require statistical mechanics or MCMC expertise.
+
+\section*{Next action}
+
+The colleague should inspect proposal symmetry, momentum refresh, Metropolis
+correction, and numerical stability. If those are part of the release claim,
+they need explicit fixtures and expected abstention cases.
+
+If the team later wants the tool to discuss reversibility, add a dedicated
+derivation-audit example with an explicit verification boundary rather than
+stretching this term check beyond its contract.
+
+\section*{Boundary}
+
+MathDevMCP does not certify an MCMC sampler. It shows that the code and document
+share selected structural ingredients and then stops before overclaiming
+ergodicity or correctness.
 
 \chapter{Private Corpus Validation}
 
-The private-corpus workflow validates external manifests without committing
-private material. Normal output redacts private paths. The generated evidence
-below uses a sanitized external corpus under the same release machinery that a
-real private department manifest would use.
+\section*{Colleague scenario}
+
+The public fixtures are useful, but an industrial release also needs to prove
+that the machinery can validate private or sanitized department material without
+committing it. The private-corpus workflow is designed for that trust boundary.
+The manifest may contain sensitive local paths, while the report must remain
+safe to share.
+
+\section*{Fixture and command}
+
+For this autonomous release, the evidence uses an external sanitized corpus
+created outside the repository. It includes six private-sanitized entries across
+DSGE, stochastic volatility, SDE/PDE numerics, ML objectives, ELBO/VI, and
+computational physics MCMC. A real deployment replaces that manifest with an
+approved private manifest using the same environment variable and validator.
 
 \lstinputlisting[caption={Private corpus validation summary},basicstyle=\ttfamily\footnotesize]{generated/release_report/private-corpus-summary.txt}
+
+\section*{Output to inspect}
+
+The summary reports \texttt{consistent}, zero findings, redacted private paths,
+and parser reports selected for proof audit. The important part is not the
+temporary directory. The important part is that the validator used unredacted
+local paths internally while emitting redacted report output.
+
+\section*{Interpretation}
+
+This closes the release blocker for private-corpus machinery without pretending
+that real confidential department documents were committed or inspected by this
+repository. It demonstrates that an operator can supply an external manifest and
+get release-gated parser evidence with safe output.
+
+\section*{Next action}
+
+Before a department deployment, an operator should replace the sanitized corpus
+with an approved private manifest, verify coverage by domain, run
+\path{scripts/validate_private_corpus.sh}, and record whether the real
+private corpus covers the same domains as the sanitized release corpus.
+
+That record matters for sales and governance. It lets a manager say, "The
+release machinery has been tested here; our department-specific claim begins
+only after we point it at our approved private material."
+
+\section*{Boundary}
+
+This report's private evidence is sanitized external evidence. It does not claim
+that unredacted department-private documents were reviewed. The privacy rule is
+simple: populated private manifests stay outside git, normal reports redact
+paths, and any private path inside the checkout is a release finding.
+
+The code owner for this boundary is \texttt{release\_corpus.py}; the release
+profile owner is \texttt{release\_policy.py}. Both should be reviewed before
+changing the private-corpus claim.
 
 \part{Security, Operations, and Maintenance}
 
 \chapter{Security and Privacy}
 
+Security in MathDevMCP starts from a local-first assumption: mathematical
+documents, private source trees, and code roots remain on the user's machine.
+The product does not need to upload documents to a service in order to search
+LaTeX labels, compare code terms, or build a release corpus report. This is a
+major part of the industrial value proposition for colleagues who work with
+unpublished notes, grant material, confidential model code, or department
+calibration files.
+
+\section{Private corpus boundary}
+
 Private documents must stay outside the repository. A populated private
 manifest may contain sensitive paths and should remain external. Normal
-MathDevMCP reports redact private document roots and code roots. Governance
-validation rejects private paths inside the checkout. Evidence bundles for
-review should be stored outside git unless they are deliberately reduced to
-safe report snippets.
+MathDevMCP reports redact private document roots and code roots through
+\texttt{release\_corpus.py}. Governance validation rejects private paths inside
+the checkout. Evidence bundles for review should be stored outside git unless
+they are deliberately reduced to safe report snippets.
+
+The privacy contract has three levels. Public fixtures are safe to commit and
+are used for repeatable tests. External sanitized fixtures may be used to prove
+release machinery without revealing real documents. Real private manifests are
+operator-supplied and should never appear in git. The report uses the second
+level and says so plainly.
+
+\section{Command and backend governance}
+
+External commands are bounded by governance policy. \texttt{governance.py}
+checks that MathDevMCP subprocess calls include explicit timeouts, and the
+policy allowlist names the external tools the project expects: LaTeXML, Pandoc,
+Lean, Lake, and Sage. Backend failures are reported as structured evidence
+rather than raw shell surprises.
+
+This matters for agent use. An MCP tool call should not become a hidden shell
+escape hatch. It should return a typed report with a status, findings, and
+provenance. When a backend is unavailable, times out, or returns diagnostic-only
+evidence, the result should make that boundary visible.
+
+\section{Review checklist}
+
+Before sharing a release bundle, scan generated report evidence for absolute
+private paths, manifest filenames, and local checkout paths. Run
+\path{scripts/audit_release_report_substance.sh} and the release-readiness
+profile with the intended manifest. If a scan finds an unredacted private path,
+treat it as a release blocker, not a cosmetic documentation issue.
 
 \chapter{Operations}
 
-The normal operator sequence is:
+Operations are intentionally command driven. A colleague should be able to
+clone the repository, install the package, run doctor checks, and obtain a
+release-readiness report without opening a notebook or editing the source. The
+normal operator sequence is:
 
 \begin{lstlisting}[language=bash]
 PYTHONPATH=src python -m mathdevmcp.cli doctor
@@ -369,6 +1090,35 @@ scripts/validate_private_corpus.sh "$PWD"
 PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile full
 \end{lstlisting}
 
+\section{Interpreting a run}
+
+Read the commands in layers. \texttt{doctor} describes local capability:
+Python, LaTeXML, Pandoc, Lean, Sage, SymPy, and LeanDojo. Backend env doctor
+checks the isolated environment used for LeanDojo. LaTeXML validation is strict
+only when the release profile requires it. The benchmark gate checks product
+behavior; release readiness combines those results with governance, parser
+policy, private-corpus status, and git state.
+
+A dirty working tree is a caveat because release reports should be tied to a
+commit. It is normal during documentation editing, but it must be cleared or
+accepted explicitly before a tag. Missing private corpus evidence is a caveat
+for the base profile and a blocker for the private-corpus and full profiles.
+
+\section{Environment layout}
+
+Lean may be available through \texttt{elan} in the user environment. LeanDojo is
+kept in \texttt{mathdevmcp-backends} and invoked through
+\texttt{MATHDEVMCP\_BACKEND\_CONDA\_ENV}. This split is deliberate: it prevents
+the backend dependency stack from destabilizing the main environment while
+still making backend evidence available for strict profiles.
+
+\section{Release cadence}
+
+For a release branch, regenerate evidence after any change to parser policy,
+release corpus metadata, benchmark cases, release policy, or user-facing
+workflow examples. Rebuild the PDF after evidence regeneration. Run the
+substance audit before final review so page count cannot hide thin chapters.
+
 \chapter{Maintainer Guide}
 
 Maintain release behavior by changing library code first, then CLI/MCP wrappers,
@@ -376,6 +1126,11 @@ then docs and evidence. When adding a new benchmark category, update the case
 builder, runner, summary tests, release report evidence, and release policy if
 the category becomes mandatory. When adding a new private corpus entry, keep the
 entry outside git and check redaction before sharing output.
+
+The maintainer rule of thumb is simple: a release claim should have one owning
+module, one CLI or MCP surface, at least one test, and one report example if it
+is colleague-facing. If any of those four pieces is missing, the claim is not
+ready to sell as an industrial feature.
 
 The highest-risk modules are:
 
@@ -388,6 +1143,28 @@ The highest-risk modules are:
   \item \texttt{mcp\_facade.py} and \texttt{cli.py}, for public tool surfaces.
 \end{itemize}
 
+\section{Change workflow}
+
+For a behavior change, start with the library function and its direct tests.
+Then update the CLI command if arguments or JSON shape changed. Then update the
+MCP facade so agents receive the same behavior. Only then regenerate report
+evidence and edit narrative documentation. This order keeps prose downstream of
+executable behavior.
+
+\section{Contract hygiene}
+
+Do not rename statuses casually. Words such as \texttt{mismatch},
+\texttt{unverified}, \texttt{inconclusive}, and \texttt{ready\_with\_caveats}
+are part of the user contract. A rename can break tests, release snippets,
+agent prompts, and colleague training material at the same time.
+
+\section{Documentation hygiene}
+
+Documentation changes that touch release claims should run the same gates as
+small code changes: generated evidence, report-substance audit, PDF build, path
+leak scan, and release-readiness check. The report is a sales document, but it
+is also a reproducibility artifact.
+
 \chapter{Limitations and Accepted Boundaries}
 
 The product is conservative by design. It is useful because it knows when to
@@ -395,6 +1172,36 @@ stop. It does not convert every mathematical statement to a theorem prover. It
 does not guarantee semantic equivalence between arbitrary prose and code. It
 does not make private data safe to commit. It does not make numeric diagnostics
 into proofs. These boundaries should remain explicit in future releases.
+
+\section{Mathematical boundary}
+
+MathDevMCP can route obligations, expose missing assumptions, run diagnostic
+checks, and call deterministic backends when configured. It cannot turn a
+natural-language theorem, an incomplete proof sketch, or a nearby equation into
+a certified theorem by itself. If a result says \texttt{unverified} or
+\texttt{diagnostic\_only}, an agent must preserve that language.
+
+\section{Parser boundary}
+
+Parser evidence is provenance evidence. It tells the user what label, file,
+environment, and line span were found. It does not guarantee that every macro,
+include, or semantic dependency has been understood. This is why parser policy
+and benchmark gates are release artifacts rather than implementation details.
+
+\section{Code-comparison boundary}
+
+Code--document comparison is a drift detector. A missing term can identify a
+review target, and a matched term can rule out some stale-code failures. Neither
+one is a proof of semantic equivalence. When a project uses domain-specific
+idioms such as factorizations, automatic differentiation, or generated kernels,
+the benchmark should grow to recognize those idioms explicitly.
+
+\section{Operational boundary}
+
+Full release readiness depends on the operator's environment. LaTeXML, Lean,
+LeanDojo, and private-corpus manifests are external capabilities. MathDevMCP
+reports them; it does not pretend they exist when they do not. That honesty is
+part of the release claim.
 
 \part{Detailed Release Manual}
 
@@ -626,7 +1433,7 @@ automatically certify every claim.
 \chapter{Release Evidence Maintenance}
 
 The evidence snippets in this report are generated by
-\texttt{scripts/generate\_release\_report\_evidence.sh}. Regenerate them after
+\path{scripts/generate_release_report_evidence.sh}. Regenerate them after
 changing release policy, parser policy, benchmark cases, private corpus
 validation, or user-facing workflow examples. Do not hand-edit generated
 evidence unless the file is explicitly converted into narrative documentation.
@@ -663,7 +1470,7 @@ and scan generated docs before commit.
 \section{Risk: backend dependency conflict}
 
 Optional backends can conflict with the main environment. Mitigation: use
-\texttt{mathdevmcp-backends}, backend-specific doctor checks, and explicit
+\path{mathdevmcp-backends}, backend-specific doctor checks, and explicit
 environment variables rather than broad installation into the base env.
 
 \section{Risk: benchmark drift}

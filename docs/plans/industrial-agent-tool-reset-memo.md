@@ -2547,3 +2547,250 @@ Final release state:
 - No populated private manifest or private corpus documents were committed.
 - The final report is `docs/mathdevmcp-release-report.pdf`, with `docs/proposal.tex` retained only as a compatibility wrapper.
 - A second commit will record this post-commit memo update.
+
+## Substantive release report rewrite Phase 0 kickoff
+
+User correction:
+
+- The current `docs/mathdevmcp-release-report.tex` reaches the requested page
+  count, but too many chapters are skeletal.
+- The release document is critical for selling the product to colleagues, so
+  page count alone is not acceptable.
+- The report must be complete, detailed, lively to read, and grounded in
+  concrete MathDevMCP examples and actual output.
+
+Plan for this execution:
+
+1. Update the reset memo before implementation.
+2. Audit `docs/plans/substantive-release-report-execution-plan.md` as if it was
+   written by another developer, looking for missing anti-skeleton safeguards.
+3. Execute every phase with the cycle: plan, execute, test, audit, tidy, update
+   reset memo.
+4. Add generated domain evidence, rewrite the report, add an automated
+   report-substance audit, rebuild the PDF, run release checks, commit changes,
+   and update this reset memo on completion.
+
+Baseline observations:
+
+```text
+git status --short
+?? docs/plans/substantive-release-report-execution-plan.md
+
+Current report: docs/mathdevmcp-release-report.tex
+Current PDF page count from prior verification: 88
+Current source length: 756 lines
+Current head before this execution: 35b8bf7
+```
+
+Thin chapters observed by source-line inventory include:
+
+```text
+9 lines :: Parser Policy
+11 lines :: Benchmark Gate
+8 lines :: Workflow 1: Find Mathematical Context
+7 lines :: Workflow 2: Read a Labeled Neighborhood
+8 lines :: Workflow 3: Compare Document and Code
+8 lines :: Workflow 4: Audit a Derivation
+10 lines :: Workflow 5: Build an Implementation Brief
+12 lines :: Kalman State-Space Likelihood
+7 lines :: HMC Leapfrog and Hamiltonian Flow
+6 lines :: Macro Filter Multi-File Corpus
+6 lines :: DSGE Euler Equation
+6 lines :: Stochastic Volatility Likelihood
+6 lines :: SDE and PDE Numerics
+6 lines :: ML and LLM Objective Functions
+6 lines :: Bayesian ELBO and Variational Inference
+6 lines :: Computational Physics MCMC
+```
+
+Immediate audit concern:
+
+- The existing plan is pointed in the right direction, but execution must not be
+  allowed to satisfy it with generic prose. Each workflow and case study needs
+  concrete command evidence, interpretation, colleague next action, and explicit
+  limitation text.
+
+## Substantive release report plan audit and Phase 1 checkpoint
+
+Plan for audit and Phase 1:
+
+- Audit the execution plan as if it were written by another developer.
+- Harden the plan against generic padding and unstable evidence filenames.
+- Extend generated evidence with stable, domain-specific snippets for the
+  report's case studies.
+- Test the generator and scan generated snippets for private path leaks.
+
+Executed:
+
+- Added `docs/plans/substantive-release-report-plan-audit.md`.
+- Updated `docs/plans/substantive-release-report-execution-plan.md` with
+  required workflow/case-study section markers and stable case evidence
+  filenames.
+- Extended `scripts/generate_release_report_evidence.sh` to create concise
+  case-study snippets for:
+  - Kalman state-space likelihood,
+  - HMC leapfrog,
+  - macro filter multi-file corpus,
+  - DSGE Euler equation,
+  - stochastic volatility likelihood,
+  - SDE/PDE numerics,
+  - ML/LLM objective functions,
+  - Bayesian ELBO/VI,
+  - computational physics MCMC.
+
+Tests/checks:
+
+```text
+bash -n scripts/generate_release_report_evidence.sh
+passed
+
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-final/manifest.json scripts/generate_release_report_evidence.sh docs/generated/release_report
+passed
+
+find docs/generated/release_report -maxdepth 1 -type f -name 'case-*' -print | sort
+27 case-study snippet files generated
+
+rg -n "/tmp/mathdevmcp|/home/chakwong/python/MathDevMCP|manifest.json" docs/generated/release_report
+no matches
+```
+
+Audit/tidy notes:
+
+- Stable snippet filenames are now available for report inclusion.
+- Snippets contain command, status, selected label or provenance, matched terms,
+  missing terms, and short excerpts rather than full raw JSON dumps.
+- Some examples intentionally report `mismatch`, such as the Kalman missing
+  solve and ML gradient term checks; these should be explained as valuable
+  diagnostic behavior, not hidden.
+
+## Substantive release report Phases 2-5 checkpoint
+
+Plan for Phases 2-5:
+
+- Rewrite the workflow chapters so each one teaches when to use the command,
+  what command output looks like, how to read the output, how it can fail, and
+  how an agent should hand it off to a colleague.
+- Rewrite the case-study chapters as worked examples rather than one-paragraph
+  descriptions, with colleague scenario, fixture/command, output, interpretation,
+  next action, and boundary sections.
+- Strengthen the architecture, security, operations, maintainer, limitation,
+  backend, and evidence-maintenance chapters with concrete MathDevMCP module and
+  script ownership.
+- Add an automated substance audit so future edits cannot satisfy the report
+  requirement with page count alone.
+
+Executed:
+
+- Expanded `docs/mathdevmcp-release-report.tex` into a substantially larger
+  product report. Workflow chapters now include the required anti-skeleton
+  markers and generated output snippets.
+- Case studies now cover Kalman likelihood, HMC, macro filter, DSGE, stochastic
+  volatility, SDE/PDE numerics, ML objectives, ELBO/VI, computational physics
+  MCMC, and private corpus validation with explicit limitations.
+- Added concrete maintainer guidance for `release_policy.py`,
+  `release_corpus.py`, `parser_policy.py`, `parser_benchmark.py`,
+  `proof_audit_v2.py`, `mcp_facade.py`, `cli.py`, and the evidence scripts.
+- Added `scripts/audit_release_report_substance.sh`.
+
+Checks:
+
+```text
+awk '/^\\chapter/{if (title != "") print count " lines :: " title; title=$0; count=0; next} title != "" {count++} END{if (title != "") print count " lines :: " title}' docs/mathdevmcp-release-report.tex
+key results:
+44-51 lines for workflow chapters
+45-57 lines for case-study chapters
+45 lines for Security and Privacy
+51 lines for Operations
+45 lines for Maintainer Guide
+39 lines for Limitations and Accepted Boundaries
+
+bash -n scripts/audit_release_report_substance.sh
+passed
+
+scripts/audit_release_report_substance.sh
+Release report substance audit passed.
+Chapters audited: 44
+Evidence snippets audited: 44
+```
+
+Audit/tidy notes:
+
+- The audit was first too strict because it counted only non-empty lines while
+  the execution plan specified source-line thresholds. It now counts source
+  lines and still checks the substantive requirements: markers, generated
+  evidence, banned filler phrases, and generated-evidence redaction.
+- A stray leading space before the private-corpus `Colleague scenario` section
+  was removed.
+- The report now reads as a product document with examples, not as a generated
+  outline. Phase 6 still needs regenerated evidence, a PDF rebuild, and page
+  count verification.
+
+## Substantive release report Phase 6 and pre-commit audit checkpoint
+
+Plan for Phase 6 and Phase 7 pre-commit checks:
+
+- Regenerate all release-report evidence using the external sanitized private
+  corpus manifest.
+- Rebuild `docs/mathdevmcp-release-report.pdf`.
+- Keep the requested 80 to 100 page range by trimming generated JSON appendices
+  before touching the colleague-facing narrative.
+- Run the automated substance audit, path-leak scan, full test suite, and full
+  release-readiness profile.
+- Audit the diff as if written by another developer before staging.
+
+Executed:
+
+- Regenerated `docs/generated/release_report/`.
+- Shortened the generated JSON appendix excerpts in
+  `scripts/generate_release_report_evidence.sh` so the expanded narrative can
+  remain intact while the PDF stays within the requested page range.
+- Rebuilt `docs/mathdevmcp-release-report.pdf`.
+- Added `\emergencystretch=6em` to `docs/preamble.tex` and normalized long
+  inline identifiers with portable LaTeX commands so the main narrative is
+  easier to typeset.
+- Audited the report source and generated snippets for filler markers, missing
+  required sections, missing generated evidence, and private path leaks.
+
+Checks:
+
+```text
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-final/manifest.json scripts/generate_release_report_evidence.sh docs/generated/release_report
+passed
+
+rg -n "/tmp/mathdevmcp|/home/chakwong/python/MathDevMCP|manifest.json" docs/generated/release_report
+no matches
+
+scripts/audit_release_report_substance.sh
+Release report substance audit passed.
+Chapters audited: 44
+Evidence snippets audited: 44
+
+pdflatex -interaction=nonstopmode -halt-on-error mathdevmcp-release-report.tex
+passed
+
+pdfinfo docs/mathdevmcp-release-report.pdf
+Pages: 100
+
+PYTHONPATH=src pytest -q
+252 passed, 2 skipped in 53.29s
+
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-final/manifest.json PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root /home/chakwong/python/MathDevMCP --profile full
+status: ready_with_caveats
+blockers: []
+caveats: [dirty_worktree]
+
+git diff --check
+passed
+```
+
+Audit/tidy notes:
+
+- The first expanded PDF build reached 110 pages. The fix was to trim generated
+  JSON appendix excerpts, not to remove the substantive workflow or case-study
+  narrative.
+- The final PDF is exactly 100 pages, within the requested 80 to 100 page
+  window.
+- The full readiness caveat before commit is expected because the report,
+  evidence, audit script, and reset memo are still modified.
+- `docs/plans/claude_audit.md` is present as an untracked file but is not part
+  of this substantive-release-report execution. It is being left uncommitted.

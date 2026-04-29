@@ -1,0 +1,10 @@
+Command: python -m mathdevmcp.cli implementation-brief macro filter likelihood <repo>/benchmarks/fixtures/doc_macro_filter_missing_gain.py --root <repo>/benchmarks/fixtures --required-terms logdet,solve,K_t --limit 2
+Query: macro filter likelihood
+Selected label: assump:macro-filter-dimensions
+Brief status: mismatch
+Brief reason: At least one document-grounded implementation check failed.
+Consistency status: mismatch
+Consistency reason: Some required document terms were not found in the code text.
+Missing terms: ['K_t']
+Provenance: doc_macro_filter_model.tex:3-7
+Context excerpt: \subsection{State equations}

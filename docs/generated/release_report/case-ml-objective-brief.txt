@@ -1,0 +1,10 @@
+Command: python -m mathdevmcp.cli implementation-brief ML objective gradient <repo>/benchmarks/fixtures/doc_sanitized_ml_llm_objective.py --root <repo>/benchmarks/fixtures --required-terms gradient,loss --limit 2
+Query: ML objective gradient
+Selected label: eq:dept-ml-gradient
+Brief status: mismatch
+Brief reason: At least one document-grounded implementation check failed.
+Consistency status: mismatch
+Consistency reason: Some required document terms were not found in the code text.
+Missing terms: ['gradient']
+Provenance: doc_sanitized_ml_llm_objective.tex:7-9
+Context excerpt: \begin{equation}\label{eq:dept-ml-loss} L(\theta) = -\sum_i \log p_\theta(y_i\mid x_i). \end{equation}

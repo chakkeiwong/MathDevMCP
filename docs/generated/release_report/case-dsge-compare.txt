@@ -1,0 +1,10 @@
+Command: python -m mathdevmcp.cli compare-label-code eq:dept-euler-equation <repo>/benchmarks/fixtures/doc_sanitized_dsge_macro_finance.py --root <repo>/benchmarks/fixtures --required-terms expectation,euler_residual --paragraph-context
+Label: eq:dept-euler-equation
+Code file: doc_sanitized_dsge_macro_finance.py
+Status: consistent
+Reason: All required document terms were found in the code text.
+Required terms: expectation,euler_residual
+Matched terms: ['expectation', 'euler_residual']
+Missing terms: []
+Provenance: doc_sanitized_dsge_macro_finance.tex:3-5
+Document excerpt: \begin{equation}\label{eq:dept-euler-equation} E_t[m_{t+1} R_{t+1}] - 1 = 0. \end{equation}

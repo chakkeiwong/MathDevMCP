@@ -1,0 +1,10 @@
+Command: python -m mathdevmcp.cli compare-label-code eq:dept-acceptance-ratio <repo>/benchmarks/fixtures/doc_sanitized_computational_physics_mcmc.py --root <repo>/benchmarks/fixtures --required-terms hamiltonian,gradient --paragraph-context
+Label: eq:dept-acceptance-ratio
+Code file: doc_sanitized_computational_physics_mcmc.py
+Status: consistent
+Reason: All required document terms were found in the code text.
+Required terms: hamiltonian,gradient
+Matched terms: ['hamiltonian', 'gradient']
+Missing terms: []
+Provenance: doc_sanitized_computational_physics_mcmc.tex:3-5
+Document excerpt: \begin{equation}\label{eq:dept-acceptance-ratio} \alpha(x,x') = \min\{1,\exp(-H(x')+H(x))\}. \end{equation}

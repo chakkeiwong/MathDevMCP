@@ -1,0 +1,10 @@
+Command: python -m mathdevmcp.cli compare-label-code eq:dept-hmc-leapfrog <repo>/benchmarks/fixtures/doc_department_hmc_jax.py --root <repo>/benchmarks/fixtures --required-terms grad,hamiltonian --paragraph-context
+Label: eq:dept-hmc-leapfrog
+Code file: doc_department_hmc_jax.py
+Status: consistent
+Reason: All required document terms were found in the code text.
+Required terms: grad,hamiltonian
+Matched terms: ['grad', 'hamiltonian']
+Missing terms: []
+Provenance: doc_department_bayesian_hmc.tex:13-17
+Document excerpt: \begin{align}\label{eq:dept-hmc-leapfrog} p_{n+1/2} &= p_n + \frac{\epsilon}{2}\nabla_\theta \logpost \\ \theta_{n+1} &= \theta_n + \epsilon M^{-1}p_{n+1/2} \\ p_{n+1} &= p_{n+1/2} + \frac{\epsilon}{2}\nabla_\theta \logpost \end{align}

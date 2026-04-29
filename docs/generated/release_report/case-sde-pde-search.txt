@@ -1,0 +1,9 @@
+Command: python -m mathdevmcp.cli search-latex Euler Maruyama stability --root <repo>/benchmarks/fixtures --limit 3
+Query: Euler Maruyama stability
+Results returned: 3
+Result 1: label=eq:dept-euler-maruyama file=doc_sanitized_sde_pde_numerics.tex lines=3-5 score=2
+  \begin{equation}\label{eq:dept-euler-maruyama} X_{n+1} = X_n + b(X_n)\Delta t + \sigma(X_n)\sqrt{\Delta t}\xi_n. \end{equation}
+Result 2: label=None file=doc_sanitized_dsge_macro_finance.tex lines=1-1 score=1
+  \section{Sanitized macro-finance Euler slice}
+Result 3: label=eq:dept-euler-equation file=doc_sanitized_dsge_macro_finance.tex lines=3-5 score=1
+  \begin{equation}\label{eq:dept-euler-equation} E_t[m_{t+1} R_{t+1}] - 1 = 0. \end{equation}

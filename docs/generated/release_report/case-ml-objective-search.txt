@@ -1,0 +1,9 @@
+Command: python -m mathdevmcp.cli search-latex ML objective gradient --root <repo>/benchmarks/fixtures --limit 3
+Query: ML objective gradient
+Results returned: 3
+Result 1: label=eq:dept-ml-gradient file=doc_sanitized_ml_llm_objective.tex lines=7-9 score=3
+  \begin{equation}\label{eq:dept-ml-gradient} \nabla_\theta L(\theta) = -\sum_i \nabla_\theta \log p_\theta(y_i\mid x_i). \end{equation}
+Result 2: label=eq:dept-reparameterization-gradient file=doc_sanitized_bayesian_elbo_vi.tex lines=7-9 score=2
+  \begin{equation}\label{eq:dept-reparameterization-gradient} \nabla_\lambda \mathcal L = E_\epsilon[\nabla_\lambda f(g_\lambda(\epsilon))]. \end{equation}
+Result 3: label=None file=doc_sanitized_ml_llm_objective.tex lines=1-1 score=2
+  \section{Sanitized ML objective}

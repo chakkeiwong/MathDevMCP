@@ -1,0 +1,9 @@
+Command: python -m mathdevmcp.cli search-latex acceptance ratio Hamiltonian --root <repo>/benchmarks/fixtures --limit 3
+Query: acceptance ratio Hamiltonian
+Results returned: 3
+Result 1: label=eq:dept-acceptance-ratio file=doc_sanitized_computational_physics_mcmc.tex lines=3-5 score=2
+  \begin{equation}\label{eq:dept-acceptance-ratio} \alpha(x,x') = \min\{1,\exp(-H(x')+H(x))\}. \end{equation}
+Result 2: label=eq:dept-hmc-hamiltonian file=doc_department_bayesian_hmc.tex lines=19-21 score=1
+  \begin{equation}\label{eq:dept-hmc-hamiltonian} H(\theta,p)= -\logpost + \frac{1}{2}p'M^{-1}p. \end{equation}
+Result 3: label=eq:domain-hamiltonian-commute file=doc_domain_formalization.tex lines=3-5 score=1
+  \begin{equation}\label{eq:domain-hamiltonian-commute} U + K = K + U \end{equation}

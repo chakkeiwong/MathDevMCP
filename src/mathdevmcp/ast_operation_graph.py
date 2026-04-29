@@ -142,6 +142,20 @@ def _classify_assignment(targets: list[str], value: ast.AST) -> set[str]:
         operations.add("hamiltonian_energy")
     if _name_contains(all_text, ("logsumexp", "normalizer", "normalized_log_weights", "log_weight")):
         operations.add("particle_normalization")
+    if _name_contains(all_text, ("expectation", "expected_", "e_t", "mean(")):
+        operations.add("expectation")
+    if _name_contains(all_text, ("euler_residual", "sdf", "stochastic_discount", "discount_factor")):
+        operations.add("euler_residual")
+    if _name_contains(all_text, ("dt", "step_size", "time_step", "euler_maruyama", "next_state", "x_next", "u_next")):
+        operations.add("time_step_update")
+    if _name_contains(all_text, ("stability", "cfl", "dt_max", "stable_step")):
+        operations.add("stability_condition")
+    if _name_contains(all_text, ("acceptance_ratio", "log_accept", "metropolis", "accept_prob")):
+        operations.add("acceptance_ratio")
+    if _name_contains(all_text, ("elbo", "entropy", "kl", "variational")):
+        operations.add("elbo_objective")
+    if _name_contains(all_text, ("reparameter", "epsilon", "eps", "z_sample")):
+        operations.add("reparameterization_gradient")
     if _name_contains(all_text, ("vmap", "scan", "lax.scan")):
         operations.add("vectorized_loop")
     if ".shape" in expression or ".shape" in target_text:

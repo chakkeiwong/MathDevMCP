@@ -1,0 +1,9 @@
+\section{Sanitized stochastic-volatility likelihood}
+
+\begin{equation}\label{eq:dept-sv-transition}
+h_{t+1} = \mu + \phi(h_t-\mu) + \sigma_\eta \eta_{t+1}.
+\end{equation}
+
+\begin{equation}\label{eq:dept-sv-likelihood}
+\log p(y_t\mid h_t) = -\frac{1}{2}\left(h_t + y_t^2\exp(-h_t)\right) + C.
+\end{equation}

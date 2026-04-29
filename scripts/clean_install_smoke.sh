@@ -51,8 +51,13 @@ if [[ -n "$(find "$TARGET" -mindepth 1 -maxdepth 1 -print -quit)" ]]; then
 fi
 
 if command -v git >/dev/null 2>&1 && git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  log_phase "copying committed HEAD into $TARGET"
-  git -C "$ROOT" archive --format=tar HEAD | tar -x -C "$TARGET"
+  if [[ -z "$(git -C "$ROOT" status --short)" ]]; then
+    log_phase "copying committed HEAD into $TARGET"
+    git -C "$ROOT" archive --format=tar HEAD | tar -x -C "$TARGET"
+  else
+    log_phase "copying current non-ignored checkout into $TARGET"
+    git -C "$ROOT" ls-files -z --cached --others --exclude-standard | tar -C "$ROOT" --null -T - -cf - | tar -x -C "$TARGET"
+  fi
 else
   log_phase "copying working tree into $TARGET"
   cp -a "$ROOT"/. "$TARGET"/

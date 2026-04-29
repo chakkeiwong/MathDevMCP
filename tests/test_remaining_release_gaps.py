@@ -88,6 +88,7 @@ def test_latexml_validation_script_reports_optional_unavailable(monkeypatch):
     payload = json.loads(result.stdout)
     assert payload["metadata"] == {"schema_version": "1.0", "contract": "latexml_backend_validation"}
     assert payload["status"] == "unavailable"
+    assert "MATHDEVMCP_LATEXML_PATH" in payload["install_hint"]
 
 
 def test_latexml_validation_strict_mode_fails_when_unavailable(monkeypatch):
@@ -118,6 +119,32 @@ def test_clean_install_smoke_help_documents_backend_and_artifacts():
     assert "MATHDEVMCP_CLEAN_SKIP_NETWORK_HEAVY=1" in result.stdout
 
 
+def test_backend_command_runner_help_documents_isolated_env():
+    result = subprocess.run(
+        [str(ROOT / "scripts" / "run_backend_command.sh"), "--help"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0
+    assert "mathdevmcp-backends" in result.stdout
+    assert "MATHDEVMCP_LEAN_TOOLCHAIN" in result.stdout
+    assert "conda" in (ROOT / "scripts" / "run_backend_command.sh").read_text(encoding="utf-8")
+
+
+def test_latexml_setup_help_documents_strict_profile():
+    result = subprocess.run(
+        [str(ROOT / "scripts" / "setup_latexml_backend.sh"), "--help"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0
+    assert "MATHDEVMCP_REQUIRE_LATEXML=1" in result.stdout
+
+
 def _private_entry(path: Path) -> dict:
     return {
         "id": "private_dsge_local",
@@ -138,6 +165,7 @@ def _private_entry(path: Path) -> dict:
 def test_private_corpus_manifest_loads_and_redacts_paths(tmp_path):
     private_root = tmp_path / "private-corpus"
     private_root.mkdir()
+    (private_root / "code").mkdir()
     manifest_path = tmp_path / "corpus.json"
     manifest_path.write_text(json.dumps({"entries": [_private_entry(private_root)]}), encoding="utf-8")
 
@@ -154,6 +182,7 @@ def test_private_corpus_manifest_loads_and_redacts_paths(tmp_path):
 def test_private_corpus_manifest_accepts_raw_entry_list(tmp_path):
     private_root = tmp_path / "private-corpus"
     private_root.mkdir()
+    (private_root / "code").mkdir()
     manifest_path = tmp_path / "corpus-list.json"
     manifest_path.write_text(json.dumps([_private_entry(private_root)]), encoding="utf-8")
 
@@ -173,11 +202,25 @@ def test_private_corpus_validation_rejects_checkout_paths(tmp_path):
     assert any(finding["kind"] == "private_path_inside_checkout" for finding in validation["findings"])
 
 
+def test_private_corpus_validation_rejects_missing_private_root(tmp_path):
+    manifest_path = tmp_path / "corpus.json"
+    manifest_path.write_text(json.dumps({"entries": [_private_entry(tmp_path / "missing-private")]}), encoding="utf-8")
+
+    validation = validate_release_corpus_manifest(FIXTURES, private_manifest=manifest_path)
+
+    assert validation["status"] == "mismatch"
+    assert any(finding["kind"] == "private_document_root_missing" for finding in validation["findings"])
+
+
 def test_parser_benchmark_reports_environment_counts_and_scanned_files():
     result = run_parser_backend(FIXTURES, "current")
 
     assert result["details"]["environment_type_counts"]["equation"] >= 1
     assert "doc_macro_filter_main.tex" in result["details"]["tex_files_scanned"]
+    assert result["details"]["per_file_metrics"]["doc_macro_filter_main.tex"]["include_targets"] == ["doc_macro_filter_model"]
+    assert result["details"]["include_status"]["resolved"]
+    assert result["details"]["macro_summary"]["total_macro_definitions"] >= 1
+    assert isinstance(result["details"]["duplicate_label_findings"], list)
     assert result["details"]["section_path_quality"] == "available"
     assert result["details"]["macro_visibility"] == "textual"
 
@@ -214,6 +257,7 @@ def test_release_evidence_script_help_and_metadata(tmp_path):
     assert help_result.returncode == 0
     assert "doctor-base.json" not in help_result.stderr
     assert "OUTPUT_DIR" in help_result.stdout
+    assert "--profile" in help_result.stdout
     assert metadata["metadata"] == {"schema_version": "1.0", "contract": "release_evidence_metadata"}
     assert metadata["private_paths_redacted"] is True
     assert metadata["git_commit"]
@@ -229,3 +273,15 @@ def test_release_evidence_script_rejects_checkout_root():
 
     assert result.returncode == 2
     assert "Refusing unsafe release evidence output directory" in result.stderr
+
+
+def test_release_matrix_help_documents_optional_profiles():
+    result = subprocess.run(
+        [str(ROOT / "scripts" / "release_matrix.sh"), "--help"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0
+    assert "Optional profiles" in result.stdout

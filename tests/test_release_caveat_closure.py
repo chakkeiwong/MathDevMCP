@@ -1,0 +1,223 @@
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+from mathdevmcp.mcp_facade import call_mcp_tool
+from mathdevmcp.release_policy import release_readiness_report
+from mathdevmcp.release_corpus import validate_release_corpus_manifest
+
+
+ROOT = Path(__file__).resolve().parent.parent
+FIXTURES = ROOT / "benchmarks" / "fixtures"
+
+
+def test_release_readiness_defaults_to_base_profile(monkeypatch):
+    monkeypatch.setenv("MATHDEVMCP_LATEXML_PATH", "/definitely/missing/latexml")
+    monkeypatch.delenv("MATHDEVMCP_PRIVATE_CORPUS_MANIFEST", raising=False)
+
+    report = release_readiness_report(ROOT)
+
+    assert report["metadata"] == {"schema_version": "1.0", "contract": "release_readiness_report"}
+    assert report["profile"] == "base"
+    assert report["profile_policy_version"]
+    assert "benchmark_gate" in report["required_capabilities"]
+    assert "latexml" in report["optional_capabilities"]
+    assert report["status"] in {"ready", "ready_with_caveats"}
+    assert any(caveat["kind"] == "latexml_optional_backend_unavailable" for caveat in report["caveats"])
+    assert any(caveat["kind"] == "private_corpus_not_configured" for caveat in report["caveats"])
+    assert not any(blocker["kind"] == "latexml_required_backend_unavailable" for blocker in report["blockers"])
+
+
+def test_latexml_profile_blocks_when_backend_unavailable(monkeypatch):
+    monkeypatch.setenv("MATHDEVMCP_LATEXML_PATH", "/definitely/missing/latexml")
+
+    report = release_readiness_report(ROOT, profile="latexml")
+
+    assert report["profile"] == "latexml"
+    assert report["status"] == "not_ready"
+    assert "latexml" in report["required_capabilities"]
+    assert any(blocker["kind"] == "latexml_required_backend_unavailable" for blocker in report["blockers"])
+
+
+def test_private_and_full_profiles_block_without_private_manifest(monkeypatch):
+    monkeypatch.delenv("MATHDEVMCP_PRIVATE_CORPUS_MANIFEST", raising=False)
+    private_report = release_readiness_report(ROOT, profile="private-corpus")
+    full_report = release_readiness_report(ROOT, profile="full")
+
+    assert private_report["status"] == "not_ready"
+    assert any(blocker["kind"] == "private_corpus_manifest_required" for blocker in private_report["blockers"])
+    assert full_report["status"] == "not_ready"
+    assert any(blocker["kind"] == "private_corpus_manifest_required" for blocker in full_report["blockers"])
+
+
+def test_backend_profile_uses_configured_backend_env(monkeypatch):
+    monkeypatch.setenv("MATHDEVMCP_BACKEND_CONDA_ENV", "mathdevmcp-backends")
+    report = release_readiness_report(ROOT, profile="backend")
+
+    assert report["profile"] == "backend"
+    assert "lean_dojo_backend_env" in report["required_capabilities"]
+    assert not any(blocker["kind"] == "backend_lean_dojo_unavailable" for blocker in report["blockers"])
+
+
+def test_backend_profile_defaults_to_documented_backend_env(monkeypatch):
+    monkeypatch.delenv("MATHDEVMCP_BACKEND_CONDA_ENV", raising=False)
+
+    report = release_readiness_report(ROOT, profile="backend")
+
+    assert report["profile"] == "backend"
+    assert not any(blocker["kind"] == "backend_lean_dojo_unavailable" for blocker in report["blockers"])
+
+
+def test_release_readiness_cli_accepts_profile(monkeypatch):
+    monkeypatch.setenv("MATHDEVMCP_LATEXML_PATH", "/definitely/missing/latexml")
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "mathdevmcp.cli",
+            "release-readiness",
+            "--root",
+            str(ROOT),
+            "--profile",
+            "latexml",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "PYTHONPATH": str(ROOT / "src")},
+    )
+
+    assert result.returncode == 1
+    payload = json.loads(result.stdout)
+    assert payload["profile"] == "latexml"
+    assert payload["status"] == "not_ready"
+
+
+def test_mcp_release_readiness_accepts_profile(monkeypatch):
+    monkeypatch.setenv("MATHDEVMCP_LATEXML_PATH", "/definitely/missing/latexml")
+
+    report = call_mcp_tool("release_readiness", {"root": str(ROOT), "profile": "latexml"})
+
+    assert report["ok"] is True
+    assert report["profile"] == "latexml"
+    assert report["status"] == "not_ready"
+
+
+def test_private_manifest_template_is_valid_json():
+    data = json.loads((ROOT / "examples" / "private-corpus-manifest.template.json").read_text(encoding="utf-8"))
+
+    assert "entries" in data
+    assert {entry["domain"] for entry in data["entries"]}.issuperset(
+        {"dsge_macro_finance", "stochastic_volatility", "sde_pde_numerics", "ml_llm_objective", "bayesian_elbo_vi", "computational_physics_mcmc"}
+    )
+    assert all(entry["privacy_class"] == "private_external" for entry in data["entries"])
+
+
+def test_private_corpus_script_help_and_missing_manifest_behavior():
+    help_result = subprocess.run(
+        [str(ROOT / "scripts" / "validate_private_corpus.sh"), "--help"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    missing = subprocess.run(
+        [str(ROOT / "scripts" / "validate_private_corpus.sh"), str(ROOT)],
+        check=False,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "PYTHONPATH": str(ROOT / "src"), "MATHDEVMCP_PRIVATE_CORPUS_MANIFEST": ""},
+    )
+
+    assert help_result.returncode == 0
+    assert "MATHDEVMCP_PRIVATE_CORPUS_MANIFEST" in help_result.stdout
+    assert missing.returncode == 2
+    assert "private_paths_redacted" in missing.stderr
+
+
+def test_validate_private_corpus_script_accepts_external_manifest(tmp_path):
+    private_root = tmp_path / "private-corpus"
+    private_root.mkdir()
+    (private_root / "doc.tex").write_text(
+        r"""
+\section{Private Synthetic DSGE}
+\begin{equation}
+\label{eq:private-euler-equation}
+E_t[m_{t+1} R_{t+1}] = 1
+\end{equation}
+""",
+        encoding="utf-8",
+    )
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "entries": [
+                    {
+                        "id": "private_dsge_local",
+                        "domain": "dsge_macro_finance",
+                        "privacy_class": "private_external",
+                        "document_root": str(private_root),
+                        "code_roots": [],
+                        "expected_labels": ["eq:private-euler-equation"],
+                        "expected_operations": ["expectation"],
+                        "expected_abstentions": ["calibration_review"],
+                        "seeded_false_confidence_cases": [],
+                        "required_parser_backends": ["current"],
+                        "release_gate_enabled": True,
+                        "notes": "Synthetic temp private manifest for tests.",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [str(ROOT / "scripts" / "validate_private_corpus.sh"), str(ROOT), str(manifest)],
+        check=False,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "PYTHONPATH": str(ROOT / "src")},
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["metadata"] == {"schema_version": "1.0", "contract": "private_corpus_validation_report"}
+    assert payload["private_paths_redacted"] is True
+    assert "<redacted-private-path>" in result.stdout
+    assert str(private_root) not in result.stdout
+
+
+def test_release_corpus_private_manifest_missing_root_is_blocking(tmp_path):
+    manifest = tmp_path / "manifest.json"
+    missing_root = tmp_path / "missing"
+    manifest.write_text(
+        json.dumps(
+            {
+                "entries": [
+                    {
+                        "id": "missing_private",
+                        "domain": "dsge_macro_finance",
+                        "privacy_class": "private_external",
+                        "document_root": str(missing_root),
+                        "code_roots": [],
+                        "expected_labels": ["eq:private-euler-equation"],
+                        "expected_operations": ["expectation"],
+                        "expected_abstentions": ["calibration_review"],
+                        "seeded_false_confidence_cases": [],
+                        "required_parser_backends": ["current"],
+                        "release_gate_enabled": True,
+                        "notes": "Missing path should block private profile.",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    validation = validate_release_corpus_manifest(FIXTURES, private_manifest=manifest)
+
+    assert validation["status"] == "mismatch"
+    assert any(finding["kind"] == "private_document_root_missing" for finding in validation["findings"])

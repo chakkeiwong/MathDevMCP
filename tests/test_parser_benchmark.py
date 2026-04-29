@@ -31,6 +31,9 @@ def test_parser_backend_current_preserves_department_corpus_labels():
     assert result["details"]["environment_count"] >= 1
     assert result["details"]["environment_type_counts"]["equation"] >= 1
     assert "doc_macro_filter_main.tex" in result["details"]["tex_files_scanned"]
+    assert result["details"]["per_file_metrics"]["doc_macro_filter_main.tex"]["include_targets"] == ["doc_macro_filter_model"]
+    assert result["details"]["include_status"]["resolved"]
+    assert result["details"]["macro_summary"]["total_macro_definitions"] >= 1
 
 
 def test_parser_backend_latexml_runs_or_reports_inconclusive():
@@ -80,6 +83,8 @@ def test_compare_parser_backends_returns_ci_friendly_summary():
     assert result["summary"]["total"] == 3
     assert result["summary"]["parsed"] >= 1
     assert result["summary"]["label_preserving"] >= 1
+    assert set(result["summary"]["backend_comparison_matrix"]) == {"current", "latexml", "pandoc"}
+    assert result["summary"]["backend_comparison_matrix"]["current"]["role_hint"] == "candidate_for_proof_audit"
 
 
 def test_parser_backend_reports_duplicate_labels(tmp_path):

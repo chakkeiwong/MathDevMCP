@@ -25,7 +25,7 @@ from .proof_audit import audit_derivation_for_label
 from .proof_audit_v2 import audit_derivation_v2_for_label
 from .governance import governance_policy, validate_governance
 from .release_corpus import release_corpus_manifest, validate_release_corpus_manifest
-from .release_policy import release_readiness_report
+from .release_policy import RELEASE_PROFILES, release_readiness_report
 from .typed_workflows import typed_obligation_for_label
 from .tool_matrix import tool_matrix
 from .workflow import build_implementation_brief
@@ -264,12 +264,12 @@ def _cmd_typed_obligation_label(args: argparse.Namespace) -> int:
 
 
 def _cmd_release_corpus_manifest(args: argparse.Namespace) -> int:
-    print(json.dumps(release_corpus_manifest(args.root), indent=2))
+    print(json.dumps(release_corpus_manifest(args.root, private_manifest=args.private_manifest or None), indent=2))
     return 0
 
 
 def _cmd_validate_release_corpus(args: argparse.Namespace) -> int:
-    result = validate_release_corpus_manifest(args.root)
+    result = validate_release_corpus_manifest(args.root, private_manifest=args.private_manifest or None)
     print(json.dumps(result, indent=2))
     return 0 if result["status"] != "mismatch" else 1
 
@@ -287,7 +287,7 @@ def _cmd_validate_governance(args: argparse.Namespace) -> int:
 
 
 def _cmd_release_readiness(args: argparse.Namespace) -> int:
-    result = release_readiness_report(args.root)
+    result = release_readiness_report(args.root, profile=args.profile)
     print(json.dumps(result, indent=2))
     return 0 if result["status"] in {"ready", "ready_with_caveats"} else 1
 
@@ -461,10 +461,12 @@ def make_parser() -> argparse.ArgumentParser:
 
     p_release_corpus = sub.add_parser("release-corpus-manifest", help="Print the release corpus manifest")
     p_release_corpus.add_argument("--root", default="benchmarks/fixtures", help="Root directory for public fixture entries")
+    p_release_corpus.add_argument("--private-manifest", default="", help="Optional private corpus manifest path")
     p_release_corpus.set_defaults(func=_cmd_release_corpus_manifest)
 
     p_validate_release_corpus = sub.add_parser("validate-release-corpus", help="Validate the release corpus manifest")
     p_validate_release_corpus.add_argument("--root", default="benchmarks/fixtures", help="Root directory for public fixture entries")
+    p_validate_release_corpus.add_argument("--private-manifest", default="", help="Optional private corpus manifest path")
     p_validate_release_corpus.set_defaults(func=_cmd_validate_release_corpus)
 
     p_governance = sub.add_parser("governance-policy", help="Print security and governance policy")
@@ -476,6 +478,7 @@ def make_parser() -> argparse.ArgumentParser:
 
     p_release = sub.add_parser("release-readiness", help="Build a release-readiness report")
     p_release.add_argument("--root", default=".", help="Project root")
+    p_release.add_argument("--profile", choices=sorted(RELEASE_PROFILES), default="base", help="Release profile to evaluate")
     p_release.set_defaults(func=_cmd_release_readiness)
 
     return parser

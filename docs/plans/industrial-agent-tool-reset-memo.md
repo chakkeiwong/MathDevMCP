@@ -1,5 +1,439 @@
 # Reset memo: industrial agent-tool direction
 
+## Industrial release caveat-closure kickoff
+
+Active execution plan:
+
+```text
+docs/plans/industrial-release-caveat-closure-execution-plan.md
+```
+
+Starting commit: `1ce9d9f`.
+
+Initial working tree state:
+
+```text
+?? docs/plans/industrial-release-caveat-closure-execution-plan.md
+```
+
+Baseline checks:
+
+```text
+PYTHONPATH=src python -m mathdevmcp.cli doctor
+- ok: true
+- LaTeXML: unavailable, latexml was not found on PATH
+- Pandoc: available, /usr/bin/pandoc, version 2.9.2.1
+- Lean: available, /home/chakwong/.elan/bin/lean, version 4.20.0
+- Sage: available, /usr/bin/sage, version 9.5
+- LeanDojo: unavailable in the base Python env
+- SymPy: available, version 1.14.0
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD"
+- status: ready_with_caveats
+- git_commit: 1ce9d9f
+- dirty_worktree: true, because the new plan file is uncommitted
+- blockers: none
+- caveats: dirty_worktree, latexml_optional_backend_unavailable
+
+PYTHONPATH=src python -m mathdevmcp.cli validate-release-corpus --root "$PWD/benchmarks/fixtures"
+- status: consistent
+- private manifest: not_configured
+- private paths redacted: true
+
+scripts/validate_latexml_backend.sh "$PWD"
+- status: unavailable
+- strict: false
+- exit: 0
+
+scripts/backend_env_doctor.sh "$PWD"
+- LeanDojo available in mathdevmcp-backends, version 4.20.0
+- SymPy available in mathdevmcp-backends, version 1.14.0
+- LaTeXML still unavailable
+
+scripts/validate_backend_install.sh "$PWD"
+- ok: true
+- optional backend caveat: latexml
+```
+
+Execution requirements for this pass:
+
+- add an independent audit at `docs/plans/industrial-release-caveat-closure-plan-audit.md`,
+- execute every phase in the caveat-closure plan,
+- use a plan, execute, test, audit, tidy, reset-memo cycle for each phase,
+- keep LaTeXML, LeanDojo, and private corpora profile-scoped rather than mandatory for base release,
+- preserve the diagnostic/proof boundary,
+- commit all coherent changes,
+- update this reset memo at completion with final commands, profile statuses, caveats, and commit hash.
+
+## Industrial release caveat-closure Phase 1 checkpoint
+
+Plan:
+
+- Add release profiles while preserving the existing `release-readiness` command and `release_readiness_report(root)` default behavior.
+- Make `base` the default profile.
+- Make `latexml`, `private-corpus`, and `full` block when their required optional evidence is unavailable.
+- Make `backend` depend on the isolated backend Python evidence rather than the active base environment.
+
+Executed:
+
+- Added profile policy fields to `src/mathdevmcp/release_policy.py`: `profile`, `required_capabilities`, `optional_capabilities`, `evidence_commands`, and `profile_policy_version`.
+- Added `--profile` to the CLI `release-readiness` command.
+- Passed profile arguments through MCP facade/server release-readiness surfaces.
+- Added optional private-manifest arguments to CLI/MCP release-corpus surfaces for later private-corpus phases.
+- Added focused tests in `tests/test_release_caveat_closure.py`.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_release_caveat_closure.py tests/test_release_candidate_installation.py tests/test_industrial_release_gap_closure.py tests/test_packaging_release_policy.py
+23 passed
+```
+
+Profile command checks:
+
+```text
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile base
+- status: ready_with_caveats
+- blockers: none
+- caveats: dirty_worktree, latexml_optional_backend_unavailable, private_corpus_not_configured
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile latexml
+- status: not_ready
+- blocker: latexml_required_backend_unavailable
+- exit: 1, expected for a strict missing optional backend profile
+```
+
+Audit/tidy notes:
+
+- Backward compatibility is preserved: the default release profile is `base` and the contract remains `release_readiness_report`.
+- Missing LaTeXML is still optional for `base` and blocking for `latexml`/`full`.
+- Missing private corpus is now visible as a low-severity base caveat and blocking for private profiles.
+- LeanDojo in the active base Python environment is not required for `base`; `backend` uses backend-env Python evidence.
+
+## Industrial release caveat-closure Phases 2 and 3 checkpoint
+
+Plan:
+
+- Keep LaTeXML optional for the base profile but make strict installation/validation instructions copy-pastable.
+- Add a backend command runner that invokes the isolated conda environment without shell string evaluation.
+- Preserve LeanDojo as an optional backend-env workflow; do not import it in the base package.
+
+Executed:
+
+- Added `scripts/setup_latexml_backend.sh`.
+- Added `scripts/run_backend_command.sh`.
+- Extended `scripts/validate_latexml_backend.sh` with an installation hint in structured output.
+- Added tests for the helper scripts and LaTeXML validation payload.
+
+Tests:
+
+```text
+bash -n scripts/setup_latexml_backend.sh scripts/run_backend_command.sh scripts/validate_latexml_backend.sh
+passed
+
+PYTHONPATH=src pytest -q tests/test_remaining_release_gaps.py tests/test_release_candidate_installation.py tests/test_release_caveat_closure.py
+28 passed, 1 skipped
+```
+
+Command checks:
+
+```text
+scripts/setup_latexml_backend.sh --help
+- documents OS package / MATHDEVMCP_LATEXML_PATH / strict validation workflow
+
+scripts/run_backend_command.sh --help
+- documents mathdevmcp-backends, MATHDEVMCP_LEAN_TOOLCHAIN, and MATHDEVMCP_LEAN_PATH
+```
+
+Audit/tidy notes:
+
+- LaTeXML remains unavailable locally and optional for `base`.
+- Strict LaTeXML profile behavior remains `not_ready` until a real executable validates.
+- The backend runner uses `exec conda run -n "$BACKEND_ENV" "$@"`, preserving argv boundaries.
+
+## Industrial release caveat-closure Phase 4 checkpoint
+
+Plan:
+
+- Add a private-corpus onboarding kit that can validate external manifests without committing private documents or paths.
+- Distinguish JSON/manifest validation from parser/content evidence.
+- Keep missing private data as a base caveat and a private-profile blocker.
+
+Executed:
+
+- Added `docs/private-corpus-manifest-guide.md`.
+- Added `examples/private-corpus-manifest.template.json`.
+- Added `scripts/validate_private_corpus.sh`.
+- Extended release-corpus validation so release-gated private document roots must exist and private manifests with no private entries are reported.
+- Added tests for template shape, missing manifest behavior, external synthetic private manifests, redaction, checkout-path rejection, and missing private roots.
+
+Tests:
+
+```text
+bash -n scripts/validate_private_corpus.sh
+passed
+
+PYTHONPATH=src pytest -q tests/test_release_caveat_closure.py tests/test_remaining_release_gaps.py tests/test_industrial_release_gap_closure.py
+34 passed, 1 skipped
+```
+
+Audit/tidy notes:
+
+- `scripts/validate_private_corpus.sh` emits `private_corpus_validation_report` and redacts private paths in normal output.
+- The validator now runs parser policy against each release-gated private document root using the unredacted path internally, then reports only redacted identifiers and parser status.
+- No private source files or real private manifests were added to git; the committed manifest file is a template with placeholder paths only.
+
+## Industrial release caveat-closure Phase 6 checkpoint
+
+Plan:
+
+- Extend parser evidence with per-file label/environment counts, include status, macro summaries, and a backend comparison matrix.
+- Keep the additions informational and additive; do not treat parser agreement as proof.
+
+Executed:
+
+- Extended `src/mathdevmcp/parser_benchmark.py` with `per_file_metrics`, `include_status`, `macro_summary`, and `backend_comparison_matrix`.
+- Preserved existing duplicate-label output as a list of duplicate label strings for compatibility.
+- Added focused parser tests for include discovery, macro counts, and comparison matrix role hints.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_parser_benchmark.py tests/test_remaining_release_gaps.py tests/test_context_and_fixtures.py
+54 passed, 1 skipped
+```
+
+Command check:
+
+```text
+PYTHONPATH=src python -m mathdevmcp.cli parser-benchmark --root "$PWD/benchmarks/fixtures" --backend current
+- current parser: parsed
+- labels_found: 53
+- environment_count: 53
+- include_status: doc_macro_filter_main.tex resolves doc_macro_filter_model.tex
+- macro_summary: 10 macro definitions across 3 files
+```
+
+Audit/tidy notes:
+
+- Parser metrics are evidence-quality/routing fields only.
+- The selected proof-audit parser remains the current parser because it has line provenance.
+- LaTeXML remains optional and unavailable locally.
+
+## Industrial release caveat-closure Phase 5 checkpoint
+
+Plan:
+
+- Add compact public synthetic fixtures for release domains that were previously private placeholders or non-gated.
+- Gate those fixtures through parser and AST operation benchmark evidence.
+- Keep the examples synthetic and diagnostic; do not imply full semantic proof.
+
+Executed:
+
+- Added public synthetic TeX/code fixtures for particle filters, DSGE/macro-finance, stochastic volatility, SDE/PDE numerics, ML/LLM objectives, Bayesian ELBO/VI, and computational-physics MCMC.
+- Promoted particle-filter public evidence to release-gated status.
+- Added release-gated public corpus entries for the new domains in `src/mathdevmcp/release_corpus.py`.
+- Extended AST operation extraction for expectation, Euler residuals, time-step updates, stability conditions, acceptance ratios, ELBO objectives, and reparameterization-gradient evidence.
+- Added parser and AST benchmark cases for the sanitized public domains.
+- Updated benchmark expectations deliberately from 34 to 41 total cases; non-recursive release readiness now uses 40 cases.
+
+Tests and checks:
+
+```text
+PYTHONPATH=src pytest -q tests/test_context_and_fixtures.py tests/test_industrial_release_gap_closure.py tests/test_ast_operation_graph.py tests/test_release_caveat_closure.py tests/test_parser_benchmark.py
+passed after benchmark total updates
+
+PYTHONPATH=src python -m mathdevmcp.cli benchmark-gate --root "$PWD"
+- passed: true
+- total: 41
+- passed_count: 41
+- failed_count: 0
+
+PYTHONPATH=src python -m mathdevmcp.cli validate-release-corpus --root "$PWD/benchmarks/fixtures"
+- status: consistent
+```
+
+Profile check:
+
+```text
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile base
+- status: ready_with_caveats
+- non-recursive benchmark gate: 40/40
+- labels_found in parser policy: 67
+- caveats: dirty_worktree, latexml_optional_backend_unavailable, private_corpus_not_configured
+```
+
+Audit/tidy notes:
+
+- The new fixtures are synthetic and safe to commit.
+- Release corpus coverage is now broader before private data is supplied.
+- The private placeholders remain for external colleague corpora and do not affect base release readiness.
+
+## Industrial release caveat-closure Phases 7 and 8 checkpoint
+
+Plan:
+
+- Add colleague-facing profile documentation and a first-30-minutes workflow.
+- Make release evidence collection profile-aware.
+- Add a local release matrix that reports optional profiles as skipped unless explicitly configured.
+
+Executed:
+
+- Updated `docs/mathdevmcp-release-policy.md` with profile semantics.
+- Updated `docs/mathdevmcp-deployment-guide.md` with backend runner, LaTeXML setup helper, private corpus validation, and release matrix commands.
+- Updated `docs/mathdevmcp-operator-guide.md` with a first-30-minutes workflow and profile matrix.
+- Extended `scripts/collect_release_evidence.sh` with `--profile`.
+- Added `scripts/release_matrix.sh`.
+- Added focused tests for help output and profile evidence behavior.
+
+Tests and checks:
+
+```text
+bash -n scripts/collect_release_evidence.sh scripts/release_matrix.sh scripts/run_backend_command.sh scripts/setup_latexml_backend.sh scripts/validate_private_corpus.sh
+passed
+
+PYTHONPATH=src pytest -q tests/test_remaining_release_gaps.py tests/test_release_caveat_closure.py tests/test_release_candidate_installation.py
+34 passed, 1 skipped
+
+rg -n "ready_with_caveats|latexml|LeanDojo|private-corpus|profile|arbitrary theorem|default LeanDojo|required LaTeXML" docs
+reviewed; docs state optional/default boundaries and do not claim arbitrary theorem proving.
+```
+
+Evidence collection:
+
+```text
+scripts/collect_release_evidence.sh /tmp/mathdevmcp-release-evidence-caveat-closure-base --profile base
+passed
+```
+
+Generated evidence files:
+
+```text
+backend-install-validation.txt
+benchmark-gate.json
+clean-install-summary.txt
+doctor-backend.json
+doctor-base.json
+governance-validation.json
+latexml-validation.json
+parser-benchmark.json
+private-corpus-validation.json
+release-evidence-metadata.json
+release-readiness-base.json
+```
+
+Audit/tidy notes:
+
+- Evidence was written under `/tmp`, not git.
+- Private-corpus validation is explicitly skipped for the base profile evidence bundle.
+- Optional profiles are not reported as passed unless their environment/data flags are set.
+
+## Industrial release caveat-closure Phase 9 completion checkpoint
+
+Plan:
+
+- Finish the caveat-closure execution with broad tests, profile checks, evidence collection, clean-install smoke, audit, tidy, and commit.
+- Keep release claims profile-specific and conservative.
+- Do not treat parser, AST, numeric, LeanDojo, benchmark, or private-corpus evidence as theorem verification unless a deterministic backend certificate is accepted.
+
+Executed:
+
+- Added and audited `docs/plans/industrial-release-caveat-closure-plan-audit.md`.
+- Executed the release profile, LaTeXML, backend, private corpus, public corpus, parser evidence, docs, evidence-matrix, and final verification phases from `docs/plans/industrial-release-caveat-closure-execution-plan.md`.
+- Hardened `scripts/clean_install_smoke.sh` so a dirty pre-commit smoke copies the current non-ignored checkout rather than stale committed `HEAD`.
+- Kept generated evidence under `/tmp` and kept private manifest examples as templates only.
+
+Final verification before commit:
+
+```text
+git diff --check
+passed
+
+bash -n scripts/clean_install_smoke.sh scripts/collect_release_evidence.sh scripts/release_matrix.sh scripts/run_backend_command.sh scripts/setup_latexml_backend.sh scripts/validate_private_corpus.sh scripts/validate_latexml_backend.sh
+passed
+
+PYTHONPATH=src pytest -q
+245 passed, 2 skipped
+
+PYTHONPATH=src MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.20.0 MATHDEVMCP_LEAN_PATH=/home/chakwong/.elan/bin/lean pytest -q
+246 passed, 2 skipped
+
+PYTHONPATH=src pytest -q tests/test_release_candidate_installation.py tests/test_release_caveat_closure.py tests/test_remaining_release_gaps.py
+36 passed, 1 skipped
+
+PYTHONPATH=src python -m mathdevmcp.cli benchmark-gate --root "$PWD"
+passed=true, total=41, passed_count=41, failed_count=0
+
+scripts/release_smoke.sh "$PWD"
+passed
+
+scripts/backend_env_doctor.sh "$PWD"
+LeanDojo available in mathdevmcp-backends, version 4.20.0; SymPy available, version 1.14.0; LaTeXML unavailable
+
+scripts/validate_backend_install.sh "$PWD"
+ok=true; optional backend caveat: latexml
+
+scripts/validate_latexml_backend.sh "$PWD"
+status=unavailable, strict=false, exit=0
+
+scripts/release_matrix.sh "$PWD"
+base ran; backend/latexml/private-corpus/full skipped unless their profile flags are set
+
+MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends scripts/release_matrix.sh "$PWD"
+base ready_with_caveats; backend ready_with_caveats; strict optional profiles skipped unless requested
+
+scripts/collect_release_evidence.sh /tmp/mathdevmcp-release-evidence-caveat-closure-final --profile base
+passed
+
+scripts/clean_install_smoke.sh /tmp/mathdevmcp-clean-caveat-closure-final
+focused clean-install tests: 10 passed; clean benchmark gate: 41/41
+```
+
+Final pre-commit profile statuses:
+
+```text
+base: ready_with_caveats
+backend: ready_with_caveats
+latexml: not_ready, blocker latexml_required_backend_unavailable
+private-corpus: not_ready, blocker private_corpus_manifest_required
+full: not_ready, blockers latexml_required_backend_unavailable and private_corpus_manifest_required
+```
+
+Pre-commit caveats:
+
+- `dirty_worktree`, expected before the implementation commit.
+- `latexml_optional_backend_unavailable`, because no real LaTeXML executable is installed or supplied through `MATHDEVMCP_LATEXML_PATH`.
+- `private_corpus_not_configured`, because no external private corpus manifest is configured.
+
+Audit/tidy notes:
+
+- No private source documents, private absolute paths, conda environments, Lean build outputs, LaTeXML scratch files, or generated evidence bundles are staged for git.
+- New scripts are executable.
+- The base release remains usable without LaTeXML, LeanDojo in the active env, or private data.
+- The backend profile validates through the isolated `mathdevmcp-backends` conda env.
+- Strict `latexml`, `private-corpus`, and `full` profiles correctly remain `not_ready` until their required external evidence exists.
+- The implementation commit will be created after this checkpoint; a post-commit reset-memo addendum records the resulting commit hash and clean-tree readiness.
+
+Post-commit completion addendum:
+
+```text
+Implementation commit created: e1df6fa, "Close industrial release caveats"
+
+git status --short
+clean
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile base
+status: ready_with_caveats
+git_commit: e1df6fa
+dirty_worktree: false
+blockers: none
+caveats: latexml_optional_backend_unavailable, private_corpus_not_configured
+```
+
+This addendum is included by amending the implementation commit, so the final
+commit hash cannot be embedded in this file without changing the hash again.
+Use `git rev-parse --short HEAD` after the amend for the exact final `HEAD`.
+
 ## Current remaining-gap closure request
 
 The active request is to execute the newly added remaining-gap plan:

@@ -44,6 +44,7 @@ if not latexml.get("available"):
         "status": "unavailable",
         "strict": strict,
         "reason": "LaTeXML is unavailable; this is an optional backend caveat unless strict mode is enabled.",
+        "install_hint": "Install OS package latexml or set MATHDEVMCP_LATEXML_PATH=/path/to/latexml. Run scripts/setup_latexml_backend.sh for local instructions.",
         "doctor_capability": latexml,
         "parser_result": None,
     }
@@ -56,6 +57,7 @@ payload = {
     "status": "validated" if validated else "inconclusive",
     "strict": strict,
     "reason": "LaTeXML preserved expected labels on the benchmark corpus." if validated else "LaTeXML ran but did not produce release-certifying parser evidence.",
+    "install_hint": None,
     "doctor_capability": latexml,
     "parser_result": parser_result,
 }

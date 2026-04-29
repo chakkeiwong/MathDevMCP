@@ -221,12 +221,14 @@ def _tool_doctor(args: dict[str, Any]) -> dict[str, Any]:
 
 def _tool_release_corpus_manifest(args: dict[str, Any]) -> dict[str, Any]:
     root = args.get("root")
-    return release_corpus_manifest(root if isinstance(root, str) else None)
+    private_manifest = args.get("private_manifest")
+    return release_corpus_manifest(root if isinstance(root, str) else None, private_manifest=private_manifest if isinstance(private_manifest, str) else None)
 
 
 def _tool_validate_release_corpus(args: dict[str, Any]) -> dict[str, Any]:
     root = args.get("root")
-    return validate_release_corpus_manifest(root if isinstance(root, str) else None)
+    private_manifest = args.get("private_manifest")
+    return validate_release_corpus_manifest(root if isinstance(root, str) else None, private_manifest=private_manifest if isinstance(private_manifest, str) else None)
 
 
 def _tool_governance_policy(args: dict[str, Any]) -> dict[str, Any]:
@@ -235,7 +237,7 @@ def _tool_governance_policy(args: dict[str, Any]) -> dict[str, Any]:
 
 
 def _tool_release_readiness(args: dict[str, Any]) -> dict[str, Any]:
-    return release_readiness_report(Path(_required_string(args, "root")))
+    return release_readiness_report(Path(_required_string(args, "root")), profile=str(args.get("profile", "base")))
 
 
 TOOL_HANDLERS: dict[str, ToolHandler] = {

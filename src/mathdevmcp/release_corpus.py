@@ -138,13 +138,97 @@ def release_corpus_manifest(
             "public_fixture",
             str(base),
             [str(base)],
-            ["eq:dept-particle-normalization"],
+            ["eq:dept-particle-normalization", "eq:dept-particle-ess"],
             ["logsumexp", "particle_normalization"],
             ["particle_filter_weight_degeneracy_review"],
             ["particle_filter_missing_logsumexp_seed"],
             ["current"],
-            False,
-            "Code fixture exists; document label should be added before this domain becomes release-gated.",
+            True,
+            "Public sanitized particle-filter fixture covers log-sum-exp normalization and ESS diagnostics.",
+        ),
+        ReleaseCorpusEntry(
+            "dsge_macro_finance_euler_public",
+            "dsge_macro_finance",
+            "public_fixture",
+            str(base),
+            [str(base)],
+            ["eq:dept-euler-equation", "eq:dept-sdf"],
+            ["expectation", "euler_residual"],
+            ["private_calibration_assumption_review"],
+            ["missing_discount_factor_seed"],
+            ["current"],
+            True,
+            "Public synthetic macro-finance fixture for Euler residual and stochastic discount factor structure.",
+        ),
+        ReleaseCorpusEntry(
+            "stochastic_volatility_likelihood_public",
+            "stochastic_volatility",
+            "public_fixture",
+            str(base),
+            [str(base)],
+            ["eq:dept-sv-transition", "eq:dept-sv-likelihood"],
+            ["innovation_update", "posterior_or_likelihood"],
+            ["latent_volatility_prior_review"],
+            ["missing_jacobian_seed"],
+            ["current"],
+            True,
+            "Public synthetic stochastic-volatility transition and likelihood fixture.",
+        ),
+        ReleaseCorpusEntry(
+            "sde_pde_numerics_public",
+            "sde_pde_numerics",
+            "public_fixture",
+            str(base),
+            [str(base)],
+            ["eq:dept-euler-maruyama", "eq:dept-pde-stability"],
+            ["time_step_update", "stability_condition"],
+            ["discretization_assumption_review"],
+            ["unstable_step_size_seed"],
+            ["current"],
+            True,
+            "Public synthetic SDE/PDE discretization and stability fixture.",
+        ),
+        ReleaseCorpusEntry(
+            "ml_llm_objective_public",
+            "ml_llm_objective",
+            "public_fixture",
+            str(base),
+            [str(base)],
+            ["eq:dept-ml-loss", "eq:dept-ml-gradient"],
+            ["gradient", "posterior_or_likelihood"],
+            ["data_pipeline_assumption_review"],
+            ["wrong_sign_gradient_seed"],
+            ["current"],
+            True,
+            "Public synthetic ML objective and gradient sign fixture.",
+        ),
+        ReleaseCorpusEntry(
+            "bayesian_elbo_vi_public",
+            "bayesian_elbo_vi",
+            "public_fixture",
+            str(base),
+            [str(base)],
+            ["eq:dept-elbo", "eq:dept-reparameterization-gradient"],
+            ["elbo_objective", "reparameterization_gradient", "expectation"],
+            ["variational_family_assumption_review"],
+            ["missing_entropy_seed"],
+            ["current"],
+            True,
+            "Public synthetic ELBO and reparameterization-gradient fixture.",
+        ),
+        ReleaseCorpusEntry(
+            "computational_physics_mcmc_public",
+            "computational_physics_mcmc",
+            "public_fixture",
+            str(base),
+            [str(base)],
+            ["eq:dept-acceptance-ratio", "eq:dept-hamiltonian-flow"],
+            ["acceptance_ratio", "hamiltonian_energy", "gradient"],
+            ["ergodicity_assumption_review"],
+            ["missing_metropolis_correction_seed"],
+            ["current"],
+            True,
+            "Public synthetic computational-physics MCMC acceptance and Hamiltonian fixture.",
         ),
         ReleaseCorpusEntry(
             "macro_filter_multifile",
@@ -272,6 +356,9 @@ def validate_release_corpus_manifest(root: str | Path | None = None, *, private_
     findings: list[dict] = []
     if full_manifest.get("private_manifest", {}).get("status") == "missing":
         findings.append({"severity": "medium", "kind": "private_manifest_missing"})
+    if full_manifest.get("private_manifest", {}).get("status") == "loaded":
+        if not any(entry["privacy_class"].startswith("private") for entry in full_manifest["entries"]):
+            findings.append({"severity": "medium", "kind": "private_manifest_has_no_private_entries"})
     for entry in full_manifest["entries"]:
         if entry["privacy_class"].startswith("private"):
             private_paths = [entry["document_root"]] if entry["document_root"] else []
@@ -286,6 +373,10 @@ def validate_release_corpus_manifest(root: str | Path | None = None, *, private_
             findings.append({"entry": entry["id"], "severity": "medium", "kind": "missing_abstention_or_false_confidence_seed"})
         if entry["release_gate_enabled"] and entry["privacy_class"].startswith("private") and not entry["document_root"]:
             findings.append({"entry": entry["id"], "severity": "high", "kind": "release_gated_private_document_root_missing"})
+        if entry["release_gate_enabled"] and entry["privacy_class"].startswith("private") and entry["document_root"]:
+            path = Path(entry["document_root"]).expanduser()
+            if not path.exists():
+                findings.append({"entry": entry["id"], "severity": "high", "kind": "private_document_root_missing"})
     status = "consistent" if not any(item["severity"] == "high" for item in findings) else "mismatch"
     reason = "Release corpus manifest satisfies privacy and release-gate checks." if status == "consistent" else "Release corpus manifest has blocking findings."
     return attach_contract({"status": status, "reason": reason, "findings": findings, "manifest": manifest}, "release_corpus_validation_report")

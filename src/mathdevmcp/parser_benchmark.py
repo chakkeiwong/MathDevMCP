@@ -46,6 +46,57 @@ def _read_all_tex(root: Path) -> str:
     return "\n".join(path.read_text(encoding="utf-8") for path in _tex_files(root))
 
 
+def _file_parser_metrics(root: Path) -> dict:
+    metrics: dict[str, dict] = {}
+    label_pattern = re.compile(r"\\label\{([^}]+)\}")
+    env_pattern = re.compile(r"\\begin\{([^}]+)\}")
+    include_pattern = re.compile(r"\\(?:input|include)\{([^}]+)\}")
+    macro_pattern = re.compile(r"\\(?:newcommand|renewcommand|DeclareMathOperator)\b")
+    for path in _tex_files(root):
+        text = path.read_text(encoding="utf-8")
+        labels = label_pattern.findall(text)
+        envs = env_pattern.findall(text)
+        relative = str(path.relative_to(root))
+        metrics[relative] = {
+            "labels": sorted(labels),
+            "label_count": len(labels),
+            "environment_count": len(envs),
+            "environment_type_counts": {env: envs.count(env) for env in sorted(set(envs))},
+            "include_targets": include_pattern.findall(text),
+            "macro_definition_count": len(macro_pattern.findall(text)),
+        }
+    return metrics
+
+
+def _include_status(root: Path, per_file: dict) -> dict:
+    all_files = {str(path.relative_to(root)) for path in _tex_files(root)}
+    resolved: list[dict] = []
+    missing: list[dict] = []
+    for relative, metrics in per_file.items():
+        parent = root / relative
+        for target in metrics.get("include_targets", []):
+            candidate = parent.parent / target
+            if not candidate.suffix:
+                candidate = candidate.with_suffix(".tex")
+            item = {
+                "from": relative,
+                "target": target,
+                "resolved": str(candidate.relative_to(root)) if candidate.exists() else None,
+            }
+            if candidate.exists() and str(candidate.relative_to(root)) in all_files:
+                resolved.append(item)
+            else:
+                missing.append(item)
+    return {"mode": "textual_input_order", "resolved": resolved, "missing": missing, "has_includes": bool(resolved or missing)}
+
+
+def _duplicate_label_findings(per_file: dict) -> list[str]:
+    labels: list[str] = []
+    for metrics in per_file.values():
+        labels.extend(metrics.get("labels", []))
+    return sorted(label for label in set(labels) if labels.count(label) > 1)
+
+
 def _expected_labels(root: Path, expected_labels: Iterable[str] | None = None) -> set[str]:
     if expected_labels is not None:
         return set(expected_labels)
@@ -115,6 +166,7 @@ def _current_parser(root: Path, started: float, expected_labels: set[str]) -> di
     index = build_index(root)
     blocks = index.get("blocks", [])
     labels = [block.get("label") for block in blocks if block.get("label")]
+    per_file = _file_parser_metrics(root)
     environment_types = sorted({block.get("kind") for block in index.get("blocks", []) if block.get("kind")})
     environment_type_counts = {kind: sum(1 for block in blocks if block.get("kind") == kind) for kind in environment_types}
     environments = sum(1 for block in index.get("blocks", []) if block.get("kind") in {"equation", "align", "alignat", "gather", "multline", "theorem", "proposition", "lemma", "assumption"})
@@ -135,6 +187,13 @@ def _current_parser(root: Path, started: float, expected_labels: set[str]) -> di
             "environment_types": environment_types,
             "environment_type_counts": environment_type_counts,
             "tex_files_scanned": [str(path.relative_to(root)) for path in _tex_files(root)],
+            "per_file_metrics": per_file,
+            "include_status": _include_status(root, per_file),
+            "macro_summary": {
+                "total_macro_definitions": sum(item["macro_definition_count"] for item in per_file.values()),
+                "files_with_macros": sorted(path for path, item in per_file.items() if item["macro_definition_count"]),
+            },
+            "duplicate_label_findings": _duplicate_label_findings(per_file),
             "root": str(root),
         },
     )
@@ -240,5 +299,15 @@ def compare_parser_backends(root: str | Path, backends: list[str] | None = None,
         "inconclusive": sum(1 for result in results if result["status"] == "inconclusive"),
         "label_preserving": sum(1 for result in results if result["quality_checks"]["label_preservation"]),
         "provenance_available": sum(1 for result in results if result["quality_checks"]["provenance_available"]),
+    }
+    summary["backend_comparison_matrix"] = {
+        result["backend"]: {
+            "status": result["status"],
+            "labels_found": result["labels_found"],
+            "provenance_quality": result["provenance_quality"],
+            "missing_expected_labels": result["details"].get("missing_expected_labels", []),
+            "role_hint": "candidate_for_proof_audit" if result["backend"] == "current" and result["quality_checks"]["provenance_available"] else "context_or_optional_evidence",
+        }
+        for result in results
     }
     return asdict(ParserBenchmarkReport(ok=True, results=results, summary=summary, metadata=contract_metadata("parser_benchmark_report")))

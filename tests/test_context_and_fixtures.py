@@ -34,8 +34,8 @@ EXPECTED_BENCHMARK_SUMMARY = {
         "proof_audit": {"total": 3, "passed": 3, "expected_abstentions": 1},
         "proof_audit_v2": {"total": 3, "passed": 3, "expected_abstentions": 1},
         "kalman_recursion": {"total": 2, "passed": 2, "expected_abstentions": 1},
-        "parser_corpus": {"total": 2, "passed": 2, "expected_abstentions": 0},
-        "ast_corpus": {"total": 5, "passed": 5, "expected_abstentions": 0},
+        "parser_corpus": {"total": 3, "passed": 3, "expected_abstentions": 0},
+        "ast_corpus": {"total": 11, "passed": 11, "expected_abstentions": 0},
         "typed_ir": {"total": 2, "passed": 2, "expected_abstentions": 2},
         "industrial_review": {"total": 1, "passed": 1, "expected_abstentions": 1},
         "release_corpus": {"total": 1, "passed": 1, "expected_abstentions": 0},
@@ -59,7 +59,9 @@ EXPECTED_BENCHMARK_SUMMARY = {
         "ast_recursion_abstention": {"total": 1, "passed": 1, "expected_abstentions": 1},
         "realistic_parser_provenance": {"total": 1, "passed": 1, "expected_abstentions": 0},
         "multifile_macro_parser_provenance": {"total": 1, "passed": 1, "expected_abstentions": 0},
+        "sanitized_domain_parser_provenance": {"total": 1, "passed": 1, "expected_abstentions": 0},
         "realistic_ast_operation_coverage": {"total": 3, "passed": 3, "expected_abstentions": 0},
+        "sanitized_domain_ast_operation_coverage": {"total": 6, "passed": 6, "expected_abstentions": 0},
         "typed_dimension_diagnostics": {"total": 1, "passed": 1, "expected_abstentions": 1},
         "typed_stochastic_diagnostics": {"total": 1, "passed": 1, "expected_abstentions": 1},
         "agent_review_packet": {"total": 1, "passed": 1, "expected_abstentions": 1},
@@ -69,7 +71,7 @@ EXPECTED_BENCHMARK_SUMMARY = {
     "expected_abstentions": 12,
 }
 
-EXPECTED_BENCHMARK_TOTAL = 34
+EXPECTED_BENCHMARK_TOTAL = 41
 
 
 def test_extract_context_for_label_returns_local_excerpt():
@@ -396,7 +398,11 @@ def test_parser_corpus_benchmark_runner_reports_department_fixture_labels():
 
     results = run_parser_corpus_benchmark(root)
 
-    assert {result["id"] for result in results} == {"parser_corpus_department_current", "parser_corpus_macro_filter_multifile"}
+    assert {result["id"] for result in results} == {
+        "parser_corpus_department_current",
+        "parser_corpus_macro_filter_multifile",
+        "parser_corpus_sanitized_public_domains",
+    }
     assert all(result["category"] == "parser_corpus" for result in results)
     assert all(result["quality_checks"]["expected_labels_preserved"] for result in results)
     assert all(result["passed"] for result in results)
@@ -413,6 +419,12 @@ def test_ast_corpus_benchmark_runner_reports_realistic_operation_coverage():
         "ast_corpus_particle_filter",
         "ast_corpus_state_space_missing_solve",
         "ast_corpus_macro_filter_missing_gain",
+        "ast_corpus_dsge_macro_finance",
+        "ast_corpus_stochastic_volatility",
+        "ast_corpus_sde_pde_numerics",
+        "ast_corpus_ml_llm_objective",
+        "ast_corpus_bayesian_elbo_vi",
+        "ast_corpus_computational_physics_mcmc",
     }
     assert all(result["category"] == "ast_corpus" for result in results)
     assert all(result["quality_checks"]["graph_contract_match"] for result in results)

@@ -1,0 +1,9 @@
+\section{Sanitized variational inference objective}
+
+\begin{equation}\label{eq:dept-elbo}
+\mathcal L(\lambda)=E_{q_\lambda(z)}[\log p(y,z)-\log q_\lambda(z)].
+\end{equation}
+
+\begin{equation}\label{eq:dept-reparameterization-gradient}
+\nabla_\lambda \mathcal L = E_\epsilon[\nabla_\lambda f(g_\lambda(\epsilon))].
+\end{equation}

@@ -35,6 +35,8 @@ def test_backend_install_scripts_expose_release_candidate_controls():
     assert "Optional backend caveats" in validate
     assert "latexml" in validate
     assert (ROOT / "scripts" / "validate_latexml_backend.sh").exists()
+    assert (ROOT / "scripts" / "setup_latexml_backend.sh").exists()
+    assert (ROOT / "scripts" / "run_backend_command.sh").exists()
 
 
 def test_clean_install_smoke_help_is_lightweight():
@@ -49,6 +51,14 @@ def test_clean_install_smoke_help_is_lightweight():
     assert "MATHDEVMCP_INSTALL_BACKENDS=1" in result.stdout
     assert "MATHDEVMCP_CLEAN_ARTIFACT_DIR" in result.stdout
     assert "TARGET_DIR" in result.stdout
+
+
+def test_clean_install_smoke_copies_dirty_non_ignored_checkout():
+    script = (ROOT / "scripts" / "clean_install_smoke.sh").read_text(encoding="utf-8")
+
+    assert "git -C \"$ROOT\" status --short" in script
+    assert "git -C \"$ROOT\" ls-files -z --cached --others --exclude-standard" in script
+    assert "copying current non-ignored checkout" in script
 
 
 def test_release_readiness_records_latexml_optional_caveat_when_unavailable(monkeypatch):

@@ -1,0 +1,9 @@
+\section{Sanitized particle-filter normalization}
+
+\begin{equation}\label{eq:dept-particle-normalization}
+\log \bar w_t^{(i)} = \ell_t^{(i)} - \operatorname{logsumexp}_j \ell_t^{(j)}.
+\end{equation}
+
+\begin{equation}\label{eq:dept-particle-ess}
+\operatorname{ESS}_t = \left(\sum_i \exp(2\log \bar w_t^{(i)})\right)^{-1}.
+\end{equation}

@@ -65,6 +65,13 @@ scripts/validate_latexml_backend.sh /path/to/MathDevMCP
 ```
 
 This command exits successfully with an `unavailable` caveat by default. Set `MATHDEVMCP_REQUIRE_LATEXML=1` only for deployments that intentionally require LaTeXML.
+Use `scripts/setup_latexml_backend.sh` for OS-package installation guidance.
+
+Run backend commands through the isolated conda environment with:
+
+```bash
+scripts/run_backend_command.sh python -m mathdevmcp.cli doctor
+```
 
 For a clean checkout smoke after committing release changes:
 
@@ -77,7 +84,7 @@ This copies `HEAD` with `git archive`, installs the base package in a disposable
 Use release evidence collection for review artifacts:
 
 ```bash
-scripts/collect_release_evidence.sh /tmp/mathdevmcp-release-evidence
+scripts/collect_release_evidence.sh /tmp/mathdevmcp-release-evidence --profile base
 ```
 
 Generated evidence should be stored outside git by default. The committed scripts and schemas are the reproducible release mechanism; routine evidence directories should be treated as review artifacts.
@@ -87,3 +94,16 @@ Generated evidence should be stored outside git by default. The committed script
 External commands must have timeouts and structured `inconclusive` failures. Private corpora should not be committed; only manifest stubs and expected labels belong in git.
 
 Private corpus evaluation can be supplied through `MATHDEVMCP_PRIVATE_CORPUS_MANIFEST`. Default reports redact private paths and governance validation rejects private roots inside the checkout.
+Validate private corpora with:
+
+```bash
+scripts/validate_private_corpus.sh /path/to/MathDevMCP
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli release-readiness \
+  --root /path/to/MathDevMCP --profile private-corpus
+```
+
+For a local profile matrix:
+
+```bash
+scripts/release_matrix.sh /path/to/MathDevMCP
+```

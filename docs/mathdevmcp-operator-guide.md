@@ -239,10 +239,66 @@ This order reduces the chance of inventing a plausible but unsupported interpret
 For a release review, collect machine-readable evidence with:
 
 ```bash
-scripts/collect_release_evidence.sh /tmp/mathdevmcp-release-evidence
+scripts/collect_release_evidence.sh /tmp/mathdevmcp-release-evidence --profile base
 ```
 
 This writes doctor, parser benchmark, benchmark gate, release-readiness, governance, backend validation, and LaTeXML validation outputs. Generated evidence is for review storage and is not normally committed.
+
+## First 30 Minutes
+
+For a new colleague:
+
+1. Install the base package:
+   ```bash
+   python -m pip install -e ".[dev]"
+   ```
+2. Run capability diagnostics:
+   ```bash
+   PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli doctor
+   ```
+3. Run the release smoke:
+   ```bash
+   scripts/release_smoke.sh /path/to/MathDevMCP
+   ```
+4. Check base readiness:
+   ```bash
+   PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli release-readiness \
+     --root /path/to/MathDevMCP --profile base
+   ```
+5. Optionally configure the backend environment:
+   ```bash
+   scripts/setup_backend_env.sh
+   scripts/run_backend_command.sh python -m mathdevmcp.cli doctor
+   ```
+6. Optionally validate LaTeXML:
+   ```bash
+   scripts/setup_latexml_backend.sh
+   scripts/validate_latexml_backend.sh /path/to/MathDevMCP
+   ```
+7. Optionally validate private corpora:
+   ```bash
+   export MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/secure/local/path/corpus.json
+   scripts/validate_private_corpus.sh /path/to/MathDevMCP
+   ```
+8. Run one proof-audit v2 example:
+   ```bash
+   PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
+     audit-derivation-v2-label eq:dept-state-space-likelihood \
+     --root /path/to/MathDevMCP/benchmarks/fixtures --summary-only
+   ```
+
+Release profile matrix:
+
+```text
+profile          required evidence                     expected status on this machine
+base             tests, benchmarks, governance          ready_with_caveats while LaTeXML is absent
+backend          base + backend env + LeanDojo import   ready_with_caveats when mathdevmcp-backends validates
+latexml          base + strict LaTeXML validation       not_ready until latexml is installed
+private-corpus   base + private manifest validation     not_ready until a private manifest is configured
+full             all optional evidence                  not_ready until all optional evidence exists
+```
+
+`verified` requires deterministic backend evidence. Parser metrics, AST operation matches, numeric diagnostics, and LeanDojo traces are not proof certificates by themselves.
 
 ## Good use cases
 

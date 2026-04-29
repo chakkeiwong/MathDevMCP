@@ -2514,3 +2514,36 @@ Audit/tidy notes:
 - `docs/proposal.tex` is now only a compatibility wrapper; the primary product document is `docs/mathdevmcp-release-report.tex`.
 - The report states that the autonomous private evidence is external sanitized evidence, not unredacted department data.
 - LaTeX produced minor overfull/underfull box warnings from long literal command names, but the PDF built successfully and is within the requested page range.
+
+## Final post-commit release memo update
+
+Commit created:
+
+```text
+1668fe8 Finalize release productization plan and private corpus gate
+```
+
+Post-commit verification:
+
+```text
+git status --short
+clean
+
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-final/manifest.json PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile full
+status: ready
+blockers: []
+caveats: []
+git_commit: 1668fe8
+dirty_worktree: false
+
+pdfinfo docs/mathdevmcp-release-report.pdf
+Pages: 88
+```
+
+Final release state:
+
+- Full release readiness is `ready` when the external sanitized private manifest is supplied.
+- The external sanitized private manifest remains outside git.
+- No populated private manifest or private corpus documents were committed.
+- The final report is `docs/mathdevmcp-release-report.pdf`, with `docs/proposal.tex` retained only as a compatibility wrapper.
+- A second commit will record this post-commit memo update.

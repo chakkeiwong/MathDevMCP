@@ -3044,3 +3044,81 @@ Audit/tidy notes:
 - The release report addition did not create a skeleton section; it is a
   concise profile-boundary clarification inside the existing release-profile
   chapter.
+
+## Public industrial release hardening completion checkpoint
+
+Completion update:
+
+- Committed the public industrial release hardening implementation.
+- Commit: `2f641e5 Harden public industrial release surface`.
+- Added a public release product-surface checker at
+  `src/mathdevmcp/public_release.py`.
+- Added CLI command:
+  `PYTHONPATH=src python -m mathdevmcp.cli public-release-check --root "$PWD"`.
+- Added release profile: `public`.
+- Added CI workflow: `.github/workflows/ci.yml`.
+- Added support matrix: `docs/mathdevmcp-support-matrix.md`.
+- Added quality gate: `scripts/quality_gate.sh`.
+- Consolidated MCP tool metadata through `MCP_TOOL_SPECS`.
+- Preserved the `get_tool_matrix` FastMCP alias while documenting the facade
+  `tool_matrix` name.
+- Hardened MCP unexpected exceptions with `tool_execution_error`.
+- Updated release report source/PDF; PDF remains 100 pages.
+
+Final pre-commit checks:
+
+```text
+scripts/quality_gate.sh
+status: consistent; blockers: []
+
+PYTHONPATH=src pytest -q
+262 passed, 2 skipped in 58.83s
+
+scripts/release_smoke.sh /home/chakwong/python/MathDevMCP
+passed; benchmark gate 41 passed / 41 total
+
+scripts/release_matrix.sh /home/chakwong/python/MathDevMCP
+base ran and passed with dirty/private-corpus caveats; optional strict profiles
+skipped because their environment flags were not set
+
+scripts/audit_release_report_substance.sh
+Release report substance audit passed; 44 chapters and 44 snippets audited
+
+pdfinfo docs/mathdevmcp-release-report.pdf
+Pages: 100
+
+git diff --check
+passed
+```
+
+Post-commit status before this memo completion update:
+
+```text
+git status --short
+?? docs/plans/claude_audit.md
+```
+
+Audit/tidy notes:
+
+- `docs/plans/claude_audit.md` remains untracked by design as user-provided
+  audit input.
+- Generated root-level `*.latexml.log` files are ignored by `.gitignore`.
+- This completion memo update should be committed separately so the reset memo
+  records the final implementation commit hash.
+
+Recovery check after interruption:
+
+```text
+git diff --check
+passed
+
+PYTHONPATH=src python -m mathdevmcp.cli public-release-check --root /home/chakwong/python/MathDevMCP
+status: consistent; blockers: []
+```
+
+Remaining tasks from the public industrial release hardening plan:
+
+- No implementation, test, documentation, or release-report phase remains open.
+- Commit this reset memo recovery/completion update separately.
+- Leave `docs/plans/claude_audit.md` untracked unless the user explicitly asks
+  to preserve that external audit input in git.

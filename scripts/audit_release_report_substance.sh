@@ -134,6 +134,7 @@ if "\\lstinputlisting" not in private_body:
     fail("private corpus chapter lacks generated evidence")
 
 minimum_lines = {
+    "MCP Conversations That Sell The Tool": 85,
     "System Architecture": 45,
     "Core Data Contracts": 28,
     "Parser Policy": 25,
@@ -151,6 +152,26 @@ for title, minimum in minimum_lines.items():
     _, lines, _ = require_chapter(title)
     if lines < minimum:
         fail(f"chapter below substance threshold ({lines} < {minimum}): {title}")
+
+conversation_body, _, _ = require_chapter("MCP Conversations That Sell The Tool")
+for marker in [
+    r"\section{The Conversation Pattern}",
+    r"\section{A Realistic Review Transcript}",
+    r"\section{Prompt Patterns That Trigger Tools}",
+    r"\section{Example Prompts and Expected Tool Calls}",
+    "Tool: search_latex",
+    "Tool: compare_label_code",
+    "Tool: audit_derivation_v2_label",
+    "validate_release_corpus",
+    "benchmark_gate",
+]:
+    if marker not in conversation_body:
+        fail(f"MCP conversation chapter missing marker: {marker}")
+
+for title in case_titles + ["Private Corpus Validation"]:
+    body, _, _ = require_chapter(title)
+    if r"\section*{MCP conversation}" not in body:
+        fail(f"case study missing MCP conversation transcript: {title}")
 
 for title, (_body, lines, is_appendix) in chapters.items():
     if not is_appendix and lines < 18:

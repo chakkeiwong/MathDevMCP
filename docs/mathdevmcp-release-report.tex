@@ -75,6 +75,197 @@ labels, file paths, line spans, code comparisons, typed diagnostics, and
 certification boundaries visible. It does not replace expert judgment; it gives
 expert judgment a better starting point.
 
+\chapter{MCP Conversations That Sell The Tool}
+
+The most natural way to use MathDevMCP is not as a long list of commands. It is
+as a conversation with an agent that has a small set of disciplined tools. The
+colleague asks the same question they would ask in a hallway or code review:
+"Does this implementation still match the equation in the note?" The difference
+is that the agent can answer by calling bounded MCP tools, citing labels and
+files, and preserving the verification boundary.
+
+This chapter is intentionally early in the report because it is the adoption
+story. A colleague does not need to learn every command before seeing value.
+They need to learn the shape of a good prompt, the kind of tool call it
+triggers, and the kind of answer that should come back.
+
+\section{The Conversation Pattern}
+
+A productive MCP conversation usually has five turns:
+
+\begin{enumerate}[label=\arabic*.]
+  \item ask the agent to locate the mathematical claim in a local root;
+  \item ask for the surrounding assumptions or notation;
+  \item ask the agent to compare the claim with a concrete code file;
+  \item ask whether the remaining derivation is certified, diagnostic, or
+        unverified;
+  \item ask for a short handoff note that another reviewer can reproduce.
+\end{enumerate}
+
+The important behavior is not that the agent sounds confident. The important
+behavior is that it chooses tools such as \texttt{search\_latex},
+\texttt{extract\_latex\_neighborhood}, \texttt{compare\_label\_code},
+\texttt{audit\_derivation\_v2\_label}, and \texttt{implementation\_brief} before
+making a mathematical claim.
+
+\section{A Realistic Review Transcript}
+
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize,caption={MCP conversation for a document-code review}]
+User:
+  In /path/to/project, check whether the Kalman likelihood in the notes
+  still matches src/kalman_filter.py. I care about logdet, solve, and the
+  quadratic form. Keep the proof boundary explicit.
+
+Agent:
+  I will first find the likely label, then compare that label to the code.
+
+Tool: search_latex
+  root=/path/to/project
+  query="Kalman likelihood log determinant solve"
+  limit=3
+
+Tool result:
+  label=eq:dept-state-space-likelihood
+  file=doc_department_state_space.tex
+  lines=...
+
+Agent:
+  I found label eq:dept-state-space-likelihood. I will inspect nearby context
+  before comparing the implementation.
+
+Tool: extract_latex_neighborhood
+  root=/path/to/project
+  label=eq:dept-state-space-likelihood
+
+Tool result:
+  status=found
+  context includes the likelihood block and nearby state-space assumptions
+
+Tool: compare_label_code
+  root=/path/to/project
+  label=eq:dept-state-space-likelihood
+  code=/path/to/project/src/kalman_filter.py
+  required_terms=["logdet", "solve", "quadratic_form"]
+  paragraph_context=true
+
+Tool result:
+  status=mismatch
+  matched_terms=["logdet"]
+  missing_terms=["solve", "quadratic_form"]
+
+Agent:
+  The checked code path visibly carries logdet, but the configured review
+  terms solve and quadratic_form are missing. This is not a theorem that the
+  code is wrong. It is a document-grounded drift signal. The next review step
+  is to inspect whether the quadratic term is implemented through an equivalent
+  factorization or whether the solve-like operation was dropped.
+
+User:
+  Can you also tell me whether the derivation itself is certified?
+
+Tool: audit_derivation_v2_label
+  root=/path/to/project
+  label=eq:dept-state-space-likelihood
+  summary_only=true
+
+Tool result:
+  status=unverified
+  high_priority_actions=[
+    "state or verify invertibility",
+    "check log-det domain",
+    "check conformability",
+    "check linear-solve residual"
+  ]
+
+Agent:
+  The derivation audit is diagnostic, not a certificate. I would write the
+  review note as: the label was found, the implementation comparison reports
+  a missing solve/quadratic-form signal, and the derivation remains unverified
+  until the matrix assumptions and solve residual are reviewed.
+\end{lstlisting}
+
+\section{Prompt Patterns That Trigger Tools}
+
+\begin{longtable}{p{0.38\textwidth}p{0.25\textwidth}p{0.27\textwidth}}
+\toprule
+Prompt shape & MCP tool & Why it helps \\
+\midrule
+"Find the equation or assumption for ..." & \path{search_latex} &
+Returns labels and provenance instead of memory. \\
+"Show the context around label ..." & \path{extract_latex_neighborhood} &
+Surfaces nearby assumptions and notation. \\
+"Compare this label to this code file ..." & \path{compare_label_code} &
+Turns a vague drift worry into matched and missing terms. \\
+"Check whether this derivation is certified." &
+\path{audit_derivation_v2_label} &
+Keeps the distinction between proof, diagnostic evidence, and abstention. \\
+"Give me a handoff note for review." & \path{implementation_brief} &
+Bundles search, context, comparison, and next action. \\
+"Is this release ready?" & \path{release_readiness} &
+Reports blockers and caveats instead of informal readiness claims. \\
+\bottomrule
+\end{longtable}
+
+\section{Example Prompts and Expected Tool Calls}
+
+This is the colleague-facing cheat sheet for proposal and adoption discussions.
+The user does not need to name tools directly. They should describe the research
+or review problem in ordinary language, and the agent should translate that
+prompt into one or more narrow MCP calls before answering. If the agent answers
+without first grounding the request in labels, file paths, or release evidence,
+the colleague should ask it to rerun the task using MathDevMCP.
+
+\begin{longtable}{p{0.34\textwidth}p{0.25\textwidth}p{0.31\textwidth}}
+\toprule
+Example prompt to the agent & Tools that should trigger & Evidence the answer should cite \\
+\midrule
+"Find where the model note defines the likelihood used by this filter." &
+\path{search_latex} &
+Candidate labels, source files, line spans, and short snippets rather than a
+free-memory summary. \\
+"Show me the assumptions around \path{eq:dept-state-space-likelihood} before
+you judge the implementation." &
+\path{extract_latex_neighborhood} &
+The labeled block plus nearby assumptions about dimensions, invertibility,
+conditioning, and notation. \\
+"Compare the likelihood equation with \path{src/kalman_filter.py}; I care
+about \path{logdet}, \path{solve}, and the quadratic form." &
+\path{compare_label_code} &
+A status such as \path{consistent}, \path{mismatch}, or
+\path{unverified}, with matched terms, missing terms, label provenance, and
+code provenance. \\
+"Can you check whether this derivation is actually certified, or only
+diagnostic?" &
+\path{audit_derivation_v2_label} &
+Parser route, typed obligations, backend evidence when available, abstentions,
+and high-priority human review actions. \\
+"Before I edit the code, give me a compact implementation brief for this label
+and file." &
+\path{implementation_brief} &
+Search result, extracted context, comparison result, caveats, and a short next
+action that another developer can reproduce. \\
+"Run the release-facing checks for this repository and tell me what blocks a
+handoff." &
+\path{benchmark_gate}, \path{doctor}, \path{release_readiness} &
+Benchmark totals, expected abstentions, backend availability, release profile,
+blockers, and caveats. \\
+"Validate this private corpus manifest, but do not print private paths." &
+\path{validate_release_corpus}, \path{release_readiness} &
+Redacted corpus metadata, gate categories, blocked private paths, and the
+profile-specific readiness result. \\
+\bottomrule
+\end{longtable}
+
+The expected user habit is simple: ask for the mathematical task in natural
+language, insist on the evidence packet, and treat the agent's prose as a
+summary of tool output rather than as an independent authority. That habit is
+what turns MathDevMCP from a command collection into a practical colleague
+assistant.
+
+The rest of the report shows this same pattern across the public case studies.
+Each case gives the mathematical situation, the generated evidence, and a short
+MCP-style transcript that a colleague can adapt directly in their own client.
+
 \chapter{Product Scope}
 
 MathDevMCP supports five colleague-facing activities:
@@ -568,6 +759,24 @@ The public fixture uses the state-space document and a deliberately incomplete
 missing-solve implementation. The command compares the likelihood label against
 required terms \path{logdet,solve}.
 
+\section*{MCP conversation}
+
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+User:
+  Check whether the state-space likelihood label matches the Kalman code.
+  Look specifically for logdet and solve-like structure.
+Agent:
+  I will anchor the review on the document label before judging the code.
+Tool: search_latex(root, "state space likelihood logdet solve")
+Tool: compare_label_code(root, "eq:dept-state-space-likelihood",
+                         code, required_terms=["logdet", "solve"],
+                         paragraph_context=true)
+Agent:
+  The result is mismatch: logdet is visible, solve is missing. This is a
+  drift signal, not a proof of invalidity. Review whether an equivalent
+  factorization implements the quadratic solve.
+\end{lstlisting}
+
 \lstinputlisting[caption={Kalman likelihood comparison evidence},basicstyle=\ttfamily\scriptsize]{generated/release_report/case-kalman-compare.txt}
 
 \section*{Output to inspect}
@@ -617,6 +826,23 @@ documented leapfrog and Hamiltonian structure?
 The fixture uses \path{doc_department_bayesian_hmc.tex} and
 \path{doc_department_hmc_jax.py}. The comparison asks for \path{grad}
 and \path{hamiltonian} under label \path{eq:dept-hmc-leapfrog}.
+
+\section*{MCP conversation}
+
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+User:
+  Does the HMC implementation visibly carry the leapfrog and Hamiltonian
+  structure from the note?
+Agent:
+  I will compare the leapfrog label against the HMC code for gradient and
+  Hamiltonian terms.
+Tool: compare_label_code(root, "eq:dept-hmc-leapfrog", code,
+                         required_terms=["grad", "hamiltonian"])
+Agent:
+  The structural check is consistent. I can say the selected code is not
+  obviously stale with respect to those terms, but I cannot certify detailed
+  balance, acceptance behavior, or convergence from this check.
+\end{lstlisting}
 
 \lstinputlisting[caption={HMC leapfrog comparison evidence},basicstyle=\ttfamily\scriptsize]{generated/release_report/case-hmc-compare.txt}
 
@@ -669,6 +895,24 @@ can follow the included document and expose the omission.
 The fixture uses a macro-filter main document, an included model file, and a
 deliberately incomplete missing-gain implementation. The comparison below
 checks the likelihood label for \path{logdet}, \path{solve}, and \path{K_t}.
+
+\section*{MCP conversation}
+
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+User:
+  This macro filter is split across included TeX files. Check whether the
+  implementation has the likelihood terms and the Kalman gain update.
+Agent:
+  I will let the parser resolve the included model file, then compare the
+  selected label to the implementation.
+Tool: search_latex(root, "macro filter likelihood Kalman gain")
+Tool: compare_label_code(root, "eq:macro-filter-likelihood", code,
+                         required_terms=["logdet", "solve", "K_t"])
+Agent:
+  The comparison finds logdet and solve but not K_t. The likely review
+  question is whether this function is intentionally prediction-only or has
+  dropped the gain/update step.
+\end{lstlisting}
 
 \lstinputlisting[caption={Macro filter comparison evidence},basicstyle=\ttfamily\scriptsize]{generated/release_report/case-macro-filter-compare.txt}
 
@@ -723,6 +967,23 @@ The fixture uses \path{doc_sanitized_dsge_macro_finance.tex} and
 \path{eq:dept-euler-equation} for \path{expectation} and
 \path{euler_residual}.
 
+\section*{MCP conversation}
+
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+User:
+  In the DSGE example, check that the code still represents the Euler
+  residual from the note. Do not make calibration claims.
+Agent:
+  I will compare the Euler-equation label to the residual code for the
+  configured structural terms.
+Tool: compare_label_code(root, "eq:dept-euler-equation", code,
+                         required_terms=["expectation", "euler_residual"])
+Agent:
+  The comparison is consistent for those terms. The code carries the named
+  residual structure, but calibration, timing, and equilibrium validity remain
+  outside this evidence.
+\end{lstlisting}
+
 \lstinputlisting[caption={DSGE Euler comparison evidence},basicstyle=\ttfamily\scriptsize]{generated/release_report/case-dsge-compare.txt}
 
 \section*{Output to inspect}
@@ -775,6 +1036,23 @@ The fixture uses \path{doc_sanitized_stochastic_volatility.tex} and
 \path{eq:dept-sv-likelihood} for \path{innovation} and
 \path{posterior_or_likelihood}.
 
+\section*{MCP conversation}
+
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+User:
+  Check whether this stochastic-volatility likelihood code has the likelihood
+  path described in the document.
+Agent:
+  I will compare the likelihood label against the code for innovation and
+  likelihood/posterior structure.
+Tool: compare_label_code(root, "eq:dept-sv-likelihood", code,
+                         required_terms=["innovation",
+                                         "posterior_or_likelihood"])
+Agent:
+  The selected structure is visible. I would still route latent-prior,
+  Jacobian, and inference-method assumptions to human review.
+\end{lstlisting}
+
 \lstinputlisting[caption={Stochastic volatility comparison evidence},basicstyle=\ttfamily\scriptsize]{generated/release_report/case-stochastic-volatility-compare.txt}
 
 \section*{Output to inspect}
@@ -824,6 +1102,22 @@ The fixture uses \path{doc_sanitized_sde_pde_numerics.tex} and
 \path{doc_sanitized_sde_pde_numerics.py}. The comparison checks
 \path{eq:dept-euler-maruyama} for \path{drift}, \path{diffusion}, and
 \path{stability_condition}.
+
+\section*{MCP conversation}
+
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+User:
+  Before we trust these simulations, check whether the code carries the
+  Euler-Maruyama drift, diffusion, and stability hook from the note.
+Agent:
+  I will anchor on the Euler-Maruyama label and inspect the selected code.
+Tool: compare_label_code(root, "eq:dept-euler-maruyama", code,
+                         required_terms=["drift", "diffusion",
+                                         "stability_condition"])
+Agent:
+  The structural terms are present. This supports an implementation-screening
+  pass, not a convergence or stability proof.
+\end{lstlisting}
 
 \lstinputlisting[caption={SDE/PDE numerics comparison evidence},basicstyle=\ttfamily\scriptsize]{generated/release_report/case-sde-pde-compare.txt}
 
@@ -876,6 +1170,22 @@ The fixture uses \path{doc_sanitized_ml_llm_objective.tex} and
 \path{doc_sanitized_ml_llm_objective.py}. The comparison checks
 \path{eq:dept-ml-gradient} for \path{gradient} and \path{loss}.
 
+\section*{MCP conversation}
+
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+User:
+  The ML code uses autodiff. Check whether the documented gradient objective
+  is visible, but do not silently equate grad with the full derivation.
+Agent:
+  I will run the configured term check and report literal matches.
+Tool: compare_label_code(root, "eq:dept-ml-gradient", code,
+                         required_terms=["gradient", "loss"])
+Agent:
+  The result is mismatch: loss is visible, gradient is not matched exactly.
+  The code may use grad or another idiom, so the next step is to decide
+  whether the benchmark should recognize that operation explicitly.
+\end{lstlisting}
+
 \lstinputlisting[caption={ML objective comparison evidence},basicstyle=\ttfamily\scriptsize]{generated/release_report/case-ml-objective-compare.txt}
 
 \section*{Output to inspect}
@@ -923,6 +1233,22 @@ identical.
 The fixture uses \path{doc_sanitized_bayesian_elbo_vi.tex} and
 \path{doc_sanitized_bayesian_elbo_vi.py}. The comparison checks
 \path{eq:dept-elbo} for \path{expectation} and \path{elbo}.
+
+\section*{MCP conversation}
+
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+User:
+  Check the ELBO implementation. If the code only has a nearby name such as
+  elbo_value, keep that distinction visible.
+Agent:
+  I will run the literal configured review terms against the ELBO label.
+Tool: compare_label_code(root, "eq:dept-elbo", code,
+                         required_terms=["expectation", "elbo"])
+Agent:
+  The result is mismatch: expectation is present, elbo is not matched exactly.
+  I see clues that may be relevant, but I will not turn those clues into a
+  certification without a sharper operation extractor or human review.
+\end{lstlisting}
 
 \lstinputlisting[caption={ELBO comparison evidence},basicstyle=\ttfamily\scriptsize]{generated/release_report/case-elbo-compare.txt}
 
@@ -976,6 +1302,22 @@ The fixture uses the sanitized computational-physics MCMC document and its
 paired code file. The comparison checks the acceptance-ratio label for
 \path{hamiltonian} and \path{gradient}.
 
+\section*{MCP conversation}
+
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+User:
+  Does the MCMC implementation carry the Hamiltonian and gradient ingredients
+  from the acceptance-ratio note?
+Agent:
+  I will compare the acceptance-ratio label to the code for those structural
+  terms only.
+Tool: compare_label_code(root, "eq:dept-acceptance-ratio", code,
+                         required_terms=["hamiltonian", "gradient"])
+Agent:
+  The selected terms are present. This is useful screening evidence, but it
+  does not certify reversibility, detailed balance, or ergodicity.
+\end{lstlisting}
+
 \lstinputlisting[caption={Computational physics MCMC comparison evidence},basicstyle=\ttfamily\scriptsize]{generated/release_report/case-physics-mcmc-compare.txt}
 
 \section*{Output to inspect}
@@ -1027,6 +1369,22 @@ created outside the repository. It includes six private-sanitized entries across
 DSGE, stochastic volatility, SDE/PDE numerics, ML objectives, ELBO/VI, and
 computational physics MCMC. A real deployment replaces that manifest with an
 approved private manifest using the same environment variable and validator.
+
+\section*{MCP conversation}
+
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+User:
+  Validate the private corpus manifest, but do not reveal private paths in the
+  answer.
+Agent:
+  I will validate the manifest and report only redacted release evidence.
+Tool: validate_release_corpus(root, private_manifest="/secure/.../corpus.json")
+Tool: release_readiness(root, profile="full")
+Agent:
+  The private manifest is loaded and release-gated entries validate. The
+  normal report redacts private roots. If a path inside the git checkout were
+  present, I would report it as a release finding rather than proceeding.
+\end{lstlisting}
 
 \lstinputlisting[caption={Private corpus validation summary},basicstyle=\ttfamily\footnotesize]{generated/release_report/private-corpus-summary.txt}
 
@@ -1540,25 +1898,29 @@ after each extraction.
 
 \lstinputlisting[caption={Release corpus validation summary},basicstyle=\ttfamily\footnotesize]{generated/release_report/release-corpus-summary.txt}
 
-\chapter{Benchmark Gate JSON Excerpt}
+\chapter{Machine-Readable Evidence Excerpts}
 
-\lstinputlisting[caption={Benchmark gate JSON excerpt},basicstyle=\ttfamily\scriptsize]{generated/release_report/benchmark-gate-json-excerpt.txt}
+The full generated JSON excerpts remain committed under
+\path{docs/generated/release_report/}. They are intentionally referenced here
+rather than printed in full so that the report foregrounds colleague workflows
+and MCP conversations while preserving reproducibility.
 
-\chapter{Parser Policy JSON Excerpt}
-
-\lstinputlisting[caption={Parser policy JSON excerpt},basicstyle=\ttfamily\scriptsize]{generated/release_report/parser-policy-json-excerpt.txt}
-
-\chapter{Release Corpus JSON Excerpt}
-
-\lstinputlisting[caption={Release corpus JSON excerpt},basicstyle=\ttfamily\scriptsize]{generated/release_report/release-corpus-json-excerpt.txt}
-
-\chapter{Full Release Readiness JSON Excerpt}
-
-\lstinputlisting[caption={Full release readiness JSON excerpt},basicstyle=\ttfamily\scriptsize]{generated/release_report/release-readiness-full-json-excerpt.txt}
-
-\chapter{Private Corpus JSON Excerpt}
-
-\lstinputlisting[caption={Private corpus JSON excerpt},basicstyle=\ttfamily\scriptsize]{generated/release_report/private-corpus-json-excerpt.txt}
+\begin{longtable}{p{0.36\textwidth}p{0.54\textwidth}}
+\toprule
+Evidence file & Purpose \\
+\midrule
+\path{benchmark-gate-json-excerpt.txt} & CI-friendly benchmark gate status,
+category totals, and expected abstentions. \\
+\path{parser-policy-json-excerpt.txt} & Parser role decision and proof-audit
+routing boundary. \\
+\path{release-corpus-json-excerpt.txt} & Public and configured private corpus
+manifest summary with redaction metadata. \\
+\path{release-readiness-full-json-excerpt.txt} & Full-profile blockers,
+caveats, capability evidence, and profile requirements. \\
+\path{private-corpus-json-excerpt.txt} & Private-corpus validation payload with
+private paths redacted. \\
+\bottomrule
+\end{longtable}
 
 \chapter{Evidence Index}
 

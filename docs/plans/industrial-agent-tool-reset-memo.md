@@ -2794,3 +2794,27 @@ Audit/tidy notes:
   evidence, audit script, and reset memo are still modified.
 - `docs/plans/claude_audit.md` is present as an untracked file but is not part
   of this substantive-release-report execution. It is being left uncommitted.
+
+## Substantive release report post-commit completion checkpoint
+
+Completion update:
+
+- Committed the substantive release report rewrite and generated evidence.
+- Commit: `b462dd4 Expand release report into substantive product documentation`.
+- The committed report source is `docs/mathdevmcp-release-report.tex`.
+- The committed PDF is `docs/mathdevmcp-release-report.pdf`.
+- The automated guardrail is `scripts/audit_release_report_substance.sh`.
+- `docs/proposal.tex` remains only a compatibility wrapper and was not changed
+  in this pass.
+
+Post-commit checks to run before the final response:
+
+```text
+scripts/audit_release_report_substance.sh
+pdfinfo docs/mathdevmcp-release-report.pdf
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-final/manifest.json PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root /home/chakwong/python/MathDevMCP --profile full
+```
+
+Expected post-commit caveat:
+
+- This memo update itself makes the worktree dirty until it is committed.

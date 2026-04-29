@@ -3122,3 +3122,93 @@ Remaining tasks from the public industrial release hardening plan:
 - Commit this reset memo recovery/completion update separately.
 - Leave `docs/plans/claude_audit.md` untracked unless the user explicitly asks
   to preserve that external audit input in git.
+
+## Final release documentation and MCP-prompt guidance checkpoint
+
+Date: 2026-04-29.
+
+Current branch state before this memo edit:
+
+```text
+git status --short --branch
+## main...origin/main
+
+git log -5 --oneline
+fa516b7 Clarify MCP tool trigger guidance
+b7e5392 Add MCP prompt examples to release docs
+2cf7c25 Finalize release report artifact
+1cd6623 Polish release report product framing
+7c08d2d Add Claude public release audit
+```
+
+This checkpoint supersedes the older tail note above that said the reset memo
+still needed a completion commit and that `docs/plans/claude_audit.md` was
+untracked. The working tree was clean and aligned with `origin/main` at
+`fa516b7` before this memo update.
+
+Recent release-document work completed:
+
+- Added an early release-report chapter section,
+  `MCP Conversations That Sell The Tool`, with realistic MCP transcripts.
+- Added per-case-study `MCP conversation` snippets so colleagues can see how
+  prompts map to tool calls across Kalman likelihoods, HMC, macro filters,
+  DSGE, stochastic volatility, SDE/PDE numerics, ML objectives, ELBO/VI,
+  computational physics MCMC, and private corpus validation.
+- Added `Example Prompts and Expected Tool Calls` so proposal/readme-style
+  readers can see paste-ready prompts and the MCP tools they should trigger.
+- Added `When MCP Tools Trigger Instead of LLM-Only Reasoning` to clarify that
+  MathDevMCP is not automatically invoked for every mathematical sentence. The
+  section distinguishes LLM-only explanation from MCP-grounded repository
+  evidence, lists prompt signals that should cause tool use, gives examples
+  that look technical but may not trigger MCP, and shows stronger prompt
+  rewrites.
+- Rebuilt both `docs/mathdevmcp-release-report.pdf` and `docs/proposal.pdf`.
+  `docs/proposal.tex` remains a compatibility wrapper around the release
+  report source.
+- Updated `scripts/audit_release_report_substance.sh` so the new
+  conversation, prompt-mapping, and LLM-vs-MCP trigger guidance sections are
+  required by the report audit.
+
+Recent commits:
+
+```text
+b7e5392 Add MCP prompt examples to release docs
+fa516b7 Clarify MCP tool trigger guidance
+```
+
+Verification after the latest documentation update:
+
+```text
+pdflatex -interaction=nonstopmode -halt-on-error mathdevmcp-release-report.tex
+passed twice from docs/
+
+pdflatex -interaction=nonstopmode -halt-on-error proposal.tex
+passed twice from docs/
+
+pdfinfo docs/mathdevmcp-release-report.pdf
+Pages: 99
+
+pdfinfo docs/proposal.pdf
+Pages: 99
+
+scripts/audit_release_report_substance.sh
+Release report substance audit passed.
+Chapters audited: 41
+Evidence snippets audited: 44
+
+PYTHONPATH=src python -m mathdevmcp.cli public-release-check --root /home/chakwong/python/MathDevMCP
+status: consistent
+blockers: []
+
+git diff --check
+passed
+```
+
+Release status:
+
+- Public release surface is consistent.
+- The release-report PDF remains inside the established 80-to-100 page target.
+- No private corpus paths were introduced.
+- No code changes were made in this documentation checkpoint.
+- Remaining work for this requested release-document pass: commit and push this
+  reset memo update.

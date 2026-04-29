@@ -21,3 +21,8 @@ artifacts/release-evidence/
 *.run.xml
 *.synctex.gz
 *.toc
+
+# Local TeX package fallbacks created while rebuilding release docs.
+docs/algorithm.sty
+docs/algorithmicx.sty
+docs/algpseudocode.sty

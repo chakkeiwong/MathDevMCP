@@ -1,3 +1,5 @@
+"""Structured benchmark cases and release benchmark gate evaluation."""
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass

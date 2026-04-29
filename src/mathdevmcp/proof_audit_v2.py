@@ -1,3 +1,10 @@
+"""Release-facing proof-audit workflow with explicit certification boundaries.
+
+The v2 audit combines parser policy, typed diagnostics, shape diagnostics,
+numeric suggestions, backend attempts, and abstention logic. Its most important
+job is preventing diagnostic evidence from being reported as a certificate.
+"""
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass

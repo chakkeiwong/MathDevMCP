@@ -1,0 +1,221 @@
+{
+  "status": "selected_for_proof_audit",
+  "reason": "Current parser preserves expected labels and line provenance for this corpus.",
+  "selected_backend": "current",
+  "blocking_findings": [],
+  "caveats": [],
+  "backend_roles": [
+    {
+      "backend": "current",
+      "role": "selected_for_proof_audit",
+      "status": "parsed"
+    }
+  ],
+  "benchmark_report": {
+    "ok": true,
+    "results": [
+      {
+        "backend": "current",
+        "status": "parsed",
+        "reason": "Current lightweight parser completed.",
+        "labels_found": 67,
+        "environments_found": 67,
+        "align_like_found": 4,
+        "provenance_quality": "line",
+        "runtime_seconds": 0.005802565996418707,
+        "labels": [
+          "assump:dept-hmc-regularity",
+          "assump:dept-state-space-guards",
+          "assump:macro-filter-dimensions",
+          "eq:dept-acceptance-ratio",
+          "eq:dept-elbo",
+          "eq:dept-euler-equation",
+          "eq:dept-euler-maruyama",
+          "eq:dept-hamiltonian-flow",
+          "eq:dept-hmc-hamiltonian",
+          "eq:dept-hmc-leapfrog",
+          "eq:dept-log-posterior",
+          "eq:dept-ml-gradient",
+          "eq:dept-ml-loss",
+          "eq:dept-particle-ess",
+          "eq:dept-particle-normalization",
+          "eq:dept-pde-stability",
+          "eq:dept-reparameterization-gradient",
+          "eq:dept-sdf",
+          "eq:dept-state-space-likelihood",
+          "eq:dept-state-space-recursion",
+          "eq:dept-sv-likelihood",
+          "eq:dept-sv-transition",
+          "eq:domain-hamiltonian-commute",
+          "eq:domain-hamiltonian-missing-assumption",
+          "eq:domain-kalman-unsupported",
+          "eq:kalman-innovation-covariance",
+          "eq:kalman-innovation-score-local",
+          "eq:kalman-prediction-covariance",
+          "eq:kalman-score-contribution",
+          "eq:longdoc-innovation-covariance",
+          "eq:longdoc-innovation-residual",
+          "eq:longdoc-observed-information",
+          "eq:longdoc-score-contribution",
+          "eq:longdoc-smoothing-gain",
+          "eq:longdoc-transition-covariance",
+          "eq:macro-filter-innovation",
+          "eq:macro-filter-likelihood",
+          "eq:macro-filter-transition",
+          "eq:proof-audit-ambiguous",
+          "eq:proof-audit-chain",
+          "eq:proof-audit-false",
+          "eq:proof-audit-kalman",
+          "eq:proof-audit-single",
+          "eq:repeat-kalman-covariance-01",
+          "eq:repeat-kalman-covariance-02",
+          "eq:repeat-kalman-covariance-03",
+          "eq:repeat-kalman-covariance-04",
+          "eq:repeat-kalman-covariance-05",
+          "eq:repeat-kalman-covariance-06",
+          "eq:repeat-kalman-covariance-07",
+          "eq:repeat-kalman-covariance-08",
+          "eq:repeat-kalman-smoothing-01",
+          "eq:repeat-kalman-smoothing-02",
+          "eq:repeat-kalman-smoothing-03",
+          "eq:repeat-kalman-smoothing-04",
+          "eq:repeat-kalman-smoothing-05",
+          "eq:repeat-kalman-smoothing-06",
+          "eq:repeat-kalman-smoothing-07",
+          "eq:repeat-kalman-smoothing-08",
+          "eq:repeat-kalman-target-score",
+          "eq:transport-density-step",
+          "prop:hamiltonian-energy",
+          "prop:macro-filter-repeat-notation",
+          "prop:proof-audit-nearby",
+          "prop:transport-implementation",
+          "prop:transport-logdet",
+          "prop:transport-mismatch"
+        ],
+        "quality_checks": {
+          "label_preservation": true,
+          "environment_recognition": true,
+          "align_detection": true,
+          "provenance_available": true
+        },
+        "details": {
+          "n_blocks": 100,
+          "n_labels": 67,
+          "environment_types": [
+            "align",
+            "assumption",
+            "equation",
+            "proposition",
+            "section",
+            "subsection"
+          ],
+          "environment_type_counts": {
+            "align": 4,
+            "assumption": 3,
+            "equation": 54,
+            "proposition": 6,
+            "section": 32,
+            "subsection": 1
+          },
+          "tex_files_scanned": [
+            "doc_consistency_bad.tex",
+            "doc_consistency_context.tex",
+            "doc_consistency_good.tex",
+            "doc_department_bayesian_hmc.tex",
+            "doc_department_particle_filter.tex",
+            "doc_department_state_space.tex",
+            "doc_derivation_chain.tex",
+            "doc_domain_formalization.tex",
+            "doc_longdoc_kalman_retrieval.tex",
+            "doc_macro_filter_main.tex",
+            "doc_macro_filter_model.tex",
+            "doc_multilabel_kalman_chain.tex",
+            "doc_proof_audit.tex",
+            "doc_realistic_hamiltonian.tex",
+            "doc_realistic_kalman_hessian.tex",
+            "doc_repeat_label_kalman_scale.tex",
+            "doc_sanitized_bayesian_elbo_vi.tex",
+            "doc_sanitized_computational_physics_mcmc.tex",
+            "doc_sanitized_dsge_macro_finance.tex",
+            "doc_sanitized_ml_llm_objective.tex",
+            "doc_sanitized_sde_pde_numerics.tex",
+            "doc_sanitized_stochastic_volatility.tex"
+          ],
+          "per_file_metrics": {
+            "doc_consistency_bad.tex": {
+              "labels": [
+                "prop:transport-mismatch"
+              ],
+              "label_count": 1,
+              "environment_count": 1,
+              "environment_type_counts": {
+                "proposition": 1
+              },
+              "include_targets": [],
+              "macro_definition_count": 0
+            },
+            "doc_consistency_context.tex": {
+              "labels": [
+                "prop:transport-implementation"
+              ],
+              "label_count": 1,
+              "environment_count": 1,
+              "environment_type_counts": {
+                "proposition": 1
+              },
+              "include_targets": [],
+              "macro_definition_count": 0
+            },
+            "doc_consistency_good.tex": {
+              "labels": [
+                "prop:transport-logdet"
+              ],
+              "label_count": 1,
+              "environment_count": 1,
+              "environment_type_counts": {
+                "proposition": 1
+              },
+              "include_targets": [],
+              "macro_definition_count": 0
+            },
+            "doc_department_bayesian_hmc.tex": {
+              "labels": [
+                "assump:dept-hmc-regularity",
+                "eq:dept-hmc-hamiltonian",
+                "eq:dept-hmc-leapfrog",
+                "eq:dept-log-posterior"
+              ],
+              "label_count": 4,
+              "environment_count": 4,
+              "environment_type_counts": {
+                "align": 1,
+                "assumption": 1,
+                "equation": 2
+              },
+              "include_targets": [],
+              "macro_definition_count": 1
+            },
+            "doc_department_particle_filter.tex": {
+              "labels": [
+                "eq:dept-particle-ess",
+                "eq:dept-particle-normalization"
+              ],
+              "label_count": 2,
+              "environment_count": 2,
+              "environment_type_counts": {
+                "equation": 2
+              },
+              "include_targets": [],
+              "macro_definition_count": 0
+            },
+            "doc_department_state_space.tex": {
+              "labels": [
+                "assump:dept-state-space-guards",
+                "eq:dept-state-space-likelihood",
+                "eq:dept-state-space-recursion"
+              ],
+              "label_count": 3,
+              "environment_count": 3,
+              "environment_type_counts": {
+                "align": 1,
+... truncated for release report appendix ...

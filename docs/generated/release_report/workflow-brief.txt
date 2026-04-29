@@ -1,0 +1,82 @@
+Command: python -m mathdevmcp.cli implementation-brief state space likelihood <repo>/benchmarks/fixtures/doc_department_state_space_missing_solve.py --root <repo>/benchmarks/fixtures --required-terms logdet,solve --limit 2
+{
+  "query": "state space likelihood",
+  "doc_root": "<repo>/benchmarks/fixtures",
+  "code_path": "<repo>/benchmarks/fixtures/doc_department_state_space_missing_solve.py",
+  "search_results": [
+    {
+      "kind": "equation",
+      "name": "equation",
+      "file": "doc_department_state_space.tex",
+      "line_start": 21,
+      "line_end": 23,
+      "label": "eq:dept-state-space-likelihood",
+      "title": null,
+      "text": "\\begin{equation}\\label{eq:dept-state-space-likelihood}\n\\ell_t = -\\frac{1}{2}\\left(\\log\\det \\InnovCov + \\Innov' \\InnovCov^{-1}\\Innov\\right).\n\\end{equation}",
+      "block_id": "doc_department_state_space.tex:21:equation:eq:dept-state-space-likelihood",
+      "section_path": [
+        "Sanitized state-space audit slice"
+      ],
+      "score": 3
+    },
+    {
+      "kind": "section",
+      "name": "Sanitized state-space audit slice",
+      "file": "doc_department_state_space.tex",
+      "line_start": 1,
+      "line_end": 1,
+      "label": null,
+      "title": "Sanitized state-space audit slice",
+      "text": "\\section{Sanitized state-space audit slice}",
+      "block_id": "doc_department_state_space.tex:1:section:Sanitized-state-space-audit-slice",
+      "section_path": [
+        "Sanitized state-space audit slice"
+      ],
+      "score": 2
+    }
+  ],
+  "selected_label": "eq:dept-state-space-likelihood",
+  "status": "mismatch",
+  "cache": {
+    "path": null,
+    "hit": false
+  },
+  "checks": {
+    "consistency": {
+      "status": "mismatch",
+      "reason": "Some required document terms were not found in the code text.",
+      "doc_terms": [
+        "logdet",
+        "solve"
+      ],
+      "code_terms": [
+        "def",
+        "kalman_filter_scan",
+        "jnp",
+        "lax",
+        "params",
+        "step",
+        "carry",
+        "obs",
+        "x_pred",
+        "p_pred",
+        "innovation",
+        "sign",
+        "logdet",
+        "linalg",
+        "slogdet",
+        "x_filt",
+        "p_filt",
+        "ll_t",
+        "return",
+        "scan",
+        "initial_state"
+      ],
+      "missing_in_code": [
+        "solve"
+      ],
+      "findings": [
+        {
+          "kind": "matched_term",
+          "term": "logdet",
+... truncated for report ...

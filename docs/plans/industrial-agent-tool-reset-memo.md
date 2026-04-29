@@ -2173,3 +2173,344 @@ The second slice should compare parser backends on current fixtures:
 - Pandoc.
 
 Only after that should the proof-audit pipeline be refactored around external parser adapters.
+
+## Final release productization kickoff: 2026-04-29
+
+Active plan:
+
+```text
+docs/plans/final-release-productization-execution-plan.md
+```
+
+Independent plan audit:
+
+```text
+docs/plans/final-release-productization-plan-audit.md
+```
+
+Starting commit:
+
+```text
+2f49963
+```
+
+Initial working tree state:
+
+```text
+?? docs/plans/final-release-productization-execution-plan.md
+```
+
+Plan for Phase 0:
+
+- record the current release baseline,
+- audit the new productization plan as if it came from another developer,
+- preserve the phase cycle requested by the user,
+- avoid committing private documents or populated private manifests,
+- use an external sanitized private corpus under `/tmp` for no-intervention release-gate validation when real private department files are not available in the workspace.
+
+Execution notes:
+
+- The existing reset memo tail predates the current release-hardening work, so this section is appended as the active continuation rather than rewriting historical checkpoints.
+- The release blocker to close is `private_corpus_manifest_required` for the `full` profile.
+- LaTeXML has been installed and validated at `/usr/bin/latexml`.
+- LeanDojo remains isolated in `mathdevmcp-backends`; the active `tfgpu` environment is not required to import it.
+
+## Final release productization Phase 0 checkpoint
+
+Plan:
+
+- Record fresh baseline evidence.
+- Audit `docs/plans/final-release-productization-execution-plan.md` independently.
+- Carry forward the requested plan/execute/test/audit/tidy/reset-memo cycle.
+
+Executed:
+
+- Added `docs/plans/final-release-productization-plan-audit.md`.
+- Confirmed current commit starts at `2f49963`.
+- Confirmed the working tree was dirty only because the new plan files were present.
+
+Baseline evidence:
+
+```text
+PYTHONPATH=src python -m mathdevmcp.cli doctor
+- ok: true
+- LaTeXML: /usr/bin/latexml, 0.8.6
+- Pandoc: /usr/bin/pandoc, 2.9.2.1
+- Lean: /home/chakwong/.elan/bin/lean, 4.20.0
+- Sage: /usr/bin/sage, 9.5
+- LeanDojo: not importable in active tfgpu env, expected
+- SymPy: available
+
+scripts/backend_env_doctor.sh "$PWD"
+- ok: true
+- LeanDojo: available through /home/chakwong/miniconda3/envs/mathdevmcp-backends/bin/python, 4.20.0
+
+MATHDEVMCP_REQUIRE_LATEXML=1 scripts/validate_latexml_backend.sh "$PWD"
+- status: validated
+- labels_found: 67
+- expected_label_recall: 1.0
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile full
+- status: not_ready
+- blocker: private_corpus_manifest_required
+- caveat: dirty_worktree
+- benchmark gate: 40/40
+```
+
+Audit notes:
+
+- The plan is executable, but real private department files are not available in this workspace.
+- Execution will use an external sanitized private corpus under `/tmp` for autonomous release-gate validation.
+- The release report must state this honestly and must not claim real private department documents were reviewed unless a real external manifest is supplied later.
+
+## Final release productization Phase 1 checkpoint
+
+Plan:
+
+- Harden private manifest validation before relying on it for final release evidence.
+- Add a no-intervention way to create external sanitized private corpus evidence outside git.
+- Validate that `private_corpus_manifest_required` disappears when a populated external manifest is supplied.
+
+Executed:
+
+- Added type and shape validation in `src/mathdevmcp/release_corpus.py`.
+- Added privacy-class policy for `private_external`, `private_sanitized_external`, and `public_fixture`.
+- Added structured findings for invalid entries, unsupported privacy classes, missing private paths, and missing parser backends.
+- Added `scripts/create_sanitized_private_corpus.sh`, which refuses to write inside the repository and creates an external sanitized manifest plus six tiny domain corpora.
+- Added tests for malformed private manifests, missing code roots, unsupported privacy class, missing parser backend metadata, and full-profile success with a temporary external private manifest.
+
+Tests:
+
+```text
+bash -n scripts/create_sanitized_private_corpus.sh scripts/validate_private_corpus.sh
+passed
+
+PYTHONPATH=src pytest -q tests/test_release_caveat_closure.py tests/test_remaining_release_gaps.py tests/test_industrial_release_gap_closure.py
+41 passed, 1 skipped
+```
+
+External sanitized validation:
+
+```text
+scripts/create_sanitized_private_corpus.sh /tmp/mathdevmcp-sanitized-private-corpus-final
+- manifest: /tmp/mathdevmcp-sanitized-private-corpus-final/manifest.json
+
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-final/manifest.json \
+scripts/validate_private_corpus.sh "$PWD"
+- status: consistent
+- private_paths_redacted: true
+- private manifest status: loaded
+- release-gated private_sanitized_external entries: 6
+- parser reports: all selected_for_proof_audit
+
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-final/manifest.json \
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile full
+- status: ready_with_caveats
+- blockers: none
+- caveat: dirty_worktree
+```
+
+Audit/tidy notes:
+
+- No populated private manifest was added to git.
+- Normal release corpus output still redacts private paths.
+- The external sanitized corpus path appears only in reset-memo command examples and not in committed manifests or source data.
+- Full profile is expected to become `ready` or remain only environment-caveated once the working tree is committed.
+
+## Final release productization Phase 2 checkpoint
+
+Plan:
+
+- Generate release-report evidence from real MathDevMCP commands.
+- Convert the old proposal entry point into a product release report.
+- Keep `docs/proposal.tex` as a compatibility wrapper rather than deleting the build target.
+- Build the report and verify the requested 80 to 100 page range.
+
+Executed:
+
+- Added `scripts/generate_release_report_evidence.sh`.
+- Generated redacted evidence snippets under `docs/generated/release_report/`.
+- Added `docs/mathdevmcp-release-report.tex` as the primary product document.
+- Replaced `docs/proposal.tex` with a small compatibility wrapper that inputs the release report.
+- Included command summaries and JSON excerpts for doctor, benchmark gate, parser policy, release corpus validation, private corpus validation, workflow examples, and full release readiness.
+
+Tests/checks:
+
+```text
+bash -n scripts/generate_release_report_evidence.sh
+passed
+
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-final/manifest.json \
+scripts/generate_release_report_evidence.sh docs/generated/release_report
+- evidence generated successfully
+
+rg -n "/tmp/mathdevmcp|/home/chakwong/python/MathDevMCP|manifest.json" docs/generated/release_report
+- no matches
+
+pdflatex -interaction=nonstopmode -halt-on-error mathdevmcp-release-report.tex
+- built successfully
+
+pdfinfo docs/mathdevmcp-release-report.pdf
+- Pages: 86
+```
+
+Audit/tidy notes:
+
+- The release report is within the requested 80 to 100 page range.
+- Generated snippets use `<repo>` and `<redacted-private-manifest>` where needed.
+- The report explicitly states that the no-intervention private evidence is external sanitized evidence, not a claim that real private department documents were inspected.
+- A final multi-pass LaTeX build remains for the final audit.
+
+## Final release productization Phase 3 checkpoint
+
+Plan:
+
+- Replace top-level scaffold/proposal language with product-release language.
+- Link the final release report, maintainer guide, release policy, deployment guide, security guide, and private corpus guide.
+- Keep compatibility for users who still build `docs/proposal.tex`.
+
+Executed:
+
+- Rewrote `README.md` around installation, workflows, private corpus validation, release profiles, report build, and tests.
+- Added `docs/mathdevmcp-maintainer-guide.md`.
+- Updated `docs/mathdevmcp-release-policy.md` to describe current profile expectations after LaTeXML/backend installation.
+- Updated `docs/mathdevmcp-deployment-guide.md` with release-report evidence generation and sanitized private-corpus validation.
+- Updated `docs/private-corpus-manifest-guide.md` with the sanitized external-corpus workflow.
+- Updated `docs/mathdevmcp-security-governance.md` with redacted evidence and external private-manifest rules.
+
+Checks:
+
+```text
+rg -n "proposed internal toolchain|initial repository|minimal implementation scaffold|early project scaffold|Build the proposal" README.md docs/*.md docs/proposal.tex docs/mathdevmcp-release-report.tex
+- no matches
+
+PYTHONPATH=src python -m mathdevmcp.cli doctor
+- ok: true
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile base
+- status: ready_with_caveats
+- blockers: none
+- caveats: dirty_worktree, private_corpus_not_configured
+```
+
+Audit/tidy notes:
+
+- Documentation examples intentionally include generic `/tmp/...` paths and placeholder manifest names.
+- Release-generated evidence snippets remain free of real local repo paths and real private manifest paths.
+
+## Final release productization Phase 4 and 5 checkpoint
+
+Plan:
+
+- Keep refactoring conservative to avoid destabilizing the broad CLI/MCP/release surface.
+- Harden and document release-critical boundaries rather than splitting every large module.
+- Add maintainer comments/docstrings where they explain policy and invariants.
+- Improve release matrix behavior for strict evidence profiles.
+
+Executed:
+
+- Added module docstrings to release policy, release corpus, parser policy, proof audit v2, AST operation graph, backend env, doctor, contracts, MCP facade/server, CLI, benchmarks, parser benchmark, and math IR.
+- Added focused comments in release policy explaining isolated LeanDojo backend validation.
+- Added `docs/mathdevmcp-maintainer-guide.md`.
+- Updated `scripts/release_matrix.sh` so the full profile runs automatically when private manifest and strict LaTeXML evidence flags are present, while preserving explicit `MATHDEVMCP_RUN_FULL_PROFILE=1`.
+
+Tests:
+
+```text
+PYTHONPATH=src python -m compileall src tests
+passed
+
+PYTHONPATH=src pytest -q tests/test_release_caveat_closure.py tests/test_remaining_release_gaps.py tests/test_mcp_facade.py tests/test_schema_contracts.py
+52 passed, 1 skipped
+```
+
+Audit/tidy notes:
+
+- No broad behavior-changing split was attempted in `benchmarks.py` or `cli.py`; those modules remain stable for the final release.
+- Comments were added at policy boundaries and public surfaces rather than line-by-line.
+- Release-critical refactor work was concentrated on private corpus validation, evidence generation, and documentation support.
+
+## Final release productization Phase 6 and 7 checkpoint
+
+Plan:
+
+- Run the final evidence matrix against the real local toolchain plus the external sanitized private corpus.
+- Rebuild the release-report evidence snippets and PDF after all code changes.
+- Audit the patch as if written by another developer, with special attention to private path leaks, weakened release gates, and stale proposal language.
+- Tidy generated artifacts and commit the productization work.
+
+Executed:
+
+- Recreated the sanitized external private corpus at `/tmp/mathdevmcp-sanitized-private-corpus-final`; this path is outside the repository and the populated manifest is not committed.
+- Regenerated `docs/generated/release_report/` using `MATHDEVMCP_PRIVATE_CORPUS_MANIFEST` and redacted evidence output.
+- Rebuilt `docs/mathdevmcp-release-report.pdf`; current page count is 88, within the requested 80 to 100 page range.
+- Strengthened `src/mathdevmcp/release_policy.py` so `release-readiness` now blocks when release corpus validation itself reports a mismatch, including malformed or missing external private manifest roots.
+- Added a regression test proving malformed private manifests block release readiness.
+
+Tests/checks:
+
+```text
+bash -n scripts/create_sanitized_private_corpus.sh
+passed
+
+bash -n scripts/generate_release_report_evidence.sh
+passed
+
+PYTHONPATH=src pytest -q tests/test_release_caveat_closure.py tests/test_remaining_release_gaps.py
+34 passed, 1 skipped
+
+PYTHONPATH=src python -m compileall src tests
+passed
+
+PYTHONPATH=src pytest -q
+252 passed, 2 skipped
+
+scripts/release_smoke.sh "$PWD"
+passed
+
+scripts/backend_env_doctor.sh "$PWD"
+ok: true; LeanDojo available in mathdevmcp-backends
+
+MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends scripts/validate_backend_install.sh "$PWD"
+ok: true; LeanDojo 4.20.0 available in mathdevmcp-backends
+
+MATHDEVMCP_REQUIRE_LATEXML=1 scripts/validate_latexml_backend.sh "$PWD"
+status: validated; labels found: 67
+
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-final/manifest.json scripts/validate_private_corpus.sh "$PWD"
+status: consistent; findings: 0; private paths redacted: true
+
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-final/manifest.json PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile full
+status: ready_with_caveats; blockers: []; caveats: dirty_worktree
+
+MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends MATHDEVMCP_REQUIRE_LATEXML=1 MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-final/manifest.json scripts/release_matrix.sh "$PWD"
+passed; base, backend, latexml, private-corpus, and full profiles ran
+
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-final/manifest.json scripts/generate_release_report_evidence.sh docs/generated/release_report
+passed
+
+rg -n "/tmp/mathdevmcp|/home/chakwong/python/MathDevMCP|manifest.json" docs/generated/release_report
+no matches
+
+rg -n "proposed internal toolchain|initial repository|minimal implementation scaffold|early project scaffold|Build the proposal" README.md docs/*.md docs/proposal.tex docs/mathdevmcp-release-report.tex
+no matches
+
+git diff --check
+passed
+
+pdflatex -interaction=nonstopmode -halt-on-error mathdevmcp-release-report.tex
+passed
+
+pdfinfo docs/mathdevmcp-release-report.pdf
+Pages: 88
+```
+
+Audit/tidy notes:
+
+- The old `private_corpus_manifest_required` blocker is closed when a valid external manifest is provided.
+- The full profile still reports `dirty_worktree` before commit, as expected; this should clear after the commit and post-commit readiness rerun.
+- Generated private-corpus report snippets use `<redacted-private-manifest>` and `<redacted-private-path>`.
+- No populated private manifest or private corpus files are staged for commit.
+- `docs/proposal.tex` is now only a compatibility wrapper; the primary product document is `docs/mathdevmcp-release-report.tex`.
+- The report states that the autonomous private evidence is external sanitized evidence, not unredacted department data.
+- LaTeX produced minor overfull/underfull box warnings from long literal command names, but the PDF built successfully and is within the requested page range.

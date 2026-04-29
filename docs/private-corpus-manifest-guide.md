@@ -44,3 +44,17 @@ Recommended domains:
 - computational physics MCMC.
 
 The private-corpus release profile is intentionally stricter than the base profile. Missing private data is a base caveat, but it is a blocker for `private-corpus` and `full`.
+
+For autonomous sanitized release-gate validation, generate a corpus outside the
+checkout:
+
+```bash
+scripts/create_sanitized_private_corpus.sh /tmp/mathdevmcp-sanitized-private-corpus
+export MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus/manifest.json
+scripts/validate_private_corpus.sh /path/to/MathDevMCP
+```
+
+The generated manifest is populated and must remain outside git. It is suitable
+for validating the redaction and release-gate machinery, but a real deployment
+should replace it with an approved real or externally sanitized department
+manifest.

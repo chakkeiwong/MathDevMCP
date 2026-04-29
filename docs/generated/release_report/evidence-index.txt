@@ -1,0 +1,17 @@
+Generated release report evidence snippets:
+doctor-summary.txt
+benchmark-gate-summary.txt
+parser-policy-summary.txt
+release-corpus-summary.txt
+release-readiness-full-summary.txt
+private-corpus-summary.txt
+workflow-search.txt
+workflow-context.txt
+workflow-compare.txt
+workflow-audit.txt
+workflow-brief.txt
+benchmark-gate-json-excerpt.txt
+parser-policy-json-excerpt.txt
+release-corpus-json-excerpt.txt
+release-readiness-full-json-excerpt.txt
+private-corpus-json-excerpt.txt

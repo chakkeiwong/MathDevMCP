@@ -1,3 +1,5 @@
+"""Runtime capability diagnostics for release and operator workflows."""
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass

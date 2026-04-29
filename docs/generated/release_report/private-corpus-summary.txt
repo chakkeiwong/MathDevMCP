@@ -1,0 +1,6 @@
+Command: MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=<redacted-private-manifest> scripts/validate_private_corpus.sh "$PWD"
+Status: consistent
+Reason: Private corpus manifest is configured and satisfies release-gate privacy checks.
+Private paths redacted: True
+Findings: 0
+Parser reports: [('private_dsge_macro_finance_euler', 'selected_for_proof_audit'), ('private_stochastic_volatility_likelihood', 'selected_for_proof_audit'), ('private_sde_pde_numerics', 'selected_for_proof_audit'), ('private_ml_llm_objective', 'selected_for_proof_audit'), ('private_bayesian_elbo_vi', 'selected_for_proof_audit'), ('private_computational_physics_mcmc', 'selected_for_proof_audit')]

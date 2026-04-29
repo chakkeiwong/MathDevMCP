@@ -1,3 +1,10 @@
+"""Backend environment discovery for optional mathematical tools.
+
+The base MathDevMCP package must import in ordinary Python environments.
+LeanDojo and similar heavy dependencies are resolved through explicit backend
+environment variables so dependency conflicts stay out of the main workflow.
+"""
+
 from __future__ import annotations
 
 import os

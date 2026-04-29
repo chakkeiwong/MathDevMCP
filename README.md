@@ -1,30 +1,155 @@
 # MathDevMCP
 
-MathDevMCP is a proposed internal toolchain for mathematical software development, large-scale LaTeX documentation, code-document consistency checking, and Claude Code MCP integration.
+MathDevMCP is an internal release candidate for mathematical development
+agents. It gives colleagues local tools for LaTeX/document indexing,
+code-document consistency checks, derivation audit, benchmark gates, optional
+math backends, MCP integration, and privacy-preserving private corpus
+validation.
 
-The initial repository contains a detailed LaTeX project proposal in `docs/` and a minimal implementation scaffold in `src/mathdevmcp/`.
+The primary product document is:
 
-## Agent guides
+- [Final release report](docs/mathdevmcp-release-report.tex)
+- [Operator guide](docs/mathdevmcp-operator-guide.md)
+- [Deployment guide](docs/mathdevmcp-deployment-guide.md)
+- [Release policy](docs/mathdevmcp-release-policy.md)
+- [Security and governance](docs/mathdevmcp-security-governance.md)
+- [Private corpus manifest guide](docs/private-corpus-manifest-guide.md)
+- [Maintainer guide](docs/mathdevmcp-maintainer-guide.md)
 
-- [Operator guide](docs/mathdevmcp-operator-guide.md) explains the general paper-reading and code-grounding workflow.
-- [Kalman Hessian guide](docs/kalman-hessian-agent-guide.md) gives practical discipline for analytical Kalman-filter Hessian derivations.
+## Install
 
-## Build the proposal
+Base development install:
 
 ```bash
+python -m pip install -e ".[dev]"
+```
+
+MCP-facing install:
+
+```bash
+python -m pip install -e ".[dev,mcp]"
+```
+
+Optional symbolic/backend packages:
+
+```bash
+python -m pip install -e ".[dev,symbolic]"
+scripts/setup_backend_env.sh
+```
+
+LeanDojo should remain in the isolated `mathdevmcp-backends` environment:
+
+```bash
+export MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends
+export MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.20.0
+export MATHDEVMCP_LEAN_PATH="$HOME/.elan/bin/lean"
+```
+
+LaTeXML is a system tool. Validate it with:
+
+```bash
+MATHDEVMCP_REQUIRE_LATEXML=1 scripts/validate_latexml_backend.sh "$PWD"
+```
+
+## Common Workflows
+
+Check the runtime environment:
+
+```bash
+PYTHONPATH=src python -m mathdevmcp.cli doctor
+scripts/backend_env_doctor.sh "$PWD"
+```
+
+Search a LaTeX corpus:
+
+```bash
+PYTHONPATH=src python -m mathdevmcp.cli search-latex "state space likelihood" \
+  --root benchmarks/fixtures --limit 3
+```
+
+Compare a labeled equation with code:
+
+```bash
+PYTHONPATH=src python -m mathdevmcp.cli compare-label-code \
+  eq:dept-state-space-likelihood \
+  benchmarks/fixtures/doc_department_state_space_missing_solve.py \
+  --root benchmarks/fixtures --required-terms logdet,solve --paragraph-context
+```
+
+Audit a derivation label:
+
+```bash
+PYTHONPATH=src python -m mathdevmcp.cli audit-derivation-v2-label \
+  eq:dept-state-space-likelihood --root benchmarks/fixtures --summary-only
+```
+
+Run the release benchmark gate:
+
+```bash
+PYTHONPATH=src python -m mathdevmcp.cli benchmark-gate --root "$PWD"
+```
+
+## Private Corpus Validation
+
+Private department documents and populated manifests stay outside git. Start
+from `examples/private-corpus-manifest.template.json`, populate it externally,
+then run:
+
+```bash
+export MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/secure/local/path/corpus.json
+scripts/validate_private_corpus.sh "$PWD"
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile full
+```
+
+For local sanitized release-gate validation without committing private files:
+
+```bash
+scripts/create_sanitized_private_corpus.sh /tmp/mathdevmcp-sanitized-private-corpus
+export MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus/manifest.json
+scripts/validate_private_corpus.sh "$PWD"
+```
+
+Normal reports redact private paths.
+
+## Release Profiles
+
+```text
+base             public benchmarks, parser policy, governance, release corpus
+backend          base + isolated LeanDojo backend env
+latexml          base + strict LaTeXML validation
+private-corpus   base + external private/sanitized manifest
+full             all required release evidence
+```
+
+Run:
+
+```bash
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile base
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile full
+```
+
+## Build the Release Report
+
+Regenerate report evidence, then build:
+
+```bash
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/secure/local/path/corpus.json \
+scripts/generate_release_report_evidence.sh docs/generated/release_report
+
 cd docs
-pdflatex -interaction=nonstopmode -halt-on-error proposal.tex
-bibtex proposal
-pdflatex -interaction=nonstopmode -halt-on-error proposal.tex
-pdflatex -interaction=nonstopmode -halt-on-error proposal.tex
+pdflatex -interaction=nonstopmode -halt-on-error mathdevmcp-release-report.tex
+bibtex mathdevmcp-release-report || true
+pdflatex -interaction=nonstopmode -halt-on-error mathdevmcp-release-report.tex
+pdflatex -interaction=nonstopmode -halt-on-error mathdevmcp-release-report.tex
 ```
 
-## Run scaffold tests
+`docs/proposal.tex` remains only as a compatibility wrapper for the release
+report.
+
+## Test
 
 ```bash
-python -m pytest tests -q
+PYTHONPATH=src pytest -q
+scripts/release_smoke.sh "$PWD"
+scripts/release_matrix.sh "$PWD"
 ```
-
-## Current status
-
-This is an early project scaffold. The first implementation focus is a LaTeX/document indexing layer plus simple CLI commands that can later be exposed through MCP tools.

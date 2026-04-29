@@ -1,3 +1,10 @@
+"""Parser backend selection policy for proof-audit routing.
+
+Parser success is not mathematical verification. This module decides which
+parser has enough label preservation and provenance to feed downstream audit
+tools without losing source traceability.
+"""
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -19,6 +26,7 @@ class ParserPolicyDecision:
 
 
 def decide_parser_policy(root: str, *, backends: list[str] | None = None, expected_labels: Iterable[str] | None = None) -> dict:
+    """Choose the parser role for a corpus and report any blocking findings."""
     report = compare_parser_backends(root, backends=backends or ["current", "latexml", "pandoc"], expected_labels=expected_labels)
     blocking: list[dict] = []
     caveats: list[dict] = []

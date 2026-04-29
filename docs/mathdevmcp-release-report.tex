@@ -1,0 +1,756 @@
+\documentclass[12pt,a4paper,openany]{book}
+
+\input{preamble}
+
+\title{\Huge\textbf{MathDevMCP}\\[10pt]
+  \Large Final Release Report for an Industrial Mathematical Development Agent}
+\author{Chak Wong and collaborators}
+\date{April 29, 2026}
+
+\begin{document}
+
+\frontmatter
+\maketitle
+\tableofcontents
+
+\mainmatter
+
+\part{Release Claim}
+
+\chapter{Executive Summary}
+
+MathDevMCP is now a working internal release candidate for document-grounded
+mathematical development. It provides a Python library, command-line tools, MCP
+tool wrappers, benchmark gates, release profiles, backend diagnostics, and
+privacy-preserving private-corpus validation. The product is designed for
+colleagues who work across long LaTeX documents, mathematical code, proofs,
+derivations, algorithms, and review workflows where unsupported claims are
+expensive.
+
+The release claim is deliberately narrow and evidence based. MathDevMCP does
+not claim to prove arbitrary mathematical papers correct. It gives agents and
+humans structured access to local documents, labels, code, parser evidence,
+typed obligations, AST operation evidence, backend diagnostics, and release
+gates. It helps colleagues find the right mathematical context, compare
+documented claims to implementations, detect missing implementation terms,
+route proof obligations, and abstain when evidence is not certifying.
+
+The current full release profile is configured to require benchmark evidence,
+parser policy, governance validation, release-corpus metadata, LeanDojo backend
+environment evidence, LaTeXML validation, and a private-corpus manifest. The
+private-corpus evidence used for this report is an external sanitized corpus
+generated outside the repository. Its purpose is to validate the privacy and
+release-gate machinery without committing private department documents. A real
+department manifest can be substituted through the same environment variable.
+
+\begin{proposalbox}
+\textbf{Release status.} With an external sanitized private manifest supplied,
+the full profile has no blocking findings. During report generation the only
+remaining caveat is the dirty working tree caused by ongoing release edits.
+\end{proposalbox}
+
+\chapter{Product Scope}
+
+MathDevMCP supports five colleague-facing activities:
+
+\begin{enumerate}[label=\arabic*.]
+  \item locating mathematical context in LaTeX source trees;
+  \item extracting labeled equation, theorem, assumption, and paragraph
+        neighborhoods with provenance;
+  \item comparing document claims with Python implementations;
+  \item auditing derivation obligations with parser, typed, shape, numeric, and
+        backend evidence;
+  \item producing repeatable release evidence across base, backend, LaTeXML,
+        private-corpus, and full profiles.
+\end{enumerate}
+
+The product is intentionally local-first. Source documents and code remain on
+the user's machine. Optional tools such as LaTeXML, Lean, LeanDojo, Sage, and
+SymPy are detected at runtime and reported through structured diagnostics.
+LeanDojo remains in the isolated \texttt{mathdevmcp-backends} environment so its
+dependency stack does not destabilize the main working environment.
+
+\section{What is included}
+
+The release includes:
+
+\begin{itemize}
+  \item a LaTeX indexer with label, environment, and context extraction;
+  \item code and document search utilities;
+  \item code--document consistency checks;
+  \item derivation-step checks with explicit \emph{unverified} and
+        \emph{mismatch} outcomes;
+  \item proof obligation and proof-audit workflows;
+  \item typed and dimensional diagnostic workflows;
+  \item AST operation extraction for mathematical implementation patterns;
+  \item parser benchmark and parser policy selection;
+  \item release corpus manifest validation;
+  \item private-corpus validation with redacted output;
+  \item release-readiness profiles;
+  \item MCP facade and FastMCP server wrappers;
+  \item operator, deployment, release, security, and maintainer documentation.
+\end{itemize}
+
+\section{What is not claimed}
+
+MathDevMCP does not replace expert mathematical review. A parser hit is not a
+proof. A shape diagnostic is not a theorem. A Lean skeleton is not a certificate
+until direct Lean checking accepts it without placeholders. A numeric diagnostic
+can refute a false claim or suggest a failure mode, but it does not establish a
+general theorem. The product's value is that it preserves these distinctions in
+machine-readable reports.
+
+\chapter{Release Profiles}
+
+The release profiles are:
+
+\begin{description}
+  \item[base] Public benchmarks, parser policy, governance, release corpus, and
+    normal doctor evidence.
+  \item[backend] Base evidence plus isolated LeanDojo backend environment
+    validation.
+  \item[latexml] Base evidence plus strict LaTeXML parser validation.
+  \item[private-corpus] Base evidence plus an external private or sanitized
+    private manifest.
+  \item[full] All of the above.
+\end{description}
+
+The profile split is important because colleagues may use the base product
+without every optional backend, while release managers can demand strict
+evidence before a broader deployment. Optional evidence is not silently ignored:
+strict profiles turn missing evidence into blocking findings.
+
+\section{Full profile evidence}
+
+\lstinputlisting[caption={Full profile release-readiness summary},basicstyle=\ttfamily\footnotesize]{generated/release_report/release-readiness-full-summary.txt}
+
+\section{Doctor evidence}
+
+\lstinputlisting[caption={Doctor capability summary},basicstyle=\ttfamily\footnotesize]{generated/release_report/doctor-summary.txt}
+
+\part{Architecture}
+
+\chapter{System Architecture}
+
+MathDevMCP has three layers. The first layer is a Python implementation
+substrate that owns parsing, indexing, consistency checks, proof-audit routing,
+benchmarking, release policy, and diagnostics. The second layer is a CLI and MCP
+facade that presents stable tools to users and agents. The third layer is a
+workflow and documentation layer that explains how to combine tools for
+colleague tasks.
+
+\section{Implementation substrate}
+
+The Python package is organized around small report-producing functions. Each
+public report includes a metadata contract so that CLI, MCP, tests, and release
+docs can depend on stable shapes. For example, release readiness returns a
+\texttt{release\_readiness\_report}; parser benchmark returns
+\texttt{parser\_backend\_result}; private corpus validation returns
+\texttt{private\_corpus\_validation\_report}. This is the main compatibility
+discipline for future maintainers.
+
+\section{CLI and MCP facades}
+
+The CLI is the reproducible interface for humans and CI. The MCP facade wraps
+the same library functions so an agent can call them interactively. The facade
+does not grant unrestricted shell access. It exposes bounded tools such as
+\texttt{search\_latex}, \texttt{compare\_label\_code},
+\texttt{audit\_derivation\_v2\_label}, \texttt{benchmark\_gate}, and
+\texttt{release\_readiness}.
+
+\section{Backend isolation}
+
+Optional backends are treated as evidence engines. LaTeXML, Pandoc, Lean, Sage,
+SymPy, and LeanDojo are detected by \texttt{doctor}. LeanDojo is checked through
+the backend environment when configured. This avoids dependency conflicts in
+the main Python environment while still allowing proof-search experiments and
+Lean fixture validation.
+
+\chapter{Core Data Contracts}
+
+Every user-facing workflow should be understood as a contract. A contract has a
+schema version, a name, a status or result payload, and where appropriate
+provenance. This is why downstream documentation, agents, and tests can
+interpret outputs without scraping prose.
+
+\section{Status vocabulary}
+
+The primary statuses are:
+
+\begin{description}
+  \item[consistent] The requested terms or structure were found in the checked
+    context.
+  \item[equivalent] A scoped derivation step matched exactly after normalization
+    or backend checking.
+  \item[unverified] Evidence exists, but it is not enough for certification.
+  \item[mismatch] Required structure is missing or contradicted.
+  \item[inconclusive] The tool lacks enough structure, parser support, or
+    backend evidence to decide.
+\end{description}
+
+This vocabulary is central to the product. It prevents the agent from turning a
+nearby equation or diagnostic hint into a categorical mathematical claim.
+
+\chapter{Parser Policy}
+
+MathDevMCP measures parser behavior before relying on parser output for proof
+audit. The current lightweight parser is selected for proof audit when it
+preserves expected labels and line provenance. LaTeXML is also validated in the
+strict LaTeXML profile, but current release routing prefers the provenance and
+environment structure available through the current parser.
+
+\lstinputlisting[caption={Parser policy summary},basicstyle=\ttfamily\footnotesize]{generated/release_report/parser-policy-summary.txt}
+
+\chapter{Benchmark Gate}
+
+The benchmark gate is the main regression control. It covers consistency,
+derivation, workflow, proof-audit, parser-corpus, AST-corpus, typed IR,
+industrial review, and release-corpus cases. The gate currently requires every
+benchmark case to pass; expected abstentions are counted as quality signals, not
+as failures.
+
+\lstinputlisting[caption={Benchmark gate summary},basicstyle=\ttfamily\footnotesize]{generated/release_report/benchmark-gate-summary.txt}
+
+\part{Colleague Workflows}
+
+\chapter{Workflow 1: Find Mathematical Context}
+
+A colleague begins with a topic such as a likelihood, Hamiltonian flow, Euler
+equation, or stability condition. The first tool is usually
+\texttt{search-latex}. It returns document blocks with labels and provenance so
+the agent can ground a response in the source document.
+
+\lstinputlisting[caption={Search workflow output},basicstyle=\ttfamily\scriptsize]{generated/release_report/workflow-search.txt}
+
+\chapter{Workflow 2: Read a Labeled Neighborhood}
+
+Once a label is known, the user can extract a paragraph neighborhood. This is
+more useful than a raw line excerpt when an agent needs nearby explanatory
+prose, assumptions, or notation.
+
+\lstinputlisting[caption={Labeled neighborhood output},basicstyle=\ttfamily\scriptsize]{generated/release_report/workflow-context.txt}
+
+\chapter{Workflow 3: Compare Document and Code}
+
+Code--document drift is one of the highest-value release use cases. The
+\texttt{compare-label-code} workflow checks whether required terms from a
+labeled document block are present in a code file. It is not a full proof of
+equivalence. It is a targeted drift detector.
+
+\lstinputlisting[caption={Code--document comparison output},basicstyle=\ttfamily\scriptsize]{generated/release_report/workflow-compare.txt}
+
+\chapter{Workflow 4: Audit a Derivation}
+
+The v2 audit workflow combines parser policy, typed obligations, route
+decisions, shape diagnostics, numeric suggestions, backend evidence, and
+verification-boundary text. It is the most appropriate colleague-facing surface
+when a user asks whether a labeled mathematical statement is actually certified.
+
+\lstinputlisting[caption={Derivation audit output},basicstyle=\ttfamily\scriptsize]{generated/release_report/workflow-audit.txt}
+
+\chapter{Workflow 5: Build an Implementation Brief}
+
+The implementation brief bundles search, label selection, context extraction,
+consistency checking, and optional derivation checking into one object. This is
+the recommended tool when another agent needs a document-grounded starting
+point for code review or implementation.
+
+\lstinputlisting[caption={Implementation brief output},basicstyle=\ttfamily\scriptsize]{generated/release_report/workflow-brief.txt}
+
+\part{Case Studies}
+
+\chapter{Kalman State-Space Likelihood}
+
+The Kalman likelihood case checks whether implementation code carries the
+linear algebra structure described by the document. Missing solves, inverses,
+or log-determinant terms are important because they often indicate stale
+documentation or a numerically fragile implementation. MathDevMCP reports such
+cases as consistency findings rather than silently rationalizing them.
+
+For a colleague, the useful behavior is fast localization. The tool identifies
+the label, extracts the surrounding text, compares the implementation file, and
+reports missing required terms. The next action is human review of the
+likelihood implementation and associated tests.
+
+\chapter{HMC Leapfrog and Hamiltonian Flow}
+
+Hamiltonian Monte Carlo code is sensitive to sign conventions, gradients,
+Metropolis corrections, and leapfrog ordering. MathDevMCP does not certify
+convergence. It checks that documented Hamiltonian and leapfrog structures are
+visible in the implementation and routes uncertified claims to abstention when
+regularity or ergodicity assumptions are not present.
+
+\chapter{Macro Filter Multi-File Corpus}
+
+The macro filter fixture exercises multi-file LaTeX inclusion, macro
+definitions, repeated notation, and a deliberately missing gain update. This is
+close to real colleague work: a main document includes a model file, macros are
+defined in one place, and code may omit a step that the exposition assumes.
+
+\chapter{DSGE Euler Equation}
+
+The DSGE case checks Euler residual and stochastic discount factor structure.
+MathDevMCP helps a reviewer avoid claiming that a model is solved or calibrated
+unless the assumptions and implementation evidence are available. The expected
+abstention is part of the release quality signal.
+
+\chapter{Stochastic Volatility Likelihood}
+
+The stochastic volatility case checks transition and likelihood labels. The
+important release behavior is conservative handling of latent-volatility prior
+assumptions and Jacobian-like omissions. A diagnostic may expose a missing
+term, but the tool should not overstate proof.
+
+\chapter{SDE and PDE Numerics}
+
+The SDE/PDE numerics case covers Euler--Maruyama and residual/stability
+structure. A colleague can use the tool to locate the discretization formula,
+check whether code carries time-step and stability terms, and record a
+discretization-assumption review when the evidence is incomplete.
+
+\chapter{ML and LLM Objective Functions}
+
+The ML objective case catches wrong-sign gradients and missing objective terms.
+This is useful for training and fine-tuning code where the prose can describe a
+loss while the implementation evolves quickly. MathDevMCP provides a structured
+way to ask whether the documented loss and gradient are visible in code.
+
+\chapter{Bayesian ELBO and Variational Inference}
+
+The ELBO case checks objective, expectation, entropy, and reparameterization
+structure. The release behavior emphasizes abstention around variational-family
+assumptions and support conditions. This keeps the agent from treating a
+surface-level match as a full variational proof.
+
+\chapter{Computational Physics MCMC}
+
+The computational physics case checks acceptance ratios, Hamiltonian energy,
+gradients, and leapfrog-like operations. The tool can surface a missing
+Metropolis correction or energy term, but it deliberately leaves convergence
+and ergodicity claims for expert review.
+
+\chapter{Private Corpus Validation}
+
+The private-corpus workflow validates external manifests without committing
+private material. Normal output redacts private paths. The generated evidence
+below uses a sanitized external corpus under the same release machinery that a
+real private department manifest would use.
+
+\lstinputlisting[caption={Private corpus validation summary},basicstyle=\ttfamily\footnotesize]{generated/release_report/private-corpus-summary.txt}
+
+\part{Security, Operations, and Maintenance}
+
+\chapter{Security and Privacy}
+
+Private documents must stay outside the repository. A populated private
+manifest may contain sensitive paths and should remain external. Normal
+MathDevMCP reports redact private document roots and code roots. Governance
+validation rejects private paths inside the checkout. Evidence bundles for
+review should be stored outside git unless they are deliberately reduced to
+safe report snippets.
+
+\chapter{Operations}
+
+The normal operator sequence is:
+
+\begin{lstlisting}[language=bash]
+PYTHONPATH=src python -m mathdevmcp.cli doctor
+scripts/backend_env_doctor.sh "$PWD"
+MATHDEVMCP_REQUIRE_LATEXML=1 scripts/validate_latexml_backend.sh "$PWD"
+PYTHONPATH=src python -m mathdevmcp.cli benchmark-gate --root "$PWD"
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile base
+\end{lstlisting}
+
+For full release validation, add:
+
+\begin{lstlisting}[language=bash]
+export MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/secure/local/path/corpus.json
+scripts/validate_private_corpus.sh "$PWD"
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile full
+\end{lstlisting}
+
+\chapter{Maintainer Guide}
+
+Maintain release behavior by changing library code first, then CLI/MCP wrappers,
+then docs and evidence. When adding a new benchmark category, update the case
+builder, runner, summary tests, release report evidence, and release policy if
+the category becomes mandatory. When adding a new private corpus entry, keep the
+entry outside git and check redaction before sharing output.
+
+The highest-risk modules are:
+
+\begin{itemize}
+  \item \texttt{benchmarks.py}, for benchmark totals and gate behavior;
+  \item \texttt{release\_policy.py}, for profile blockers and caveats;
+  \item \texttt{release\_corpus.py}, for privacy redaction and manifest shape;
+  \item \texttt{parser\_policy.py}, for proof-audit parser routing;
+  \item \texttt{proof\_audit\_v2.py}, for verification-boundary reporting;
+  \item \texttt{mcp\_facade.py} and \texttt{cli.py}, for public tool surfaces.
+\end{itemize}
+
+\chapter{Limitations and Accepted Boundaries}
+
+The product is conservative by design. It is useful because it knows when to
+stop. It does not convert every mathematical statement to a theorem prover. It
+does not guarantee semantic equivalence between arbitrary prose and code. It
+does not make private data safe to commit. It does not make numeric diagnostics
+into proofs. These boundaries should remain explicit in future releases.
+
+\part{Detailed Release Manual}
+
+\chapter{End-to-End Colleague Scenario}
+
+This chapter walks through a realistic review day. A colleague has a document
+claim about a state-space likelihood and a Python implementation that is being
+edited quickly before a deadline. The colleague does not want a polished essay;
+they want to know where the claim lives, whether the code visibly contains the
+required numerical operations, whether a derivation can be certified, and what
+should be reviewed by a human.
+
+\section{Step 1: locate the candidate claim}
+
+The agent begins with \texttt{search-latex}. This avoids relying on a language
+model's memory of the repository. The search result gives labels and local
+context. The colleague can inspect those labels directly or ask the agent to use
+the top result. If no label is found, the workflow stops as \emph{inconclusive}
+rather than inventing a source.
+
+\section{Step 2: extract neighborhood context}
+
+The label neighborhood gives surrounding prose and assumptions. This step
+matters because many mathematical claims are not self-contained. A likelihood
+equation may rely on notation introduced one paragraph above, while a stability
+condition may depend on a boundary condition or discretization convention.
+
+\section{Step 3: compare to code}
+
+The comparison step asks for concrete required terms such as
+\texttt{logdet}, \texttt{solve}, \texttt{gradient}, or \texttt{stability}. A
+missing term is not automatically a proof of a bug, but it is a precise review
+signal. The output includes the selected label, findings, and status, so the
+agent can explain what was checked.
+
+\section{Step 4: audit the derivation boundary}
+
+The v2 audit report is where MathDevMCP becomes most valuable for disciplined
+agent work. It records parser policy, typed diagnostics, shape diagnostics,
+numeric diagnostic suggestions, backend attempts, and a verification boundary.
+That boundary text is essential: it tells the colleague whether the output is a
+certificate, a diagnostic, or an abstention.
+
+\section{Step 5: produce an implementation brief}
+
+For handoff, the implementation brief bundles the key evidence. A teammate can
+read one object rather than rerun every command. This is especially useful when
+the agent is asked to create a code-review note, a pull-request comment, or a
+maintenance ticket.
+
+\chapter{Release Gate Interpretation}
+
+The release gate should be read as a contract, not a vibe check. A green base
+profile means public fixtures, governance, release corpus metadata, parser
+policy, and benchmark cases pass. It does not mean every optional backend or
+private corpus is available. A green full profile means the strict optional
+evidence has also been supplied. This separation lets the team use MathDevMCP
+productively on ordinary machines while still preserving a stricter bar for
+industrial release.
+
+\section{Blockers}
+
+Blockers represent release conditions that must be fixed or explicitly scoped
+out. Examples include benchmark failure, parser policy failure, governance
+validation failure, missing strict LaTeXML evidence in the LaTeXML profile,
+missing backend evidence in the backend profile, and missing private manifest
+evidence in the private-corpus or full profiles.
+
+\section{Caveats}
+
+Caveats are not ignored. They are tracked because a release may be useful while
+still carrying environmental or evidence limitations. A dirty worktree is a
+caveat because generated reports should name the actual commit. Missing private
+corpus evidence is a low-severity caveat in the base profile, but a blocker in
+the private-corpus and full profiles.
+
+\section{Expected abstentions}
+
+Expected abstentions protect the product from false confidence. A benchmark can
+pass because the tool correctly abstained in a case where certification would
+be inappropriate. This is different from a tolerated failure budget. The
+current benchmark policy requires all cases to pass.
+
+\chapter{Private Corpus Operating Model}
+
+Private corpus validation is designed for teams that cannot commit research
+documents, code paths, or real local directory structures. The populated
+manifest lives outside git. The release validator reads it locally, uses
+unredacted paths internally to parse documents, and emits redacted reports.
+
+\section{External sanitized corpus}
+
+For autonomous release validation in this workspace, the execution created an
+external sanitized corpus under a temporary directory. It includes six release
+domains: DSGE macro-finance, stochastic volatility, SDE/PDE numerics, ML/LLM
+objectives, Bayesian ELBO/VI, and computational-physics MCMC. The generated
+manifest is not committed. The report includes only redacted summaries.
+
+\section{Real private corpus substitution}
+
+A real deployment should replace the sanitized manifest with an approved
+external manifest. The same validator and full profile commands apply. The
+operator should verify that every release-gated entry has expected labels,
+parser backends, expected abstentions or false-confidence seeds, and external
+document roots. If a real private corpus covers fewer domains than the
+sanitized release corpus, the release report should say exactly that.
+
+\section{Failure modes}
+
+Important private-corpus failure modes are:
+
+\begin{itemize}
+  \item missing manifest path;
+  \item invalid JSON;
+  \item malformed entry fields;
+  \item private path inside the repository checkout;
+  \item missing document root or code root;
+  \item release-gated entry with no expected labels;
+  \item release-gated entry with no parser backend;
+  \item parser policy not selected for proof audit.
+\end{itemize}
+
+\chapter{Backend Environment Operating Model}
+
+Backend tools are intentionally not all installed into the main Python
+environment. This is a release-quality design choice. LeanDojo can bring a
+dependency stack that conflicts with unrelated document or ML packages. The
+backend env checks therefore prove that the optional backend can be invoked
+without requiring the main working environment to import every optional module.
+
+\section{Lean}
+
+Lean is detected as an executable, usually through the user-local
+\texttt{elan} proxy. The release pins the intended toolchain through
+\texttt{MATHDEVMCP\_LEAN\_TOOLCHAIN} for MathDevMCP subprocesses. This avoids
+changing the user's global Lean default.
+
+\section{LeanDojo}
+
+LeanDojo is checked as a Python module inside \texttt{mathdevmcp-backends}. A
+plain \texttt{doctor} command in the active environment may report LeanDojo as
+unavailable. The backend env doctor is the authoritative check for the backend
+profile.
+
+\section{LaTeXML}
+
+LaTeXML is a system executable, not a Python dependency. The strict LaTeXML
+profile requires it to preserve expected labels on the benchmark corpus. The
+current evidence shows label preservation and source provenance. Environment
+recognition differs from the lightweight parser, so parser policy still chooses
+the current parser for proof-audit routing.
+
+\chapter{Code Architecture for Maintainers}
+
+The implementation should be maintained by preserving the boundary between
+library logic, CLI rendering, MCP wrappers, scripts, and documentation.
+
+\section{Library logic}
+
+Library functions build structured dictionaries with contract metadata. They
+should be deterministic for the same input files and environment. New behavior
+should be added in library code first and exercised by direct tests.
+
+\section{CLI}
+
+The CLI should remain a thin argument parser. It should call library functions,
+print JSON, and return meaningful exit codes. It should not contain hidden
+business logic that bypasses the tested library surface.
+
+\section{MCP facade}
+
+The MCP facade should wrap the same library functions. Tool names are part of
+the colleague-facing API. If a tool is renamed, keep a compatibility alias or
+document a breaking change.
+
+\section{Scripts}
+
+Scripts should orchestrate repeatable workflows. They should set
+\texttt{PYTHONPATH} explicitly, avoid shell string evaluation for backend
+commands, and preserve redaction. Scripts that create generated evidence should
+write to ignored or explicitly requested output directories.
+
+\chapter{Adding a New Domain}
+
+To add a new mathematical domain, follow this release path:
+
+\begin{enumerate}[label=\arabic*.]
+  \item Add a small public or sanitized fixture with at least one labeled
+        mathematical block.
+  \item Add paired code showing the relevant operations or a seeded mismatch.
+  \item Extend AST operation extraction only if the new operation is genuinely
+        needed.
+  \item Add benchmark cases for parser preservation, AST operation coverage,
+        and expected abstention behavior.
+  \item Add release corpus metadata.
+  \item Add a report case study and generated evidence snippet if the domain is
+        release-facing.
+  \item Update private manifest templates only with placeholder paths.
+\end{enumerate}
+
+This path keeps new domains measurable. It also prevents the product from
+accumulating impressive-sounding workflows that do not have regression tests.
+
+\chapter{Adding a New Backend}
+
+A new backend should enter the system as optional evidence. The correct path is
+to add a doctor capability, an isolated invocation strategy if needed, timeout
+protection, a clear result contract, and tests for unavailable, timeout,
+inconclusive, mismatch, and certifying behavior. Only after that should the
+backend be used in proof-audit routing or release profiles.
+
+\section{Backend result discipline}
+
+Backend results should distinguish:
+
+\begin{itemize}
+  \item backend unavailable;
+  \item input not encodable;
+  \item timeout;
+  \item diagnostic-only evidence;
+  \item counterexample or mismatch;
+  \item deterministic certificate.
+\end{itemize}
+
+The last item is intentionally rare. Most mathematical development tools are
+useful because they reduce search space and expose gaps, not because they
+automatically certify every claim.
+
+\chapter{Release Evidence Maintenance}
+
+The evidence snippets in this report are generated by
+\texttt{scripts/generate\_release\_report\_evidence.sh}. Regenerate them after
+changing release policy, parser policy, benchmark cases, private corpus
+validation, or user-facing workflow examples. Do not hand-edit generated
+evidence unless the file is explicitly converted into narrative documentation.
+
+\section{Evidence hygiene}
+
+After regeneration, run a path leak scan. The scan should check for real private
+roots, local manifest filenames, and repository-local absolute paths. The
+committed snippets may contain \texttt{<repo>},
+\texttt{<redacted-private-path>}, and
+\texttt{<redacted-private-manifest>}.
+
+\section{Evidence reproducibility}
+
+Generated snippets should name the command that produced them. A colleague
+reading the report should be able to rerun the command in the repository and
+understand why the local result may differ if the worktree is dirty, optional
+backends are missing, or a private manifest is not configured.
+
+\chapter{Risk Register}
+
+\section{Risk: overclaiming certification}
+
+The most important product risk is false confidence. Mitigation: keep
+verification-boundary text in proof-audit reports, preserve diagnostic-only
+flags, and require benchmark cases where abstention is the correct outcome.
+
+\section{Risk: private data leakage}
+
+Private roots and manifests are sensitive. Mitigation: keep populated manifests
+outside git, redact normal reports, reject private paths inside the checkout,
+and scan generated docs before commit.
+
+\section{Risk: backend dependency conflict}
+
+Optional backends can conflict with the main environment. Mitigation: use
+\texttt{mathdevmcp-backends}, backend-specific doctor checks, and explicit
+environment variables rather than broad installation into the base env.
+
+\section{Risk: benchmark drift}
+
+Benchmark totals and category meanings can drift as the project grows.
+Mitigation: update tests, reset memo, and release report together whenever a
+benchmark case is added or removed.
+
+\section{Risk: large-module entropy}
+
+The codebase has several large modules. Mitigation: keep public facades stable,
+extract pure helper modules when it improves locality, and run focused tests
+after each extraction.
+
+\appendix
+\part*{Appendices}
+\addcontentsline{toc}{part}{Appendices}
+
+\chapter{Release Corpus Summary}
+
+\lstinputlisting[caption={Release corpus validation summary},basicstyle=\ttfamily\footnotesize]{generated/release_report/release-corpus-summary.txt}
+
+\chapter{Benchmark Gate JSON Excerpt}
+
+\lstinputlisting[caption={Benchmark gate JSON excerpt},basicstyle=\ttfamily\scriptsize]{generated/release_report/benchmark-gate-json-excerpt.txt}
+
+\chapter{Parser Policy JSON Excerpt}
+
+\lstinputlisting[caption={Parser policy JSON excerpt},basicstyle=\ttfamily\scriptsize]{generated/release_report/parser-policy-json-excerpt.txt}
+
+\chapter{Release Corpus JSON Excerpt}
+
+\lstinputlisting[caption={Release corpus JSON excerpt},basicstyle=\ttfamily\scriptsize]{generated/release_report/release-corpus-json-excerpt.txt}
+
+\chapter{Full Release Readiness JSON Excerpt}
+
+\lstinputlisting[caption={Full release readiness JSON excerpt},basicstyle=\ttfamily\scriptsize]{generated/release_report/release-readiness-full-json-excerpt.txt}
+
+\chapter{Private Corpus JSON Excerpt}
+
+\lstinputlisting[caption={Private corpus JSON excerpt},basicstyle=\ttfamily\scriptsize]{generated/release_report/private-corpus-json-excerpt.txt}
+
+\chapter{Evidence Index}
+
+\lstinputlisting[caption={Generated evidence index},basicstyle=\ttfamily\footnotesize]{generated/release_report/evidence-index.txt}
+
+\chapter{Command Reference}
+
+\begin{longtable}{p{0.32\textwidth}p{0.58\textwidth}}
+\toprule
+Command & Purpose \\
+\midrule
+\texttt{doctor} & Report runtime capabilities and optional backend status. \\
+\texttt{search-latex} & Search a LaTeX source tree for relevant context. \\
+\texttt{extract-latex-neighborhood} & Extract paragraph context around a label. \\
+\texttt{compare-label-code} & Compare labeled document terms to code. \\
+\texttt{audit-derivation-v2-label} & Build typed proof-audit evidence for a label. \\
+\texttt{implementation-brief} & Bundle search, context, and code checks. \\
+\texttt{benchmark-gate} & Run the release benchmark gate. \\
+\texttt{validate-release-corpus} & Validate public and configured private corpus metadata. \\
+\texttt{release-readiness} & Produce a profile-specific release report. \\
+\bottomrule
+\end{longtable}
+
+\chapter{Private Manifest Fields}
+
+\begin{longtable}{p{0.32\textwidth}p{0.58\textwidth}}
+\toprule
+Field & Meaning \\
+\midrule
+\texttt{id} & Stable entry identifier. \\
+\texttt{domain} & Mathematical or colleague workflow domain. \\
+\texttt{privacy\_class} & \texttt{private\_external} or \texttt{private\_sanitized\_external}. \\
+\texttt{document\_root} & External LaTeX/document root. \\
+\texttt{code\_roots} & External code roots associated with the documents. \\
+\texttt{expected\_labels} & Labels the parser must preserve. \\
+\texttt{expected\_operations} & Mathematical operations expected in code or AST evidence. \\
+\texttt{expected\_abstentions} & Known cases where conservative abstention is expected. \\
+\texttt{seeded\_false\_confidence\_cases} & False-confidence seeds for review. \\
+\texttt{required\_parser\_backends} & Parser backends required for the entry. \\
+\texttt{release\_gate\_enabled} & Whether the entry is mandatory for private profile evidence. \\
+\texttt{notes} & Human-readable release note. \\
+\bottomrule
+\end{longtable}
+
+\backmatter
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

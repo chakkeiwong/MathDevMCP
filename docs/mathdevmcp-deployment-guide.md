@@ -1,6 +1,7 @@
 # MathDevMCP Deployment Guide
 
-MathDevMCP should be deployed as a small base package with optional external workers. The base package must import without LaTeXML, Pandoc, Lean, Sage, or LeanDojo.
+MathDevMCP is deployed as a small base package with optional external workers.
+The base package must import without LaTeXML, Pandoc, Lean, Sage, or LeanDojo.
 
 ## Local Smoke
 
@@ -89,6 +90,15 @@ scripts/collect_release_evidence.sh /tmp/mathdevmcp-release-evidence --profile b
 
 Generated evidence should be stored outside git by default. The committed scripts and schemas are the reproducible release mechanism; routine evidence directories should be treated as review artifacts.
 
+For release-report snippets that are safe to commit, use:
+
+```bash
+scripts/generate_release_report_evidence.sh docs/generated/release_report
+```
+
+Set `MATHDEVMCP_PRIVATE_CORPUS_MANIFEST` first when the report should include
+private-corpus evidence. The generated report snippets redact private paths.
+
 ## Release Caveats
 
 External commands must have timeouts and structured `inconclusive` failures. Private corpora should not be committed; only manifest stubs and expected labels belong in git.
@@ -106,4 +116,12 @@ For a local profile matrix:
 
 ```bash
 scripts/release_matrix.sh /path/to/MathDevMCP
+```
+
+For no-intervention sanitized validation outside git:
+
+```bash
+scripts/create_sanitized_private_corpus.sh /tmp/mathdevmcp-sanitized-private-corpus
+export MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus/manifest.json
+scripts/validate_private_corpus.sh /path/to/MathDevMCP
 ```

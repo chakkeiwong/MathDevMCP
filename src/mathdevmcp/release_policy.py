@@ -1,3 +1,10 @@
+"""Release profile policy and machine-readable readiness reporting.
+
+The release profiles let the base product remain usable while strict profiles
+turn optional evidence into blockers. Keep this module as the single place where
+profile requirements, blockers, caveats, and evidence commands are assembled.
+"""
+
 from __future__ import annotations
 
 import importlib.metadata
@@ -18,6 +25,7 @@ PROFILE_POLICY_VERSION = "2026-04-caveat-closure"
 
 
 def release_readiness_report(root: str | Path, *, profile: str = "base") -> dict:
+    """Return the release status for a repository and release profile."""
     from .benchmarks import benchmark_gate_report
 
     root_path = Path(root)
@@ -57,6 +65,8 @@ def release_readiness_report(root: str | Path, *, profile: str = "base") -> dict
         else:
             caveats.append(latexml_finding)
     if profile_policy["requires_backend"]:
+        # The backend profile validates LeanDojo through the documented isolated
+        # environment; the active Python environment is allowed to omit it.
         backend_ok, backend_version, backend_detail = _run_backend_python_with_default_env("lean_dojo", package="lean-dojo")
         backend_evidence = {
             "kind": "backend_lean_dojo_unavailable",
@@ -68,6 +78,14 @@ def release_readiness_report(root: str | Path, *, profile: str = "base") -> dict
         }
         if not backend_ok:
             blockers.append(backend_evidence)
+    if release_corpus_validation.get("status") == "mismatch":
+        blockers.append(
+            {
+                "kind": "release_corpus_validation_failed",
+                "severity": "high",
+                "findings": release_corpus_validation.get("findings", []),
+            }
+        )
     private_manifest = release_corpus_validation.get("manifest", {}).get("private_manifest", {})
     private_entries = [
         entry

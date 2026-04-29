@@ -1,0 +1,82 @@
+Command: python -m mathdevmcp.cli audit-derivation-v2-label eq:dept-state-space-likelihood --root <repo>/benchmarks/fixtures --summary-only
+{
+  "label": "eq:dept-state-space-likelihood",
+  "doc_root": "<repo>/benchmarks/fixtures",
+  "status": "unverified",
+  "reason": "At least one obligation remains unverified or diagnostic-only.",
+  "counts": {
+    "total": 1,
+    "verified": 0,
+    "mismatch": 0,
+    "unverified": 1,
+    "inconclusive": 0
+  },
+  "high_priority_actions": [
+    {
+      "kind": "state_or_verify_missing_constraint",
+      "target": "invertibility_required",
+      "severity": "high",
+      "reason": "Matrix inverse or solve notation requires an invertible or positive-definite operand.",
+      "obligation_id": "obligation_1"
+    },
+    {
+      "kind": "state_or_verify_missing_constraint",
+      "target": "square_matrix_required",
+      "severity": "high",
+      "reason": "Determinant and log determinant require a square matrix operand.",
+      "obligation_id": "obligation_1"
+    },
+    {
+      "kind": "state_or_verify_missing_constraint",
+      "target": "conformable_product_required",
+      "severity": "high",
+      "reason": "Transpose and matrix product notation require conformable dimensions.",
+      "obligation_id": "obligation_1"
+    },
+    {
+      "kind": "human_formalization_or_review",
+      "severity": "high",
+      "reason": "Typed obligation has missing assumptions or dimension constraints.",
+      "obligation_id": "obligation_1"
+    },
+    {
+      "kind": "logdet_domain_check",
+      "target": "determinant/logdet operand",
+      "severity": "high",
+      "reason": "Log determinant requires square positive-definite or otherwise valid matrix input.",
+      "obligation_id": "obligation_1"
+    },
+    {
+      "kind": "linear_solve_residual_check",
+      "target": "inverse/solve operand",
+      "severity": "high",
+      "reason": "Inverse notation should be checked with solve residuals and conditioning diagnostics.",
+      "obligation_id": "obligation_1"
+    }
+  ],
+  "obligations": [
+    {
+      "id": "obligation_1",
+      "label": "eq:dept-state-space-likelihood",
+      "status": "unverified",
+      "reason": "The obligation has missing shape, dimension, or regularity constraints.",
+      "evidence_kind": "diagnostic_bundle",
+      "diagnostic_only": true,
+      "verification_boundary": "The obligation has missing shape, dimension, or regularity constraints. A deterministic backend certificate is required before this can become verified.",
+      "route": "human_review",
+      "missing_constraints": [
+        {
+          "kind": "invertibility_required",
+          "target": "inverse operand",
+          "reason": "Matrix inverse or solve notation requires an invertible or positive-definite operand.",
+          "status": "missing_assumption",
+          "source": "unresolved_constructs"
+        },
+        {
+          "kind": "square_matrix_required",
+          "target": "determinant/logdet operand",
+          "reason": "Determinant and log determinant require a square matrix operand.",
+          "status": "missing_assumption",
+          "source": "unresolved_constructs"
+        },
+... truncated for report ...

@@ -1,0 +1,6 @@
+Command: PYTHONPATH=src python -m mathdevmcp.cli validate-release-corpus --root "$PWD/benchmarks/fixtures"
+Status: consistent
+Findings: 0
+Entries: 22
+Private manifest status: loaded
+Private paths redacted: True

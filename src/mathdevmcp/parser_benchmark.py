@@ -1,3 +1,5 @@
+"""Parser backend measurement for label preservation and provenance quality."""
+
 from __future__ import annotations
 
 from collections.abc import Iterable

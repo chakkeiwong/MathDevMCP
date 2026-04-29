@@ -1,3 +1,5 @@
+"""Shared JSON contract helpers for CLI, MCP, tests, and release reports."""
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -57,6 +59,7 @@ def provenance_from_doc_context(doc_context: dict | None) -> dict | None:
 
 
 def attach_contract(result: dict, contract: str, doc_context: dict | None = None) -> dict:
+    """Attach stable contract metadata and optional provenance to a report."""
     result["metadata"] = contract_metadata(contract)
     provenance = provenance_from_doc_context(doc_context)
     if provenance is not None:

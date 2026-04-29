@@ -1,0 +1,8 @@
+Command: PYTHONPATH=src python -m mathdevmcp.cli parser-benchmark --root "$PWD/benchmarks/fixtures" --backend current
+Policy status: selected_for_proof_audit
+Selected backend: current
+Labels found: 67
+Environments found: 67
+Align-like blocks found: 4
+Provenance quality: line
+Blocking findings: 0

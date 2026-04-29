@@ -1,3 +1,5 @@
+"""Command-line entry point for MathDevMCP release and workflow tools."""
+
 from __future__ import annotations
 
 import argparse

@@ -1,0 +1,48 @@
+Command: python -m mathdevmcp.cli search-latex Kalman likelihood --root <repo>/benchmarks/fixtures --limit 3
+[
+  {
+    "kind": "section",
+    "name": "Likelihood derivative notes",
+    "file": "doc_longdoc_kalman_retrieval.tex",
+    "line_start": 23,
+    "line_end": 23,
+    "label": null,
+    "title": "Likelihood derivative notes",
+    "text": "\\section{Likelihood derivative notes}",
+    "block_id": "doc_longdoc_kalman_retrieval.tex:23:section:Likelihood-derivative-notes",
+    "section_path": [
+      "Likelihood derivative notes"
+    ],
+    "score": 2
+  },
+  {
+    "kind": "equation",
+    "name": "equation",
+    "file": "doc_longdoc_kalman_retrieval.tex",
+    "line_start": 26,
+    "line_end": 31,
+    "label": "eq:longdoc-score-contribution",
+    "title": null,
+    "text": "\\begin{equation}\\label{eq:longdoc-score-contribution}\n\\partial_i \\ell_t\n= -\\frac{1}{2}\\operatorname{tr}(S_t^{-1}\\partial_i S_t)\n+ \\frac{1}{2}v_t' S_t^{-1}(\\partial_i S_t)S_t^{-1}v_t\n- (\\partial_i v_t)'S_t^{-1}v_t.\n\\end{equation}",
+    "block_id": "doc_longdoc_kalman_retrieval.tex:26:equation:eq:longdoc-score-contribution",
+    "section_path": [
+      "Likelihood derivative notes"
+    ],
+    "score": 2
+  },
+  {
+    "kind": "section",
+    "name": "Kalman likelihood Hessian",
+    "file": "doc_realistic_kalman_hessian.tex",
+    "line_start": 1,
+    "line_end": 1,
+    "label": null,
+    "title": "Kalman likelihood Hessian",
+    "text": "\\section{Kalman likelihood Hessian}",
+    "block_id": "doc_realistic_kalman_hessian.tex:1:section:Kalman-likelihood-Hessian",
+    "section_path": [
+      "Kalman likelihood Hessian"
+    ],
+    "score": 2
+  }
+]

@@ -1,3 +1,10 @@
+"""In-process MCP facade over the tested MathDevMCP library functions.
+
+The facade keeps MCP tools narrow and structured. It should not grow separate
+business logic from the CLI/library path; tool handlers should delegate to the
+same report-producing functions used by tests and release scripts.
+"""
+
 from __future__ import annotations
 
 from collections.abc import Callable

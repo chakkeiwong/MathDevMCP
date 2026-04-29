@@ -1,3 +1,5 @@
+"""FastMCP server wrapper for the stable MathDevMCP facade."""
+
 from __future__ import annotations
 
 from collections.abc import Sequence

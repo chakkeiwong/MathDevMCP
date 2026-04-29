@@ -47,9 +47,9 @@ else
   echo '{"profile":"private-corpus","status":"skipped","reason":"MATHDEVMCP_PRIVATE_CORPUS_MANIFEST is not set"}'
 fi
 
-if [[ "${MATHDEVMCP_RUN_FULL_PROFILE:-0}" == "1" ]]; then
+if [[ "${MATHDEVMCP_RUN_FULL_PROFILE:-0}" == "1" || ( -n "${MATHDEVMCP_PRIVATE_CORPUS_MANIFEST:-}" && "${MATHDEVMCP_REQUIRE_LATEXML:-0}" == "1" ) ]]; then
   echo '{"profile":"full","status":"running"}'
   run_profile full
 else
-  echo '{"profile":"full","status":"skipped","reason":"MATHDEVMCP_RUN_FULL_PROFILE=1 is not set"}'
+  echo '{"profile":"full","status":"skipped","reason":"set MATHDEVMCP_RUN_FULL_PROFILE=1, or set MATHDEVMCP_PRIVATE_CORPUS_MANIFEST and MATHDEVMCP_REQUIRE_LATEXML=1"}'
 fi

@@ -1,3 +1,5 @@
+"""Typed mathematical obligation diagnostics used by proof-audit workflows."""
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass

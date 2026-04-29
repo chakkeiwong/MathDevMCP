@@ -1,0 +1,281 @@
+{
+  "status": "ready_with_caveats",
+  "reason": "Release gates passed with documented caveats.",
+  "profile": "full",
+  "profile_policy_version": "2026-04-caveat-closure",
+  "required_capabilities": [
+    "benchmark_gate",
+    "current_parser_policy",
+    "governance_validation",
+    "release_corpus_manifest",
+    "lean_dojo_backend_env",
+    "latexml",
+    "private_corpus_manifest"
+  ],
+  "optional_capabilities": [],
+  "evidence_commands": [
+    "PYTHONPATH=src python -m mathdevmcp.cli doctor",
+    "PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root \"$PWD\" --profile full",
+    "PYTHONPATH=src python -m mathdevmcp.cli validate-release-corpus --root \"$PWD/benchmarks/fixtures\"",
+    "scripts/release_smoke.sh \"$PWD\"",
+    "scripts/backend_env_doctor.sh \"$PWD\"",
+    "scripts/validate_backend_install.sh \"$PWD\"",
+    "MATHDEVMCP_REQUIRE_LATEXML=1 scripts/validate_latexml_backend.sh \"$PWD\"",
+    "MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/secure/local/path/corpus.json scripts/validate_private_corpus.sh \"$PWD\""
+  ],
+  "package_version": "editable_or_uninstalled",
+  "git_commit": "2f49963",
+  "dirty_worktree": true,
+  "benchmark_gate": {
+    "ok": true,
+    "passed": true,
+    "total": 40,
+    "passed_count": 40,
+    "failed_count": 0,
+    "summary": {
+      "by_category": {
+        "consistency": {
+          "total": 5,
+          "passed": 5,
+          "expected_abstentions": 0
+        },
+        "derivation": {
+          "total": 6,
+          "passed": 6,
+          "expected_abstentions": 5
+        },
+        "workflow": {
+          "total": 3,
+          "passed": 3,
+          "expected_abstentions": 1
+        },
+        "proof_audit": {
+          "total": 3,
+          "passed": 3,
+          "expected_abstentions": 1
+        },
+        "proof_audit_v2": {
+          "total": 3,
+          "passed": 3,
+          "expected_abstentions": 1
+        },
+        "kalman_recursion": {
+          "total": 2,
+          "passed": 2,
+          "expected_abstentions": 1
+        },
+        "parser_corpus": {
+          "total": 3,
+          "passed": 3,
+          "expected_abstentions": 0
+        },
+        "ast_corpus": {
+          "total": 11,
+          "passed": 11,
+          "expected_abstentions": 0
+        },
+        "typed_ir": {
+          "total": 2,
+          "passed": 2,
+          "expected_abstentions": 2
+        },
+        "industrial_review": {
+          "total": 1,
+          "passed": 1,
+          "expected_abstentions": 1
+        },
+        "release_corpus": {
+          "total": 1,
+          "passed": 1,
+          "expected_abstentions": 0
+        }
+      },
+      "by_focus": {
+        "status_regression": {
+          "total": 2,
+          "passed": 2,
+          "expected_abstentions": 0
+        },
+        "provenance_correctness": {
+          "total": 2,
+          "passed": 2,
+          "expected_abstentions": 0
+        },
+        "realistic_fixture": {
+          "total": 1,
+          "passed": 1,
+          "expected_abstentions": 0
+        },
+        "abstention_quality": {
+          "total": 1,
+          "passed": 1,
+          "expected_abstentions": 1
+        },
+        "false_confidence_control": {
+          "total": 6,
+          "passed": 6,
+          "expected_abstentions": 0
+        },
+        "realistic_abstention": {
+          "total": 1,
+          "passed": 1,
+          "expected_abstentions": 1
+        },
+        "multilabel_provenance": {
+          "total": 1,
+          "passed": 1,
+          "expected_abstentions": 1
+        },
+        "long_document_provenance": {
+          "total": 1,
+          "passed": 1,
+          "expected_abstentions": 1
+        },
+        "repeat_label_stability": {
+          "total": 1,
+          "passed": 1,
+          "expected_abstentions": 1
+        },
+        "workflow_contract": {
+          "total": 3,
+          "passed": 3,
+          "expected_abstentions": 1
+        },
+        "proof_audit_routing": {
+          "total": 1,
+          "passed": 1,
+          "expected_abstentions": 0
+        },
+        "proof_audit_abstention": {
+          "total": 1,
+          "passed": 1,
+          "expected_abstentions": 1
+        },
+        "release_spine_verified": {
+          "total": 1,
+          "passed": 1,
+          "expected_abstentions": 0
+        },
+        "release_spine_abstention": {
+          "total": 1,
+          "passed": 1,
+          "expected_abstentions": 1
+        },
+        "ast_recursion_abstention": {
+          "total": 1,
+          "passed": 1,
+          "expected_abstentions": 1
+        },
+        "realistic_parser_provenance": {
+          "total": 1,
+          "passed": 1,
+          "expected_abstentions": 0
+        },
+        "multifile_macro_parser_provenance": {
+          "total": 1,
+          "passed": 1,
+          "expected_abstentions": 0
+        },
+        "sanitized_domain_parser_provenance": {
+          "total": 1,
+          "passed": 1,
+          "expected_abstentions": 0
+        },
+        "realistic_ast_operation_coverage": {
+          "total": 3,
+          "passed": 3,
+          "expected_abstentions": 0
+        },
+        "sanitized_domain_ast_operation_coverage": {
+          "total": 6,
+          "passed": 6,
+          "expected_abstentions": 0
+        },
+        "typed_dimension_diagnostics": {
+          "total": 1,
+          "passed": 1,
+          "expected_abstentions": 1
+        },
+        "typed_stochastic_diagnostics": {
+          "total": 1,
+          "passed": 1,
+          "expected_abstentions": 1
+        },
+        "agent_review_packet": {
+          "total": 1,
+          "passed": 1,
+          "expected_abstentions": 1
+        },
+        "release_corpus_manifest": {
+          "total": 1,
+          "passed": 1,
+          "expected_abstentions": 0
+        }
+      },
+      "expected_abstentions": 12
+    },
+    "policy": {
+      "name": "all_benchmarks_must_pass",
+      "required_pass_rate": 1.0,
+      "allow_category_failures": {},
+      "description": "Every benchmark case must pass; no category-specific failure budget is currently allowed."
+    },
+    "metadata": {
+      "schema_version": "1.0",
+      "contract": "benchmark_gate"
+    }
+  },
+  "doctor_summary": {
+    "ok": true,
+    "python": {
+      "executable": "/home/chakwong/miniconda3/envs/tfgpu/bin/python",
+      "version": "3.11.15",
+      "prefix": "/home/chakwong/miniconda3/envs/tfgpu",
+      "path_head": [
+        "/home/chakwong/bin",
+        "/home/chakwong/.codex/tmp/arg0/codex-arg0U2SIb1",
+        "/home/chakwong/.vscode-server/bin/10c8e557c8b9f9ed0a87f61f1c9a44bde731c409/bin/remote-cli",
+        "/home/chakwong/miniconda3/envs/tfgpu/bin",
+        "/home/chakwong/bin"
+      ]
+    },
+    "capabilities": {
+      "latexml": {
+        "name": "latexml",
+        "available": true,
+        "kind": "executable",
+        "path": "/usr/bin/latexml",
+        "version": "latexml (LaTeXML version 0.8.6)",
+        "status": "available",
+        "detail": "available"
+      },
+      "pandoc": {
+        "name": "pandoc",
+        "available": true,
+        "kind": "executable",
+        "path": "/usr/bin/pandoc",
+        "version": "pandoc 2.9.2.1",
+        "status": "available",
+        "detail": "available"
+      },
+      "lean": {
+        "name": "lean",
+        "available": true,
+        "kind": "executable",
+        "path": "/home/chakwong/.elan/bin/lean",
+        "version": "Lean (version 4.20.0, x86_64-unknown-linux-gnu, commit 77cfc4d1a4f6, Release)",
+        "status": "available",
+        "detail": "available"
+      },
+      "sage": {
+        "name": "sage",
+        "available": true,
+        "kind": "executable",
+        "path": "/usr/bin/sage",
+        "version": "SageMath version 9.5, Release Date: 2022-01-30",
+        "status": "available",
+        "detail": "available"
+      },
+      "lean_dojo": {
+        "name": "lean_dojo",
+... truncated for release report appendix ...

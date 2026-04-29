@@ -1,0 +1,82 @@
+Command: python -m mathdevmcp.cli compare-label-code eq:dept-state-space-likelihood <repo>/benchmarks/fixtures/doc_department_state_space_missing_solve.py --root <repo>/benchmarks/fixtures --required-terms logdet,solve --paragraph-context
+{
+  "status": "mismatch",
+  "reason": "Some required document terms were not found in the code text.",
+  "doc_terms": [
+    "logdet",
+    "solve"
+  ],
+  "code_terms": [
+    "def",
+    "kalman_filter_scan",
+    "jnp",
+    "lax",
+    "params",
+    "step",
+    "carry",
+    "obs",
+    "x_pred",
+    "p_pred",
+    "innovation",
+    "sign",
+    "logdet",
+    "linalg",
+    "slogdet",
+    "x_filt",
+    "p_filt",
+    "ll_t",
+    "return",
+    "scan",
+    "initial_state"
+  ],
+  "missing_in_code": [
+    "solve"
+  ],
+  "findings": [
+    {
+      "kind": "matched_term",
+      "term": "logdet",
+      "present_in_code": true,
+      "severity": "required"
+    },
+    {
+      "kind": "missing_term",
+      "term": "solve",
+      "present_in_code": false,
+      "severity": "required"
+    },
+    {
+      "kind": "extra_code_terms",
+      "terms": [
+        "carry",
+        "def",
+        "initial_state",
+        "innovation",
+        "jnp",
+        "kalman_filter_scan",
+        "lax",
+        "linalg",
+        "ll_t",
+        "obs",
+        "p_filt",
+        "p_pred",
+        "params",
+        "return",
+        "scan",
+        "sign",
+        "slogdet",
+        "step",
+        "x_filt",
+        "x_pred"
+      ],
+      "severity": "audit_only"
+    }
+  ],
+  "extra_in_code": [
+    "carry",
+    "def",
+    "initial_state",
+    "innovation",
+    "jnp",
+    "kalman_filter_scan",
+... truncated for report ...

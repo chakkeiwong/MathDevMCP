@@ -1,0 +1,7 @@
+Command: PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile full
+Status: ready_with_caveats
+Reason: Release gates passed with documented caveats.
+Blockers: []
+Caveats: ['dirty_worktree']
+Git commit: 2f49963
+Dirty worktree: True

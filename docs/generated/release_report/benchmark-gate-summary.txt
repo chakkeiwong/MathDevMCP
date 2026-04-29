@@ -1,0 +1,17 @@
+Command: PYTHONPATH=src python -m mathdevmcp.cli benchmark-gate --root "$PWD"
+Passed: True
+Cases: 41/41
+Expected abstentions: 12
+Categories:
+  consistency: 5/5 passed, expected abstentions 0
+  derivation: 6/6 passed, expected abstentions 5
+  workflow: 3/3 passed, expected abstentions 1
+  proof_audit: 3/3 passed, expected abstentions 1
+  proof_audit_v2: 3/3 passed, expected abstentions 1
+  kalman_recursion: 2/2 passed, expected abstentions 1
+  parser_corpus: 3/3 passed, expected abstentions 0
+  ast_corpus: 11/11 passed, expected abstentions 0
+  typed_ir: 2/2 passed, expected abstentions 2
+  industrial_review: 1/1 passed, expected abstentions 1
+  release_corpus: 1/1 passed, expected abstentions 0
+  release_policy: 1/1 passed, expected abstentions 0

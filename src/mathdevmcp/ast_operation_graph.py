@@ -1,3 +1,10 @@
+"""AST-level operation extraction for mathematical implementation review.
+
+This module recognizes implementation patterns such as solves, log determinants,
+gradients, leapfrog updates, and likelihood operations. The graph is diagnostic
+evidence for code review; it is not a proof of mathematical equivalence.
+"""
+
 from __future__ import annotations
 
 import ast

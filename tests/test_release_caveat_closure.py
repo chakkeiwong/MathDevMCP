@@ -221,3 +221,84 @@ def test_release_corpus_private_manifest_missing_root_is_blocking(tmp_path):
 
     assert validation["status"] == "mismatch"
     assert any(finding["kind"] == "private_document_root_missing" for finding in validation["findings"])
+
+
+def test_release_readiness_blocks_malformed_private_manifest(tmp_path, monkeypatch):
+    manifest = tmp_path / "manifest.json"
+    missing_root = tmp_path / "missing"
+    manifest.write_text(
+        json.dumps(
+            {
+                "entries": [
+                    {
+                        "id": "missing_private",
+                        "domain": "dsge_macro_finance",
+                        "privacy_class": "private_external",
+                        "document_root": str(missing_root),
+                        "code_roots": [],
+                        "expected_labels": ["eq:private-euler-equation"],
+                        "expected_operations": ["expectation"],
+                        "expected_abstentions": ["calibration_review"],
+                        "seeded_false_confidence_cases": [],
+                        "required_parser_backends": ["current"],
+                        "release_gate_enabled": True,
+                        "notes": "Missing path should block release readiness.",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("MATHDEVMCP_PRIVATE_CORPUS_MANIFEST", str(manifest))
+
+    report = release_readiness_report(ROOT, profile="private-corpus")
+
+    assert report["status"] == "not_ready"
+    assert any(blocker["kind"] == "release_corpus_validation_failed" for blocker in report["blockers"])
+
+
+def test_full_profile_passes_with_external_private_manifest(tmp_path, monkeypatch):
+    private_root = tmp_path / "external-private-corpus"
+    private_root.mkdir()
+    (private_root / "code").mkdir()
+    (private_root / "doc.tex").write_text(
+        r"""
+\section{External Sanitized Private Corpus}
+\begin{equation}
+\label{eq:private-euler-equation}
+E_t[m_{t+1} R_{t+1}] = 1
+\end{equation}
+""",
+        encoding="utf-8",
+    )
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "entries": [
+                    {
+                        "id": "private_dsge_external_release_gate",
+                        "domain": "dsge_macro_finance",
+                        "privacy_class": "private_sanitized_external",
+                        "document_root": str(private_root),
+                        "code_roots": [str(private_root / "code")],
+                        "expected_labels": ["eq:private-euler-equation"],
+                        "expected_operations": ["expectation", "euler_residual"],
+                        "expected_abstentions": ["private_calibration_assumption_review"],
+                        "seeded_false_confidence_cases": ["missing_discount_factor_seed"],
+                        "required_parser_backends": ["current"],
+                        "release_gate_enabled": True,
+                        "notes": "Temporary sanitized external corpus for full-profile tests.",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("MATHDEVMCP_PRIVATE_CORPUS_MANIFEST", str(manifest))
+
+    report = release_readiness_report(ROOT, profile="full")
+
+    assert report["profile"] == "full"
+    assert not any(blocker["kind"] == "private_corpus_manifest_required" for blocker in report["blockers"])
+    assert not any(blocker["kind"] == "private_corpus_release_gated_entries_missing" for blocker in report["blockers"])

@@ -212,6 +212,64 @@ def test_private_corpus_validation_rejects_missing_private_root(tmp_path):
     assert any(finding["kind"] == "private_document_root_missing" for finding in validation["findings"])
 
 
+def test_private_corpus_validation_rejects_malformed_entry_types(tmp_path):
+    private_root = tmp_path / "private-corpus"
+    private_root.mkdir()
+    manifest_path = tmp_path / "corpus.json"
+    entry = _private_entry(private_root)
+    entry["expected_labels"] = "eq:private-euler-equation"
+    manifest_path.write_text(json.dumps({"entries": [entry]}), encoding="utf-8")
+
+    validation = validate_release_corpus_manifest(FIXTURES, private_manifest=manifest_path)
+
+    assert validation["status"] == "mismatch"
+    assert validation["manifest"]["private_manifest"]["status"] == "invalid_entries"
+    assert any(finding["kind"] == "private_manifest_entry_invalid" for finding in validation["findings"])
+
+
+def test_private_corpus_validation_rejects_missing_code_root(tmp_path):
+    private_root = tmp_path / "private-corpus"
+    private_root.mkdir()
+    manifest_path = tmp_path / "corpus.json"
+    entry = _private_entry(private_root)
+    entry["code_roots"] = [str(tmp_path / "missing-code-root")]
+    manifest_path.write_text(json.dumps({"entries": [entry]}), encoding="utf-8")
+
+    validation = validate_release_corpus_manifest(FIXTURES, private_manifest=manifest_path)
+
+    assert validation["status"] == "mismatch"
+    assert any(finding["kind"] == "private_path_missing" for finding in validation["findings"])
+
+
+def test_private_corpus_validation_rejects_missing_parser_backends(tmp_path):
+    private_root = tmp_path / "private-corpus"
+    private_root.mkdir()
+    manifest_path = tmp_path / "corpus.json"
+    entry = _private_entry(private_root)
+    entry["required_parser_backends"] = []
+    manifest_path.write_text(json.dumps({"entries": [entry]}), encoding="utf-8")
+
+    validation = validate_release_corpus_manifest(FIXTURES, private_manifest=manifest_path)
+
+    assert validation["status"] == "mismatch"
+    assert any(finding["kind"] == "missing_required_parser_backends" for finding in validation["findings"])
+
+
+def test_private_corpus_validation_rejects_unsupported_privacy_class(tmp_path):
+    private_root = tmp_path / "private-corpus"
+    private_root.mkdir()
+    (private_root / "code").mkdir()
+    manifest_path = tmp_path / "corpus.json"
+    entry = _private_entry(private_root)
+    entry["privacy_class"] = "private_unreviewed"
+    manifest_path.write_text(json.dumps({"entries": [entry]}), encoding="utf-8")
+
+    validation = validate_release_corpus_manifest(FIXTURES, private_manifest=manifest_path)
+
+    assert validation["status"] == "mismatch"
+    assert any(finding["kind"] == "unsupported_privacy_class" for finding in validation["findings"])
+
+
 def test_parser_benchmark_reports_environment_counts_and_scanned_files():
     result = run_parser_backend(FIXTURES, "current")
 

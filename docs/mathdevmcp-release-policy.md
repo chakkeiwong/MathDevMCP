@@ -11,6 +11,7 @@ An internal release candidate requires:
 - reset memo records commands, totals, and caveats,
 - no private corpus files are staged.
 
+The primary human-readable release report is `docs/mathdevmcp-release-report.tex`.
 The machine-readable release report is available through:
 
 ```bash
@@ -27,11 +28,16 @@ Release profiles:
 
 ```text
 profile          required evidence                     expected status on this machine
-base             tests, benchmarks, governance          ready_with_caveats while LaTeXML is absent
-backend          base + backend env + LeanDojo import   ready_with_caveats when mathdevmcp-backends validates
-latexml          base + strict LaTeXML validation       not_ready until latexml is installed
-private-corpus   base + private manifest validation     not_ready until a private manifest is configured
-full             all optional evidence                  not_ready until every optional profile passes
+base             tests, benchmarks, governance          ready or ready_with_caveats
+backend          base + backend env + LeanDojo import   ready when mathdevmcp-backends validates
+latexml          base + strict LaTeXML validation       ready when latexml preserves expected labels
+private-corpus   base + private manifest validation     ready when external manifest validates
+full             all optional evidence                  ready when all strict profiles pass
 ```
 
 The base profile keeps LaTeXML, LeanDojo, and private corpora optional. Strict profiles intentionally turn missing optional evidence into blockers.
+
+On the current release machine, LaTeXML and the isolated LeanDojo backend
+validate. The remaining profile-sensitive requirement is supplying
+`MATHDEVMCP_PRIVATE_CORPUS_MANIFEST` for private-corpus and full release
+validation.

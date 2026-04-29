@@ -206,6 +206,155 @@ Reports blockers and caveats instead of informal readiness claims. \\
 \bottomrule
 \end{longtable}
 
+\section{When MCP Tools Trigger Instead of LLM-Only Reasoning}
+
+A useful mental model is that the agent has two modes. In an LLM-only answer,
+the agent reasons from the prompt, the chat history, and any text the user has
+pasted into the conversation. That can be appropriate for ordinary explanation,
+brainstorming, rewriting, or conceptual discussion. In an MCP-grounded answer,
+the agent asks MathDevMCP for bounded evidence from the repository: labels,
+file paths, line spans, code comparisons, derivation diagnostics, benchmark
+results, or release-readiness reports.
+
+The difference matters because MathDevMCP does not automatically run on every
+mathematical word in a conversation. A client model still decides whether to
+call a tool. The user can make the decision almost unavoidable by asking for
+local evidence, naming a repository root, naming a label or code path, or
+asking for a status that only a tool should produce. If the response contains
+no tool name, no arguments, no label provenance, and no result fields, the user
+should treat it as an LLM-only answer.
+
+\begin{longtable}{p{0.30\textwidth}p{0.30\textwidth}p{0.30\textwidth}}
+\toprule
+Situation & LLM-only answer is reasonable & MCP-grounded answer is expected \\
+\midrule
+Conceptual explanation &
+"Explain why Kalman likelihoods contain a log determinant." The answer can
+explain the mathematics without inspecting local files. &
+"In this repository, find the likelihood label and cite the file and line
+span." This asks for local provenance, so \path{search_latex} should run. \\
+Editing prose &
+"Make this paragraph clearer." The user supplies the text and does not ask for
+repository evidence. &
+"Rewrite this paragraph after checking the nearby theorem assumptions." The
+agent should retrieve context with \path{extract_latex_neighborhood}. \\
+Code review &
+"Does this function look idiomatic?" This is a general programming judgment. &
+"Compare label \path{eq:dept-state-space-likelihood} with
+\path{src/kalman_filter.py} for \path{logdet} and \path{solve}." The agent
+should call \path{compare_label_code}. \\
+Derivation review &
+"Is this derivation convincing?" Without a label or root, the agent may only
+reason from pasted text. &
+"Audit label \path{eq:dept-state-space-likelihood} and tell me whether the
+result is certified, diagnostic, or unverified." This points to
+\path{audit_derivation_v2_label}. \\
+Release handoff &
+"Are we ready to release?" This is ambiguous unless the repository and profile
+are identified. &
+"Run release readiness for this repository under the full profile and list
+blockers and caveats." This should trigger \path{release_readiness}, and often
+\path{benchmark_gate} or \path{doctor}. \\
+\bottomrule
+\end{longtable}
+
+\subsection*{Signals That Should Cause Tool Use}
+
+The following prompt features are strong trigger signals. They do not guarantee
+tool use in every client, but they tell both the agent and the reviewer that an
+LLM-only answer would be incomplete.
+
+\begin{enumerate}[label=\arabic*.]
+  \item The prompt names a local repository root, project directory, manifest,
+        LaTeX file, or code file.
+  \item The prompt asks the agent to find, cite, or inspect a label, theorem,
+        assumption, equation, section, or paragraph in local documents.
+  \item The prompt asks whether a document claim still matches a code path.
+  \item The prompt gives required mathematical or implementation terms such as
+        \path{logdet}, \path{solve}, \path{gradient}, \path{hamiltonian}, or
+        \path{euler_residual}.
+  \item The prompt asks for a status such as \path{consistent},
+        \path{mismatch}, \path{unverified}, \path{blocked}, or
+        \path{release_ready}.
+  \item The prompt asks for derivation certification, typed obligations,
+        backend evidence, abstentions, or proof boundaries.
+  \item The prompt asks for release evidence, benchmark gates, private corpus
+        validation, governance policy, backend availability, or profile
+        readiness.
+  \item The prompt says "use MCP", "show the tool result", "cite labels and
+        files", "do not answer from memory", or "keep the evidence boundary
+        explicit".
+\end{enumerate}
+
+\subsection*{Cases That Look Like Tool Triggers But Usually Are Not}
+
+Many plausible prompts sound technical but still invite an LLM-only response.
+These are useful failure cases to show colleagues because they explain why
+prompt shape matters. The improved prompt does not need to be verbose; it only
+needs to specify the local artifact and the evidence expected.
+
+\begin{longtable}{p{0.30\textwidth}p{0.28\textwidth}p{0.32\textwidth}}
+\toprule
+Prompt that may not trigger MCP & Why it may stay LLM-only & Better prompt \\
+\midrule
+"Explain the Kalman likelihood." &
+This asks for general mathematical exposition, not local evidence. &
+"In \path{/path/to/project}, find the Kalman likelihood label and summarize it
+with file and line provenance." \\
+"Does the filter implementation look right?" &
+There is no code path, document label, or required term list. &
+"Compare \path{eq:dept-state-space-likelihood} with
+\path{src/kalman_filter.py}; check \path{logdet}, \path{solve}, and the
+quadratic form." \\
+"Can MathDevMCP prove this derivation?" &
+The product audits bounded obligations; it does not promise unrestricted proof
+repair. &
+"Run \path{audit_derivation_v2_label} on this label and report whether the
+result is certified, diagnostic, unverified, or blocked." \\
+"The paper and code might be inconsistent. Thoughts?" &
+The agent can speculate because no local target is supplied. &
+"Search the LaTeX for the likelihood label, then compare the best label to
+\path{src/likelihood.py} with required terms \path{logdet} and \path{solve}." \\
+"Check the private corpus." &
+The tool needs a manifest path or configured environment variable, and the
+answer must respect redaction policy. &
+"Validate this private manifest with MathDevMCP, do not print private paths,
+and report release-gate blockers only." \\
+"Find recent papers about Hamiltonian Monte Carlo." &
+That is a literature or web task, not a local MathDevMCP repository task. &
+"In this repository, find the HMC leapfrog label and compare it to the sampler
+implementation for \path{gradient} and \path{hamiltonian}." \\
+"Summarize the equation I pasted below." &
+The user supplied the whole object, so the agent may summarize directly. &
+"After summarizing the pasted equation, search the repository for matching
+labels and cite any local match before making implementation claims." \\
+"Run the release check." &
+The release tool requires a root and, for full evidence, a profile and optional
+private manifest configuration. &
+"Run \path{release_readiness} for \path{/path/to/project} with profile
+\path{full}, then list blockers, caveats, and missing backend evidence." \\
+\bottomrule
+\end{longtable}
+
+\subsection*{How A Colleague Can Verify That The Tool Actually Ran}
+
+The safest adoption practice is to ask the agent to expose the evidence trail.
+A tool-grounded answer should show at least the tool name, important arguments,
+and result fields. For example, a comparison answer should mention
+\path{compare_label_code}, the label, the code path, matched terms, missing
+terms, and the status. A derivation answer should mention
+\path{audit_derivation_v2_label}, the parser route, obligations, backend
+evidence or abstentions, and high-priority review actions. A release answer
+should mention \path{release_readiness}, the profile, blockers, caveats, and
+capability evidence.
+
+If those artifacts are absent, the answer may still be useful, but it should be
+treated as explanation rather than repository evidence. The most reliable
+follow-up is direct: "Please rerun this using MathDevMCP tools, show the tool
+calls and result statuses, and do not make claims that are not supported by the
+tool output." That instruction converts an ambiguous prompt into an auditable
+MCP workflow.
+
 \section{Example Prompts and Expected Tool Calls}
 
 This is the colleague-facing cheat sheet for proposal and adoption discussions.

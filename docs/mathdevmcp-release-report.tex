@@ -19,31 +19,35 @@
 
 \chapter{Executive Summary}
 
-MathDevMCP is now a working internal release candidate for document-grounded
-mathematical development. It provides a Python library, command-line tools, MCP
-tool wrappers, benchmark gates, release profiles, backend diagnostics, and
-privacy-preserving private-corpus validation. The product is designed for
-colleagues who work across long LaTeX documents, mathematical code, proofs,
-derivations, algorithms, and review workflows where unsupported claims are
-expensive.
+Mathematical teams already know the failure modes that matter here. A note says a
+likelihood uses a log determinant and a linear solve, while the implementation
+has been refactored twice under deadline. A proof sketch depends on
+positive-definiteness or invertibility, but the assumption is buried in another
+section or carried only in a senior colleague's memory. A new agent can sound
+confident about the mathematics, but the answer is hard to trust because it does
+not show where the claim came from or where the verification boundary ends.
 
-The product sells itself best in the situations where colleagues already feel
-friction. A model note says the likelihood uses a log determinant and a linear
-solve, while the implementation is moving quickly. A proof sketch relies on
-positive-definiteness, but the assumption is buried in another section. A new
-agent can search the repository, but it cannot be trusted unless it shows where
-the claim came from and where the boundary of verification lies. MathDevMCP is
-built for those moments. It turns local mathematical documents and code into
-structured evidence packets that a human reviewer can inspect, challenge, and
-reuse.
+MathDevMCP is built for those moments. It gives colleagues a local-first way to
+connect claims to the implementation, surface support and mismatches, and avoid
+making unsupported mathematical statements. Instead of asking a reviewer to trust
+an agent's paraphrase, it turns local LaTeX documents, labels, code, parser
+signals, typed obligations, backend checks, and release gates into structured
+evidence packets that a human can inspect, challenge, and reuse.
 
-The release claim is deliberately narrow and evidence based. MathDevMCP does
-not claim to prove arbitrary mathematical papers correct. It gives agents and
-humans structured access to local documents, labels, code, parser evidence,
-typed obligations, AST operation evidence, backend diagnostics, and release
-gates. It helps colleagues find the right mathematical context, compare
-documented claims to implementations, detect missing implementation terms,
-route proof obligations, and abstain when evidence is not certifying.
+The product promise is practical rather than grand. MathDevMCP helps a colleague
+find the right equation and its nearby assumptions, detect that code no longer
+carries a documented solve-like operation, explain why a derivation remains
+uncertified, and hand another reviewer a document-grounded implementation brief.
+It is most useful in review loops where unsupported claims are expensive and
+where a generic assistant is too willing to smooth over missing provenance.
+
+This is why the release claim is deliberately narrow and evidence based.
+MathDevMCP does not claim to prove arbitrary mathematical papers correct. Its
+value is that it preserves the distinction between retrieval, diagnostics,
+mismatch, abstention, and deterministic certification in machine-readable
+reports. In practice, that means colleagues can move faster without pretending
+that a search hit, a parser extraction, or a nearby symbolic pattern is already a
+proof.
 
 The current full release profile is configured to require benchmark evidence,
 parser policy, governance validation, release-corpus metadata, LeanDojo backend
@@ -60,6 +64,17 @@ a dirty working tree while the report is being edited; the post-commit release
 readiness gate should be rerun before a release tag is cut.
 \end{proposalbox}
 
+\section{Why This Tool Exists}
+
+MathDevMCP exists because mathematical review work breaks down in predictable
+ways. Derivations drift from code, hidden assumptions disappear into nearby
+sections, and ordinary assistants can retrieve plausible context without showing
+whether the implementation carries the required operation or whether the
+derivation remains uncertified. The tool is useful precisely because it keeps
+labels, file paths, line spans, code comparisons, typed diagnostics, and
+certification boundaries visible. It does not replace expert judgment; it gives
+expert judgment a better starting point.
+
 \chapter{Product Scope}
 
 MathDevMCP supports five colleague-facing activities:
@@ -73,6 +88,17 @@ MathDevMCP supports five colleague-facing activities:
         backend evidence;
   \item producing repeatable release evidence across base, backend, LaTeXML,
         private-corpus, and full profiles.
+\end{enumerate}
+
+In colleague terms, this means the tool helps answer five recurring workflow
+questions:
+
+\begin{enumerate}[label=\alph*.]
+  \item Where is the equation or assumption we are talking about?
+  \item What nearby notation or assumptions does it depend on?
+  \item Does the code visibly carry the documented structure?
+  \item If a derivation is not certified, why not?
+  \item Can another reviewer reproduce the evidence without trusting my memory?
 \end{enumerate}
 
 The product is intentionally local-first. Source documents and code remain on
@@ -108,8 +134,17 @@ MathDevMCP does not replace expert mathematical review. A parser hit is not a
 proof. A shape diagnostic is not a theorem. A Lean skeleton is not a certificate
 until direct Lean checking accepts it without placeholders. A numeric diagnostic
 can refute a false claim or suggest a failure mode, but it does not establish a
-general theorem. The product's value is that it preserves these distinctions in
-machine-readable reports.
+general theorem. This boundary is a product feature: it lets colleagues move
+faster without laundering a plausible hint into a mathematical certificate.
+
+\section{Review Workflow}
+
+A normal assistant workflow tends to move from question to answer too quickly.
+MathDevMCP changes the order of operations: find the labeled source context,
+inspect nearby assumptions, compare the documented claim against code, audit the
+certification boundary, and hand off a compact evidence packet. That ordering is
+the main usability story of the tool because it makes another reviewer's local
+reproduction path explicit.
 
 \chapter{Release Profiles}
 

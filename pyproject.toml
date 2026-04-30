@@ -25,6 +25,7 @@ quality = ["build", "twine"]
 symbolic = ["sympy"]
 mcp = ["mcp"]
 leandojo = ["lean-dojo"]
+backends = ["sympy", "lean-dojo"]
 all = ["sympy", "mcp", "lean-dojo", "build", "twine"]
 
 [project.scripts]

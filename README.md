@@ -19,17 +19,30 @@ The primary product document is:
 
 ## Install
 
-Base development install:
+End-user install (gives you the MCP server and the CLI; tools degrade to
+diagnostic abstention when optional backends are absent):
+
+```bash
+python -m pip install mathdevmcp
+```
+
+End-user install with the full deterministic-backend stack (sympy +
+lean-dojo, so `check_equality` and the LeanDojo path can certify rather
+than abstain):
+
+```bash
+python -m pip install "mathdevmcp[backends]"
+```
+
+Development install:
 
 ```bash
 python -m pip install -e ".[dev]"
 ```
 
-MCP-facing install:
-
-```bash
-python -m pip install -e ".[dev,mcp]"
-```
+The `[mcp]` extra is retained for backwards compatibility but is now a
+no-op — the `mcp` runtime is a base dependency so a plain
+`pip install mathdevmcp` is enough to launch `mathdevmcp-mcp`.
 
 Optional symbolic/backend packages:
 

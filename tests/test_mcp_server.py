@@ -1,104 +1,50 @@
+"""Slim MCP server tests — exercises the 3 surviving deterministic primitives.
+
+Workflow behaviors that used to live behind the MCP server (compare/audit/
+benchmark/release/governance/doctor) are tested at the library level in their
+own per-module test files; the FastMCP wrappers here only confirm the
+parameters get marshalled correctly into the facade.
+"""
+
 from pathlib import Path
 
-from mathdevmcp.mcp_server import audit_derivation_label, audit_kalman_recursion, benchmark_gate, compare_label_code, extract_latex_context, get_tool_matrix, governance_policy, implementation_brief, release_readiness, run_benchmarks, typed_obligation_label, validate_release_corpus
-from test_context_and_fixtures import EXPECTED_BENCHMARK_TOTAL
+from mathdevmcp.mcp_server import check_equality, latex_label_lookup, lean_check
 
 
 FIXTURES = Path(__file__).resolve().parent.parent / "benchmarks" / "fixtures"
-ROOT = FIXTURES.parent.parent
 
 
-def test_mcp_server_extract_latex_context_returns_label_metadata():
-    result = extract_latex_context(str(FIXTURES), "prop:transport-logdet")
+def test_mcp_server_latex_label_lookup_returns_label_metadata():
+    result = latex_label_lookup(str(FIXTURES), "prop:transport-logdet")
 
     assert result["label"] == "prop:transport-logdet"
     assert result["file"] == "doc_consistency_good.tex"
+    assert result["ok"] is True
 
 
+def test_mcp_server_check_equality_certifies_normalization_match():
+    result = check_equality("a + b", "a + b")
 
-def test_mcp_server_compare_label_code_returns_mismatch():
-    result = compare_label_code(
-        str(FIXTURES),
-        "prop:transport-mismatch",
-        str(FIXTURES / "doc_consistency_bad.py"),
-        required_terms=["logdet"],
-    )
+    assert result["status"] == "equivalent"
+    assert result["evidence"][0]["severity"] == "certifying"
+
+
+def test_mcp_server_check_equality_refutes_with_counterexample():
+    result = check_equality("1 + 1", "3")
 
     assert result["status"] == "mismatch"
-    assert result["missing_in_code"] == ["logdet"]
+    assert result["evidence"][0]["severity"] == "blocking"
 
 
+def test_mcp_server_lean_check_returns_lean_envelope():
+    result = lean_check("example : 1 + 1 = 2 := rfl")
 
-def test_mcp_server_implementation_brief_returns_consistent_result():
-    result = implementation_brief(
-        str(FIXTURES),
-        "transport log-determinant identity",
-        str(FIXTURES / "doc_consistency_good.py"),
-        required_terms=["logdet"],
-    )
-
-    assert result["status"] == "consistent"
-    assert result["selected_label"] == "prop:transport-logdet"
+    assert result["metadata"] == {"schema_version": "1.0", "contract": "lean_check_result"}
+    assert result["status"] in {"verified", "mismatch", "inconclusive"}
 
 
+def test_mcp_server_lean_check_refuses_placeholder_proof():
+    result = lean_check("example : 1 + 1 = 2 := by sorry")
 
-def test_mcp_server_run_benchmarks_returns_structured_report():
-    result = run_benchmarks(str(ROOT))
-
-    assert result["metadata"] == {"schema_version": "1.0", "contract": "benchmark_results"}
-    assert result["total"] == EXPECTED_BENCHMARK_TOTAL
-    assert result["passed"] == EXPECTED_BENCHMARK_TOTAL
-
-
-
-def test_mcp_server_audit_derivation_label_returns_proof_audit_result():
-    result = audit_derivation_label(str(FIXTURES), "eq:proof-audit-single", backend="sympy")
-
-    assert result["metadata"] == {"schema_version": "1.0", "contract": "proof_audit_result"}
-    assert result["status"] == "verified"
-
-
-def test_mcp_server_audit_kalman_recursion_returns_ast_result():
-    result = audit_kalman_recursion(str(FIXTURES / "doc_kalman_recursion_bad.py"))
-
-    assert result["metadata"] == {"schema_version": "1.0", "contract": "kalman_recursion_audit"}
-    assert result["status"] == "mismatch"
-    assert result["missing_operations"] == ["covariance_update"]
-
-
-def test_mcp_server_typed_obligation_label_returns_diagnostic_result():
-    result = typed_obligation_label(str(FIXTURES), "eq:dept-hmc-leapfrog")
-
-    assert result["metadata"] == {"schema_version": "1.0", "contract": "typed_obligation_label_diagnostic"}
-    assert result["status"] == "unverified"
-    assert result["typed_diagnostic"]["status"] == "needs_assumptions"
-
-
-
-def test_mcp_server_benchmark_gate_returns_ci_result():
-    result = benchmark_gate(str(ROOT))
-
-    assert result["metadata"] == {"schema_version": "1.0", "contract": "benchmark_gate"}
-    assert result["passed"] is True
-    assert result["failed_count"] == 0
-    assert result["policy"]["name"] == "all_benchmarks_must_pass"
-
-
-def test_mcp_server_release_policy_tools_return_contracts():
-    corpus = validate_release_corpus(str(FIXTURES))
-    governance = governance_policy()
-    release = release_readiness(str(ROOT))
-
-    assert corpus["metadata"] == {"schema_version": "1.0", "contract": "release_corpus_validation_report"}
-    assert corpus["status"] == "consistent"
-    assert governance["metadata"] == {"schema_version": "1.0", "contract": "governance_policy"}
-    assert release["metadata"] == {"schema_version": "1.0", "contract": "release_readiness_report"}
-    assert release["benchmark_gate"]["passed"] is True
-
-
-
-def test_mcp_server_tool_matrix_exposes_core_problem_classes():
-    problems = {entry["problem"] for entry in get_tool_matrix()}
-
-    assert "long_document_tracking" in problems
-    assert "document_grounded_implementation" in problems
+    assert result["status"] == "inconclusive"
+    assert result["evidence"][0]["uses_sorry"] is True

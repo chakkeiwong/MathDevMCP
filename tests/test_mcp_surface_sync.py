@@ -19,8 +19,7 @@ def test_mcp_server_exposure_matches_registry_aliases():
     server_names = {spec.exposed_server_name for spec in MCP_TOOL_SPECS}
 
     assert server_names == MCP_SERVER_EXPOSED_TOOLS
-    assert "tool_matrix" in {spec.name for spec in MCP_TOOL_SPECS}
-    assert "get_tool_matrix" in MCP_SERVER_EXPOSED_TOOLS
+    assert {"latex_label_lookup", "check_equality", "lean_check"} == server_names
 
 
 def test_mcp_readme_mentions_every_registry_and_server_tool():
@@ -36,13 +35,13 @@ def test_mcp_unexpected_exception_returns_stable_error(monkeypatch):
     def broken_handler(_args):
         raise RuntimeError("private path /home/chakwong/secret leaked by exception")
 
-    monkeypatch.setitem(TOOL_HANDLERS, "doctor", broken_handler)
+    monkeypatch.setitem(TOOL_HANDLERS, "check_equality", broken_handler)
 
-    result = call_mcp_tool("doctor", {})
+    result = call_mcp_tool("check_equality", {"lhs": "a", "rhs": "a"})
 
     assert result == {
         "ok": False,
-        "error": {"type": "tool_execution_error", "message": "MathDevMCP tool failed during execution: doctor"},
+        "error": {"type": "tool_execution_error", "message": "MathDevMCP tool failed during execution: check_equality"},
         "metadata": {"schema_version": "1.0", "contract": "error"},
     }
 

@@ -1,162 +1,92 @@
+"""Slim MCP facade tests — exercises the 3 surviving deterministic primitives.
+
+Library-level workflow tests (proof_audit, kalman_workflows, consistency,
+benchmarks, release_policy, governance, doctor) live in their own per-module
+test files; they are unaffected by the MCP surface shrink.
+"""
+
 from pathlib import Path
 
 from mathdevmcp.mcp_facade import call_mcp_tool, list_mcp_tools
-from test_context_and_fixtures import EXPECTED_BENCHMARK_SUMMARY, EXPECTED_BENCHMARK_TOTAL
 
 
 FIXTURES = Path(__file__).resolve().parent.parent / "benchmarks" / "fixtures"
-ROOT = FIXTURES.parent.parent
 
 
-def test_list_mcp_tools_includes_implementation_brief():
+def test_list_mcp_tools_exposes_three_deterministic_primitives():
     names = {tool["name"] for tool in list_mcp_tools()}
 
-    assert "implementation_brief" in names
-    assert "compare_label_code" in names
-    assert "benchmark_gate" in names
-    assert "audit_kalman_recursion" in names
-    assert "typed_obligation_label" in names
-    assert "release_corpus_manifest" in names
-    assert "validate_release_corpus" in names
-    assert "governance_policy" in names
-    assert "release_readiness" in names
+    assert names == {"latex_label_lookup", "check_equality", "lean_check"}
 
 
+def test_list_mcp_tools_advertises_optional_capabilities():
+    by_name = {tool["name"]: tool for tool in list_mcp_tools()}
 
-def test_call_mcp_tool_compare_label_code_returns_traceable_result():
+    assert by_name["check_equality"]["optional_capability"] == "symbolic_backend"
+    assert by_name["lean_check"]["optional_capability"] == "lean_backend"
+    assert by_name["latex_label_lookup"]["optional_capability"] is None
+
+
+def test_call_mcp_tool_latex_label_lookup_returns_paragraph_context():
     result = call_mcp_tool(
-        "compare_label_code",
-        {
-            "root": str(FIXTURES),
-            "label": "prop:transport-mismatch",
-            "code": str(FIXTURES / "doc_consistency_bad.py"),
-            "required_terms": ["logdet"],
-        },
+        "latex_label_lookup",
+        {"root": str(FIXTURES), "label": "prop:transport-logdet"},
+    )
+
+    assert result["label"] == "prop:transport-logdet"
+    assert result["file"] == "doc_consistency_good.tex"
+    assert result["ok"] is True
+    assert result["metadata"] == {"schema_version": "1.0", "contract": "latex_paragraph_context"}
+
+
+def test_call_mcp_tool_check_equality_certifies_normalization_match():
+    result = call_mcp_tool(
+        "check_equality",
+        {"lhs": "a + b", "rhs": "a + b"},
+    )
+
+    assert result["status"] == "equivalent"
+    assert result["evidence"][0]["severity"] == "certifying"
+    assert result["ok"] is True
+
+
+def test_call_mcp_tool_check_equality_certifies_sympy_simplification():
+    result = call_mcp_tool(
+        "check_equality",
+        {"lhs": "(a + b)*(a - b)", "rhs": "a*a - b*b"},
+    )
+
+    assert result["status"] == "equivalent"
+    assert result["evidence"][0]["severity"] == "certifying"
+
+
+def test_call_mcp_tool_check_equality_refutes_with_counterexample():
+    result = call_mcp_tool(
+        "check_equality",
+        {"lhs": "1 + 1", "rhs": "3"},
     )
 
     assert result["status"] == "mismatch"
-    assert result["doc_context"]["file"] == "doc_consistency_bad.tex"
-    assert result["metadata"] == {"schema_version": "1.0", "contract": "label_consistency_result"}
-    assert result["provenance"]["label"] == "prop:transport-mismatch"
-    assert result["ok"] is True
+    assert result["evidence"][0]["severity"] == "blocking"
 
 
+def test_call_mcp_tool_lean_check_returns_lean_envelope():
+    # Lean is not required to be installed; we only assert the envelope shape.
+    result = call_mcp_tool("lean_check", {"source": "example : 1 + 1 = 2 := rfl"})
 
-def test_call_mcp_tool_implementation_brief_returns_consistent_result():
+    assert result["metadata"] == {"schema_version": "1.0", "contract": "lean_check_result"}
+    assert result["status"] in {"verified", "mismatch", "inconclusive"}
+    assert result["evidence"][0]["backend"] == "lean"
+
+
+def test_call_mcp_tool_lean_check_refuses_placeholder_proof_in_certified_mode():
     result = call_mcp_tool(
-        "implementation_brief",
-        {
-            "root": str(FIXTURES),
-            "query": "transport log-determinant identity",
-            "code": str(FIXTURES / "doc_consistency_good.py"),
-            "required_terms": ["logdet"],
-        },
+        "lean_check",
+        {"source": "example : 1 + 1 = 2 := by sorry"},
     )
 
-    assert result["status"] == "consistent"
-    assert result["selected_label"] == "prop:transport-logdet"
-    assert result["metadata"] == {"schema_version": "1.0", "contract": "implementation_brief"}
-    assert result["ok"] is True
-
-
-def test_call_mcp_tool_implementation_brief_reuses_cache(tmp_path):
-    cache = tmp_path / "mcp_workflow_cache.json"
-
-    cold = call_mcp_tool(
-        "implementation_brief",
-        {
-            "root": str(FIXTURES),
-            "query": "transport log-determinant identity",
-            "code": str(FIXTURES / "doc_consistency_good.py"),
-            "required_terms": ["logdet"],
-            "cache": str(cache),
-        },
-    )
-    warm = call_mcp_tool(
-        "implementation_brief",
-        {
-            "root": str(FIXTURES),
-            "query": "transport log-determinant identity",
-            "code": str(FIXTURES / "doc_consistency_good.py"),
-            "required_terms": ["logdet"],
-            "cache": str(cache),
-        },
-    )
-
-    assert cold["cache"] == {"path": str(cache), "hit": False}
-    assert warm["cache"] == {"path": str(cache), "hit": True}
-    assert warm["status"] == "consistent"
-
-
-def test_call_mcp_tool_audit_kalman_recursion_returns_ast_evidence():
-    result = call_mcp_tool(
-        "audit_kalman_recursion",
-        {"code": str(FIXTURES / "doc_kalman_recursion_bad.py")},
-    )
-
-    assert result["status"] == "mismatch"
-    assert result["missing_operations"] == ["covariance_update"]
-    assert result["ast_operation_graph"]["metadata"] == {"schema_version": "1.0", "contract": "ast_operation_graph"}
-    assert result["ok"] is True
-
-
-def test_call_mcp_tool_typed_obligation_label_returns_dimension_diagnostics():
-    result = call_mcp_tool(
-        "typed_obligation_label",
-        {"root": str(FIXTURES), "label": "eq:dept-state-space-likelihood"},
-    )
-
-    assert result["status"] == "unverified"
-    assert result["metadata"] == {"schema_version": "1.0", "contract": "typed_obligation_label_diagnostic"}
-    assert result["typed_diagnostic"]["metadata"] == {"schema_version": "1.0", "contract": "typed_math_obligation_diagnostic"}
-    assert result["ok"] is True
-
-
-
-def test_call_mcp_tool_run_benchmarks_aggregates_results():
-    result = call_mcp_tool("run_benchmarks", {"root": str(ROOT)})
-
-    assert result["total"] == EXPECTED_BENCHMARK_TOTAL
-    assert result["passed"] == EXPECTED_BENCHMARK_TOTAL
-    assert result["metadata"] == {"schema_version": "1.0", "contract": "benchmark_results"}
-    assert all("details" in item for item in result["results"])
-    assert result["summary"] == EXPECTED_BENCHMARK_SUMMARY
-    assert result["ok"] is True
-
-
-
-def test_call_mcp_tool_benchmark_gate_returns_ci_shape():
-    result = call_mcp_tool("benchmark_gate", {"root": str(ROOT)})
-
-    assert result == {
-        "ok": True,
-        "passed": True,
-        "total": EXPECTED_BENCHMARK_TOTAL,
-        "passed_count": EXPECTED_BENCHMARK_TOTAL,
-        "failed_count": 0,
-        "summary": EXPECTED_BENCHMARK_SUMMARY,
-        "policy": {
-            "name": "all_benchmarks_must_pass",
-            "required_pass_rate": 1.0,
-            "allow_category_failures": {},
-            "description": "Every benchmark case must pass; no category-specific failure budget is currently allowed.",
-        },
-        "metadata": {"schema_version": "1.0", "contract": "benchmark_gate"},
-    }
-
-
-def test_call_mcp_tool_release_surfaces_return_contracts():
-    corpus = call_mcp_tool("validate_release_corpus", {"root": str(FIXTURES)})
-    governance = call_mcp_tool("governance_policy", {})
-    release = call_mcp_tool("release_readiness", {"root": str(ROOT)})
-
-    assert corpus["metadata"] == {"schema_version": "1.0", "contract": "release_corpus_validation_report"}
-    assert corpus["status"] == "consistent"
-    assert governance["metadata"] == {"schema_version": "1.0", "contract": "governance_policy"}
-    assert release["metadata"] == {"schema_version": "1.0", "contract": "release_readiness_report"}
-    assert release["benchmark_gate"]["passed"] is True
-    assert release["ok"] is True
-
+    assert result["status"] == "inconclusive"
+    assert result["evidence"][0]["uses_sorry"] is True
 
 
 def test_call_mcp_tool_returns_structured_error_for_unknown_tool():
@@ -169,12 +99,11 @@ def test_call_mcp_tool_returns_structured_error_for_unknown_tool():
     }
 
 
-
 def test_call_mcp_tool_returns_structured_error_for_invalid_arguments():
-    result = call_mcp_tool("compare_label_code", {"root": str(FIXTURES), "label": "prop:transport-mismatch"})
+    result = call_mcp_tool("check_equality", {"lhs": "a + b"})
 
     assert result == {
         "ok": False,
-        "error": {"type": "invalid_arguments", "message": "Missing required string argument: code"},
+        "error": {"type": "invalid_arguments", "message": "Missing required string argument: rhs"},
         "metadata": {"schema_version": "1.0", "contract": "error"},
     }

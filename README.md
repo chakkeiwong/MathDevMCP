@@ -119,16 +119,21 @@ maps to a skill / subagent / CLI command — see
 The MCP server speaks standard stdio MCP and works with any compatible
 client. The `.claude/skills/` and `.claude/agents/` files are Claude Code-
 specific, so non-Claude clients see only the 3 primitives by default. To
-get the same workflow behavior in another client, port the skill content
-into that client's rules / system-prompt format:
+get the same workflow behavior in another client, copy the canonical
+rules block into that client's rules / instructions / system-prompt
+mechanism — there's a single source of truth in
+[`docs/clients/workflow-rules.md`](docs/clients/workflow-rules.md):
 
 - **Cursor** — see [`docs/clients/cursor.md`](docs/clients/cursor.md) for
-  setup, what works, what's different, and a ready-to-paste
-  `.cursorrules` block that mirrors the three skills.
+  `~/.cursor/mcp.json` setup and `.cursorrules` placement.
+- **GitHub Copilot (VS Code)** — see
+  [`docs/clients/github-copilot.md`](docs/clients/github-copilot.md) for
+  `.vscode/mcp.json` setup, agent-mode notes, and
+  `.github/copilot-instructions.md` placement.
 - **Other MCP clients** (Continue, Cline, OpenAI tool-use, custom) — the
-  Cursor doc's rules block is a good template: it's plain text, has no
-  Cursor-specific syntax, and captures the certifying-evidence rule plus
-  the three workflow recipes.
+  rules block in `workflow-rules.md` is plain text with no client-
+  specific syntax; drop it wherever your client reads system-prompt-
+  prepended instructions.
 
 ## Common Workflows
 

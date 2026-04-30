@@ -114,6 +114,22 @@ maps to a skill / subagent / CLI command — see
 [`docs/mcp-simplification.md`](docs/mcp-simplification.md) and
 [`mcp/README.md`](mcp/README.md).
 
+### Using MathDevMCP from other clients
+
+The MCP server speaks standard stdio MCP and works with any compatible
+client. The `.claude/skills/` and `.claude/agents/` files are Claude Code-
+specific, so non-Claude clients see only the 3 primitives by default. To
+get the same workflow behavior in another client, port the skill content
+into that client's rules / system-prompt format:
+
+- **Cursor** — see [`docs/clients/cursor.md`](docs/clients/cursor.md) for
+  setup, what works, what's different, and a ready-to-paste
+  `.cursorrules` block that mirrors the three skills.
+- **Other MCP clients** (Continue, Cline, OpenAI tool-use, custom) — the
+  Cursor doc's rules block is a good template: it's plain text, has no
+  Cursor-specific syntax, and captures the certifying-evidence rule plus
+  the three workflow recipes.
+
 ## Common Workflows
 
 Check the runtime environment:

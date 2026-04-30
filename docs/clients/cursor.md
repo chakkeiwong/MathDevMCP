@@ -52,17 +52,26 @@ installs), use the module form instead:
 
 ## 3. Load the workflow rules
 
-Copy the canonical rules block from
-[`workflow-rules.md`](workflow-rules.md) (the code block under "The
-rules block") into either:
+The easiest path is the bundled CLI command — no copy-paste, no leaving
+the terminal:
 
-- `<project>/.cursorrules` (legacy, single-file workspace rules)
-- `<project>/.cursor/rules/mathdevmcp.mdc` (newer multi-file format)
+```bash
+cd <your-project>
+mathdevmcp install-rules cursor          # writes <project>/.cursorrules
+mathdevmcp install-rules cursor --dry-run   # preview only
+```
 
-Either location works. The rules give Cursor the same workflow
-instructions Claude Code reads from `.claude/skills/`: how to audit a
-labeled derivation, how to audit a code implementation against a spec,
-how to drive release-readiness, and the certifying-evidence rule.
+The command is idempotent and non-destructive: it wraps the rules in
+HTML-comment markers (`<!-- mathdevmcp:workflow-rules:start -->` /
+`...:end -->`), so re-running it updates the marked block in place
+without touching anything else in the file. If the file already
+contains other content and no marked block, the rules are appended at
+the end with a blank-line separator.
+
+If you'd rather paste manually (e.g., to put it in
+`<project>/.cursor/rules/mathdevmcp.mdc` instead of `.cursorrules`,
+which the CLI doesn't write), copy the canonical rules block from
+[`workflow-rules.md`](workflow-rules.md).
 
 ## What works the same as Claude Code
 

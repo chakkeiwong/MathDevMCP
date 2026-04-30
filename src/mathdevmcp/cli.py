@@ -27,6 +27,7 @@ from .proof_audit import audit_derivation_for_label
 from .proof_audit_v2 import audit_derivation_v2_for_label
 from .public_release import public_release_check
 from .governance import governance_policy, validate_governance
+from ._install_rules import CLIENT_CHOICES, install_rules
 from .release_corpus import release_corpus_manifest, validate_release_corpus_manifest
 from .release_policy import RELEASE_PROFILES, release_readiness_report
 from .typed_workflows import typed_obligation_for_label
@@ -302,6 +303,15 @@ def _cmd_public_release_check(args: argparse.Namespace) -> int:
 
 
 
+def _cmd_install_rules(args: argparse.Namespace) -> int:
+    results = install_rules([args.client], root=Path(args.root), dry_run=args.dry_run)
+    for result in results:
+        print(f"{result.client:8s}  {result.describe():14s}  {result.path}")
+        print(f"          reason: {result.reason}")
+    return 0
+
+
+
 def make_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="MathDevMCP development utilities")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -493,6 +503,19 @@ def make_parser() -> argparse.ArgumentParser:
     p_public = sub.add_parser("public-release-check", help="Validate public release product-surface gates")
     p_public.add_argument("--root", default=".", help="Project root")
     p_public.set_defaults(func=_cmd_public_release_check)
+
+    p_install_rules = sub.add_parser(
+        "install-rules",
+        help="Install MathDevMCP workflow rules into a non-Claude MCP client's project instructions file",
+    )
+    p_install_rules.add_argument(
+        "client",
+        choices=sorted(CLIENT_CHOICES),
+        help="Target client: cursor (.cursorrules), copilot (.github/copilot-instructions.md), or all",
+    )
+    p_install_rules.add_argument("--root", default=".", help="Project root in which to write the instructions file")
+    p_install_rules.add_argument("--dry-run", action="store_true", help="Print what would happen without writing")
+    p_install_rules.set_defaults(func=_cmd_install_rules)
 
     return parser
 

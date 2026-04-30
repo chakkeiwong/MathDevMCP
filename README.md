@@ -118,22 +118,35 @@ maps to a skill / subagent / CLI command — see
 
 The MCP server speaks standard stdio MCP and works with any compatible
 client. The `.claude/skills/` and `.claude/agents/` files are Claude Code-
-specific, so non-Claude clients see only the 3 primitives by default. To
-get the same workflow behavior in another client, copy the canonical
-rules block into that client's rules / instructions / system-prompt
-mechanism — there's a single source of truth in
-[`docs/clients/workflow-rules.md`](docs/clients/workflow-rules.md):
+specific, so non-Claude clients see only the 3 primitives by default. The
+bundled CLI installs the workflow rules into the right project file for
+each supported client — no copy-paste:
+
+```bash
+cd <your-project>
+mathdevmcp install-rules cursor    # writes .cursorrules
+mathdevmcp install-rules copilot   # writes .github/copilot-instructions.md
+mathdevmcp install-rules all       # both, idempotent
+mathdevmcp install-rules cursor --dry-run    # preview only
+```
+
+The command wraps the rules in HTML-comment markers and is idempotent —
+re-running updates only the marked block, leaving the rest of the file
+intact. Per-client setup details (MCP server config, troubleshooting,
+what's different from Claude Code):
 
 - **Cursor** — see [`docs/clients/cursor.md`](docs/clients/cursor.md) for
-  `~/.cursor/mcp.json` setup and `.cursorrules` placement.
+  `~/.cursor/mcp.json` setup.
 - **GitHub Copilot (VS Code)** — see
   [`docs/clients/github-copilot.md`](docs/clients/github-copilot.md) for
-  `.vscode/mcp.json` setup, agent-mode notes, and
-  `.github/copilot-instructions.md` placement.
+  `.vscode/mcp.json` setup and agent-mode notes.
 - **Other MCP clients** (Continue, Cline, OpenAI tool-use, custom) — the
-  rules block in `workflow-rules.md` is plain text with no client-
-  specific syntax; drop it wherever your client reads system-prompt-
-  prepended instructions.
+  rules block at
+  [`docs/clients/workflow-rules.md`](docs/clients/workflow-rules.md) is
+  plain text with no client-specific syntax; drop it wherever your
+  client reads system-prompt-prepended instructions, or extend the CLI
+  with a new `--client` value (the install logic is in
+  `src/mathdevmcp/_install_rules.py:CLIENT_TARGETS`).
 
 ## Common Workflows
 

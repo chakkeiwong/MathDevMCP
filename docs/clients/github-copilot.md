@@ -69,12 +69,33 @@ VS Code Copilot reads `<project>/.github/copilot-instructions.md` as
 workspace-level system context for every Copilot Chat conversation.
 This is the equivalent of Cursor's `.cursorrules`.
 
-Copy the canonical rules block from
-[`workflow-rules.md`](workflow-rules.md) (the code block under "The
-rules block") into `.github/copilot-instructions.md` at your project
-root. If the file already exists, paste the block at the bottom under
-its own `## MathDevMCP usage` heading so it doesn't collide with
-existing instructions.
+The easiest path is the bundled CLI command — no copy-paste, no leaving
+the terminal:
+
+```bash
+cd <your-project>
+mathdevmcp install-rules copilot          # writes <project>/.github/copilot-instructions.md
+mathdevmcp install-rules copilot --dry-run   # preview only
+```
+
+The command is idempotent and non-destructive: it wraps the rules in
+HTML-comment markers (`<!-- mathdevmcp:workflow-rules:start -->` /
+`...:end -->`), so re-running it updates the marked block in place
+without touching anything else in the file. If the file already
+contains other content and no marked block, the rules are appended at
+the end. The `.github/` directory is created automatically if it
+doesn't exist.
+
+You can install both Cursor and Copilot rules in one shot:
+
+```bash
+mathdevmcp install-rules all
+```
+
+If you'd rather paste manually (e.g., to put it in
+`.github/instructions/mathdevmcp.instructions.md` instead, which the
+CLI doesn't write), copy the canonical rules block from
+[`workflow-rules.md`](workflow-rules.md).
 
 For finer-grained control, newer VS Code versions also support
 per-language / per-path scoped instructions via

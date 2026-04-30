@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -54,13 +55,13 @@ def test_doctor_uses_requested_backend_python_without_main_env_fallback(monkeypa
     assert result["capabilities"]["lean_dojo"]["detail"] == "Python module lean_dojo is not importable in backend env"
 
 
-def test_cli_doctor_reports_json_contract():
+def test_cli_doctor_reports_json_contract(requires_pandoc):
     result = subprocess.run(
         [sys.executable, "-m", "mathdevmcp.cli", "doctor"],
         check=False,
         capture_output=True,
         text=True,
-        env={"PYTHONPATH": str(ROOT / "src")},
+        env={**os.environ, "PYTHONPATH": str(ROOT / "src")},
     )
 
     assert result.returncode == 0, result.stderr

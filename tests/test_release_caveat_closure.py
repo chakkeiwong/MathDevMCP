@@ -51,7 +51,7 @@ def test_private_and_full_profiles_block_without_private_manifest(monkeypatch):
     assert any(blocker["kind"] == "private_corpus_manifest_required" for blocker in full_report["blockers"])
 
 
-def test_backend_profile_uses_configured_backend_env(monkeypatch):
+def test_backend_profile_uses_configured_backend_env(monkeypatch, requires_backend_lean_dojo):
     monkeypatch.setenv("MATHDEVMCP_BACKEND_CONDA_ENV", "mathdevmcp-backends")
     report = release_readiness_report(ROOT, profile="backend")
 
@@ -60,7 +60,7 @@ def test_backend_profile_uses_configured_backend_env(monkeypatch):
     assert not any(blocker["kind"] == "backend_lean_dojo_unavailable" for blocker in report["blockers"])
 
 
-def test_backend_profile_defaults_to_documented_backend_env(monkeypatch):
+def test_backend_profile_defaults_to_documented_backend_env(monkeypatch, requires_backend_lean_dojo):
     monkeypatch.delenv("MATHDEVMCP_BACKEND_CONDA_ENV", raising=False)
 
     report = release_readiness_report(ROOT, profile="backend")

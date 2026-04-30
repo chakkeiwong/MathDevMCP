@@ -18,7 +18,7 @@ FIXTURES = ROOT / "benchmarks" / "fixtures"
 LEANDOJO_FIXTURE = ROOT / "tests" / "fixtures" / "leandojo_tiny_project"
 
 
-def test_leandojo_fixture_files_are_pinned_and_directly_checkable():
+def test_leandojo_fixture_files_are_pinned_and_directly_checkable(requires_lean):
     assert (LEANDOJO_FIXTURE / "lean-toolchain").read_text(encoding="utf-8").strip() == "leanprover/lean4:v4.20.0"
     assert (LEANDOJO_FIXTURE / "lakefile.lean").exists()
     source = (LEANDOJO_FIXTURE / "MathDevMCPDemo.lean").read_text(encoding="utf-8")
@@ -39,7 +39,7 @@ def test_leandojo_fixture_files_are_pinned_and_directly_checkable():
     assert result["readiness"]["dojo_entered"] is False
 
 
-def test_leandojo_false_candidate_never_verifies_without_final_certificate():
+def test_leandojo_false_candidate_never_verifies_without_final_certificate(requires_lean):
     source = (LEANDOJO_FIXTURE / "MathDevMCPFalseCandidate.lean").read_text(encoding="utf-8")
 
     result = attempt_leandojo_tiny_theorem(

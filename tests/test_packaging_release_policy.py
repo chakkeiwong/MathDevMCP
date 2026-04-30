@@ -11,7 +11,12 @@ def test_optional_dependency_groups_keep_base_package_small():
     data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     optional = data["project"]["optional-dependencies"]
 
-    assert data["project"]["dependencies"] == []
+    # The MCP runtime is the only base dependency: a package whose primary
+    # purpose is to be an MCP server must hard-require the protocol library
+    # so `pip install mathdevmcp && mathdevmcp-mcp` works without extras.
+    # Capability backends (sympy, lean-dojo, etc.) stay optional and are
+    # surfaced through extras + runtime "diagnostic" abstention when absent.
+    assert data["project"]["dependencies"] == ["mcp"]
     assert "pytest" in optional["dev"]
     assert "build" in optional["dev"]
     assert "twine" in optional["dev"]

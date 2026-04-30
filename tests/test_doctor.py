@@ -7,8 +7,6 @@ import pytest
 
 from mathdevmcp.contracts import validate_contract_payload
 from mathdevmcp.doctor import doctor_report
-from mathdevmcp.mcp_facade import call_mcp_tool, list_mcp_tools
-from mathdevmcp.mcp_server import doctor as server_doctor
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -54,22 +52,6 @@ def test_doctor_uses_requested_backend_python_without_main_env_fallback(monkeypa
     assert result["capabilities"]["lean_dojo"]["available"] is False
     assert result["capabilities"]["lean_dojo"]["path"] == str(fake_python)
     assert result["capabilities"]["lean_dojo"]["detail"] == "Python module lean_dojo is not importable in backend env"
-
-
-def test_mcp_facade_exposes_doctor():
-    names = {tool["name"] for tool in list_mcp_tools()}
-    result = call_mcp_tool("doctor", {})
-
-    assert "doctor" in names
-    assert result["ok"] is True
-    assert result["metadata"] == {"schema_version": "1.0", "contract": "doctor_report"}
-
-
-def test_mcp_server_doctor_delegates():
-    result = server_doctor()
-
-    assert result["ok"] is True
-    assert result["metadata"] == {"schema_version": "1.0", "contract": "doctor_report"}
 
 
 def test_cli_doctor_reports_json_contract():

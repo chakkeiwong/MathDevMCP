@@ -4,7 +4,6 @@ from pathlib import Path
 import subprocess
 import sys
 
-from mathdevmcp.mcp_facade import call_mcp_tool
 from mathdevmcp.release_policy import release_readiness_report
 from mathdevmcp.release_corpus import validate_release_corpus_manifest
 
@@ -93,16 +92,6 @@ def test_release_readiness_cli_accepts_profile(monkeypatch):
     payload = json.loads(result.stdout)
     assert payload["profile"] == "latexml"
     assert payload["status"] == "not_ready"
-
-
-def test_mcp_release_readiness_accepts_profile(monkeypatch):
-    monkeypatch.setenv("MATHDEVMCP_LATEXML_PATH", "/definitely/missing/latexml")
-
-    report = call_mcp_tool("release_readiness", {"root": str(ROOT), "profile": "latexml"})
-
-    assert report["ok"] is True
-    assert report["profile"] == "latexml"
-    assert report["status"] == "not_ready"
 
 
 def test_private_manifest_template_is_valid_json():

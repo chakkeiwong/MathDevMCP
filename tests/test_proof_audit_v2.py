@@ -3,8 +3,6 @@ import subprocess
 import sys
 
 from mathdevmcp.leandojo_backend import attempt_leandojo_tiny_theorem
-from mathdevmcp.mcp_facade import call_mcp_tool, list_mcp_tools
-from mathdevmcp.mcp_server import audit_derivation_v2_label
 from mathdevmcp.numeric_runner import check_finite_difference_gradient, check_logdet_domain, check_solve_residual
 from mathdevmcp.proof_audit_v2 import audit_derivation_v2_for_label
 
@@ -79,21 +77,6 @@ def test_cli_audit_derivation_v2_label_reports_contract():
     assert result.returncode == 0, result.stderr
     assert '"contract": "proof_audit_v2_result"' in result.stdout
     assert '"status": "unverified"' in result.stdout
-
-
-def test_mcp_facade_and_server_expose_proof_audit_v2():
-    names = {tool["name"] for tool in list_mcp_tools()}
-    facade = call_mcp_tool(
-        "audit_derivation_v2_label",
-        {"root": str(FIXTURES), "label": "eq:proof-audit-single", "summary_only": True},
-    )
-    server = audit_derivation_v2_label(str(FIXTURES), "eq:proof-audit-single", summary_only=True)
-
-    assert "audit_derivation_v2_label" in names
-    assert facade["ok"] is True
-    assert facade["metadata"]["contract"] == "proof_audit_v2_result"
-    assert server["metadata"]["contract"] == "proof_audit_v2_result"
-    assert server["status"] == "verified"
 
 
 def test_numeric_runner_executes_only_explicit_safe_diagnostics():

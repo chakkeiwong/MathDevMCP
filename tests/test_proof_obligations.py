@@ -4,7 +4,7 @@ import sys
 
 from mathdevmcp.contracts import validate_contract_payload, validate_derivation_evidence
 from mathdevmcp.mcp_facade import call_mcp_tool, list_mcp_tools
-from mathdevmcp.mcp_server import check_proof_obligation as server_check_proof_obligation
+from mathdevmcp.mcp_server import check_equality as server_check_equality
 from mathdevmcp.proof_obligations import check_proof_obligation
 
 
@@ -67,17 +67,17 @@ def test_proof_obligation_contract_and_evidence_validate():
     assert validate_derivation_evidence(result["evidence"]) == []
 
 
-def test_mcp_facade_exposes_check_proof_obligation():
+def test_mcp_facade_exposes_check_equality():
     names = {tool["name"] for tool in list_mcp_tools()}
-    result = call_mcp_tool("check_proof_obligation", {"lhs": "a + b", "rhs": "b + a", "backend": "sympy"})
+    result = call_mcp_tool("check_equality", {"lhs": "a + b", "rhs": "b + a", "backend": "sympy"})
 
-    assert "check_proof_obligation" in names
+    assert "check_equality" in names
     assert result["status"] == "equivalent"
     assert result["ok"] is True
 
 
-def test_mcp_server_check_proof_obligation_delegates():
-    result = server_check_proof_obligation("a + b", "b + a", backend="sympy")
+def test_mcp_server_check_equality_delegates():
+    result = server_check_equality("a + b", "b + a", backend="sympy")
 
     assert result["status"] == "equivalent"
     assert result["metadata"] == {"schema_version": "1.0", "contract": "proof_obligation_result"}

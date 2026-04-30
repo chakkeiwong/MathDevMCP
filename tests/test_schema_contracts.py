@@ -25,11 +25,11 @@ def test_implementation_brief_returns_success_envelope_when_no_label_found():
 
 
 def test_mcp_facade_returns_structured_invalid_arguments_error():
-    result = call_mcp_tool("implementation_brief", {"root": str(FIXTURES), "query": "transport"})
+    result = call_mcp_tool("check_equality", {"lhs": "a"})
 
     assert result == {
         "ok": False,
-        "error": {"type": "invalid_arguments", "message": "Missing required string argument: code"},
+        "error": {"type": "invalid_arguments", "message": "Missing required string argument: rhs"},
         "metadata": {"schema_version": "1.0", "contract": "error"},
     }
 
@@ -40,12 +40,12 @@ def test_mcp_facade_returns_structured_tool_execution_error(monkeypatch):
     def broken_handler(_args):
         raise RuntimeError("/home/chakwong/private/details")
 
-    monkeypatch.setitem(TOOL_HANDLERS, "doctor", broken_handler)
-    result = call_mcp_tool("doctor", {})
+    monkeypatch.setitem(TOOL_HANDLERS, "check_equality", broken_handler)
+    result = call_mcp_tool("check_equality", {"lhs": "a", "rhs": "a"})
 
     assert result == {
         "ok": False,
-        "error": {"type": "tool_execution_error", "message": "MathDevMCP tool failed during execution: doctor"},
+        "error": {"type": "tool_execution_error", "message": "MathDevMCP tool failed during execution: check_equality"},
         "metadata": {"schema_version": "1.0", "contract": "error"},
     }
     assert validate_contract_payload(result) == []
@@ -59,7 +59,7 @@ def test_validate_contract_payload_accepts_success_and_error_envelopes():
         str(FIXTURES / "doc_consistency_good.py"),
         required_terms=["logdet"],
     )
-    error = call_mcp_tool("implementation_brief", {"root": str(FIXTURES), "query": "transport"})
+    error = call_mcp_tool("check_equality", {"lhs": "a"})
 
     assert validate_contract_payload(success) == []
     assert validate_contract_payload(error) == []

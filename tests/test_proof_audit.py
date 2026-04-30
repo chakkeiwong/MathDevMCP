@@ -3,8 +3,6 @@ import subprocess
 import sys
 
 from mathdevmcp.contracts import validate_contract_payload, validate_derivation_evidence
-from mathdevmcp.mcp_facade import call_mcp_tool, list_mcp_tools
-from mathdevmcp.mcp_server import audit_derivation_label as server_audit_derivation_label
 from mathdevmcp.proof_audit import audit_derivation_for_label
 
 
@@ -79,25 +77,6 @@ def test_proof_audit_contract_and_evidence_validate():
     assert validate_contract_payload({**result, "ok": True}) == []
     for obligation in result["obligations"]:
         assert validate_derivation_evidence(obligation["evidence"]) == []
-
-
-def test_mcp_facade_exposes_audit_derivation_label():
-    names = {tool["name"] for tool in list_mcp_tools()}
-    result = call_mcp_tool(
-        "audit_derivation_label",
-        {"root": str(FIXTURES), "label": "eq:proof-audit-single", "backend": "sympy"},
-    )
-
-    assert "audit_derivation_label" in names
-    assert result["ok"] is True
-    assert result["status"] == "verified"
-
-
-def test_mcp_server_audit_derivation_label_delegates():
-    result = server_audit_derivation_label(str(FIXTURES), "eq:proof-audit-single", backend="sympy")
-
-    assert result["status"] == "verified"
-    assert result["metadata"] == {"schema_version": "1.0", "contract": "proof_audit_result"}
 
 
 def test_cli_audit_derivation_label_reports_contract():

@@ -6,6 +6,15 @@ local tools for LaTeX/document indexing, code-document consistency checks,
 derivation audit, benchmark gates, optional math backends, MCP integration,
 and privacy-preserving private corpus validation.
 
+The MCP server exposes a small set of **deterministic primitives** —
+`latex_label_lookup`, `check_equality`, `lean_check` — and ships
+project-local **skills** and **subagents** that compose those primitives
+into higher-level workflows (derivation audits, code/doc consistency
+review, release-gate driving). Workflow logic lives as editable prose in
+`.claude/`, not as Python tools an agent has to route through. See
+[`docs/mcp-simplification.md`](docs/mcp-simplification.md) for the
+rationale and tool-by-tool mapping.
+
 The primary product document is:
 
 - [Final release report](docs/mathdevmcp-release-report.tex)
@@ -67,6 +76,43 @@ MATHDEVMCP_REQUIRE_LATEXML=1 scripts/validate_latexml_backend.sh "$PWD"
 
 The supported install and validation modes are summarized in the
 [support matrix](docs/mathdevmcp-support-matrix.md).
+
+## MCP server, skills, and subagents
+
+The MCP surface is intentionally small. Three deterministic primitives,
+each returning a contract envelope with severity-tagged evidence:
+
+| Tool | Purpose |
+|---|---|
+| `latex_label_lookup` | Fetch a labeled LaTeX block plus paragraph neighborhood and provenance. |
+| `check_equality` | Check `lhs == rhs` via SymPy. Severity `certifying` only when simplification reaches zero or normalization matches exactly. |
+| `lean_check` | Run the Lean compiler on a supplied source string. Severity `certifying` only when Lean exits 0 and the source has no `sorry` / `admit`. |
+
+Anything missing — pandoc, sympy, Lean, latexml, lean-dojo — produces a
+`severity: diagnostic` abstention, never a crash. The certifying-evidence
+rule means an agent can *never* claim "verified" off a diagnostic, so the
+MCP stays honest in degraded environments.
+
+Project-local skills and subagents under `.claude/` compose the
+primitives into workflows:
+
+- `.claude/skills/audit-derivation/` — extract every `=` from a labeled
+  block, route each through `check_equality`, refuse to call anything
+  "verified" without backend evidence at `severity: certifying`.
+- `.claude/skills/audit-implementation/` — domain-parameterized check
+  that a code file contains the operations and shape guards a labeled
+  spec demands. Worked Kalman example included.
+- `.claude/skills/release-check/` — drive the release-readiness CLI for
+  a profile and translate blockers into actions.
+- `.claude/agents/derivation-auditor.md` — long-form multi-block audit
+  with the certifying-evidence rule baked into the agent identity.
+- `.claude/agents/code-doc-consistency-reviewer.md` — five-axis drift
+  review (operations, identities, assumptions, symbols, edge cases).
+
+For deeper context — what was removed, why, and how each former MCP tool
+maps to a skill / subagent / CLI command — see
+[`docs/mcp-simplification.md`](docs/mcp-simplification.md) and
+[`mcp/README.md`](mcp/README.md).
 
 ## Common Workflows
 
@@ -177,3 +223,12 @@ scripts/quality_gate.sh
 scripts/release_smoke.sh "$PWD"
 scripts/release_matrix.sh "$PWD"
 ```
+
+`pytest` skips backend-dependent tests cleanly when the relevant tool
+isn't installed (Lean binary, lean-dojo in the backend conda env,
+pandoc, etc.) and reports the reason. A fresh clone with no optional
+backends comes back **237 passed, 15 skipped** — the skips mirror the
+runtime "missing backend → diagnostic abstention" contract. Skip
+predicates live in `tests/conftest.py`. To exercise the full backend
+matrix, run `scripts/setup_backend_env.sh` and install the Lean
+toolchain via `elan` before re-running.

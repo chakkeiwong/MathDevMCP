@@ -36,6 +36,12 @@ the whole codebase.
 - Keep CLI and MCP wrappers thin; put behavior in library functions.
 - Keep optional tools optional unless a strict release profile requires them.
 - Keep LeanDojo in the backend environment.
+- Keep base/public release checks separate from strict backend checks. Missing
+  backend evidence is a caveat for base/public, but a blocker for `backend` and
+  `full`.
+- Treat Lean toolchain download and availability failures as diagnostic
+  `inconclusive` evidence. Only direct Lean rejection of supplied source is a
+  `mismatch`.
 - Never commit private documents or populated private manifests.
 - Run focused tests after each behavior change, then the full suite.
 - Treat `full` as strict internal/deployment evidence and `public` as the

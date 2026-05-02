@@ -50,7 +50,7 @@ def test_call_mcp_tool_compare_label_code_returns_traceable_result():
     assert result["ok"] is True
 
 
-def test_call_mcp_tool_audit_implementation_label_matches_compatibility_alias():
+def test_call_mcp_tool_audit_implementation_label_returns_rich_audit_while_alias_stays_legacy():
     args = {
         "root": str(FIXTURES),
         "label": "prop:transport-mismatch",
@@ -61,8 +61,10 @@ def test_call_mcp_tool_audit_implementation_label_matches_compatibility_alias():
     preferred = call_mcp_tool("audit_implementation_label", args)
     legacy = call_mcp_tool("compare_label_code", args)
 
-    assert preferred == legacy
+    assert preferred["metadata"] == {"schema_version": "1.0", "contract": "implementation_audit_result"}
+    assert legacy["metadata"] == {"schema_version": "1.0", "contract": "label_consistency_result"}
     assert preferred["status"] == "mismatch"
+    assert legacy["status"] == "mismatch"
 
 
 def test_call_mcp_tool_preferred_label_and_equality_names_work():

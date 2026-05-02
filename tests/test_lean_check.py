@@ -101,6 +101,23 @@ def test_check_lean_source_reports_unavailable_lean_as_inconclusive(monkeypatch)
     assert result["evidence"][0]["kind"] == "lean_unavailable"
 
 
+def test_check_lean_source_reports_toolchain_download_failure_as_inconclusive(monkeypatch, tmp_path):
+    lean = tmp_path / "lean"
+    lean.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+    lean.chmod(0o755)
+    monkeypatch.setenv("MATHDEVMCP_LEAN_PATH", str(lean))
+
+    def failed_toolchain_run(*args, **kwargs):
+        return subprocess.CompletedProcess(args[0], 1, "", "error: error during download")
+
+    monkeypatch.setattr(subprocess, "run", failed_toolchain_run)
+
+    result = check_lean_source("theorem t : True := by trivial")
+
+    assert result["status"] == "inconclusive"
+    assert result["evidence"][0]["kind"] == "lean_unavailable"
+
+
 def test_check_lean_source_reports_timeout_as_inconclusive(monkeypatch):
     _requires_lean()
     def timeout_run(*args, **kwargs):

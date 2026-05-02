@@ -3683,3 +3683,442 @@ three-tool-only design.
    Test by updating the evidence generation script to prefer
    `audit_implementation_label` in narrative snippets while keeping CLI command
    compatibility clear.
+
+## Current MCP interface remaining-gaps request
+
+The next request is to close the remaining gaps after the tiered MCP interface
+checkpoint. The execution plan is:
+
+- [mcp-interface-remaining-gaps-execution-plan.md](mcp-interface-remaining-gaps-execution-plan.md)
+
+The gaps to address are:
+
+1. make `audit_implementation_label` a real structured implementation-audit
+   spine rather than only a preferred-name wrapper,
+2. add schema-checked client workflow rules and an install command,
+3. make deprecated alias usage auditable,
+4. clarify backend/Lean environment policy,
+5. align release-facing examples and evidence with preferred MCP names,
+6. document package policy explicitly,
+7. keep Claude/client workflow guidance as tested supplements rather than a
+   replacement for MCP contracts.
+
+This pass should repeat the established cycle:
+
+```text
+plan phase -> execute -> test -> audit -> tidy -> update reset memo
+```
+
+Safety invariant remains unchanged: no parser output, AST match, inferred
+diagnostic, generated client rule, Lean placeholder scan, backend environment
+check, benchmark pass, or MCP wrapper may become a verified mathematical claim
+unless deterministic backend evidence is recorded under an explicit
+MathDevMCP contract.
+
+Initial state:
+
+```text
+main is ahead of origin/main by c38b8ce Improve MCP interface with tiered surface
+untracked local directory remains: .serena/
+```
+
+### MCP remaining-gaps plan-audit result
+
+Added the second-developer audit artifact:
+
+- [mcp-interface-remaining-gaps-plan-audit.md](mcp-interface-remaining-gaps-plan-audit.md)
+
+Audit conclusion: proceed with all phases. The audit added guardrails:
+
+- `compare_label_code` must remain backward-compatible and keep the
+  `label_consistency_result` contract,
+- `audit_implementation_label` should become a conservative aggregator, not a
+  verifier,
+- client rules must be generated from one source and schema-checked,
+- alias audits should ignore historical plans by default,
+- backend/full profile strictness should remain separate from base/public test
+  expectations,
+- package policy should remain conservative in this pass.
+
+Phase 1 remains justified: implement `audit_implementation_label` as a richer
+structured implementation-audit spine while preserving the legacy alias.
+
+### MCP remaining-gaps Phase 1 checkpoint
+
+Phase plan:
+
+- Implement `audit_implementation_label` as a conservative aggregator over the
+  existing term-comparison, proof-audit v2, AST operation graph, semantic
+  alignment, and shape-semantics modules.
+- Preserve `compare_label_code` as the backward-compatible
+  `label_consistency_result` alias.
+- Keep the result diagnostic-only: no AST/shape/client evidence may become a
+  verified mathematical claim.
+
+Executed:
+
+- Added `src/mathdevmcp/implementation_audit.py`.
+- Updated MCP facade/server preferred `audit_implementation_label` to return
+  `implementation_audit_result`.
+- Kept MCP `compare_label_code` on the old `label_consistency_result` path.
+- Added focused implementation-audit and MCP compatibility tests.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_implementation_audit.py tests/test_mcp_facade.py tests/test_mcp_server.py tests/test_mcp_surface_sync.py
+- 39 passed
+
+PYTHONPATH=src python -m mathdevmcp.cli benchmark-gate --root "$PWD"
+- passed: true
+- total: 41
+- passed_count: 41
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile base
+- status: ready_with_caveats
+- blockers: none
+- caveats: dirty_worktree, lean_version_or_toolchain_caveat, dependency_conflicts, private_corpus_not_configured
+```
+
+Audit interpretation:
+
+- The preferred implementation-audit surface now has a real structured result:
+  nested `label_consistency_result`, `proof_audit_v2_result`,
+  `ast_operation_graph`, `semantic_alignment_report`, and
+  `shape_semantic_report` evidence.
+- The legacy alias remains compatible and intentionally lacks the richer AST
+  packet.
+- The strongest non-mismatch status is `consistent`, not `verified`; the result
+  includes an explicit verification-boundary statement.
+- The local base profile remains releasable with caveats. The Lean caveat is an
+  environment/toolchain download issue, not a Phase 1 regression.
+
+Phase 2 remains justified: the PR's portable-rule idea is useful, but the rules
+must be generated from one tiered-interface source and schema-checked so they do
+not call nonexistent parameters such as `paragraph_context` on
+`latex_label_lookup`.
+
+### MCP remaining-gaps Phase 2 checkpoint
+
+Phase plan:
+
+- Adopt the useful `install-rules` idea from PR #1 without shrinking the MCP
+  surface to three tools.
+- Generate portable Cursor/Copilot workflow rules from one Python source.
+- Schema-check every documented example against the actual FastMCP wrapper
+  parameters.
+- Ensure rule installation is idempotent and preserves existing project
+  instructions outside a marked MathDevMCP block.
+
+Executed:
+
+- Added `src/mathdevmcp/_workflow_rules.py` with canonical portable workflow
+  rules and schema validation against the MCP registry/server wrappers.
+- Added `src/mathdevmcp/_install_rules.py` with marker-scoped installs for
+  `.cursorrules` and `.github/copilot-instructions.md`.
+- Added CLI subcommand:
+
+```text
+mathdevmcp install-rules <cursor|copilot|all> --root . [--dry-run]
+```
+
+- Added client docs:
+  - `docs/clients/workflow-rules.md`
+  - `docs/clients/cursor.md`
+  - `docs/clients/github-copilot.md`
+- Added tests for doc/source sync, schema-valid tool parameters, dry-run,
+  idempotency, parent-directory creation, `all` expansion, and CLI JSON output.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_workflow_rules.py tests/test_mcp_surface_sync.py tests/test_packaging_release_policy.py
+- 18 passed
+
+PYTHONPATH=src python -m mathdevmcp.cli install-rules cursor --root /tmp/mathdevmcp-rule-check --dry-run
+- status: would_update
+- result: would_create /tmp/mathdevmcp-rule-check/.cursorrules
+- no file written
+```
+
+Audit interpretation:
+
+- The rules now prefer the tiered interface:
+  `latex_label_lookup`, `check_equality`, `lean_check`,
+  `audit_derivation_v2_label`, `audit_implementation_label`,
+  `benchmark_gate`, and `release_readiness`.
+- The previous PR bug is explicitly guarded: the packaged rules do not mention
+  `paragraph_context` for `latex_label_lookup`.
+- The installed block is marker-scoped, so reruns update only the MathDevMCP
+  section.
+- Client rules remain guidance only; all certifying claims still require
+  deterministic backend evidence.
+
+Phase 3 remains justified: aliases are still exposed for migration, and we need
+an auditable way to distinguish active stale instructions from historical
+planning records.
+
+### MCP remaining-gaps Phase 3 checkpoint
+
+Phase plan:
+
+- Keep deprecated aliases available for migration, but make active usage
+  visible and measurable.
+- Ignore historical plans by default so old design notes do not block current
+  release work.
+- Treat migration tables as allowed, while flagging active instructions that
+  still tell users to call deprecated MCP names.
+
+Executed:
+
+- Added `src/mathdevmcp/mcp_alias_audit.py`.
+- Added CLI command:
+
+```text
+mathdevmcp audit-mcp-aliases --root . [--include-history]
+```
+
+- Added tests for registry-derived alias mappings, migration-section allowance,
+  active-instruction findings, historical-plan exclusion, and CLI JSON contract.
+- Updated active stale guidance:
+  - `docs/kalman-hessian-agent-guide.md` now teaches MCP
+    `latex_label_lookup` and `audit_implementation_label` while keeping CLI
+    command examples where appropriate.
+  - `scripts/audit_release_report_substance.sh` now expects
+    `Tool: audit_implementation_label` in the release-report conversation
+    chapter.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_mcp_alias_audit.py tests/test_mcp_surface_sync.py
+- 13 passed
+
+PYTHONPATH=src python -m mathdevmcp.cli audit-mcp-aliases --root "$PWD"
+- status: consistent
+- active_instruction: 0
+- migration_section: 19
+```
+
+Audit interpretation:
+
+- The scanner found the stale active guidance before cleanup, especially in the
+  Kalman Hessian guide; after edits, only migration/compatibility sections
+  mention deprecated MCP aliases.
+- This gives maintainers a concrete retirement signal for a future release:
+  aliases should not be removed until the active-instruction count remains zero
+  across client rules, docs, and scripts.
+
+Phase 4 remains justified: base/public release checks and backend/Lean strict
+checks still need explicit policy documentation and tests so environment issues
+remain caveats unless a strict backend profile is selected.
+
+### MCP remaining-gaps Phase 4 checkpoint
+
+Phase plan:
+
+- Make backend/Lean policy explicit and test-backed.
+- Keep base/public profiles usable without optional backend setup.
+- Keep strict backend/full profiles blocking when isolated backend evidence is
+  missing.
+- Confirm Lean toolchain/environment failures remain diagnostic/inconclusive
+  unless Lean directly rejects a supplied source.
+
+Executed:
+
+- Added `backend_environment_policy()` in `src/mathdevmcp/release_policy.py`.
+- Updated `docs/mathdevmcp-support-matrix.md` and
+  `docs/mathdevmcp-maintainer-guide.md` with the base-vs-strict backend
+  boundary and Lean failure classification.
+- Added tests that:
+  - base profile does not block on a missing backend env,
+  - backend policy reports base/strict requirements,
+  - Lean toolchain download failure maps to `inconclusive`/`lean_unavailable`,
+  - support matrix documents optional `[mcp]` and backend boundaries.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_release_caveat_closure.py tests/test_lean_check.py tests/test_packaging_release_policy.py tests/test_public_release_check.py
+- 24 passed, 6 skipped
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile base
+- status: ready_with_caveats
+- blockers: none
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile backend
+- status: not_ready
+- blocker: backend_lean_dojo_unavailable
+- detail: No backend Python interpreter is configured.
+```
+
+Audit interpretation:
+
+- The profile split is behaving correctly: this local machine can produce base
+  evidence despite Lean toolchain and dependency caveats, but cannot pass the
+  strict backend profile without the isolated backend Python.
+- The Lean checker already had a token/comment-aware placeholder scanner and
+  environment-failure classification; the new test locks the toolchain-download
+  behavior.
+- `mcp` remains optional for package policy; MCP source/docs can still be
+  checked in base/public tests without importing the optional runtime.
+
+Phase 5 remains justified: release-facing narrative and generated-evidence
+checks should now require preferred MCP names, especially
+`Tool: audit_implementation_label`.
+
+### MCP remaining-gaps Phase 5 checkpoint
+
+Phase plan:
+
+- Ensure active release-facing narrative teaches preferred MCP names.
+- Keep CLI command compatibility separate from MCP conversation examples.
+- Add a regression test so release report `Tool:` examples do not return to
+  deprecated MCP names.
+
+Executed:
+
+- Updated `scripts/audit_release_report_substance.sh` in Phase 3 to require
+  `Tool: audit_implementation_label`.
+- Added a doc-sync test that requires `Tool: audit_implementation_label` and
+  rejects `Tool: compare_label_code` and
+  `Tool: extract_latex_neighborhood` in
+  `docs/mathdevmcp-release-report.tex`.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_mcp_surface_sync.py
+- 9 passed
+
+bash scripts/audit_release_report_substance.sh
+- Release report substance audit passed.
+- Chapters audited: 41
+- Evidence snippets audited: 44
+```
+
+Audit interpretation:
+
+- The release report already used preferred MCP examples; this phase made that
+  expectation executable.
+- CLI snippets such as `compare-label-code` remain acceptable where the report
+  is demonstrating CLI behavior rather than MCP tool calls.
+
+Phase 6 remains justified: the package dependency decision should now be
+encoded explicitly so future PRs do not silently promote `mcp` to a base
+dependency or contradict the support matrix.
+
+### MCP remaining-gaps Phase 6 checkpoint
+
+Phase plan:
+
+- Keep the package policy conservative: do not promote `mcp` to a base
+  dependency in this pass.
+- Document that base imports remain lightweight and MCP-facing installs use
+  the `[mcp]` extra.
+- Add public release and packaging tests so the dependency decision cannot
+  silently drift.
+
+Executed:
+
+- Updated `README.md`, `mcp/README.md`, and
+  `docs/mathdevmcp-deployment-guide.md` to state the optional MCP runtime
+  policy.
+- Extended `src/mathdevmcp/public_release.py` so public release checks fail if
+  base dependencies become non-empty or the `[mcp]` extra no longer contains
+  `mcp`.
+- Added tests for lightweight base package policy, optional MCP docs, and
+  public-release packaging enforcement.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_packaging_release_policy.py tests/test_public_release_check.py tests/test_release_candidate_installation.py tests/test_mcp_surface_sync.py
+- 25 passed
+```
+
+Audit interpretation:
+
+- This deliberately rejects PR #1's proposal to promote `mcp` into base
+  dependencies for now.
+- The tradeoff is explicit: base install/import stays lightweight; users who
+  launch `mathdevmcp-mcp` need the `[mcp]` extra.
+- Public release checks can now catch accidental package-policy drift.
+
+Phase 7 remains justified: all implementation phases are complete and should be
+verified together with the full suite, benchmark gate, diff checks, final memo
+update, and a commit.
+
+### MCP remaining-gaps Phase 7 final checkpoint
+
+Final verification:
+
+```text
+PYTHONPATH=src pytest -q
+- 287 passed, 11 skipped
+
+PYTHONPATH=src python -m mathdevmcp.cli benchmark-gate --root "$PWD"
+- passed: true
+- total: 41
+- passed_count: 41
+
+PYTHONPATH=src python -m mathdevmcp.cli audit-mcp-aliases --root "$PWD"
+- status: consistent
+- active_instruction: 0
+- migration_section: 19
+
+git diff --check
+- passed
+
+PYTHONPATH=src python -m mathdevmcp.cli public-release-check --root "$PWD"
+- status: consistent
+- blockers: none
+
+bash scripts/audit_release_report_substance.sh
+- Release report substance audit passed.
+- Chapters audited: 41
+- Evidence snippets audited: 44
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile base
+- status: ready_with_caveats
+- blockers: none
+- caveats: dirty_worktree, lean_version_or_toolchain_caveat, dependency_conflicts, private_corpus_not_configured
+```
+
+Final interpretation:
+
+- The tiered MCP interface remains larger than three tools by design. This pass
+  improves the current interface rather than collapsing tested workflows into
+  client-side prose.
+- `audit_implementation_label` is now the main structured implementation-audit
+  surface and remains diagnostic rather than certifying.
+- Portable Cursor/Copilot rules are generated from one source and
+  schema-checked against the MCP wrappers.
+- Deprecated aliases remain available, but active docs/scripts/client rules no
+  longer teach them.
+- Base/public profiles are separated from strict backend/full profiles.
+- Release-facing `Tool:` examples now prefer current MCP names.
+- Package policy is explicit: base dependencies stay empty; MCP runtime stays
+  in the `[mcp]` extra.
+
+Remaining hypotheses for the next pass:
+
+1. Alias retirement can be safe after one measured migration cycle.
+   Test by running `audit-mcp-aliases` in CI or release scripts and requiring
+   `active_instruction: 0` across at least one release checkpoint before
+   removing deprecated server aliases.
+
+2. `audit_implementation_label` can become more useful by adding an optional
+   symbol/role map.
+   Test whether explicit mappings such as `S_t -> innovation_covariance` reduce
+   false mismatches on realistic private/sanitized corpora without weakening
+   the diagnostic-only boundary.
+
+3. Backend profile readiness needs a reproducible strict job.
+   Test by provisioning `mathdevmcp-backends` in CI or a local release machine
+   and requiring `release-readiness --profile backend` to pass separately from
+   base/public.
+
+4. CLI preferred-name parity may be worth adding after MCP migration settles.
+   Test whether adding CLI aliases such as `audit-implementation-label` improves
+   operator ergonomics without confusing existing `compare-label-code` scripts.

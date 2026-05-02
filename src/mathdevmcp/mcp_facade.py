@@ -20,6 +20,7 @@ from .derivation import derive_step_for_label
 from .doctor import doctor_report
 from .governance import governance_policy
 from .index_cache import load_or_build_index
+from .implementation_audit import audit_implementation_label
 from .kalman_workflows import audit_kalman_recursion
 from .latex_index import build_index, extract_context_for_label, extract_paragraph_context_for_label, search_index
 from .lean_check import check_lean_source
@@ -129,7 +130,19 @@ def _tool_compare_label_code(args: dict[str, Any]) -> dict[str, Any]:
 
 
 def _tool_audit_implementation_label(args: dict[str, Any]) -> dict[str, Any]:
-    return _tool_compare_label_code(args)
+    return audit_implementation_label(
+        _required_string(args, "root"),
+        _required_string(args, "label"),
+        _required_string(args, "code"),
+        before=int(args.get("before", 0)),
+        after=int(args.get("after", 0)),
+        paragraph_context=bool(args.get("paragraph_context", False)),
+        required_terms=_optional_terms(args),
+        required_operations=_optional_operations(args),
+        backend=str(args.get("backend", "sympy")),
+        cache_path=args.get("cache") or None,
+        index=_index_for_args(args),
+    )
 
 
 def _tool_derive_label_step(args: dict[str, Any]) -> dict[str, Any]:
@@ -313,7 +326,7 @@ MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
     ),
     MCPToolSpec("search_code_docs", _tool_search_code_docs, "Search code and document files together.", "code_doc_search_results", "primitive"),
     MCPToolSpec("compare_doc_code", _tool_compare_doc_code, "Compare document text against code text.", "doc_code_consistency_result", "workflow", stability="experimental"),
-    MCPToolSpec("audit_implementation_label", _tool_audit_implementation_label, "Audit a labeled document block against a code implementation.", "label_consistency_result", "workflow"),
+    MCPToolSpec("audit_implementation_label", _tool_audit_implementation_label, "Audit a labeled document block against a code implementation.", "implementation_audit_result", "workflow"),
     MCPToolSpec(
         "compare_label_code",
         _tool_compare_label_code,

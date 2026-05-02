@@ -55,7 +55,8 @@ Record the labels that matter. If no labels exist, note that the document needs 
 
 ### 2. Extract local context before reasoning
 
-For every candidate equation/proposition, use `extract_latex_neighborhood` first:
+For every candidate equation/proposition, use MCP `latex_label_lookup` first
+or the CLI `extract-latex-neighborhood` command:
 
 ```bash
 PYTHONPATH=/home/chakwong/MathDevMCP/src python -m mathdevmcp.cli \
@@ -111,7 +112,7 @@ Interpretation:
 
 For Hessians, expect many correct steps to remain `unverified`. That is fine. The agent should then write the missing derivation explicitly.
 
-### 5. Use `compare_label_code` for implementation mapping
+### 5. Use `audit_implementation_label` for implementation mapping
 
 After identifying a documented equation, check whether implementation code contains the required terms:
 

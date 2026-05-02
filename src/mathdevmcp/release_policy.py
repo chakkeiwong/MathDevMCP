@@ -169,6 +169,29 @@ def release_readiness_report(root: str | Path, *, profile: str = "base") -> dict
     )
 
 
+def backend_environment_policy() -> dict:
+    """Return the profile-scoped backend environment policy."""
+
+    profiles = {profile: _profile_policy(profile) for profile in sorted(RELEASE_PROFILES)}
+    return attach_contract(
+        {
+            "status": "consistent",
+            "reason": "Backend and Lean dependencies are profile-scoped; base/public checks stay usable without strict optional backend evidence.",
+            "base_policy": "The base package and base release profile do not require LeanDojo, LaTeXML, private corpora, or the mcp package as a base dependency.",
+            "mcp_policy": "MCP-facing installs use the optional [mcp] extra; public release checks inspect MCP source/docs without importing the optional runtime.",
+            "lean_policy": "Direct Lean rejection is a mismatch, while missing executables, toolchain download failures, timeouts, and placeholders are diagnostic/inconclusive.",
+            "strict_profiles": {
+                "backend": "Requires isolated LeanDojo backend evidence.",
+                "latexml": "Requires a validating LaTeXML executable.",
+                "private-corpus": "Requires an external release-gated private corpus manifest.",
+                "full": "Requires backend, LaTeXML, and private corpus evidence.",
+            },
+            "profiles": profiles,
+        },
+        "backend_environment_policy",
+    )
+
+
 def _run_backend_python_with_default_env(module: str, *, package: str) -> tuple[bool, str | None, str]:
     previous = os.environ.get("MATHDEVMCP_BACKEND_CONDA_ENV")
     if not previous:

@@ -35,7 +35,7 @@ def test_mcp_server_compare_label_code_returns_mismatch():
     assert result["missing_in_code"] == ["logdet"]
 
 
-def test_mcp_server_audit_implementation_label_matches_legacy_alias():
+def test_mcp_server_audit_implementation_label_returns_rich_audit_while_alias_stays_legacy():
     args = (
         str(FIXTURES),
         "prop:transport-mismatch",
@@ -45,8 +45,10 @@ def test_mcp_server_audit_implementation_label_matches_legacy_alias():
     preferred = audit_implementation_label(*args, required_terms=["logdet"])
     legacy = compare_label_code(*args, required_terms=["logdet"])
 
-    assert preferred == legacy
+    assert preferred["metadata"] == {"schema_version": "1.0", "contract": "implementation_audit_result"}
+    assert legacy["metadata"] == {"schema_version": "1.0", "contract": "label_consistency_result"}
     assert preferred["status"] == "mismatch"
+    assert legacy["status"] == "mismatch"
 
 
 def test_mcp_server_check_equality_returns_proof_obligation_contract():

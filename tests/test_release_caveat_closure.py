@@ -5,7 +5,7 @@ import subprocess
 import sys
 
 from mathdevmcp.mcp_facade import call_mcp_tool
-from mathdevmcp.release_policy import release_readiness_report
+from mathdevmcp.release_policy import backend_environment_policy, release_readiness_report
 from mathdevmcp.release_corpus import validate_release_corpus_manifest
 
 
@@ -16,6 +16,7 @@ FIXTURES = ROOT / "benchmarks" / "fixtures"
 def test_release_readiness_defaults_to_base_profile(monkeypatch):
     monkeypatch.setenv("MATHDEVMCP_LATEXML_PATH", "/definitely/missing/latexml")
     monkeypatch.delenv("MATHDEVMCP_PRIVATE_CORPUS_MANIFEST", raising=False)
+    monkeypatch.setenv("MATHDEVMCP_BACKEND_CONDA_ENV", "definitely-missing-backend-env")
 
     report = release_readiness_report(ROOT)
 
@@ -28,6 +29,18 @@ def test_release_readiness_defaults_to_base_profile(monkeypatch):
     assert any(caveat["kind"] == "latexml_optional_backend_unavailable" for caveat in report["caveats"])
     assert any(caveat["kind"] == "private_corpus_not_configured" for caveat in report["caveats"])
     assert not any(blocker["kind"] == "latexml_required_backend_unavailable" for blocker in report["blockers"])
+    assert not any(blocker["kind"] == "backend_lean_dojo_unavailable" for blocker in report["blockers"])
+
+
+def test_backend_environment_policy_records_base_vs_strict_boundary():
+    policy = backend_environment_policy()
+
+    assert policy["metadata"] == {"schema_version": "1.0", "contract": "backend_environment_policy"}
+    assert "do not require LeanDojo" in policy["base_policy"]
+    assert "[mcp]" in policy["mcp_policy"]
+    assert "toolchain download failures" in policy["lean_policy"]
+    assert policy["profiles"]["base"]["requires_backend"] is False
+    assert policy["profiles"]["backend"]["requires_backend"] is True
 
 
 def test_latexml_profile_blocks_when_backend_unavailable(monkeypatch):

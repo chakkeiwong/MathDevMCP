@@ -22,6 +22,30 @@ def test_optional_dependency_groups_keep_base_package_small():
     assert {"sympy", "mcp", "lean-dojo", "build", "twine"}.issubset(set(optional["all"]))
 
 
+def test_docs_explain_optional_mcp_runtime_policy():
+    combined = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in [
+            ROOT / "README.md",
+            ROOT / "mcp" / "README.md",
+            ROOT / "docs" / "mathdevmcp-deployment-guide.md",
+            ROOT / "docs" / "mathdevmcp-support-matrix.md",
+        ]
+    )
+
+    assert "base package intentionally has no required runtime dependencies" in combined
+    assert "[mcp]" in combined
+    assert "mathdevmcp-mcp" in combined
+
+
+def test_support_matrix_documents_backend_profile_boundary():
+    text = (ROOT / "docs" / "mathdevmcp-support-matrix.md").read_text(encoding="utf-8")
+
+    assert "base and public profiles must stay usable" in text
+    assert "MCP-facing installs use the optional `[mcp]` extra" in text
+    assert "toolchain download failures" in text
+
+
 def test_release_readiness_report_records_policy_fields():
     report = release_readiness_report(ROOT)
 

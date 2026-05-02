@@ -164,7 +164,7 @@ for marker in [
     r"\section{Example Prompts and Expected Tool Calls}",
     "LLM-only",
     "Tool: search_latex",
-    "Tool: compare_label_code",
+    "Tool: audit_implementation_label",
     "Tool: audit_derivation_v2_label",
     "validate_release_corpus",
     "benchmark_gate",

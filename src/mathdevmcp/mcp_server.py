@@ -119,9 +119,11 @@ def audit_implementation_label(
     label: str,
     code: str,
     required_terms: Sequence[str] | None = None,
+    required_operations: Sequence[str] | None = None,
     before: int = 0,
     after: int = 0,
     paragraph_context: bool = False,
+    backend: str = "sympy",
     cache: str | None = None,
 ) -> dict:
     return call_mcp_tool(
@@ -131,9 +133,11 @@ def audit_implementation_label(
             "label": label,
             "code": code,
             "required_terms": list(required_terms) if required_terms is not None else None,
+            "required_operations": list(required_operations) if required_operations is not None else None,
             "before": before,
             "after": after,
             "paragraph_context": paragraph_context,
+            "backend": backend,
             "cache": cache,
         },
     )

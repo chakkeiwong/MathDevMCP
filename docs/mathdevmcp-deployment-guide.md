@@ -4,6 +4,8 @@ MathDevMCP is deployed as a small base package with optional external workers.
 The base package must import without LaTeXML, Pandoc, Lean, Sage, or LeanDojo.
 The public industrial release gate is separate from internal deployment
 profiles and is checked with `public-release-check`.
+The MCP server runtime is also optional; install `mathdevmcp[mcp]` or
+`.[dev,mcp]` before running `mathdevmcp-mcp`.
 
 ## Local Smoke
 

@@ -20,6 +20,14 @@ LeanDojo remains outside the base Python environment. Use the
 `mathdevmcp-backends` conda environment so Ray, Pydantic, and LeanDojo
 dependencies do not destabilize document, PDF, ML, or MCP workflows.
 
+The base and public profiles must stay usable when the optional backend stack is
+absent. Missing LeanDojo, LaTeXML, private corpora, or a Lean toolchain cache is
+a caveat in base/public evidence unless a strict profile explicitly requires
+that capability. MCP-facing installs use the optional `[mcp]` extra; base
+library imports remain lightweight.
+
+Direct Lean source rejection is a mismatch. Lean executable absence, toolchain download failures, timeouts, and placeholder proofs are diagnostic or inconclusive evidence, not mathematical refutations.
+
 ## Public Release Boundary
 
 The `base`, `backend`, `latexml`, `private-corpus`, and `full` profiles are
@@ -28,4 +36,3 @@ industrial release checks for packaging, CI, MCP surface consistency, support
 matrix coverage, documentation alignment, quality gates, and private path
 redaction. A public release should not be claimed unless the `public` profile
 is executable and has no blockers.
-

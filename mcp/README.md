@@ -71,6 +71,12 @@ carefully:
 
 ## Launch
 
+Install the optional MCP runtime before launching the server:
+
+```bash
+python -m pip install -e ".[mcp]"
+```
+
 Installed script entrypoint:
 
 ```bash

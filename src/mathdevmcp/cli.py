@@ -18,8 +18,10 @@ from .code_search import search_files
 from .consistency import compare_files, compare_label_to_code
 from .derivation import derive_step_for_label, derive_step_from_files
 from .doctor import doctor_report
+from ._install_rules import install_rules
 from .kalman_workflows import audit_kalman_recursion
 from .latex_index import build_index, extract_context_for_label, extract_paragraph_context_for_label, search_index, write_index
+from .mcp_alias_audit import audit_deprecated_alias_usage
 from .performance import index_performance_smoke
 from .parser_benchmark import compare_parser_backends
 from .proof_obligations import check_proof_obligation
@@ -301,6 +303,18 @@ def _cmd_public_release_check(args: argparse.Namespace) -> int:
     return 0 if result["status"] == "consistent" else 1
 
 
+def _cmd_install_rules(args: argparse.Namespace) -> int:
+    result = install_rules(args.root, args.client, dry_run=args.dry_run)
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_audit_mcp_aliases(args: argparse.Namespace) -> int:
+    result = audit_deprecated_alias_usage(args.root, include_history=args.include_history)
+    print(json.dumps(result, indent=2))
+    return 0 if result["status"] != "mismatch" else 1
+
+
 
 def make_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="MathDevMCP development utilities")
@@ -493,6 +507,17 @@ def make_parser() -> argparse.ArgumentParser:
     p_public = sub.add_parser("public-release-check", help="Validate public release product-surface gates")
     p_public.add_argument("--root", default=".", help="Project root")
     p_public.set_defaults(func=_cmd_public_release_check)
+
+    p_install_rules = sub.add_parser("install-rules", help="Install portable MathDevMCP workflow rules for an MCP client")
+    p_install_rules.add_argument("client", choices=["cursor", "copilot", "all"], help="Client instruction target to update")
+    p_install_rules.add_argument("--root", default=".", help="Project root where client instruction files live")
+    p_install_rules.add_argument("--dry-run", action="store_true", help="Preview the updated instruction file content without writing")
+    p_install_rules.set_defaults(func=_cmd_install_rules)
+
+    p_aliases = sub.add_parser("audit-mcp-aliases", help="Audit active docs/scripts for deprecated MCP tool aliases")
+    p_aliases.add_argument("--root", default=".", help="Project root to scan")
+    p_aliases.add_argument("--include-history", action="store_true", help="Include historical plans and generated evidence directories")
+    p_aliases.set_defaults(func=_cmd_audit_mcp_aliases)
 
     return parser
 

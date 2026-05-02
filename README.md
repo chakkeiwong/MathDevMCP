@@ -31,6 +31,9 @@ MCP-facing install:
 python -m pip install -e ".[dev,mcp]"
 ```
 
+The base package intentionally has no required runtime dependencies. Use the
+`[mcp]` extra for `mathdevmcp-mcp` and the FastMCP server runtime.
+
 Optional symbolic/backend packages:
 
 ```bash

@@ -85,9 +85,13 @@ def _check_packaging_metadata(root: Path) -> dict[str, Any]:
     for field in ["name", "version", "description", "requires-python"]:
         if not project.get(field):
             findings.append({"check": "packaging_metadata", "severity": "high", "kind": "packaging_metadata_missing", "detail": field})
+    if project.get("dependencies", []) != []:
+        findings.append({"check": "packaging_metadata", "severity": "high", "kind": "base_dependencies_not_lightweight", "detail": ", ".join(project.get("dependencies", []))})
     for group in ["dev", "mcp", "symbolic", "leandojo", "all", "quality"]:
         if group not in optional:
             findings.append({"check": "packaging_metadata", "severity": "high", "kind": "optional_dependency_group_missing", "detail": group})
+    if "mcp" not in optional.get("mcp", []):
+        findings.append({"check": "packaging_metadata", "severity": "high", "kind": "mcp_extra_missing_runtime_dependency"})
     if "license" not in project:
         findings.append({"check": "packaging_metadata", "severity": "medium", "kind": "license_metadata_missing"})
     return _check_result("packaging_metadata", findings)

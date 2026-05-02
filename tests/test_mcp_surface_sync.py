@@ -91,6 +91,14 @@ def test_primary_docs_use_preferred_mcp_names():
     assert "paragraph_context=true" not in combined
 
 
+def test_release_report_active_tool_examples_use_preferred_mcp_names():
+    text = (ROOT / "docs" / "mathdevmcp-release-report.tex").read_text(encoding="utf-8")
+
+    assert "Tool: audit_implementation_label" in text
+    assert "Tool: compare_label_code" not in text
+    assert "Tool: extract_latex_neighborhood" not in text
+
+
 def test_mcp_unexpected_exception_returns_stable_error(monkeypatch):
     def broken_handler(_args):
         raise RuntimeError("private path /home/chakwong/secret leaked by exception")

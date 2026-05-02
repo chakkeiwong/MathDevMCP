@@ -32,3 +32,11 @@ def test_public_release_profile_uses_public_surface_gate():
     assert "ci_release_gate" in report["required_capabilities"]
     assert not any(blocker["kind"] == "ci_release_gate_missing" for blocker in report["blockers"])
 
+
+def test_public_release_check_enforces_lightweight_base_package():
+    report = public_release_check(ROOT)
+    packaging = next(check for check in report["checks"] if check["name"] == "packaging_metadata")
+
+    assert packaging["status"] == "consistent"
+    assert not any(finding["kind"] == "base_dependencies_not_lightweight" for finding in packaging["findings"])
+    assert not any(finding["kind"] == "mcp_extra_missing_runtime_dependency" for finding in packaging["findings"])

@@ -41,12 +41,15 @@ python -m pip install -e ".[dev,symbolic]"
 scripts/setup_backend_env.sh
 ```
 
-LeanDojo should remain in the isolated `mathdevmcp-backends` environment:
+LeanDojo should remain in an isolated backend environment. The documented
+bootstrap creates `mathdevmcp-backends`; an existing validated environment can
+be selected with `MATHDEVMCP_BACKEND_CONDA_ENV`:
 
 ```bash
 export MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends
 export MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.20.0
 export MATHDEVMCP_LEAN_PATH="$HOME/.elan/bin/lean"
+scripts/validate_backend_install.sh "$PWD"
 ```
 
 LaTeXML is a system tool. Validate it with:
@@ -134,7 +137,6 @@ then run:
 ```bash
 export MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/secure/local/path/corpus.json
 scripts/validate_private_corpus.sh "$PWD"
-PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile full
 ```
 
 For local sanitized release-gate validation without committing private files:
@@ -146,6 +148,18 @@ scripts/validate_private_corpus.sh "$PWD"
 ```
 
 Normal reports redact private paths.
+
+For a strict full-profile review, configure backend, LaTeXML, and external
+private-corpus evidence in the same shell:
+
+```bash
+export MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends
+export MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.20.0
+export MATHDEVMCP_REQUIRE_LATEXML=1
+export MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/secure/local/path/corpus.json
+PYTHONPATH=src python -m mathdevmcp.cli release-profile-analysis --root "$PWD"
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile full
+```
 
 ## Release Profiles
 
@@ -161,6 +175,7 @@ public           public industrial release product-surface gate
 Run:
 
 ```bash
+PYTHONPATH=src python -m mathdevmcp.cli release-profile-analysis --root "$PWD"
 PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile base
 PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile full
 PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile public

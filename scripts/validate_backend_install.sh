@@ -21,8 +21,8 @@ import sys
 from mathdevmcp.doctor import doctor_report
 
 report = doctor_report()
-required = ["pandoc", "lean", "sage", "sympy"]
-optional = ["latexml", "lean_dojo"]
+required = ["pandoc", "lean", "sage", "lean_dojo"]
+optional = ["latexml", "sympy"]
 missing_required = [name for name in required if not report["capabilities"].get(name, {}).get("available")]
 missing_optional = [name for name in optional if not report["capabilities"].get(name, {}).get("available")]
 

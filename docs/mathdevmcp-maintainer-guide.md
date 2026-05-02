@@ -102,6 +102,25 @@ documentation boundary language, quality checks, and generated-evidence
 redaction all agree. It does not certify arbitrary mathematics; it certifies
 that the public product surface is coherent enough for release review.
 
+For strict internal/full release evidence, configure all optional evidence in
+one shell. An existing validated backend env may be selected with
+`MATHDEVMCP_BACKEND_CONDA_ENV`; `scripts/setup_backend_env.sh` remains the
+bootstrap path when no such env exists. `scripts/validate_backend_install.sh`
+requires Pandoc, Lean, Sage, and isolated LeanDojo evidence, and reports SymPy
+as an optional symbolic-backend caveat.
+
+```bash
+export MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends
+export MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.20.0
+export MATHDEVMCP_REQUIRE_LATEXML=1
+export MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/secure/local/path/corpus.json
+scripts/backend_env_doctor.sh "$PWD"
+scripts/validate_backend_install.sh "$PWD"
+scripts/validate_private_corpus.sh "$PWD"
+PYTHONPATH=src python -m mathdevmcp.cli release-profile-analysis --root "$PWD"
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile full
+```
+
 Scan for path leaks:
 
 ```bash
@@ -123,7 +142,9 @@ pdflatex -interaction=nonstopmode -halt-on-error mathdevmcp-release-report.tex
 - `private_corpus_manifest_required`: set
   `MATHDEVMCP_PRIVATE_CORPUS_MANIFEST` to an external manifest.
 - `backend_lean_dojo_unavailable`: run `scripts/setup_backend_env.sh` and set
-  `MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends`.
+  `MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends`, or select another
+  validated backend env. Missing SymPy is an optional symbolic-backend caveat,
+  not the LeanDojo backend blocker.
 - `latexml_required_backend_unavailable`: install LaTeXML or set
   `MATHDEVMCP_LATEXML_PATH`.
 - Dirty worktree caveat: commit or intentionally record the dirty evidence.

@@ -116,6 +116,56 @@ def test_backend_profile_defaults_to_documented_backend_env(monkeypatch):
         assert report["status"] in {"ready", "ready_with_caveats"}
 
 
+def test_backend_profile_omits_active_env_conflict_when_backend_env_isolated(monkeypatch):
+    import mathdevmcp.release_policy as release_policy
+
+    def fake_backend_check(module: str, *, package: str):
+        assert module == "lean_dojo"
+        assert package == "lean-dojo"
+        return True, "4.20.0", "Python module lean_dojo imports in backend env"
+
+    real_doctor = release_policy.doctor_report()
+
+    def fake_doctor_report():
+        payload = dict(real_doctor)
+        payload["conflicts"] = ["active pydantic conflict from application environment"]
+        return payload
+
+    monkeypatch.setattr(release_policy, "_run_backend_python_with_default_env", fake_backend_check)
+    monkeypatch.setattr(release_policy, "doctor_report", fake_doctor_report)
+
+    report = release_policy.release_readiness_report(ROOT, profile="backend")
+
+    caveat_kinds = {caveat["kind"] for caveat in report["caveats"]}
+    assert "dependency_conflicts" not in caveat_kinds
+    assert report["doctor_summary"]["conflicts"] == ["active pydantic conflict from application environment"]
+    assert not any(blocker["kind"] == "backend_lean_dojo_unavailable" for blocker in report["blockers"])
+
+
+def test_backend_profile_keeps_active_env_conflict_when_backend_env_missing(monkeypatch):
+    import mathdevmcp.release_policy as release_policy
+
+    def fake_backend_check(module: str, *, package: str):
+        return False, None, "No backend Python interpreter is configured."
+
+    real_doctor = release_policy.doctor_report()
+
+    def fake_doctor_report():
+        payload = dict(real_doctor)
+        payload["conflicts"] = ["active pydantic conflict from application environment"]
+        return payload
+
+    monkeypatch.setattr(release_policy, "_run_backend_python_with_default_env", fake_backend_check)
+    monkeypatch.setattr(release_policy, "doctor_report", fake_doctor_report)
+
+    report = release_policy.release_readiness_report(ROOT, profile="backend")
+
+    caveat_kinds = {caveat["kind"] for caveat in report["caveats"]}
+    assert "dependency_conflicts" in caveat_kinds
+    assert any(blocker["kind"] == "backend_lean_dojo_unavailable" for blocker in report["blockers"])
+    assert report["doctor_summary"]["conflicts"] == ["active pydantic conflict from application environment"]
+
+
 def test_release_readiness_cli_accepts_profile(monkeypatch):
     monkeypatch.setenv("MATHDEVMCP_LATEXML_PATH", "/definitely/missing/latexml")
     result = subprocess.run(

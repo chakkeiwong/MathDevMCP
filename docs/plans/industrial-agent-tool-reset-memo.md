@@ -1162,6 +1162,560 @@ This addendum is included by amending the implementation commit, so the exact
 final commit hash cannot be embedded here without changing the hash again. Use
 `git rev-parse --short HEAD` after the amend for the exact final `HEAD`.
 
+## Release gap full-closure kickoff
+
+Active execution plan:
+
+```text
+docs/plans/release-gap-full-closure-execution-plan.md
+```
+
+Starting commit:
+
+```text
+62d5003 Complete release profile analysis
+```
+
+Starting timestamp:
+
+```text
+2026-05-02T17:06:00Z
+```
+
+Initial working tree state:
+
+```text
+## main...origin/main [ahead 4]
+```
+
+Initial profile analysis:
+
+```text
+PYTHONPATH=src python -m mathdevmcp.cli release-profile-analysis --root "$PWD"
+- status: ready_with_caveats
+- git_commit: 62d5003
+- dirty_worktree: false
+- base.status: ready
+- public.status: ready
+- backend.status: not_ready
+- latexml.status: ready
+- private-corpus.status: not_ready
+- full.status: not_ready
+- base_public.claim_ready: true
+- backend.claim_ready: false
+- latexml.claim_ready: true
+- private_corpus.claim_ready: false
+- full.claim_ready: false
+- blockers:
+  - backend_lean_dojo_unavailable
+  - private_corpus_manifest_required
+```
+
+Initial local strict-evidence probes:
+
+```text
+conda env list
+- existing envs include mathdev-lean; mathdevmcp-backends is not present
+
+conda run -n mathdev-lean python -c "import lean_dojo; print(version)"
+- lean_dojo import available
+- lean-dojo version: 4.20.0
+
+elan toolchain list
+- leanprover/lean4:v4.30.0-rc2
+
+ELAN_TOOLCHAIN=leanprover/lean4:v4.30.0-rc2 ~/.elan/bin/lean --version
+- Lean 4.30.0-rc2
+```
+
+Interpretation:
+
+- Public/base release is already clean at kickoff.
+- The backend blocker is closable locally by selecting the existing
+  `mathdev-lean` backend env, but the first backend probe exposed an ambiguity:
+  active-env `magic-pdf`/`pydantic` conflicts still appear as backend/full
+  caveats even when LeanDojo is imported from the isolated backend env.
+- The private-corpus blocker is closable locally by generating and validating
+  the external sanitized private corpus under `/tmp`.
+- The full profile remains a justified next target if Phase 1 preserves strict
+  backend semantics and Phase 2 validates private-corpus evidence without path
+  leaks.
+
+Required cycle for this pass:
+
+```text
+plan for the phase
+-> execute
+-> test
+-> audit
+-> tidy up
+-> update reset memo
+```
+
+### Release gap full-closure plan audit checkpoint
+
+Second-developer audit:
+
+```text
+docs/plans/release-gap-full-closure-plan-audit.md
+```
+
+Audit result:
+
+- Approved with constraints.
+- Keep full-profile readiness separate from mathematical proof.
+- Keep active-env dependency conflicts visible in `doctor_summary`; only remove
+  them from backend/full release caveats when isolated backend LeanDojo evidence
+  is actually configured and available.
+- Keep Lean toolchain caveats strict.
+- Keep generated private-corpus evidence outside git and ensure validation
+  output redacts private paths.
+- Run the final full-profile command with backend env, Lean toolchain, LaTeXML,
+  and private manifest configured together.
+
+Phase 1 remains justified because the current strict-profile output contains an
+ambiguous active-environment dependency caveat even when LeanDojo is available
+through an isolated backend environment.
+
+### Release gap full-closure Phase 1 checkpoint
+
+Phase plan:
+
+- Tighten backend/full caveat semantics without weakening strict backend
+  evidence.
+- Reuse the backend LeanDojo import check before deciding whether active-env
+  dependency conflicts should affect strict profile status.
+- Keep raw doctor conflicts visible.
+
+Executed:
+
+- Updated `src/mathdevmcp/release_policy.py` so
+  `dependency_conflicts` affects backend/full readiness only when the required
+  isolated backend LeanDojo evidence is absent.
+- Added tests covering both directions:
+  - configured backend LeanDojo evidence suppresses the active-env conflict as a
+    release caveat;
+  - missing backend evidence still keeps the conflict caveat and backend
+    blocker visible.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_release_caveat_closure.py tests/test_release_profile_analysis.py
+- 21 passed
+
+git diff --check
+- passed
+
+MATHDEVMCP_BACKEND_CONDA_ENV=mathdev-lean \
+MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.30.0-rc2 \
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile backend
+- status: ready_with_caveats
+- blockers: none
+- caveats: dirty_worktree
+- lean: available, Lean 4.30.0-rc2
+- lean_dojo: available from /home/chakwong/anaconda3/envs/mathdev-lean/bin/python
+- doctor_summary.conflicts still records the active-env magic-pdf/pydantic
+  conflict
+```
+
+Audit interpretation:
+
+- Strict backend evidence is still required.
+- The active application environment conflict remains diagnostic evidence, but
+  no longer pollutes backend/full release readiness after isolated backend
+  LeanDojo evidence is configured.
+- The only live backend caveat after Phase 1 is the expected dirty-tree caveat
+  from in-progress edits.
+
+Tidy notes:
+
+- No generated evidence artifacts were committed.
+- Phase 2 remains justified because the private-corpus strict blocker is still
+  open and must be closed with external sanitized evidence.
+
+### Release gap full-closure Phase 2 checkpoint
+
+Phase plan:
+
+- Generate a sanitized private corpus outside git.
+- Validate the external manifest through the private-corpus gate.
+- Confirm parser policy selects the current backend for all release-gated
+  private entries.
+- Confirm the generated corpus does not appear in git status.
+
+Executed:
+
+- Generated external sanitized private-corpus evidence at:
+
+```text
+/tmp/mathdevmcp-sanitized-private-corpus-release-gap-full-closure/manifest.json
+```
+
+- Ran private-corpus validation with:
+
+```text
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-release-gap-full-closure/manifest.json \
+scripts/validate_private_corpus.sh "$PWD"
+```
+
+Validation result:
+
+```text
+- status: consistent
+- private_paths_redacted: true
+- private_manifest.status: loaded
+- private_manifest.entries: 6
+- findings: none
+- parser_reports: 6 entries, all selected_for_proof_audit
+```
+
+- Ran profile readiness with:
+
+```text
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-release-gap-full-closure/manifest.json \
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile private-corpus
+```
+
+Readiness result:
+
+```text
+- status: ready_with_caveats
+- blockers: none
+- caveats: dirty_worktree
+- private manifest path: <redacted-private-manifest>
+- private code roots: <redacted-private-path>
+```
+
+Tidy/audit notes:
+
+- `git status --short --branch` showed only intended repository edits and new
+  plan/audit files; no generated `/tmp` corpus artifacts are tracked or staged.
+- The private-corpus blocker is closed under configured external evidence.
+- The dirty-tree caveat is expected during implementation.
+- Phase 3 remains justified because backend, LaTeXML, private-corpus, and full
+  evidence must still be tested together in one strict release matrix.
+
+### Release gap full-closure Phase 3 checkpoint
+
+Phase plan:
+
+- Run strict backend, LaTeXML, private-corpus, full, and cross-profile evidence
+  with all required environment variables configured together.
+- Audit any validator mismatch against the release profile policy rather than
+  weakening the profile.
+- Preserve the distinction between strict operational readiness and
+  mathematical proof.
+
+Executed:
+
+- Ran backend environment diagnostics with:
+
+```text
+MATHDEVMCP_BACKEND_CONDA_ENV=mathdev-lean \
+MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.30.0-rc2 \
+scripts/backend_env_doctor.sh "$PWD"
+```
+
+Backend result:
+
+```text
+- status: ok
+- Lean: available under leanprover/lean4:v4.30.0-rc2
+- LeanDojo: available in mathdev-lean, version 4.20.0
+- SymPy: unavailable in mathdev-lean
+```
+
+- The first backend install validation failed because
+  `scripts/validate_backend_install.sh` required `sympy` but treated
+  `lean_dojo` as optional. That contradicted the release profile policy:
+  backend/full require isolated LeanDojo evidence; SymPy is a symbolic
+  diagnostic extra.
+- Updated `scripts/validate_backend_install.sh` so required capabilities are
+  `pandoc`, `lean`, `sage`, and `lean_dojo`; optional backend caveats are
+  `latexml` and `sympy`.
+- Added/updated tests to lock the validator capability split.
+
+Tests:
+
+```text
+MATHDEVMCP_BACKEND_CONDA_ENV=mathdev-lean \
+MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.30.0-rc2 \
+scripts/validate_backend_install.sh "$PWD"
+- exit: 0
+- optional backend caveat: sympy
+
+PYTHONPATH=src pytest -q tests/test_release_candidate_installation.py tests/test_release_caveat_closure.py
+- 25 passed
+
+git diff --check
+- passed
+```
+
+Strict matrix:
+
+```text
+MATHDEVMCP_BACKEND_CONDA_ENV=mathdev-lean \
+MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.30.0-rc2 \
+MATHDEVMCP_REQUIRE_LATEXML=1 \
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-release-gap-full-closure/manifest.json \
+scripts/release_matrix.sh "$PWD"
+- exit: 0
+- full profile: ready_with_caveats
+- full blockers: none
+- full caveats: dirty_worktree
+```
+
+Cross-profile strict analysis:
+
+```text
+MATHDEVMCP_BACKEND_CONDA_ENV=mathdev-lean \
+MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.30.0-rc2 \
+MATHDEVMCP_REQUIRE_LATEXML=1 \
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-release-gap-full-closure/manifest.json \
+PYTHONPATH=src python -m mathdevmcp.cli release-profile-analysis --root "$PWD"
+- status: ready
+- reason: All release profile claims are ready
+- all claim_ready fields: true
+- blockers: none
+- remaining profile caveat during implementation: dirty_worktree
+```
+
+Audit interpretation:
+
+- The strict full-profile path is executable on this machine when backend,
+  Lean toolchain, LaTeXML, and external private-corpus evidence are configured
+  together.
+- The only remaining caveat is the dirty worktree produced by this in-progress
+  implementation, so the next phase is justified.
+- The validator change is a policy alignment rather than a relaxation:
+  LeanDojo moved to required evidence and SymPy moved to an optional
+  symbolic-backend caveat.
+- Full-profile readiness remains an operational release evidence claim, not a
+  theorem or arbitrary mathematics certificate.
+
+### Release gap full-closure Phase 4 pre-commit checkpoint
+
+Phase plan:
+
+- Update release-facing documentation so operators can reproduce the strict
+  closeout path.
+- Run the full test suite and public/strict release gates.
+- Confirm generated private-corpus evidence remains outside git.
+- Commit the coherent source, docs, tests, plan, audit, and memo changes.
+
+Executed:
+
+- Updated `README.md`, `docs/mathdevmcp-support-matrix.md`, and
+  `docs/mathdevmcp-maintainer-guide.md` to clarify:
+  - `release-profile-analysis` is the first release-gap review command;
+  - strict full-profile review must configure backend, LaTeXML, and external
+    private-corpus evidence together;
+  - an existing validated backend environment can be selected with
+    `MATHDEVMCP_BACKEND_CONDA_ENV`;
+  - `scripts/validate_backend_install.sh` requires Pandoc, Lean, Sage, and
+    isolated LeanDojo evidence, while SymPy remains an optional symbolic
+    backend caveat.
+
+Final pre-commit verification:
+
+```text
+PYTHONPATH=src pytest -q
+- 295 passed, 11 skipped
+
+PYTHONPATH=src python -m mathdevmcp.cli benchmark-gate --root "$PWD"
+- passed: true
+- total: 41
+- passed_count: 41
+
+PYTHONPATH=src python -m mathdevmcp.cli public-release-check --root "$PWD"
+- status: consistent
+- blockers: none
+- caveats: none
+
+PYTHONPATH=src python -m mathdevmcp.cli audit-mcp-aliases --root "$PWD"
+- status: consistent
+- active_instruction: 0
+- migration_section: 19
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile public
+- status: ready_with_caveats
+- blockers: none
+- caveats: dirty_worktree
+```
+
+Strict full-profile verification:
+
+```text
+MATHDEVMCP_BACKEND_CONDA_ENV=mathdev-lean \
+MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.30.0-rc2 \
+MATHDEVMCP_REQUIRE_LATEXML=1 \
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-release-gap-full-closure/manifest.json \
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile full
+- status: ready_with_caveats
+- blockers: none
+- caveats: dirty_worktree
+- Lean: available, Lean 4.30.0-rc2
+- LeanDojo: available in mathdev-lean, version 4.20.0
+- LaTeXML: available
+- private_manifest.status: loaded
+- private_manifest.entries: 6
+- private_paths_redacted: true
+- doctor_summary.conflicts still records the active-env magic-pdf/pydantic
+  conflict
+
+MATHDEVMCP_BACKEND_CONDA_ENV=mathdev-lean \
+MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.30.0-rc2 \
+MATHDEVMCP_REQUIRE_LATEXML=1 \
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-release-gap-full-closure/manifest.json \
+PYTHONPATH=src python -m mathdevmcp.cli release-profile-analysis --root "$PWD"
+- status: ready
+- reason: All release profile claims are ready.
+- base.claim_ready: true
+- public.claim_ready: true
+- backend.claim_ready: true
+- latexml.claim_ready: true
+- private_corpus.claim_ready: true
+- full.claim_ready: true
+- strict blockers: none
+- remaining caveat before commit: dirty_worktree
+- next_hypotheses: public_base_release_process
+```
+
+Tidy/audit checks:
+
+```text
+git diff --check
+- passed
+
+git status --short --branch
+- only intended repository source/docs/tests/plans files are modified or added
+- no generated /tmp private-corpus artifacts are tracked
+```
+
+Phase 4 interpretation:
+
+- All release blockers found at kickoff are closed under the documented
+  evidence configuration.
+- Public/base readiness remains separate from strict full-profile readiness.
+- Full readiness is still only an operational release claim. It records backend,
+  parser, corpus, redaction, and release-gate evidence; it does not certify
+  arbitrary mathematics.
+- The next step is justified: commit the changes, then rerun public and strict
+  readiness checks on a clean worktree.
+
+### Release gap full-closure post-commit addendum
+
+Implementation commit before this memo addendum was:
+
+```text
+e0004a7 Close release profile gaps
+```
+
+Clean-tree checks immediately after that commit:
+
+```text
+git status --short --branch
+- ## main...origin/main [ahead 5]
+- no modified or untracked files
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile public
+- status: ready
+- git_commit: e0004a7
+- dirty_worktree: false
+- blockers: none
+- caveats: none
+```
+
+Strict full-profile clean-tree check:
+
+```text
+MATHDEVMCP_BACKEND_CONDA_ENV=mathdev-lean \
+MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.30.0-rc2 \
+MATHDEVMCP_REQUIRE_LATEXML=1 \
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-release-gap-full-closure/manifest.json \
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile full
+- status: ready
+- git_commit: e0004a7
+- dirty_worktree: false
+- blockers: none
+- caveats: none
+- Lean: available, Lean 4.30.0-rc2
+- LeanDojo: available in mathdev-lean, version 4.20.0
+- LaTeXML: available
+- private_manifest.status: loaded
+- private_manifest.entries: 6
+- private_paths_redacted: true
+```
+
+Strict cross-profile clean-tree check:
+
+```text
+MATHDEVMCP_BACKEND_CONDA_ENV=mathdev-lean \
+MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.30.0-rc2 \
+MATHDEVMCP_REQUIRE_LATEXML=1 \
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-release-gap-full-closure/manifest.json \
+PYTHONPATH=src python -m mathdevmcp.cli release-profile-analysis --root "$PWD"
+- status: ready
+- dirty_worktree: false
+- base.status: ready
+- public.status: ready
+- backend.status: ready
+- latexml.status: ready
+- private-corpus.status: ready
+- full.status: ready
+- all release claim_ready fields: true
+- strict_profile_blockers: none
+- next_hypotheses: public_base_release_process
+```
+
+Final interpretation:
+
+- There are no remaining implementation release blockers in the current local
+  evidence set.
+- The public/base release claim is ready on a clean committed tree.
+- The strict full/internal claim is ready when the validated local backend env,
+  Lean toolchain, LaTeXML executable, and external sanitized private manifest
+  are configured.
+- The active environment dependency conflict remains visible in
+  `doctor_summary`, but it is no longer a backend/full release caveat once
+  isolated LeanDojo evidence is configured.
+- The generated private-corpus manifest remains outside git and release output
+  reports redacted private paths.
+
+Suggested next hypotheses:
+
+1. Publication does not change public/base readiness.
+   Test by pushing/merging/tagging, then rerunning `release-profile-analysis`
+   and `release-readiness --profile public` on the published commit. Expected:
+   `base_public.claim_ready: true`, `public.status: ready`, and
+   `dirty_worktree: false`.
+
+2. A canonical `mathdevmcp-backends` environment can replace the local
+   `mathdev-lean` release evidence without changing outcomes. Test by
+   provisioning from `environment-backends.yml`, setting
+   `MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends`, and rerunning
+   `scripts/validate_backend_install.sh`, `release-readiness --profile
+   backend`, and `release-readiness --profile full`. Expected: all remain
+   `ready`; any SymPy difference is either available or an optional symbolic
+   caveat only.
+
+3. Internal CI can preserve strict full-profile evidence without leaking
+   private paths. Test by storing the private/sanitized manifest path as a CI
+   secret, running `scripts/validate_private_corpus.sh` and
+   `release-profile-analysis`, and scanning artifacts for real manifest or
+   source paths. Expected: private paths are redacted and full claim remains
+   ready.
+
+4. Strict operational readiness still should not be interpreted as proof of
+   arbitrary mathematics. Test future release reports by checking that parser,
+   AST, LeanDojo, and private-corpus evidence is described as diagnostic or
+   release-gate evidence unless a direct deterministic certificate is present.
+
+This memo addendum is included by amending the implementation commit, so the
+exact final commit hash changes after this text is added. Use
+`git rev-parse --short HEAD` for the final hash recorded in the final response.
+
 The pass must:
 
 - create a sibling plan-audit file before broad implementation,

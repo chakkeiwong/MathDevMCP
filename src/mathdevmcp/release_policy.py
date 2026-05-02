@@ -41,6 +41,13 @@ def release_readiness_report(root: str | Path, *, profile: str = "base") -> dict
     blockers: list[dict] = []
     caveats: list[dict] = []
     profile_policy = _profile_policy(profile)
+    backend_ok: bool | None = None
+    backend_version: str | None = None
+    backend_detail: str | None = None
+    if profile_policy["requires_backend"]:
+        # The backend profile validates LeanDojo through the documented isolated
+        # environment; the active Python environment is allowed to omit it.
+        backend_ok, backend_version, backend_detail = _run_backend_python_with_default_env("lean_dojo", package="lean-dojo")
     if not gate["passed"]:
         blockers.append({"kind": "benchmark_gate_failed", "severity": "high"})
     if parser.get("status") not in {"selected", "selected_for_proof_audit"}:
@@ -58,7 +65,7 @@ def release_readiness_report(root: str | Path, *, profile: str = "base") -> dict
                 "profile_scope": "backend_or_full",
             }
         )
-    if doctor.get("conflicts") and _profile_caveat_applies(profile_policy, "active_env_dependency_conflict"):
+    if doctor.get("conflicts") and _profile_caveat_applies(profile_policy, "active_env_dependency_conflict", backend_ok=backend_ok):
         caveats.append(
             {
                 "kind": "dependency_conflicts",
@@ -80,9 +87,6 @@ def release_readiness_report(root: str | Path, *, profile: str = "base") -> dict
         elif _profile_caveat_applies(profile_policy, "latexml"):
             caveats.append(latexml_finding)
     if profile_policy["requires_backend"]:
-        # The backend profile validates LeanDojo through the documented isolated
-        # environment; the active Python environment is allowed to omit it.
-        backend_ok, backend_version, backend_detail = _run_backend_python_with_default_env("lean_dojo", package="lean-dojo")
         backend_evidence = {
             "kind": "backend_lean_dojo_unavailable",
             "severity": "high",
@@ -257,14 +261,14 @@ def _profile_policy(profile: str) -> dict:
     }
 
 
-def _profile_caveat_applies(profile_policy: dict, kind: str) -> bool:
+def _profile_caveat_applies(profile_policy: dict, kind: str, *, backend_ok: bool | None = None) -> bool:
     """Return whether an optional evidence caveat should affect this profile."""
 
     profile = profile_policy["profile"]
     if kind == "lean_toolchain":
         return profile_policy["requires_backend"]
     if kind == "active_env_dependency_conflict":
-        return profile_policy["requires_backend"]
+        return profile_policy["requires_backend"] and backend_ok is not True
     if kind == "latexml":
         return profile not in {"public"} and not profile_policy["requires_latexml"]
     if kind == "private_corpus":

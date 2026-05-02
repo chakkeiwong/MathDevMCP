@@ -37,6 +37,8 @@ def test_backend_install_scripts_expose_release_candidate_controls():
     assert (ROOT / "scripts" / "validate_latexml_backend.sh").exists()
     assert (ROOT / "scripts" / "setup_latexml_backend.sh").exists()
     assert (ROOT / "scripts" / "run_backend_command.sh").exists()
+    assert 'required = ["pandoc", "lean", "sage", "lean_dojo"]' in validate
+    assert 'optional = ["latexml", "sympy"]' in validate
 
 
 def test_clean_install_smoke_help_is_lightweight():

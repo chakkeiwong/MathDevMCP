@@ -85,19 +85,22 @@ scripts/generate_release_report_evidence.sh docs/generated/release_report
 
 ## Public Industrial Release Checks
 
-Before any public industrial release claim, run:
+Before any public industrial release claim, run the cross-profile analysis
+first, then the public gate:
 
 ```bash
+PYTHONPATH=src python -m mathdevmcp.cli release-profile-analysis --root "$PWD"
 scripts/quality_gate.sh
 PYTHONPATH=src python -m mathdevmcp.cli public-release-check --root "$PWD"
 PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile public
 ```
 
-The public gate checks that CI, packaging metadata, MCP surface documentation,
-support matrix coverage, documentation boundary language, quality checks, and
-generated-evidence redaction all agree. It does not certify arbitrary
-mathematics; it certifies that the public product surface is coherent enough
-for release review.
+The profile analysis answers which release claims are currently justified and
+which strict profile hypotheses remain. The public gate checks that CI,
+packaging metadata, MCP surface documentation, support matrix coverage,
+documentation boundary language, quality checks, and generated-evidence
+redaction all agree. It does not certify arbitrary mathematics; it certifies
+that the public product surface is coherent enough for release review.
 
 Scan for path leaks:
 

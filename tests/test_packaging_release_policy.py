@@ -41,6 +41,8 @@ def test_docs_explain_optional_mcp_runtime_policy():
 def test_support_matrix_documents_backend_profile_boundary():
     text = (ROOT / "docs" / "mathdevmcp-support-matrix.md").read_text(encoding="utf-8")
 
+    assert "release-profile-analysis" in text
+    assert "cross-profile release review" in text
     assert "base and public profiles must stay usable" in text
     assert "MCP-facing installs use the optional `[mcp]` extra" in text
     assert "toolchain download failures" in text
@@ -65,3 +67,18 @@ def test_public_profile_is_available_and_distinct_from_full():
     assert report["profile"] == "public"
     assert "ci_release_gate" in report["required_capabilities"]
     assert "private_corpus_manifest" in report["optional_capabilities"]
+
+
+def test_docs_recommend_release_profile_analysis_for_gap_review():
+    combined = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in [
+            ROOT / "README.md",
+            ROOT / "docs" / "mathdevmcp-release-policy.md",
+            ROOT / "docs" / "mathdevmcp-maintainer-guide.md",
+        ]
+    )
+
+    assert "release-profile-analysis" in combined
+    assert "what gaps remain" in combined
+    assert "strict profile hypotheses" in combined

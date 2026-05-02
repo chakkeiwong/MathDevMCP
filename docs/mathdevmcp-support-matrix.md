@@ -3,6 +3,10 @@
 This matrix defines the supported install and release evidence profiles for
 the internal release candidate and the public industrial release gate.
 
+Use `PYTHONPATH=src python -m mathdevmcp.cli release-profile-analysis --root
+"$PWD"` for cross-profile release review. Use `release-readiness --profile X`
+when investigating one specific profile.
+
 | Profile or mode | Purpose | Install or setup | Validation command | Release status |
 | --- | --- | --- | --- | --- |
 | `base` | Local document search, parser policy, benchmark gate, governance, and release-corpus checks. | `python -m pip install -e ".[dev]"` | `PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile base` | Supported for internal release candidate use. |

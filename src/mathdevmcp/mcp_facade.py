@@ -28,6 +28,7 @@ from .proof_obligations import check_proof_obligation
 from .proof_audit import audit_derivation_for_label
 from .proof_audit_v2 import audit_derivation_v2_for_label
 from .release_corpus import release_corpus_manifest, validate_release_corpus_manifest
+from .release_profile_analysis import release_profile_analysis
 from .release_policy import release_readiness_report
 from .typed_workflows import typed_obligation_for_label
 from .tool_matrix import tool_matrix
@@ -301,6 +302,10 @@ def _tool_release_readiness(args: dict[str, Any]) -> dict[str, Any]:
     return release_readiness_report(Path(_required_string(args, "root")), profile=str(args.get("profile", "base")))
 
 
+def _tool_release_profile_analysis(args: dict[str, Any]) -> dict[str, Any]:
+    return release_profile_analysis(Path(_required_string(args, "root")))
+
+
 MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
     MCPToolSpec("search_latex", _tool_search_latex, "Search indexed LaTeX blocks with provenance.", "latex_search_results", "primitive"),
     MCPToolSpec("latex_label_lookup", _tool_latex_label_lookup, "Fetch a labeled LaTeX block with paragraph neighborhood and provenance.", "latex_paragraph_context", "primitive"),
@@ -397,6 +402,7 @@ MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
     MCPToolSpec("validate_release_corpus", _tool_validate_release_corpus, "Validate release corpus privacy and gate metadata.", "release_corpus_validation_report", "operational"),
     MCPToolSpec("governance_policy", _tool_governance_policy, "Return security and governance policy.", "governance_policy", "informational"),
     MCPToolSpec("release_readiness", _tool_release_readiness, "Return an auditable release-readiness report.", "release_readiness_report", "operational"),
+    MCPToolSpec("release_profile_analysis", _tool_release_profile_analysis, "Analyze every release profile and remaining profile gaps.", "release_profile_analysis", "operational"),
 )
 
 

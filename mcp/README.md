@@ -44,6 +44,8 @@ Facade registry: `src/mathdevmcp/mcp_facade.py`
 - `release_corpus_manifest` - return public/private release corpus metadata.
 - `validate_release_corpus` - validate corpus privacy and release-gate fields.
 - `release_readiness` - return a profile-specific release-readiness report.
+- `release_profile_analysis` - analyze all release profiles and remaining
+  profile gaps.
 
 ### Informational Tools
 

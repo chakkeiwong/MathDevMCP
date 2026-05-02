@@ -36,6 +36,7 @@ MCP_SERVER_EXPOSED_TOOLS = {
     "validate_release_corpus",
     "governance_policy",
     "release_readiness",
+    "release_profile_analysis",
 }
 
 
@@ -340,6 +341,11 @@ def governance_policy() -> dict:
 @mcp.tool(description="Return an auditable release-readiness report.", structured_output=False)
 def release_readiness(root: str, profile: str = "base") -> dict:
     return call_mcp_tool("release_readiness", {"root": root, "profile": profile})
+
+
+@mcp.tool(description="Analyze every release profile and remaining profile gaps.", structured_output=False)
+def release_profile_analysis(root: str) -> dict:
+    return call_mcp_tool("release_profile_analysis", {"root": root})
 
 
 def main(argv: list[str] | None = None) -> int:

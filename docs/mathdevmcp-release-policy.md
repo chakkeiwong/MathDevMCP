@@ -12,7 +12,15 @@ An internal release candidate requires:
 - no private corpus files are staged.
 
 The primary human-readable release report is `docs/mathdevmcp-release-report.tex`.
-The machine-readable release report is available through:
+The cross-profile machine-readable release analysis is available through:
+
+```bash
+python -m mathdevmcp.cli release-profile-analysis --root /path/to/MathDevMCP
+```
+
+Use it first when answering "what gaps remain?" because it evaluates every
+profile, groups strict-profile blockers, and lists next hypotheses. The
+single-profile machine-readable release report is available through:
 
 ```bash
 python -m mathdevmcp.cli release-readiness --root /path/to/MathDevMCP --profile base

@@ -780,6 +780,388 @@ PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profil
 This addendum is included by amending the implementation commit, so the exact
 final commit hash is the result of `git rev-parse --short HEAD` after the amend.
 
+## Release profile analysis completion kickoff
+
+Active execution plan:
+
+```text
+docs/plans/release-profile-analysis-completion-execution-plan.md
+```
+
+Second-developer audit:
+
+```text
+docs/plans/release-profile-analysis-completion-plan-audit.md
+```
+
+Starting commit:
+
+```text
+ed122e0 Clarify public release preflight caveats
+```
+
+Starting timestamp:
+
+```text
+2026-05-02T15:06:16Z
+```
+
+Initial working tree state:
+
+```text
+## main...origin/main [ahead 3]
+```
+
+Motivation:
+
+- Individual `release-readiness --profile ...` reports are now profile-scoped,
+  but maintainers still need a single cross-profile analysis to answer which
+  release claims are justified and what strict-profile evidence remains.
+- The analysis must summarize existing readiness reports, not weaken strict
+  gates or create a second release policy engine.
+
+Required cycle for this pass:
+
+```text
+plan for the phase
+-> execute
+-> test
+-> audit
+-> tidy up
+-> update reset memo
+```
+
+### Release profile analysis Phase 1 checkpoint
+
+Phase plan:
+
+- Add a library-level cross-profile analysis contract.
+- Build the report only by summarizing existing `release_readiness_report`
+  outputs.
+- Keep strict profile blockers visible and keep raw evidence available in the
+  underlying readiness reports.
+- Add focused tests for coverage, claim classification, strict blockers, and
+  public-safe doctor highlights.
+
+Executed:
+
+- Added `src/mathdevmcp/release_profile_analysis.py`.
+- Added `release_profile_analysis(root)` with:
+  - stable profile order,
+  - profile entries for base, public, backend, LaTeXML, private-corpus, and
+    full,
+  - release claims for `base_public`, `backend`, `latexml`,
+    `private_corpus`, and `full`,
+  - strict-profile blockers grouped by profile,
+  - public-safe doctor highlights,
+  - explicit next hypotheses.
+- Added `tests/test_release_profile_analysis.py`.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_release_profile_analysis.py -k 'not cli'
+- 3 passed, 1 deselected
+```
+
+Audit interpretation:
+
+- The new analysis is a summary layer, not a second release policy engine.
+- The base/public claim is ready when the corresponding readiness reports have
+  no blockers.
+- Missing backend/private/full evidence remains visible as strict-profile
+  blockers.
+- Doctor highlights avoid local absolute paths while still showing capability
+  and dependency-conflict state.
+
+Tidy notes:
+
+- CLI/MCP access tests are present but intentionally deselected in this phase;
+  Phase 2 wires those surfaces.
+- No generated evidence was committed.
+
+Phase 2 remains justified because the report needs operational CLI/MCP access
+to be useful in release review and agent workflows.
+
+### Release profile analysis Phase 2 checkpoint
+
+Phase plan:
+
+- Add CLI access through `release-profile-analysis --root`.
+- Add MCP facade and FastMCP server access through `release_profile_analysis`.
+- Keep wrappers thin and delegate to the library contract.
+- Update MCP surface documentation and sync tests.
+
+Executed:
+
+- Added `_cmd_release_profile_analysis` and CLI parser wiring in
+  `src/mathdevmcp/cli.py`.
+- Added `release_profile_analysis` handler and registry entry in
+  `src/mathdevmcp/mcp_facade.py`.
+- Added FastMCP wrapper and server exposure entry in
+  `src/mathdevmcp/mcp_server.py`.
+- Updated `mcp/README.md` to mention the new operational tool.
+- Fixed the combined `base_public` claim status so dirty-tree caveats do not
+  make the claim `not_ready`.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_release_profile_analysis.py tests/test_mcp_surface_sync.py
+- first run: 4 failed, 9 passed
+- failures:
+  - combined base/public claim treated dirty-tree caveats as not ready
+  - MCP server exposure set did not include release_profile_analysis
+  - MCP README did not mention release_profile_analysis
+
+After fixes:
+PYTHONPATH=src pytest -q tests/test_release_profile_analysis.py tests/test_mcp_surface_sync.py
+- 13 passed
+
+PYTHONPATH=src python -m mathdevmcp.cli release-profile-analysis --root "$PWD"
+- status: ready_with_caveats
+- base_public claim_ready: true
+- backend claim_ready: false
+- private_corpus claim_ready: false
+- full claim_ready: false
+
+git diff --check
+- passed
+```
+
+Audit interpretation:
+
+- The CLI and MCP surfaces are thin wrappers over the library report.
+- MCP/public release checks correctly caught missing surface documentation
+  before the fix.
+- The report now gives a single answer: public/base is currently justified;
+  strict backend/private/full claims remain blocked or unproven.
+
+Tidy notes:
+
+- No generated evidence artifacts were written.
+- The current dirty-tree caveat is expected during implementation and should
+  disappear after commit.
+
+Phase 3 remains justified because the documented release-review workflow should
+now teach `release-profile-analysis` as the first cross-profile command.
+
+### Release profile analysis Phase 3 checkpoint
+
+Phase plan:
+
+- Make `release-profile-analysis` the recommended first command for release gap
+  review.
+- Keep `release-readiness --profile X` documented as the single-profile drill
+  down.
+- Add focused doc assertions so the cross-profile workflow does not drift.
+
+Executed:
+
+- Updated `README.md` to list `release_profile_analysis` as an operational MCP
+  tool and add the CLI gap-review command.
+- Updated `docs/mathdevmcp-release-policy.md` to distinguish cross-profile
+  analysis from single-profile readiness.
+- Updated `docs/mathdevmcp-support-matrix.md` to recommend
+  `release-profile-analysis` for cross-profile release review.
+- Updated `docs/mathdevmcp-maintainer-guide.md` so public release checks start
+  with the profile analysis.
+- Extended `tests/test_packaging_release_policy.py` with focused doc
+  assertions.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_packaging_release_policy.py tests/test_public_release_check.py tests/test_release_profile_analysis.py tests/test_mcp_surface_sync.py
+- 22 passed
+
+PYTHONPATH=src python -m mathdevmcp.cli public-release-check --root "$PWD"
+- status: consistent
+- blockers: none
+- caveats: none
+
+git diff --check
+- passed
+```
+
+Audit interpretation:
+
+- The documentation now teaches the right operational order: cross-profile
+  analysis first, then single-profile readiness drill-down.
+- The public release surface remains consistent after adding the new MCP/CLI
+  surface.
+- No strict-profile blocker was softened or hidden.
+
+Tidy notes:
+
+- No generated evidence artifacts were written.
+- The current dirty-tree caveat remains expected before commit.
+
+Phase 4 remains justified: all implementation phases are complete, so final
+suite, release gates, memo completion, and commit should run.
+
+### Release profile analysis Phase 4 final checkpoint
+
+Phase plan:
+
+- Run final full-suite and release-profile gates.
+- Record the cross-profile analysis interpretation.
+- Confirm strict blockers remain visible.
+- Commit the coherent changes.
+
+Final verification:
+
+```text
+PYTHONPATH=src pytest -q
+- 293 passed, 11 skipped
+
+PYTHONPATH=src python -m mathdevmcp.cli release-profile-analysis --root "$PWD"
+- status: ready_with_caveats
+- reason: Base/public release claims are ready; one or more strict profiles
+  still require external evidence.
+- base_public claim_ready: true
+- backend claim_ready: false
+- latexml claim_ready: true with dirty-tree caveat during implementation
+- private_corpus claim_ready: false
+- full claim_ready: false
+- next_hypotheses: public_base_release_process, backend_env_readiness,
+  private_corpus_manifest_readiness, full_profile_readiness
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile base
+- status: ready_with_caveats
+- blockers: none
+- caveats: dirty_worktree
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile public
+- status: ready_with_caveats
+- blockers: none
+- caveats: dirty_worktree
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile backend
+- status: not_ready
+- blocker: backend_lean_dojo_unavailable
+- caveats: dirty_worktree, lean_version_or_toolchain_caveat,
+  dependency_conflicts
+
+PYTHONPATH=src python -m mathdevmcp.cli benchmark-gate --root "$PWD"
+- passed: true
+- total: 41
+- passed_count: 41
+- failed_count: 0
+
+PYTHONPATH=src python -m mathdevmcp.cli public-release-check --root "$PWD"
+- status: consistent
+- blockers: none
+- caveats: none
+
+PYTHONPATH=src python -m mathdevmcp.cli audit-mcp-aliases --root "$PWD"
+- status: consistent
+- active_instruction: 0
+- migration_section: 19
+
+git diff --check
+- passed
+
+git status --short --branch
+- tracked changes from this pass plus new plan/audit/report/test files
+```
+
+Final interpretation:
+
+- The profile analysis is now complete as a repeatable product artifact:
+  library contract, CLI command, MCP tool, docs, and tests.
+- Public/base release remains justified; the dirty-tree caveat is expected
+  before the implementation commit and should disappear post-commit.
+- Backend and full profile claims remain blocked by missing isolated backend
+  evidence in this shell.
+- Private-corpus and full profile claims remain blocked until an external
+  sanitized/private manifest is supplied.
+- LaTeXML strict evidence is available on this machine, but its implementation
+  run still carries the temporary dirty-tree caveat.
+- The analysis does not claim theorem verification; it summarizes operational
+  release readiness and next testable hypotheses.
+
+Next hypotheses to test:
+
+1. Clean post-commit public/base release.
+   Test by rerunning `release-profile-analysis` and
+   `release-readiness --profile public` after commit. Expected result:
+   `base_public.claim_ready == true`, `public.status == ready`, and no
+   `dirty_worktree` caveat.
+
+2. Backend strict readiness.
+   Test by configuring `MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends` and a
+   working Lean toolchain cache, then rerunning `release-profile-analysis` and
+   `release-readiness --profile backend`. Expected result: no
+   `backend_lean_dojo_unavailable` blocker; any remaining Lean/toolchain issue
+   is real backend evidence to fix.
+
+3. Private-corpus strict readiness.
+   Test by setting `MATHDEVMCP_PRIVATE_CORPUS_MANIFEST` to an external
+   sanitized/private manifest and rerunning `validate_private_corpus.sh` plus
+   `release-readiness --profile private-corpus`. Expected result: no
+   `private_corpus_manifest_required` blocker and no private path leaks.
+
+4. Full internal release readiness.
+   Test only after backend and private-corpus hypotheses pass. Expected result:
+   `release-readiness --profile full` is ready or reveals a new strict-profile
+   blocker that was hidden by missing prerequisites.
+
+5. CI/release-process integration.
+   Test by adding `release-profile-analysis` to the release evidence collection
+   or CI summary. Expected result: future "what gaps remain?" questions can be
+   answered from one artifact without hand-comparing profile reports.
+
+Post-commit completion addendum before amend:
+
+```text
+Implementation commit created: 34bcf27, "Complete release profile analysis"
+
+git status --short --branch
+## main...origin/main [ahead 4]
+
+PYTHONPATH=src python -m mathdevmcp.cli release-profile-analysis --root "$PWD"
+- status: ready_with_caveats
+- git_commit: 34bcf27
+- dirty_worktree: false
+- base.status: ready
+- public.status: ready
+- backend.status: not_ready
+- latexml.status: ready
+- private-corpus.status: not_ready
+- full.status: not_ready
+- base_public.claim_ready: true
+- backend.claim_ready: false
+- latexml.claim_ready: true
+- private_corpus.claim_ready: false
+- full.claim_ready: false
+- strict blockers:
+  - backend_lean_dojo_unavailable
+  - private_corpus_manifest_required
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile base
+- status: ready
+- blockers: none
+- caveats: none
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile public
+- status: ready
+- blockers: none
+- caveats: none
+```
+
+Post-commit interpretation:
+
+- The dirty-tree implementation caveat disappeared after commit.
+- Public/base release readiness is clean for the current checked-out commit.
+- Strict backend, private-corpus, and full claims remain intentionally blocked
+  until their external evidence is configured.
+- The LaTeXML strict profile is ready on this machine.
+
+This addendum is included by amending the implementation commit, so the exact
+final commit hash cannot be embedded here without changing the hash again. Use
+`git rev-parse --short HEAD` after the amend for the exact final `HEAD`.
+
 The pass must:
 
 - create a sibling plan-audit file before broad implementation,

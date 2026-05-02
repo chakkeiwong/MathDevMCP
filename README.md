@@ -70,7 +70,8 @@ deterministic primitives, tested workflow tools, and operational release tools:
   `audit_derivation_v2_label`, `audit_kalman_recursion`,
   `typed_obligation_label`;
 - operations: `doctor`, `benchmark_gate`, `run_benchmarks`,
-  `release_corpus_manifest`, `validate_release_corpus`, `release_readiness`;
+  `release_corpus_manifest`, `validate_release_corpus`, `release_readiness`,
+  `release_profile_analysis`;
 - informational: `tool_matrix`/`get_tool_matrix`, `governance_policy`.
 
 Compatibility aliases remain available for a migration cycle:
@@ -87,6 +88,12 @@ Check the runtime environment:
 ```bash
 PYTHONPATH=src python -m mathdevmcp.cli doctor
 scripts/backend_env_doctor.sh "$PWD"
+```
+
+Analyze all release profiles before answering what gaps remain:
+
+```bash
+PYTHONPATH=src python -m mathdevmcp.cli release-profile-analysis --root "$PWD"
 ```
 
 Search a LaTeX corpus:

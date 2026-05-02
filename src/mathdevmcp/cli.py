@@ -30,6 +30,7 @@ from .proof_audit_v2 import audit_derivation_v2_for_label
 from .public_release import public_release_check
 from .governance import governance_policy, validate_governance
 from .release_corpus import release_corpus_manifest, validate_release_corpus_manifest
+from .release_hypotheses import release_hypothesis_check
 from .release_profile_analysis import release_profile_analysis
 from .release_policy import RELEASE_PROFILES, release_readiness_report
 from .typed_workflows import typed_obligation_for_label
@@ -310,6 +311,17 @@ def _cmd_public_release_check(args: argparse.Namespace) -> int:
     return 0 if result["status"] == "consistent" else 1
 
 
+def _cmd_release_hypothesis_check(args: argparse.Namespace) -> int:
+    result = release_hypothesis_check(
+        args.root,
+        public=args.public,
+        strict_full=args.strict_full,
+        require_canonical_backend=args.require_canonical_backend,
+    )
+    print(json.dumps(result, indent=2))
+    return 0 if result["status"] == "consistent" else 1
+
+
 def _cmd_install_rules(args: argparse.Namespace) -> int:
     result = install_rules(args.root, args.client, dry_run=args.dry_run)
     print(json.dumps(result, indent=2))
@@ -518,6 +530,13 @@ def make_parser() -> argparse.ArgumentParser:
     p_public = sub.add_parser("public-release-check", help="Validate public release product-surface gates")
     p_public.add_argument("--root", default=".", help="Project root")
     p_public.set_defaults(func=_cmd_public_release_check)
+
+    p_hypotheses = sub.add_parser("release-hypothesis-check", help="Validate executable release-closeout hypotheses")
+    p_hypotheses.add_argument("--root", default=".", help="Project root")
+    p_hypotheses.add_argument("--public", action="store_true", help="Run public/base-safe release hypothesis checks")
+    p_hypotheses.add_argument("--strict-full", action="store_true", help="Require configured strict full-profile evidence")
+    p_hypotheses.add_argument("--require-canonical-backend", action="store_true", help="Require MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends")
+    p_hypotheses.set_defaults(func=_cmd_release_hypothesis_check)
 
     p_install_rules = sub.add_parser("install-rules", help="Install portable MathDevMCP workflow rules for an MCP client")
     p_install_rules.add_argument("client", choices=["cursor", "copilot", "all"], help="Client instruction target to update")

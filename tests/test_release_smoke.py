@@ -52,3 +52,16 @@ def test_release_smoke_script_passes():
     assert '"contract": "doctor_report"' in result.stdout
     assert '"contract": "parser_benchmark_report"' in result.stdout
     assert '"contract": "release_readiness_report"' in result.stdout
+
+
+def test_release_hypotheses_script_public_mode_passes():
+    result = subprocess.run(
+        [str(ROOT / "scripts" / "release_hypotheses_check.sh"), str(ROOT), "--public"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert '"contract": "release_hypothesis_check"' in result.stdout
+    assert '"publication_invariant"' in result.stdout

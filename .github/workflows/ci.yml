@@ -35,6 +35,8 @@ jobs:
         run: scripts/audit_release_report_substance.sh
       - name: Public release surface check
         run: PYTHONPATH=src python -m mathdevmcp.cli public-release-check --root "$PWD"
+      - name: Release hypothesis check
+        run: PYTHONPATH=src python -m mathdevmcp.cli release-hypothesis-check --root "$PWD" --public
 
   package-build:
     runs-on: ubuntu-latest
@@ -49,4 +51,3 @@ jobs:
           python -m pip install build twine
           python -m build
           python -m twine check dist/*
-

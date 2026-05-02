@@ -1716,6 +1716,565 @@ This memo addendum is included by amending the implementation commit, so the
 exact final commit hash changes after this text is added. Use
 `git rev-parse --short HEAD` for the final hash recorded in the final response.
 
+## Release hypotheses closure kickoff
+
+Active execution plan:
+
+```text
+docs/plans/release-hypotheses-closure-execution-plan.md
+```
+
+Second-developer audit:
+
+```text
+docs/plans/release-hypotheses-closure-plan-audit.md
+```
+
+Starting commit:
+
+```text
+91b2a9c Close release profile gaps
+```
+
+Starting timestamp:
+
+```text
+2026-05-02T17:45:55Z
+```
+
+Initial working tree state:
+
+```text
+## main...origin/main [ahead 5]
+```
+
+Initial checks:
+
+```text
+PYTHONPATH=src python -m mathdevmcp.cli public-release-check --root "$PWD"
+- status: consistent
+- blockers: none
+- caveats: none
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile public
+- status: ready
+- git_commit: 91b2a9c
+- dirty_worktree: false
+- blockers: none
+- caveats: none
+
+PYTHONPATH=src python -m mathdevmcp.cli release-profile-analysis --root "$PWD"
+- status: ready_with_caveats
+- reason: Base/public release claims are ready; one or more strict profiles
+  still require external evidence.
+- base.status: ready
+- public.status: ready
+- backend.status: not_ready
+- latexml.status: ready
+- private-corpus.status: not_ready
+- full.status: not_ready
+- strict blockers:
+  - backend_lean_dojo_unavailable
+  - private_corpus_manifest_required
+```
+
+Environment observations:
+
+```text
+conda env list
+- base
+- mathdev-lean
+- tf-gpu
+- tf-gpu-bench
+- mathdevmcp-backends is not present at kickoff
+
+/tmp/mathdevmcp-sanitized-private-corpus-release-gap-full-closure/manifest.json
+- exists as external sanitized evidence
+```
+
+Audit result:
+
+- Approved with constraints.
+- Do not push, merge, tag, or publish from this pass.
+- Public CI must not require private manifests, backend conda envs, or cached
+  Lean toolchains.
+- Canonical backend closure requires actual `mathdevmcp-backends` validation;
+  fallback `mathdev-lean` evidence can support strict local full checks but is
+  not canonical closure.
+- Private manifest/source paths stay outside git and must remain redacted in
+  normal output.
+- Evidence-boundary checks must prevent "full readiness means arbitrary proof"
+  language without blocking valid deterministic backend certificates for
+  scoped claims.
+
+Phase 1 remains justified because the previous memo's hypotheses are currently
+documented as prose. They should become executable release checks before
+another release claim.
+
+### Release hypotheses closure Phase 1 checkpoint
+
+Phase plan:
+
+- Turn the publication/process hypotheses into an executable public-safe gate.
+- Wire the gate into CI without requiring private secrets or backend/Lean
+  caches.
+- Add evidence-boundary checks that keep full/profile readiness distinct from
+  proof of arbitrary mathematics.
+
+Executed:
+
+- Added `src/mathdevmcp/release_hypotheses.py` with a structured
+  `release_hypothesis_check` contract.
+- Added CLI command:
+
+```text
+PYTHONPATH=src python -m mathdevmcp.cli release-hypothesis-check --root "$PWD" --public
+```
+
+- Added wrapper script:
+
+```text
+scripts/release_hypotheses_check.sh "$PWD" --public
+```
+
+- Added a public CI step named `Release hypothesis check`.
+- Extended public release surface checks so CI must contain
+  `release-hypothesis-check`.
+- Updated release docs so the public hypothesis gate is part of release review
+  and strict/full hypothesis checks remain opt-in.
+- Added focused tests for:
+  - public hypothesis checks without private secrets;
+  - strict canonical mode rejecting a non-canonical backend env;
+  - CLI and script surfaces;
+  - CI public release gate coverage.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_release_hypotheses.py tests/test_public_release_check.py tests/test_release_smoke.py
+- 12 passed
+
+bash -n scripts/release_hypotheses_check.sh
+- passed
+
+git diff --check
+- passed
+```
+
+Command check:
+
+```text
+scripts/release_hypotheses_check.sh "$PWD" --public
+- status: consistent
+- blockers: none
+- caveats:
+  - public_profile_not_clean_ready, dirty_worktree
+  - strict_full_check_not_requested
+- ci_hypothesis_gate: consistent
+- evidence_boundary: consistent
+```
+
+Audit interpretation:
+
+- The public hypothesis gate is executable and safe for public CI.
+- The dirty-worktree caveat is expected during implementation and should
+  disappear after commit.
+- Strict/full checks are explicitly skipped in public mode rather than
+  silently treated as passed.
+- Phase 2 remains justified because canonical backend reproducibility still
+  needs either actual `mathdevmcp-backends` evidence or an explicit external
+  blocker.
+
+### Release hypotheses closure Phase 2 checkpoint
+
+Phase plan:
+
+- Verify strict full logic with the already validated `mathdev-lean` env.
+- Verify that canonical-required mode rejects non-canonical backend evidence.
+- Attempt to provision and validate canonical `mathdevmcp-backends`.
+- Run strict full and cross-profile checks with the canonical backend env.
+
+Executed:
+
+- Ran non-canonical strict full hypothesis check with:
+
+```text
+MATHDEVMCP_BACKEND_CONDA_ENV=mathdev-lean \
+MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.30.0-rc2 \
+MATHDEVMCP_REQUIRE_LATEXML=1 \
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-release-gap-full-closure/manifest.json \
+scripts/release_hypotheses_check.sh "$PWD" --strict-full
+- status: consistent
+- blockers: none
+- caveats:
+  - dirty_worktree on publication/full profile status
+- selected_backend_env: mathdev-lean
+- full_profile_status: ready_with_caveats
+- private_manifest.entries: 6
+- private_paths_redacted: true
+```
+
+- Ran canonical-required mode with `mathdev-lean` selected:
+
+```text
+... scripts/release_hypotheses_check.sh "$PWD" --strict-full --require-canonical-backend
+- status: mismatch, expected
+- blocker: canonical_backend_env_not_selected
+- selected_backend_env: mathdev-lean
+- expected: mathdevmcp-backends
+```
+
+- Attempted canonical provisioning in the sandbox:
+
+```text
+MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends \
+MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.30.0-rc2 \
+scripts/setup_backend_env.sh
+- failed in sandbox with NoWritableEnvsDirError
+```
+
+- Reran with approved external write permission for conda env creation:
+
+```text
+MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends \
+MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.30.0-rc2 \
+scripts/setup_backend_env.sh
+- conda env created from environment-backends.yml
+- Lean toolchain already installed: leanprover/lean4:v4.30.0-rc2
+- backend_env_doctor: ok true
+- Lean: available, Lean 4.30.0-rc2
+- LeanDojo: available in /home/chakwong/anaconda3/envs/mathdevmcp-backends/bin/python, version 4.20.0
+- SymPy: available in mathdevmcp-backends, version 1.14.0
+- LaTeXML: available
+- active-env magic-pdf/pydantic conflict remains visible in doctor conflicts
+```
+
+Tests and canonical checks:
+
+```text
+PYTHONPATH=src pytest -q tests/test_release_hypotheses.py tests/test_release_candidate_installation.py tests/test_release_caveat_closure.py
+- 29 passed
+
+MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends \
+MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.30.0-rc2 \
+scripts/validate_backend_install.sh "$PWD"
+- exit: 0
+- required capabilities available: pandoc, lean, sage, lean_dojo
+- optional capabilities available: latexml, sympy
+
+MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends \
+MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.30.0-rc2 \
+MATHDEVMCP_REQUIRE_LATEXML=1 \
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-release-gap-full-closure/manifest.json \
+scripts/release_hypotheses_check.sh "$PWD" --strict-full --require-canonical-backend
+- status: consistent
+- blockers: none
+- caveats: dirty_worktree on publication/full profile status
+- selected_backend_env: mathdevmcp-backends
+- canonical_backend_required: true
+- full_profile_status: ready_with_caveats
+- private_manifest.entries: 6
+- private_paths_redacted: true
+
+MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends \
+MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.30.0-rc2 \
+MATHDEVMCP_REQUIRE_LATEXML=1 \
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-release-gap-full-closure/manifest.json \
+PYTHONPATH=src python -m mathdevmcp.cli release-profile-analysis --root "$PWD"
+- status: ready
+- all claim_ready fields: true
+- blockers: none
+- caveats: dirty_worktree only
+```
+
+Audit interpretation:
+
+- The canonical backend hypothesis is now locally closed: the documented
+  `mathdevmcp-backends` env provisions and validates with LeanDojo and SymPy.
+- The strict full gate correctly distinguishes canonical backend evidence from
+  fallback `mathdev-lean` evidence.
+- The remaining caveat is only dirty worktree from this implementation.
+- Phase 3 remains justified because private CI/redaction behavior should be
+  documented and checked as an internal-secret workflow while keeping public CI
+  secret-free.
+
+### Release hypotheses closure Phase 3 checkpoint
+
+Phase plan:
+
+- Validate the external sanitized private manifest and strict full hypothesis
+  gate with canonical backend evidence.
+- Confirm generated release evidence does not leak private or user-local paths.
+- Keep public CI secret-free and document strict internal CI invocation.
+- Ensure release/full evidence boundary language remains executable.
+
+Executed:
+
+- Ran private corpus validation with:
+
+```text
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-release-gap-full-closure/manifest.json \
+scripts/validate_private_corpus.sh "$PWD"
+- status: consistent
+- private_paths_redacted: true
+- private_manifest.status: loaded
+- private_manifest.entries: 6
+- parser_reports: 6 entries, all selected_for_proof_audit
+```
+
+- Ran canonical strict hypothesis check again:
+
+```text
+MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends \
+MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.30.0-rc2 \
+MATHDEVMCP_REQUIRE_LATEXML=1 \
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-release-gap-full-closure/manifest.json \
+scripts/release_hypotheses_check.sh "$PWD" --strict-full --require-canonical-backend
+- status: consistent
+- blockers: none
+- caveats: dirty_worktree on publication/full profile status
+- selected_backend_env: mathdevmcp-backends
+- private_manifest.entries: 6
+- private_paths_redacted: true
+```
+
+- Ran generated-evidence leak scan:
+
+```text
+rg -n "/tmp/mathdevmcp|manifest.json|/home/chakwong" docs/generated/release_report
+- initially found docs/generated/release_report/doctor-summary.txt with
+  /home/chakwong/miniconda3/envs/tfgpu/bin/python
+```
+
+- Fixed the leak by:
+  - redacting the committed doctor-summary path to `<home>/...`;
+  - updating `scripts/generate_release_report_evidence.sh` to replace the
+    current home directory with `<home>`;
+  - strengthening `src/mathdevmcp/public_release.py` so generated release
+    evidence rejects any `/home/chakwong` path, not only an older narrower path
+    pattern;
+  - adding a regression test that generated release evidence contains no
+    `/home/chakwong` path.
+
+Post-fix tests and checks:
+
+```text
+rg -n "/tmp/mathdevmcp|manifest.json|/home/chakwong" docs/generated/release_report
+- no matches
+
+PYTHONPATH=src python -m mathdevmcp.cli public-release-check --root "$PWD"
+- status: consistent
+- private_path_leaks: consistent
+- blockers: none
+
+PYTHONPATH=src pytest -q tests/test_release_hypotheses.py tests/test_support_matrix_docs.py tests/test_public_release_check.py
+- 11 passed
+
+git diff --check
+- passed
+```
+
+Audit interpretation:
+
+- The private CI/redaction hypothesis is materially improved: the pass found
+  and fixed an existing generated-evidence local path leak.
+- Public CI remains secret-free; the new public hypothesis check does not use
+  `--strict-full` or `MATHDEVMCP_PRIVATE_CORPUS_MANIFEST`.
+- Internal strict CI has an explicit command path using a secret manifest and
+  canonical backend env.
+- Evidence-boundary checks are executable and pass.
+- Phase 4/final verification remains justified because all implementation
+  phases have passed and only dirty-worktree caveats remain before commit.
+
+### Release hypotheses closure Phase 4 pre-commit checkpoint
+
+Phase plan:
+
+- Run full verification over tests, benchmark gate, public release gate, public
+  hypothesis gate, canonical strict hypothesis gate, diff hygiene, and private
+  path leak scanning.
+- Confirm remaining caveats are only dirty-worktree caveats from the
+  in-progress implementation.
+- Commit the coherent plan, audit, source, docs, scripts, tests, and memo
+  changes.
+
+Final pre-commit verification:
+
+```text
+PYTHONPATH=src pytest -q
+- 302 passed, 11 skipped
+
+PYTHONPATH=src python -m mathdevmcp.cli benchmark-gate --root "$PWD"
+- passed: true
+- total: 41
+- passed_count: 41
+
+PYTHONPATH=src python -m mathdevmcp.cli public-release-check --root "$PWD"
+- status: consistent
+- blockers: none
+- caveats: none
+- private_path_leaks: consistent
+
+PYTHONPATH=src python -m mathdevmcp.cli release-hypothesis-check --root "$PWD" --public
+- status: consistent
+- blockers: none
+- caveats:
+  - public_profile_not_clean_ready, dirty_worktree
+  - strict_full_check_not_requested
+- ci_hypothesis_gate: consistent
+- evidence_boundary: consistent
+```
+
+Canonical strict hypothesis verification:
+
+```text
+MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends \
+MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.30.0-rc2 \
+MATHDEVMCP_REQUIRE_LATEXML=1 \
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-release-gap-full-closure/manifest.json \
+PYTHONPATH=src python -m mathdevmcp.cli release-hypothesis-check \
+  --root "$PWD" --strict-full --require-canonical-backend
+- status: consistent
+- blockers: none
+- caveats:
+  - public_profile_not_clean_ready, dirty_worktree
+  - full_profile_not_clean_ready, dirty_worktree
+- selected_backend_env: mathdevmcp-backends
+- full_profile_status: ready_with_caveats
+- private_manifest.entries: 6
+- private_paths_redacted: true
+```
+
+Tidy checks:
+
+```text
+git diff --check
+- passed
+
+rg -n "/tmp/mathdevmcp|manifest.json|/home/chakwong" docs/generated/release_report
+- no matches
+
+git status --short --branch
+- only intended source, script, docs, tests, CI, plan, audit, and memo changes
+  are present
+- no generated /tmp corpus artifacts are tracked
+```
+
+Pre-commit interpretation:
+
+- Publication hypothesis is executable and public-CI-safe.
+- Canonical backend hypothesis is closed locally with the newly provisioned
+  `mathdevmcp-backends` env.
+- Private CI/redaction hypothesis is closed for local sanitized evidence and
+  documented for internal CI secrets.
+- Evidence-boundary hypothesis is executable and passes.
+- The only live caveats before commit are dirty-worktree caveats introduced by
+  the implementation itself.
+
+### Release hypotheses closure post-commit addendum
+
+Committed implementation snapshot before this memo addendum:
+
+```text
+86c0c65 Close release hypotheses
+```
+
+Clean committed-tree checks:
+
+```text
+git status --short --branch
+- ## main...origin/main [ahead 6]
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile public
+- status: ready
+- git_commit: 86c0c65
+- dirty_worktree: false
+- blockers: none
+- caveats: none
+
+PYTHONPATH=src python -m mathdevmcp.cli release-hypothesis-check --root "$PWD" --public
+- status: consistent
+- blockers: none
+- caveats:
+  - strict_full_check_not_requested
+- publication_invariant: consistent
+- ci_hypothesis_gate: consistent
+- evidence_boundary: consistent
+```
+
+Canonical strict/full checks on the clean committed tree:
+
+```text
+MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends \
+MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.30.0-rc2 \
+MATHDEVMCP_REQUIRE_LATEXML=1 \
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-release-gap-full-closure/manifest.json \
+PYTHONPATH=src python -m mathdevmcp.cli release-hypothesis-check \
+  --root "$PWD" --strict-full --require-canonical-backend
+- status: consistent
+- blockers: none
+- caveats: none
+- selected_backend_env: mathdevmcp-backends
+- full_profile_status: ready
+- private_manifest.entries: 6
+- private_paths_redacted: true
+
+MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends \
+MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.30.0-rc2 \
+MATHDEVMCP_REQUIRE_LATEXML=1 \
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/tmp/mathdevmcp-sanitized-private-corpus-release-gap-full-closure/manifest.json \
+PYTHONPATH=src python -m mathdevmcp.cli release-profile-analysis --root "$PWD"
+- status: ready
+- all profiles: ready
+- all release claims: claim_ready true
+- strict_profile_blockers: none
+- next_hypotheses: public_base_release_process
+```
+
+Completion interpretation:
+
+- The publication invariant is now executable and clean on the committed tree.
+- The canonical backend hypothesis is locally closed with
+  `mathdevmcp-backends`, Lean `4.30.0-rc2`, LeanDojo `4.20.0`, SymPy `1.14.0`,
+  and LaTeXML available.
+- The private CI/redaction hypothesis is closed for the external sanitized
+  evidence manifest with six redacted entries; the manifest remains outside
+  git.
+- The public CI path stays secret-free and runs only the public hypothesis
+  gate.
+- The evidence-boundary hypothesis is executable: release readiness is
+  operational evidence for scoped profiles, not a claim that MathDevMCP proves
+  arbitrary mathematics.
+- Remaining work is release-process work, not a local implementation blocker:
+  push, merge, tag, publish, and adopt the strict internal CI job if the team
+  wants full-profile evidence in automation.
+
+Suggested next hypotheses:
+
+1. Public/base readiness survives publication.
+   Test by pushing or merging the amended commit, then rerunning
+   `release-hypothesis-check --public`, `public-release-check`, and
+   `release-readiness --profile public` on the published commit.
+
+2. Internal strict CI can reproduce full-profile readiness from secrets.
+   Test by provisioning `mathdevmcp-backends` in CI and passing a private
+   `MATHDEVMCP_PRIVATE_CORPUS_MANIFEST` secret to
+   `release-hypothesis-check --strict-full --require-canonical-backend`.
+
+3. The generated-evidence redaction policy stays stable as diagnostics evolve.
+   Test future release report regeneration with the public release check and
+   the leak scan for `/home/chakwong`, `/tmp/mathdevmcp`, and raw
+   `manifest.json` references.
+
+4. Hypothesis-gate runtime remains acceptable after CI adoption.
+   Test CI duration over one release cycle; if it grows materially, split
+   public hypothesis checks from strict internal full-profile checks while
+   preserving the same JSON contract.
+
+This addendum is included by amending the implementation commit, so the final
+commit hash changes after this text is added. Use `git rev-parse --short HEAD`
+for the final hash recorded in the final response.
+
 The pass must:
 
 - create a sibling plan-audit file before broad implementation,

@@ -1,6 +1,6 @@
 Command: PYTHONPATH=src python -m mathdevmcp.cli doctor
 Overall ok: True
-Python: 3.11.15 at /home/chakwong/miniconda3/envs/tfgpu/bin/python
+Python: 3.11.15 at <home>/miniconda3/envs/tfgpu/bin/python
 LaTeXML: available (latexml (LaTeXML version 0.8.6))
 Pandoc: available (pandoc 2.9.2.1)
 Lean: available (Lean (version 4.20.0, x86_64-unknown-linux-gnu, commit 77cfc4d1a4f6, Release))

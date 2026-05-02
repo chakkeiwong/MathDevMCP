@@ -176,6 +176,7 @@ Run:
 
 ```bash
 PYTHONPATH=src python -m mathdevmcp.cli release-profile-analysis --root "$PWD"
+PYTHONPATH=src python -m mathdevmcp.cli release-hypothesis-check --root "$PWD" --public
 PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile base
 PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile full
 PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile public
@@ -184,6 +185,9 @@ PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profil
 `full` is the strict internal/deployment profile. `public` adds CI,
 packaging, MCP surface consistency, documentation synchronization, quality
 gate, and redaction checks before a public industrial release claim.
+`release-hypothesis-check --public` checks publication invariants and evidence
+boundary language without requiring private secrets. Strict/full hypothesis
+checks are opt-in because they require backend and private-corpus evidence.
 
 ## Build the Release Report
 

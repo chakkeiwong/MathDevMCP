@@ -128,6 +128,8 @@ For public industrial release surface validation:
 scripts/quality_gate.sh
 PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli public-release-check \
   --root /path/to/MathDevMCP
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli release-hypothesis-check \
+  --root /path/to/MathDevMCP --public
 PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli release-readiness \
   --root /path/to/MathDevMCP --profile public
 ```
@@ -138,6 +140,21 @@ generated-evidence redaction. It does not require private corpus material,
 LeanDojo, or a cached Lean toolchain unless a strict backend/full profile is
 being claimed. The raw `doctor_summary` still records those capabilities for
 reviewers.
+
+For strict internal/full release hypothesis validation with a canonical backend
+environment and an external private/sanitized manifest:
+
+```bash
+export MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends
+export MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.20.0
+export MATHDEVMCP_REQUIRE_LATEXML=1
+export MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/secure/local/path/corpus.json
+scripts/release_hypotheses_check.sh /path/to/MathDevMCP \
+  --strict-full --require-canonical-backend
+```
+
+Internal CI can run the strict command only when the private manifest path is
+available as a secret. Public CI should run only `--public`.
 
 For no-intervention sanitized validation outside git:
 

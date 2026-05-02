@@ -32,6 +32,13 @@ Release recommendations:
 - `ready_with_caveats`: release gates pass but profile-relevant caveats exist,
 - `not_ready`: blocking release checks failed.
 
+Release readiness is operational evidence about configured checks, profiles,
+redaction, and packaging. It does not certify arbitrary mathematics. Use
+`verified` or certificate language only for scoped claims with deterministic
+backend evidence; parser, benchmark, private-corpus, and full-profile evidence
+remain diagnostic or release-gate evidence unless such a certificate is
+present.
+
 Release profiles:
 
 ```text
@@ -71,6 +78,7 @@ Run:
 
 ```bash
 PYTHONPATH=src python -m mathdevmcp.cli public-release-check --root "$PWD"
+PYTHONPATH=src python -m mathdevmcp.cli release-hypothesis-check --root "$PWD" --public
 PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile public
 ```
 
@@ -84,3 +92,18 @@ Current strict-profile interpretation:
 - `private-corpus`: requires `MATHDEVMCP_PRIVATE_CORPUS_MANIFEST` pointing to an
   external private or sanitized manifest.
 - `full`: requires all of the above.
+
+`release-hypothesis-check --public` is the publication-invariant gate: it
+checks public/base readiness, CI command presence, private-path redaction
+expectations, and the evidence boundary without requiring private secrets or
+strict backend environments. Strict internal/full hypothesis checks are opt-in
+because they require external backend and private-corpus evidence:
+
+```bash
+MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends \
+MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.20.0 \
+MATHDEVMCP_REQUIRE_LATEXML=1 \
+MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/secure/local/path/corpus.json \
+PYTHONPATH=src python -m mathdevmcp.cli release-hypothesis-check \
+  --root "$PWD" --strict-full --require-canonical-backend
+```

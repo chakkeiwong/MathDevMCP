@@ -69,7 +69,7 @@ def _check_ci_workflow(root: Path) -> dict[str, Any]:
         findings.append({"check": "ci_workflow", "severity": "high", "kind": "ci_release_gate_missing", "path": str(path)})
     else:
         text = path.read_text(encoding="utf-8")
-        required_markers = ["pytest", "release_smoke.sh", "release_matrix.sh", "audit_release_report_substance.sh", "public-release-check"]
+        required_markers = ["pytest", "release_smoke.sh", "release_matrix.sh", "audit_release_report_substance.sh", "public-release-check", "release-hypothesis-check"]
         for marker in required_markers:
             if marker not in text:
                 findings.append({"check": "ci_workflow", "severity": "high", "kind": "ci_required_command_missing", "detail": marker})
@@ -182,7 +182,7 @@ def _check_quality_gate(root: Path) -> dict[str, Any]:
 def _check_private_path_leaks(root: Path) -> dict[str, Any]:
     findings: list[dict[str, Any]] = []
     evidence_dir = root / "docs" / "generated" / "release_report"
-    banned = ["/tmp/mathdevmcp", "/home/chakwong/python/MathDevMCP", "manifest.json"]
+    banned = ["/tmp/mathdevmcp", "/home/chakwong", "manifest.json"]
     if evidence_dir.exists():
         for path in evidence_dir.glob("*.txt"):
             text = path.read_text(encoding="utf-8")

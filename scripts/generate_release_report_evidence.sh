@@ -51,6 +51,7 @@ private_manifest = os.environ.get("MATHDEVMCP_PRIVATE_CORPUS_MANIFEST", "").stri
 
 def _write(name: str, text: str) -> None:
     cleaned = text.replace(str(root), "<repo>")
+    cleaned = cleaned.replace(str(Path.home()), "<home>")
     if private_manifest:
         cleaned = cleaned.replace(private_manifest, "<redacted-private-manifest>")
     out.joinpath(name).write_text(cleaned.rstrip() + "\n", encoding="utf-8")

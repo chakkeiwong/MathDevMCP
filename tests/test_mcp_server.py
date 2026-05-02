@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from mathdevmcp.mcp_server import audit_derivation_label, audit_kalman_recursion, benchmark_gate, compare_label_code, extract_latex_context, get_tool_matrix, governance_policy, implementation_brief, release_readiness, run_benchmarks, typed_obligation_label, validate_release_corpus
+from mathdevmcp.mcp_server import audit_derivation_label, audit_implementation_label, audit_kalman_recursion, benchmark_gate, check_equality, compare_label_code, extract_latex_context, get_tool_matrix, governance_policy, implementation_brief, latex_label_lookup, lean_check, release_readiness, run_benchmarks, typed_obligation_label, validate_release_corpus
 from test_context_and_fixtures import EXPECTED_BENCHMARK_TOTAL
 
 
@@ -15,6 +15,13 @@ def test_mcp_server_extract_latex_context_returns_label_metadata():
     assert result["file"] == "doc_consistency_good.tex"
 
 
+def test_mcp_server_preferred_label_lookup_returns_paragraph_context():
+    result = latex_label_lookup(str(FIXTURES), "prop:transport-logdet")
+
+    assert result["metadata"] == {"schema_version": "1.0", "contract": "latex_paragraph_context"}
+    assert result["label"] == "prop:transport-logdet"
+
+
 
 def test_mcp_server_compare_label_code_returns_mismatch():
     result = compare_label_code(
@@ -26,6 +33,34 @@ def test_mcp_server_compare_label_code_returns_mismatch():
 
     assert result["status"] == "mismatch"
     assert result["missing_in_code"] == ["logdet"]
+
+
+def test_mcp_server_audit_implementation_label_matches_legacy_alias():
+    args = (
+        str(FIXTURES),
+        "prop:transport-mismatch",
+        str(FIXTURES / "doc_consistency_bad.py"),
+    )
+
+    preferred = audit_implementation_label(*args, required_terms=["logdet"])
+    legacy = compare_label_code(*args, required_terms=["logdet"])
+
+    assert preferred == legacy
+    assert preferred["status"] == "mismatch"
+
+
+def test_mcp_server_check_equality_returns_proof_obligation_contract():
+    result = check_equality("(a+b)*(a-b)", "a*a - b*b")
+
+    assert result["metadata"] == {"schema_version": "1.0", "contract": "proof_obligation_result"}
+    assert result["status"] in {"equivalent", "verified", "inconclusive"}
+
+
+def test_mcp_server_lean_check_returns_lean_contract():
+    result = lean_check("example : 1 + 1 = 2 := rfl")
+
+    assert result["metadata"] == {"schema_version": "1.0", "contract": "lean_check_result"}
+    assert result["status"] in {"verified", "inconclusive", "mismatch"}
 
 
 

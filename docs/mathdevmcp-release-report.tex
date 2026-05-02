@@ -133,7 +133,7 @@ Agent:
   I found label eq:dept-state-space-likelihood. I will inspect nearby context
   before comparing the implementation.
 
-Tool: extract_latex_neighborhood
+Tool: latex_label_lookup
   root=/path/to/project
   label=eq:dept-state-space-likelihood
 
@@ -141,12 +141,12 @@ Tool result:
   status=found
   context includes the likelihood block and nearby state-space assumptions
 
-Tool: compare_label_code
+Tool: audit_implementation_label
   root=/path/to/project
   label=eq:dept-state-space-likelihood
   code=/path/to/project/src/kalman_filter.py
   required_terms=["logdet", "solve", "quadratic_form"]
-  paragraph_context=true
+  before=1, after=1
 
 Tool result:
   status=mismatch
@@ -192,9 +192,9 @@ Prompt shape & MCP tool & Why it helps \\
 \midrule
 "Find the equation or assumption for ..." & \path{search_latex} &
 Returns labels and provenance instead of memory. \\
-"Show the context around label ..." & \path{extract_latex_neighborhood} &
+"Show the context around label ..." & \path{latex_label_lookup} &
 Surfaces nearby assumptions and notation. \\
-"Compare this label to this code file ..." & \path{compare_label_code} &
+"Compare this label to this code file ..." & \path{audit_implementation_label} &
 Turns a vague drift worry into matched and missing terms. \\
 "Check whether this derivation is certified." &
 \path{audit_derivation_v2_label} &
@@ -237,12 +237,12 @@ Editing prose &
 "Make this paragraph clearer." The user supplies the text and does not ask for
 repository evidence. &
 "Rewrite this paragraph after checking the nearby theorem assumptions." The
-agent should retrieve context with \path{extract_latex_neighborhood}. \\
+agent should retrieve context with \path{latex_label_lookup}. \\
 Code review &
 "Does this function look idiomatic?" This is a general programming judgment. &
 "Compare label \path{eq:dept-state-space-likelihood} with
 \path{src/kalman_filter.py} for \path{logdet} and \path{solve}." The agent
-should call \path{compare_label_code}. \\
+should call \path{audit_implementation_label}. \\
 Derivation review &
 "Is this derivation convincing?" Without a label or root, the agent may only
 reason from pasted text. &
@@ -341,7 +341,7 @@ private manifest configuration. &
 The safest adoption practice is to ask the agent to expose the evidence trail.
 A tool-grounded answer should show at least the tool name, important arguments,
 and result fields. For example, a comparison answer should mention
-\path{compare_label_code}, the label, the code path, matched terms, missing
+\path{audit_implementation_label}, the label, the code path, matched terms, missing
 terms, and the status. A derivation answer should mention
 \path{audit_derivation_v2_label}, the parser route, obligations, backend
 evidence or abstentions, and high-priority review actions. A release answer
@@ -374,12 +374,12 @@ Candidate labels, source files, line spans, and short snippets rather than a
 free-memory summary. \\
 "Show me the assumptions around \path{eq:dept-state-space-likelihood} before
 you judge the implementation." &
-\path{extract_latex_neighborhood} &
+\path{latex_label_lookup} &
 The labeled block plus nearby assumptions about dimensions, invertibility,
 conditioning, and notation. \\
 "Compare the likelihood equation with \path{src/kalman_filter.py}; I care
 about \path{logdet}, \path{solve}, and the quadratic form." &
-\path{compare_label_code} &
+\path{audit_implementation_label} &
 A status such as \path{consistent}, \path{mismatch}, or
 \path{unverified}, with matched terms, missing terms, label provenance, and
 code provenance. \\
@@ -568,7 +568,7 @@ the report.
 The CLI is the reproducible interface for humans and CI. The MCP facade wraps
 the same library functions so an agent can call them interactively. The facade
 does not grant unrestricted shell access. It exposes bounded tools such as
-\path{search_latex}, \path{compare_label_code},
+\path{search_latex}, \path{audit_implementation_label},
 \path{audit_derivation_v2_label}, \path{benchmark_gate}, and
 \path{release_readiness}.
 
@@ -917,9 +917,9 @@ User:
 Agent:
   I will anchor the review on the document label before judging the code.
 Tool: search_latex(root, "state space likelihood logdet solve")
-Tool: compare_label_code(root, "eq:dept-state-space-likelihood",
+Tool: audit_implementation_label(root, "eq:dept-state-space-likelihood",
                          code, required_terms=["logdet", "solve"],
-                         paragraph_context=true)
+                         before=1, after=1)
 Agent:
   The result is mismatch: logdet is visible, solve is missing. This is a
   drift signal, not a proof of invalidity. Review whether an equivalent
@@ -985,7 +985,7 @@ User:
 Agent:
   I will compare the leapfrog label against the HMC code for gradient and
   Hamiltonian terms.
-Tool: compare_label_code(root, "eq:dept-hmc-leapfrog", code,
+Tool: audit_implementation_label(root, "eq:dept-hmc-leapfrog", code,
                          required_terms=["grad", "hamiltonian"])
 Agent:
   The structural check is consistent. I can say the selected code is not
@@ -1055,7 +1055,7 @@ Agent:
   I will let the parser resolve the included model file, then compare the
   selected label to the implementation.
 Tool: search_latex(root, "macro filter likelihood Kalman gain")
-Tool: compare_label_code(root, "eq:macro-filter-likelihood", code,
+Tool: audit_implementation_label(root, "eq:macro-filter-likelihood", code,
                          required_terms=["logdet", "solve", "K_t"])
 Agent:
   The comparison finds logdet and solve but not K_t. The likely review
@@ -1125,7 +1125,7 @@ User:
 Agent:
   I will compare the Euler-equation label to the residual code for the
   configured structural terms.
-Tool: compare_label_code(root, "eq:dept-euler-equation", code,
+Tool: audit_implementation_label(root, "eq:dept-euler-equation", code,
                          required_terms=["expectation", "euler_residual"])
 Agent:
   The comparison is consistent for those terms. The code carries the named
@@ -1194,7 +1194,7 @@ User:
 Agent:
   I will compare the likelihood label against the code for innovation and
   likelihood/posterior structure.
-Tool: compare_label_code(root, "eq:dept-sv-likelihood", code,
+Tool: audit_implementation_label(root, "eq:dept-sv-likelihood", code,
                          required_terms=["innovation",
                                          "posterior_or_likelihood"])
 Agent:
@@ -1260,7 +1260,7 @@ User:
   Euler-Maruyama drift, diffusion, and stability hook from the note.
 Agent:
   I will anchor on the Euler-Maruyama label and inspect the selected code.
-Tool: compare_label_code(root, "eq:dept-euler-maruyama", code,
+Tool: audit_implementation_label(root, "eq:dept-euler-maruyama", code,
                          required_terms=["drift", "diffusion",
                                          "stability_condition"])
 Agent:
@@ -1327,7 +1327,7 @@ User:
   is visible, but do not silently equate grad with the full derivation.
 Agent:
   I will run the configured term check and report literal matches.
-Tool: compare_label_code(root, "eq:dept-ml-gradient", code,
+Tool: audit_implementation_label(root, "eq:dept-ml-gradient", code,
                          required_terms=["gradient", "loss"])
 Agent:
   The result is mismatch: loss is visible, gradient is not matched exactly.
@@ -1391,7 +1391,7 @@ User:
   elbo_value, keep that distinction visible.
 Agent:
   I will run the literal configured review terms against the ELBO label.
-Tool: compare_label_code(root, "eq:dept-elbo", code,
+Tool: audit_implementation_label(root, "eq:dept-elbo", code,
                          required_terms=["expectation", "elbo"])
 Agent:
   The result is mismatch: expectation is present, elbo is not matched exactly.
@@ -1460,7 +1460,7 @@ User:
 Agent:
   I will compare the acceptance-ratio label to the code for those structural
   terms only.
-Tool: compare_label_code(root, "eq:dept-acceptance-ratio", code,
+Tool: audit_implementation_label(root, "eq:dept-acceptance-ratio", code,
                          required_terms=["hamiltonian", "gradient"])
 Agent:
   The selected terms are present. This is useful screening evidence, but it

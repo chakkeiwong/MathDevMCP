@@ -55,6 +55,28 @@ MATHDEVMCP_REQUIRE_LATEXML=1 scripts/validate_latexml_backend.sh "$PWD"
 The supported install and validation modes are summarized in the
 [support matrix](docs/mathdevmcp-support-matrix.md).
 
+## MCP Interface
+
+The MCP server uses a tiered interface. The preferred surface keeps
+deterministic primitives, tested workflow tools, and operational release tools:
+
+- primitives: `search_latex`, `latex_label_lookup`, `search_code_docs`,
+  `check_equality`, `lean_check`;
+- workflows: `audit_implementation_label`, `derive_label_step`,
+  `implementation_brief`, `audit_derivation_label`,
+  `audit_derivation_v2_label`, `audit_kalman_recursion`,
+  `typed_obligation_label`;
+- operations: `doctor`, `benchmark_gate`, `run_benchmarks`,
+  `release_corpus_manifest`, `validate_release_corpus`, `release_readiness`;
+- informational: `tool_matrix`/`get_tool_matrix`, `governance_policy`.
+
+Compatibility aliases remain available for a migration cycle:
+`extract_latex_context` and `extract_latex_neighborhood` map to
+`latex_label_lookup`; `check_proof_obligation` maps to `check_equality`;
+`compare_label_code` maps to `audit_implementation_label`.
+
+See [mcp/README.md](mcp/README.md) for the full surface and migration table.
+
 ## Common Workflows
 
 Check the runtime environment:
@@ -71,7 +93,7 @@ PYTHONPATH=src python -m mathdevmcp.cli search-latex "state space likelihood" \
   --root benchmarks/fixtures --limit 3
 ```
 
-Compare a labeled equation with code:
+Audit a labeled equation against code:
 
 ```bash
 PYTHONPATH=src python -m mathdevmcp.cli compare-label-code \

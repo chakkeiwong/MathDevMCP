@@ -15,13 +15,14 @@ from typing import Any
 from .benchmarks import benchmark_gate_report, build_benchmark_report, run_derivation_benchmark, run_label_consistency_benchmark, run_seeded_mismatch_benchmark, run_workflow_benchmark, summarize_benchmark_results
 from .code_search import search_files
 from .consistency import compare_files, compare_label_to_code
-from .contracts import error_result, success_result
+from .contracts import attach_contract, error_result, success_result
 from .derivation import derive_step_for_label
 from .doctor import doctor_report
 from .governance import governance_policy
 from .index_cache import load_or_build_index
 from .kalman_workflows import audit_kalman_recursion
 from .latex_index import build_index, extract_context_for_label, extract_paragraph_context_for_label, search_index
+from .lean_check import check_lean_source
 from .proof_obligations import check_proof_obligation
 from .proof_audit import audit_derivation_for_label
 from .proof_audit_v2 import audit_derivation_v2_for_label
@@ -40,9 +41,13 @@ class MCPToolSpec:
     handler: ToolHandler
     description: str
     output_contract: str
+    tier: str
+    certifying_capable: bool = False
     stability: str = "stable"
     server_name: str | None = None
     optional_capability: str | None = None
+    deprecated: bool = False
+    replacement: str | None = None
 
     @property
     def exposed_server_name(self) -> str:
@@ -98,6 +103,10 @@ def _tool_extract_latex_neighborhood(args: dict[str, Any]) -> dict[str, Any]:
     )
 
 
+def _tool_latex_label_lookup(args: dict[str, Any]) -> dict[str, Any]:
+    return attach_contract(_tool_extract_latex_neighborhood(args), "latex_paragraph_context")
+
+
 def _tool_search_code_docs(args: dict[str, Any]) -> list[dict[str, Any]]:
     return search_files(Path(_required_string(args, "root")), _required_string(args, "query"), limit=int(args.get("limit", 20)))
 
@@ -117,6 +126,10 @@ def _tool_compare_label_code(args: dict[str, Any]) -> dict[str, Any]:
         required_terms=_optional_terms(args),
         index=_index_for_args(args),
     )
+
+
+def _tool_audit_implementation_label(args: dict[str, Any]) -> dict[str, Any]:
+    return _tool_compare_label_code(args)
 
 
 def _tool_derive_label_step(args: dict[str, Any]) -> dict[str, Any]:
@@ -163,6 +176,18 @@ def _tool_check_proof_obligation(args: dict[str, Any]) -> dict[str, Any]:
         _required_string(args, "rhs"),
         assumptions=assumption_list,
         backend=str(args.get("backend", "auto")),
+    )
+
+
+def _tool_check_equality(args: dict[str, Any]) -> dict[str, Any]:
+    return _tool_check_proof_obligation(args)
+
+
+def _tool_lean_check(args: dict[str, Any]) -> dict[str, Any]:
+    return check_lean_source(
+        _required_string(args, "source"),
+        timeout_seconds=int(args.get("timeout_seconds", 10)),
+        allow_sorry=bool(args.get("allow_sorry", False)),
     )
 
 
@@ -264,31 +289,80 @@ def _tool_release_readiness(args: dict[str, Any]) -> dict[str, Any]:
 
 
 MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
-    MCPToolSpec("search_latex", _tool_search_latex, "Search indexed LaTeX blocks with provenance.", "latex_search_results"),
-    MCPToolSpec("extract_latex_context", _tool_extract_latex_context, "Extract line context around a LaTeX label.", "latex_context"),
+    MCPToolSpec("search_latex", _tool_search_latex, "Search indexed LaTeX blocks with provenance.", "latex_search_results", "primitive"),
+    MCPToolSpec("latex_label_lookup", _tool_latex_label_lookup, "Fetch a labeled LaTeX block with paragraph neighborhood and provenance.", "latex_paragraph_context", "primitive"),
+    MCPToolSpec(
+        "extract_latex_context",
+        _tool_extract_latex_context,
+        "Deprecated alias for label lookup with line context.",
+        "latex_context",
+        "primitive",
+        stability="deprecated",
+        deprecated=True,
+        replacement="latex_label_lookup",
+    ),
     MCPToolSpec(
         "extract_latex_neighborhood",
         _tool_extract_latex_neighborhood,
-        "Extract paragraph neighborhood around a LaTeX label.",
+        "Deprecated alias for paragraph-level label lookup.",
         "latex_paragraph_context",
+        "primitive",
+        stability="deprecated",
+        deprecated=True,
+        replacement="latex_label_lookup",
     ),
-    MCPToolSpec("search_code_docs", _tool_search_code_docs, "Search code and document files together.", "code_doc_search_results"),
-    MCPToolSpec("compare_doc_code", _tool_compare_doc_code, "Compare document text against code text.", "doc_code_consistency_result"),
-    MCPToolSpec("compare_label_code", _tool_compare_label_code, "Compare a labeled document block against code.", "label_consistency_result"),
-    MCPToolSpec("derive_label_step", _tool_derive_label_step, "Check a derivation step against labeled document context.", "label_derivation_result"),
-    MCPToolSpec("implementation_brief", _tool_implementation_brief, "Build a document-grounded implementation brief.", "implementation_brief"),
+    MCPToolSpec("search_code_docs", _tool_search_code_docs, "Search code and document files together.", "code_doc_search_results", "primitive"),
+    MCPToolSpec("compare_doc_code", _tool_compare_doc_code, "Compare document text against code text.", "doc_code_consistency_result", "workflow", stability="experimental"),
+    MCPToolSpec("audit_implementation_label", _tool_audit_implementation_label, "Audit a labeled document block against a code implementation.", "label_consistency_result", "workflow"),
+    MCPToolSpec(
+        "compare_label_code",
+        _tool_compare_label_code,
+        "Deprecated alias for audit_implementation_label.",
+        "label_consistency_result",
+        "workflow",
+        stability="deprecated",
+        deprecated=True,
+        replacement="audit_implementation_label",
+    ),
+    MCPToolSpec("derive_label_step", _tool_derive_label_step, "Check a derivation step against labeled document context.", "label_derivation_result", "workflow", certifying_capable=True),
+    MCPToolSpec("implementation_brief", _tool_implementation_brief, "Build a document-grounded implementation brief.", "implementation_brief", "workflow"),
+    MCPToolSpec(
+        "check_equality",
+        _tool_check_equality,
+        "Check lhs == rhs with a deterministic symbolic backend when available.",
+        "proof_obligation_result",
+        "primitive",
+        certifying_capable=True,
+        optional_capability="symbolic_backend",
+    ),
     MCPToolSpec(
         "check_proof_obligation",
         _tool_check_proof_obligation,
-        "Check a bounded derivation/proof obligation with optional backend assistance.",
+        "Deprecated alias for check_equality.",
         "proof_obligation_result",
+        "primitive",
+        certifying_capable=True,
+        stability="deprecated",
         optional_capability="symbolic_backend",
+        deprecated=True,
+        replacement="check_equality",
+    ),
+    MCPToolSpec(
+        "lean_check",
+        _tool_lean_check,
+        "Compile a supplied Lean source. Certifying only when Lean exits 0 and the source has no placeholders.",
+        "lean_check_result",
+        "primitive",
+        certifying_capable=True,
+        optional_capability="lean_backend",
     ),
     MCPToolSpec(
         "audit_derivation_label",
         _tool_audit_derivation_label,
         "Audit proof obligations extracted from a labeled derivation block.",
         "proof_audit_result",
+        "workflow",
+        certifying_capable=True,
         optional_capability="symbolic_backend",
     ),
     MCPToolSpec(
@@ -296,18 +370,20 @@ MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
         _tool_audit_derivation_v2_label,
         "Audit a labeled derivation with typed routing and release-readiness evidence.",
         "proof_audit_v2_result",
+        "workflow",
+        certifying_capable=True,
         optional_capability="symbolic_backend",
     ),
-    MCPToolSpec("audit_kalman_recursion", _tool_audit_kalman_recursion, "Audit AST-level Kalman recursion structure in Python code.", "kalman_recursion_audit"),
-    MCPToolSpec("typed_obligation_label", _tool_typed_obligation_label, "Build typed/dimensional diagnostics for a labeled math obligation.", "typed_obligation_label_diagnostic"),
-    MCPToolSpec("run_benchmarks", _tool_run_benchmarks, "Run seeded consistency benchmarks.", "benchmark_results"),
-    MCPToolSpec("benchmark_gate", _tool_benchmark_gate, "Return CI-friendly benchmark gate results.", "benchmark_gate"),
-    MCPToolSpec("tool_matrix", _tool_tool_matrix, "Return the current MathDevMCP tool matrix.", "tool_matrix", server_name="get_tool_matrix"),
-    MCPToolSpec("doctor", _tool_doctor, "Report external backend capabilities and environment diagnostics.", "doctor_report"),
-    MCPToolSpec("release_corpus_manifest", _tool_release_corpus_manifest, "Return the release corpus manifest.", "release_corpus_manifest"),
-    MCPToolSpec("validate_release_corpus", _tool_validate_release_corpus, "Validate release corpus privacy and gate metadata.", "release_corpus_validation_report"),
-    MCPToolSpec("governance_policy", _tool_governance_policy, "Return security and governance policy.", "governance_policy"),
-    MCPToolSpec("release_readiness", _tool_release_readiness, "Return an auditable release-readiness report.", "release_readiness_report"),
+    MCPToolSpec("audit_kalman_recursion", _tool_audit_kalman_recursion, "Audit AST-level Kalman recursion structure in Python code.", "kalman_recursion_audit", "workflow"),
+    MCPToolSpec("typed_obligation_label", _tool_typed_obligation_label, "Build typed/dimensional diagnostics for a labeled math obligation.", "typed_obligation_label_diagnostic", "workflow"),
+    MCPToolSpec("run_benchmarks", _tool_run_benchmarks, "Run seeded consistency benchmarks.", "benchmark_results", "operational"),
+    MCPToolSpec("benchmark_gate", _tool_benchmark_gate, "Return CI-friendly benchmark gate results.", "benchmark_gate", "operational"),
+    MCPToolSpec("tool_matrix", _tool_tool_matrix, "Return the current MathDevMCP tool matrix.", "tool_matrix", "informational", server_name="get_tool_matrix"),
+    MCPToolSpec("doctor", _tool_doctor, "Report external backend capabilities and environment diagnostics.", "doctor_report", "operational"),
+    MCPToolSpec("release_corpus_manifest", _tool_release_corpus_manifest, "Return the release corpus manifest.", "release_corpus_manifest", "operational"),
+    MCPToolSpec("validate_release_corpus", _tool_validate_release_corpus, "Validate release corpus privacy and gate metadata.", "release_corpus_validation_report", "operational"),
+    MCPToolSpec("governance_policy", _tool_governance_policy, "Return security and governance policy.", "governance_policy", "informational"),
+    MCPToolSpec("release_readiness", _tool_release_readiness, "Return an auditable release-readiness report.", "release_readiness_report", "operational"),
 )
 
 
@@ -321,8 +397,12 @@ def list_mcp_tools() -> list[dict[str, Any]]:
             "server_name": spec.exposed_server_name,
             "description": spec.description,
             "output_contract": spec.output_contract,
+            "tier": spec.tier,
             "stability": spec.stability,
+            "certifying_capable": spec.certifying_capable,
             "optional_capability": spec.optional_capability,
+            "deprecated": spec.deprecated,
+            "replacement": spec.replacement,
         }
         for spec in MCP_TOOL_SPECS
     ]

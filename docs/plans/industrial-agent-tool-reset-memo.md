@@ -3212,3 +3212,474 @@ Release status:
 - No code changes were made in this documentation checkpoint.
 - Remaining work for this requested release-document pass: commit and push this
   reset memo update.
+
+## Current MCP interface improvement request
+
+The next request is to execute the MCP interface improvement plan:
+
+- [mcp-interface-improvement-execution-plan.md](mcp-interface-improvement-execution-plan.md)
+
+The motivation is that PR #1's proposed three-tool-only MCP surface is too
+small for MathDevMCP's product value. The useful direction is not to preserve
+every current tool, but to build a tiered middle interface that keeps
+deterministic primitives, tested workflow tools, operational release tools, and
+explicit deprecation metadata.
+
+This pass should:
+
+1. update this reset memo before and after each phase,
+2. audit the plan as a second developer before implementation,
+3. execute each plan phase in sequence using a plan/execute/test/audit/tidy
+   cycle,
+4. keep going without human intervention unless a phase reveals that the next
+   phase is no longer justified,
+5. preserve `.serena/` and unrelated local files,
+6. commit the completed implementation and documentation changes.
+
+Safety invariant for this pass: interface simplification must not weaken the
+certifying-evidence rule. No parser output, AST match, inferred diagnostic,
+skill instruction, MCP wrapper, benchmark pass, or documentation claim may be
+treated as mathematical verification unless deterministic backend evidence is
+recorded under the relevant MathDevMCP contract.
+
+Initial context after refreshing the local checkout:
+
+```text
+main is aligned with origin/main at c57eb83
+untracked local directory: .serena/
+new plan artifact: docs/plans/mcp-interface-improvement-execution-plan.md
+```
+
+The current `main` already contains a lightweight `MCPToolSpec` registry and
+`tests/test_mcp_surface_sync.py`, so Phase 2 should harden registry metadata
+rather than recreate the registry from scratch.
+
+### MCP interface improvement plan-audit result
+
+Added the second-developer audit artifact:
+
+- [mcp-interface-improvement-plan-audit.md](mcp-interface-improvement-plan-audit.md)
+
+Audit conclusion: proceed. The plan is directionally sound and no issue makes
+Phase 1 unjustified. The audit tightened several execution constraints:
+
+- extend the existing `MCPToolSpec` rather than rewriting the registry,
+- preserve compatibility aliases while adding preferred names,
+- keep alias result payloads compatible unless tests deliberately allow new
+  deprecation fields,
+- measure the preferred stable surface separately from deprecated aliases,
+- treat `audit_implementation_label` initially as a better named wrapper, not
+  as a claim of stronger semantic verification,
+- harden `lean_check` with a conservative scanner without claiming to implement
+  a complete Lean lexer,
+- restrict stale-tool doc checks to primary active docs and workflow rules,
+  not historical planning records,
+- salvage PR #1 conservatively.
+
+Next phase remains justified: inventory and classification should be executed
+as registry metadata and documentation alignment, not as a detached list.
+
+### MCP interface Phase 1 result: inventory and classification
+
+Phase plan: inventory the current facade/server tool names, identify stale
+active documentation, and decide whether the next registry phase remains
+justified.
+
+Observed current surface on `main`:
+
+- primitive/retrieval-style tools: `search_latex`, `extract_latex_context`,
+  `extract_latex_neighborhood`, `search_code_docs`,
+- code/document and proof workflow tools: `compare_doc_code`,
+  `compare_label_code`, `derive_label_step`, `implementation_brief`,
+  `audit_derivation_label`, `audit_derivation_v2_label`,
+  `audit_kalman_recursion`, `typed_obligation_label`,
+- backend/check tools: `check_proof_obligation`,
+- release/operational tools: `run_benchmarks`, `benchmark_gate`, `doctor`,
+  `release_corpus_manifest`, `validate_release_corpus`, `release_readiness`,
+- informational/static tools: `tool_matrix`/server alias `get_tool_matrix`,
+  `governance_policy`.
+
+Active documentation still teaches old names as primary entry points in
+`mcp/README.md`, `docs/mathdevmcp-operator-guide.md`, and
+`docs/mathdevmcp-release-report.tex`. This is acceptable as a Phase 1 finding
+but needs correction after preferred aliases exist.
+
+Targeted Phase 1 verification:
+
+```text
+PYTHONPATH=src python -m pytest -q tests/test_mcp_surface_sync.py tests/test_mcp_facade.py tests/test_mcp_server.py
+25 passed
+```
+
+Audit interpretation: Phase 1 found no blocker. The current registry is a good
+base, but it lacks tier, deprecation, replacement, and certifying-capability
+metadata. Phase 2 remains justified.
+
+### MCP interface Phase 2 result: registry metadata hardening
+
+Phase plan: extend the existing `MCPToolSpec` with interface classification
+metadata while preserving current handler behavior.
+
+Changes made:
+
+- extended `src/mathdevmcp/mcp_facade.py` so every MCP tool spec now declares:
+  - `tier`: `primitive`, `workflow`, `operational`, or `informational`,
+  - `certifying_capable`,
+  - `deprecated`,
+  - `replacement`,
+  - existing `stability`, `server_name`, `output_contract`, and optional
+    capability metadata,
+- extended `list_mcp_tools()` to expose the new metadata,
+- extended `tests/test_mcp_surface_sync.py` so future tools must declare valid
+  tier/stability/contract/certifying/deprecation metadata.
+
+Targeted Phase 2 verification:
+
+```text
+PYTHONPATH=src python -m pytest -q tests/test_mcp_surface_sync.py tests/test_mcp_facade.py tests/test_mcp_server.py tests/test_schema_contracts.py
+35 passed
+```
+
+Audit interpretation: this phase preserved compatibility and made the registry
+the classification source of truth. Phase 3 remains justified because the
+registry can now represent preferred names and deprecated aliases explicitly.
+
+### MCP interface Phase 3 result: preferred names and compatibility aliases
+
+Phase plan: add preferred tool names without removing legacy tools, then verify
+behavior through facade and FastMCP wrappers.
+
+Changes made:
+
+- added `latex_label_lookup` as the preferred paragraph-context label lookup
+  primitive,
+- added `check_equality` as the preferred bounded equality-check primitive,
+- added `audit_implementation_label` as the preferred implementation-review
+  workflow name while keeping its first implementation behavior-compatible with
+  `compare_label_code`,
+- added `lean_check` to the MCP facade and FastMCP server,
+- marked `extract_latex_context`, `extract_latex_neighborhood`,
+  `check_proof_obligation`, and `compare_label_code` as deprecated registry
+  entries with replacements,
+- kept legacy handlers callable for compatibility.
+
+Targeted Phase 3 verification:
+
+```text
+PYTHONPATH=src python -m pytest -q tests/test_mcp_facade.py tests/test_mcp_server.py tests/test_lean_check.py
+28 passed, 6 skipped
+```
+
+Audit interpretation: preferred names work and old names still work. The
+existing `mcp/README.md` sync test now fails because the README has not yet
+been updated to list the new preferred names. That is an expected Phase 5
+documentation task, not a behavioral blocker. Phase 4 remains justified because
+`lean_check` is now an exposed MCP primitive and needs stronger placeholder
+detection before the final sync gate.
+
+### MCP interface Phase 4 result: Lean placeholder detection hardening
+
+Phase plan: replace substring placeholder detection with a conservative scanner
+that ignores comments, strings, and identifier substrings while still detecting
+actual `sorry` and `admit` tokens.
+
+Changes made:
+
+- updated `src/mathdevmcp/lean_check.py` so `_uses_placeholder(...)` scans
+  outside line comments, nested block comments, and string literals,
+- avoids false positives for identifiers such as `sorryCount` and
+  `admitTheoremName`,
+- keeps true positives for standalone `sorry` and `admit` proof placeholders,
+- added pure scanner tests in `tests/test_lean_check.py`.
+
+Targeted Phase 4 verification:
+
+```text
+PYTHONPATH=src python -m pytest -q tests/test_lean_check.py tests/test_mcp_facade.py tests/test_mcp_server.py
+30 passed, 6 skipped
+```
+
+Audit interpretation: the new scanner is intentionally not a full Lean lexer,
+but it fixes the brittle substring behavior that would make `lean_check` a poor
+MCP primitive. The certifying boundary is unchanged: Lean must still accept the
+source and placeholder tokens cannot certify. Phase 5 remains justified because
+active docs now need to describe the tiered surface and preferred names.
+
+### MCP interface Phase 5 result: documentation and client-rule alignment
+
+Phase plan: update active documentation so it teaches the tiered MCP interface
+and preferred names while preserving deprecated names only as migration
+compatibility.
+
+Changes made:
+
+- rewrote `mcp/README.md` around the tiered interface:
+  - primitive tools,
+  - workflow tools,
+  - operational tools,
+  - informational tools,
+  - deprecated compatibility names and replacements,
+- updated `README.md` with the tiered MCP surface and migration aliases,
+- updated `docs/mathdevmcp-operator-guide.md` so new prompts prefer
+  `latex_label_lookup`, `check_equality`, and `audit_implementation_label`,
+- updated narrative/prompt-mapping sections of
+  `docs/mathdevmcp-release-report.tex` to use the preferred MCP names.
+
+Targeted Phase 5 verification:
+
+```text
+PYTHONPATH=src python -m pytest -q tests/test_mcp_surface_sync.py tests/test_support_matrix_docs.py
+7 passed
+```
+
+Audit interpretation: active teaching docs now agree with the preferred
+surface. Generated evidence snippets still reflect current CLI command names
+where those snippets are included via `\lstinputlisting`; they were not
+hand-edited. The PDF was not rebuilt in this phase because the source doc was
+the release-facing artifact being corrected. Phase 6 remains justified to add
+stronger sync tests for registry metadata and documentation drift.
+
+### MCP interface Phase 6 result: generated-doc and sync tests
+
+Phase plan: add tests that prevent registry, FastMCP, README, deprecation
+mapping, and active documentation examples from drifting again.
+
+Changes made:
+
+- extended `tests/test_mcp_surface_sync.py` with checks that:
+  - the preferred stable surface remains intentionally sized and tiered,
+  - deprecated registry entries have documented replacements,
+  - active docs mention preferred names,
+  - active docs do not teach nonexistent `paragraph_context=true` calls,
+  - README, FastMCP server exposure, and facade registry stay synchronized.
+- fixed two remaining release-report examples that still used
+  `paragraph_context=true`.
+
+Targeted Phase 6 verification:
+
+```text
+PYTHONPATH=src python -m pytest -q tests/test_mcp_surface_sync.py tests/test_mcp_facade.py tests/test_mcp_server.py
+35 passed
+```
+
+Audit interpretation: the sync tests caught and fixed real stale examples.
+Phase 7 remains justified, but PR #1 salvage should be conservative: the
+three-tool shrink is rejected, while low-risk portability and install-rule
+ideas can be adopted only if they remain schema-valid.
+
+### MCP interface Phase 7 result: PR #1 salvage strategy
+
+Phase plan: salvage low-risk PR #1 ideas that fit the tiered interface, while
+rejecting the three-tool-only surface and deferring packaging/client-rule
+changes that need separate policy review.
+
+Changes made:
+
+- adopted the `.mcp.json` portability fix by replacing the hardcoded
+  `/home/chakwong/MathDevMCP/src` with relative `src`.
+
+Changes explicitly not adopted in this pass:
+
+- did not promote `mcp` to a base dependency; this remains a package policy
+  choice and current packaging tests still expect the optional-extra structure,
+- did not add `mathdevmcp install-rules`; that remains useful but should be a
+  follow-up once generated client rules are written against the tiered surface
+  and covered by sync tests,
+- did not add `.claude/skills` or `.claude/agents` from PR #1; prose skills
+  should supplement, not replace, tested MCP workflow contracts.
+
+Targeted Phase 7 verification:
+
+```text
+PYTHONPATH=src python -m pytest -q tests/test_mcp_surface_sync.py tests/test_packaging_release_policy.py tests/test_release_candidate_installation.py
+19 passed
+```
+
+Audit interpretation: the safe portability fix landed without disrupting the
+release/package tests. Full verification is now justified.
+
+## MCP interface improvement checkpoint outcome
+
+This pass executed the MCP interface improvement plan as a tiered-interface
+checkpoint. It rejects the three-tool-only MCP surface from PR #1 while keeping
+the useful idea that the interface needs clearer structure and migration
+metadata.
+
+### Changes implemented
+
+Added planning/audit artifacts:
+
+- `docs/plans/mcp-interface-improvement-execution-plan.md`,
+- `docs/plans/mcp-interface-improvement-plan-audit.md`.
+
+Updated reset memo throughout the pass with phase results and next-phase
+justification.
+
+Implemented MCP interface changes:
+
+- extended `src/mathdevmcp/mcp_facade.py` `MCPToolSpec` with:
+  - `tier`,
+  - `certifying_capable`,
+  - `deprecated`,
+  - `replacement`,
+  - existing contract/stability/server-name/optional-capability metadata,
+- exposed metadata through `list_mcp_tools()`,
+- added preferred MCP names:
+  - `latex_label_lookup`,
+  - `check_equality`,
+  - `audit_implementation_label`,
+  - `lean_check`,
+- kept compatibility aliases:
+  - `extract_latex_context` -> `latex_label_lookup`,
+  - `extract_latex_neighborhood` -> `latex_label_lookup`,
+  - `check_proof_obligation` -> `check_equality`,
+  - `compare_label_code` -> `audit_implementation_label`,
+- added FastMCP wrappers for the preferred names,
+- kept workflow tools such as `audit_derivation_v2_label`,
+  `typed_obligation_label`, `audit_kalman_recursion`, and
+  `implementation_brief` available as tested structured contracts.
+
+Hardened Lean checking:
+
+- replaced substring placeholder detection with a conservative scanner that
+  ignores line comments, nested block comments, string literals, and identifier
+  substrings,
+- kept true placeholder tokens `sorry` and `admit` non-certifying,
+- changed Lean toolchain/download/network environment failures from
+  mathematical `mismatch` to diagnostic `inconclusive`.
+
+Updated docs and sync checks:
+
+- rewrote `mcp/README.md` around primitive/workflow/operational/informational
+  tiers and deprecated migration names,
+- updated `README.md`, `docs/mathdevmcp-operator-guide.md`, and
+  `docs/mathdevmcp-release-report.tex` to teach preferred names,
+- extended `tests/test_mcp_surface_sync.py` so registry, FastMCP exposure,
+  README entries, deprecated replacements, preferred-name docs, and schema-safe
+  examples stay synchronized,
+- adopted PR #1's `.mcp.json` portability fix by changing `PYTHONPATH` to
+  relative `src`.
+
+Updated tests:
+
+- added preferred-name facade/server coverage,
+- added registry metadata and documentation sync coverage,
+- added Lean placeholder scanner coverage,
+- made LeanDojo/release backend tests environment-aware so unavailable Lean or
+  missing isolated backend env produces inconclusive/blocking environment
+  evidence rather than false mathematical mismatch.
+
+### Verification completed
+
+Focused phase checks passed:
+
+```text
+Phase 1 MCP baseline: 25 passed
+Phase 2 registry/schema: 35 passed
+Phase 3 preferred names: 28 passed, 6 skipped
+Phase 4 Lean hardening: 30 passed, 6 skipped
+Phase 5 docs sync: 7 passed
+Phase 6 MCP sync: 35 passed
+Phase 7 portability/package: 19 passed
+Final focused set: 72 passed, 7 skipped
+```
+
+Full suite initially failed because Lean/LeanDojo environment assumptions were
+not satisfied: `lean --version` attempted a network-dependent toolchain
+download, and the documented `mathdevmcp-backends` conda environment was not
+configured. The implementation was hardened so such toolchain/download failures
+are diagnostic/inconclusive instead of mathematical mismatch.
+
+After those fixes, the full suite passed:
+
+```text
+265 passed, 11 skipped
+```
+
+Benchmark gate passed:
+
+```text
+passed=true, total=41, passed_count=41, failed_count=0,
+expected_abstentions=12, policy=all_benchmarks_must_pass
+```
+
+Base release-readiness completed:
+
+```text
+status=ready_with_caveats
+blockers=[]
+caveats=[
+  dirty_worktree,
+  lean_version_or_toolchain_caveat,
+  dependency_conflicts,
+  private_corpus_not_configured
+]
+```
+
+Public release check passed:
+
+```text
+status=consistent
+blockers=[]
+```
+
+Diff hygiene passed:
+
+```text
+git diff --check
+```
+
+### Audit notes
+
+This checkpoint intentionally does not claim that `audit_implementation_label`
+is semantically stronger than the existing code/document comparison. It is a
+preferred name and compatibility wrapper for this pass. The next implementation
+should make it the real structured implementation-audit spine by combining
+label context, AST operation graph evidence, shape diagnostics, typed
+diagnostics, and explicit abstention reasons.
+
+The preferred stable MCP surface is larger than three tools because workflow
+contracts are part of MathDevMCP's value. Deprecated compatibility aliases keep
+the total exposed surface larger during migration. That is deliberate; the
+release goal is an intentional surface, not the smallest possible surface.
+
+`lean_check` now treats Lean environment/toolchain download failures as
+`inconclusive`. This is safer than reporting `mismatch`, because a missing
+toolchain is not a mathematical refutation. Real Lean proof rejection still
+remains blocking.
+
+PR #1 salvage was intentionally conservative. The `.mcp.json` portability fix
+landed. `mathdevmcp install-rules`, `.claude` skills/agents, and promoting
+`mcp` to a base dependency remain follow-up decisions because they should be
+implemented against the tiered interface and package policy, not against the
+three-tool-only design.
+
+### Next hypotheses to test
+
+1. `audit_implementation_label` can become the main code/document semantic
+   review spine without overclaiming proof.
+   Test by integrating AST operation graph evidence, shape diagnostics, typed
+   diagnostics, and source provenance into its result while preserving
+   `compare_label_code` as a compatibility alias.
+
+2. Generated client rules are useful if and only if they are schema-checked.
+   Test by implementing `mathdevmcp install-rules` against the tiered interface
+   and adding tests that generated Cursor/Copilot rules mention only real tool
+   names and parameters.
+
+3. The preferred stable MCP surface can be reduced further by retiring
+   deprecated aliases after one migration cycle.
+   Test by collecting usages of deprecated names in docs, scripts, and agent
+   prompts, then removing or converting aliases only after migration evidence
+   shows they are no longer needed.
+
+4. Lean/backend environment policy should be split from base release tests.
+   Test by adding a dedicated backend-profile CI job or local script that
+   provisions `mathdevmcp-backends`, pins Lean, and runs the backend profile
+   separately from base/public checks.
+
+5. Release-report generated evidence should be regenerated after interface
+   renaming.
+   Test by updating the evidence generation script to prefer
+   `audit_implementation_label` in narrative snippets while keeping CLI command
+   compatibility clear.

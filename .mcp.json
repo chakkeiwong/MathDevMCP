@@ -8,7 +8,7 @@
         "mathdevmcp.mcp_server"
       ],
       "env": {
-        "PYTHONPATH": "/home/chakwong/MathDevMCP/src"
+        "PYTHONPATH": "src"
       }
     }
   }

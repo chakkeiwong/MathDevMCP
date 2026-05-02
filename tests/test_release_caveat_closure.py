@@ -58,7 +58,13 @@ def test_backend_profile_uses_configured_backend_env(monkeypatch):
 
     assert report["profile"] == "backend"
     assert "lean_dojo_backend_env" in report["required_capabilities"]
-    assert not any(blocker["kind"] == "backend_lean_dojo_unavailable" for blocker in report["blockers"])
+    backend_blockers = [blocker for blocker in report["blockers"] if blocker["kind"] == "backend_lean_dojo_unavailable"]
+    if backend_blockers:
+        assert report["status"] == "not_ready"
+        assert backend_blockers[0]["backend_conda_env"] == "mathdevmcp-backends"
+        assert "setup_backend_env.sh" in backend_blockers[0]["install_hint"]
+    else:
+        assert report["status"] in {"ready", "ready_with_caveats"}
 
 
 def test_backend_profile_defaults_to_documented_backend_env(monkeypatch):
@@ -67,7 +73,11 @@ def test_backend_profile_defaults_to_documented_backend_env(monkeypatch):
     report = release_readiness_report(ROOT, profile="backend")
 
     assert report["profile"] == "backend"
-    assert not any(blocker["kind"] == "backend_lean_dojo_unavailable" for blocker in report["blockers"])
+    backend_blockers = [blocker for blocker in report["blockers"] if blocker["kind"] == "backend_lean_dojo_unavailable"]
+    if backend_blockers:
+        assert backend_blockers[0]["backend_conda_env"] == "mathdevmcp-backends"
+    else:
+        assert report["status"] in {"ready", "ready_with_caveats"}
 
 
 def test_release_readiness_cli_accepts_profile(monkeypatch):

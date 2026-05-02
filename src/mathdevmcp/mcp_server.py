@@ -12,14 +12,18 @@ from .mcp_facade import call_mcp_tool
 MCP_SERVER_TOOL_ALIASES = {"tool_matrix": "get_tool_matrix"}
 MCP_SERVER_EXPOSED_TOOLS = {
     "search_latex",
+    "latex_label_lookup",
     "extract_latex_context",
     "extract_latex_neighborhood",
     "search_code_docs",
     "compare_doc_code",
+    "audit_implementation_label",
     "compare_label_code",
     "derive_label_step",
     "implementation_brief",
+    "check_equality",
     "check_proof_obligation",
+    "lean_check",
     "audit_derivation_label",
     "audit_derivation_v2_label",
     "audit_kalman_recursion",
@@ -62,6 +66,14 @@ def extract_latex_neighborhood(root: str, label: str, before: int = 1, after: in
     )
 
 
+@mcp.tool(description="Fetch a labeled LaTeX block plus paragraph neighborhood and provenance.", structured_output=False)
+def latex_label_lookup(root: str, label: str, before: int = 1, after: int = 1, cache: str | None = None) -> dict:
+    return call_mcp_tool(
+        "latex_label_lookup",
+        {"root": root, "label": label, "before": before, "after": after, "cache": cache},
+    )
+
+
 @mcp.tool(description="Search code and document files together.", structured_output=False)
 def search_code_docs(root: str, query: str, limit: int = 20) -> list[dict]:
     return call_mcp_tool("search_code_docs", {"root": root, "query": query, "limit": limit})
@@ -88,6 +100,32 @@ def compare_label_code(
 ) -> dict:
     return call_mcp_tool(
         "compare_label_code",
+        {
+            "root": root,
+            "label": label,
+            "code": code,
+            "required_terms": list(required_terms) if required_terms is not None else None,
+            "before": before,
+            "after": after,
+            "paragraph_context": paragraph_context,
+            "cache": cache,
+        },
+    )
+
+
+@mcp.tool(description="Audit a labeled document block against a code implementation.", structured_output=False)
+def audit_implementation_label(
+    root: str,
+    label: str,
+    code: str,
+    required_terms: Sequence[str] | None = None,
+    before: int = 0,
+    after: int = 0,
+    paragraph_context: bool = False,
+    cache: str | None = None,
+) -> dict:
+    return call_mcp_tool(
+        "audit_implementation_label",
         {
             "root": root,
             "label": label,
@@ -166,6 +204,24 @@ def check_proof_obligation(
         "check_proof_obligation",
         {"lhs": lhs, "rhs": rhs, "assumptions": list(assumptions) if assumptions is not None else None, "backend": backend},
     )
+
+
+@mcp.tool(description="Check lhs == rhs with a deterministic symbolic backend when available.", structured_output=False)
+def check_equality(
+    lhs: str,
+    rhs: str,
+    assumptions: Sequence[str] | None = None,
+    backend: str = "auto",
+) -> dict:
+    return call_mcp_tool(
+        "check_equality",
+        {"lhs": lhs, "rhs": rhs, "assumptions": list(assumptions) if assumptions is not None else None, "backend": backend},
+    )
+
+
+@mcp.tool(description="Compile a supplied Lean source. Certifying only when Lean exits 0 and the source has no placeholders.", structured_output=False)
+def lean_check(source: str, timeout_seconds: int = 10, allow_sorry: bool = False) -> dict:
+    return call_mcp_tool("lean_check", {"source": source, "timeout_seconds": timeout_seconds, "allow_sorry": allow_sorry})
 
 
 @mcp.tool(description="Audit proof obligations extracted from a labeled derivation block.", structured_output=False)

@@ -20,6 +20,7 @@ class LeanCheckResult:
 
 
 _PLACEHOLDER_MARKERS = ("sorry", "admit")
+_IDENTIFIER_CHARS = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_'.")
 
 
 def _lean_path() -> str | None:
@@ -37,7 +38,65 @@ def _source_hash(source: str) -> str:
 
 
 def _uses_placeholder(source: str) -> bool:
-    return any(marker in source for marker in _PLACEHOLDER_MARKERS)
+    """Detect Lean placeholder tokens outside comments, strings, and identifiers.
+
+    This is a conservative scanner, not a full Lean lexer. Its job is to avoid
+    obvious false positives such as comments and identifiers while preserving
+    the safety rule that actual `sorry`/`admit` tokens cannot certify a proof.
+    """
+    index = 0
+    length = len(source)
+    block_comment_depth = 0
+    in_string = False
+    while index < length:
+        current = source[index]
+        nxt = source[index + 1] if index + 1 < length else ""
+
+        if block_comment_depth:
+            if current == "/" and nxt == "-":
+                block_comment_depth += 1
+                index += 2
+                continue
+            if current == "-" and nxt == "/":
+                block_comment_depth -= 1
+                index += 2
+                continue
+            index += 1
+            continue
+
+        if in_string:
+            if current == "\\":
+                index += 2
+                continue
+            if current == '"':
+                in_string = False
+            index += 1
+            continue
+
+        if current == "-" and nxt == "-":
+            newline = source.find("\n", index + 2)
+            if newline == -1:
+                break
+            index = newline + 1
+            continue
+        if current == "/" and nxt == "-":
+            block_comment_depth = 1
+            index += 2
+            continue
+        if current == '"':
+            in_string = True
+            index += 1
+            continue
+
+        for marker in _PLACEHOLDER_MARKERS:
+            if source.startswith(marker, index):
+                before = source[index - 1] if index > 0 else ""
+                after_index = index + len(marker)
+                after = source[after_index] if after_index < length else ""
+                if before not in _IDENTIFIER_CHARS and after not in _IDENTIFIER_CHARS:
+                    return True
+        index += 1
+    return False
 
 
 def _lean_version(lean: str) -> str:
@@ -46,6 +105,19 @@ def _lean_version(lean: str) -> str:
     except Exception:
         return "unavailable"
     return (completed.stdout or completed.stderr).strip()
+
+
+def _lean_environment_failure(output: str) -> bool:
+    lowered = output.lower()
+    markers = (
+        "error during download",
+        "could not resolve host",
+        "could not resolve hostname",
+        "connection refused",
+        "failed to download",
+        "toolchain",
+    )
+    return any(marker in lowered for marker in markers)
 
 
 def _evidence(kind: str, *, command: list[str], source: str, uses_sorry: bool, lean_version: str, returncode: int | None = None, stdout: str = "", stderr: str = "", reason: str) -> dict:
@@ -146,6 +218,20 @@ def check_lean_source(source: str, *, timeout_seconds: int = 10, allow_sorry: bo
             stdout=completed.stdout,
             stderr=completed.stderr,
             reason="Lean accepted the source, but the proof uses a placeholder.",
+        )
+        return attach_contract(asdict(LeanCheckResult("inconclusive", evidence["reason"], [evidence])), "lean_check_result")
+    combined_output = "\n".join(part for part in (completed.stdout, completed.stderr) if part)
+    if _lean_environment_failure(combined_output):
+        evidence = _evidence(
+            "lean_unavailable",
+            command=command,
+            source=source,
+            uses_sorry=uses_sorry,
+            lean_version=version,
+            returncode=completed.returncode,
+            stdout=completed.stdout,
+            stderr=completed.stderr,
+            reason="Lean execution failed because the configured toolchain or network-dependent environment is unavailable.",
         )
         return attach_contract(asdict(LeanCheckResult("inconclusive", evidence["reason"], [evidence])), "lean_check_result")
     evidence = _evidence(

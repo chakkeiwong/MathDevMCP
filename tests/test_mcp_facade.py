@@ -9,9 +9,14 @@ ROOT = FIXTURES.parent.parent
 
 
 def test_list_mcp_tools_includes_implementation_brief():
-    names = {tool["name"] for tool in list_mcp_tools()}
+    tools = {tool["name"]: tool for tool in list_mcp_tools()}
+    names = set(tools)
 
     assert "implementation_brief" in names
+    assert "latex_label_lookup" in names
+    assert "check_equality" in names
+    assert "lean_check" in names
+    assert "audit_implementation_label" in names
     assert "compare_label_code" in names
     assert "benchmark_gate" in names
     assert "audit_kalman_recursion" in names
@@ -20,6 +25,10 @@ def test_list_mcp_tools_includes_implementation_brief():
     assert "validate_release_corpus" in names
     assert "governance_policy" in names
     assert "release_readiness" in names
+    assert tools["compare_label_code"]["deprecated"] is True
+    assert tools["compare_label_code"]["replacement"] == "audit_implementation_label"
+    assert tools["check_proof_obligation"]["deprecated"] is True
+    assert tools["check_proof_obligation"]["replacement"] == "check_equality"
 
 
 
@@ -40,6 +49,30 @@ def test_call_mcp_tool_compare_label_code_returns_traceable_result():
     assert result["provenance"]["label"] == "prop:transport-mismatch"
     assert result["ok"] is True
 
+
+def test_call_mcp_tool_audit_implementation_label_matches_compatibility_alias():
+    args = {
+        "root": str(FIXTURES),
+        "label": "prop:transport-mismatch",
+        "code": str(FIXTURES / "doc_consistency_bad.py"),
+        "required_terms": ["logdet"],
+    }
+
+    preferred = call_mcp_tool("audit_implementation_label", args)
+    legacy = call_mcp_tool("compare_label_code", args)
+
+    assert preferred == legacy
+    assert preferred["status"] == "mismatch"
+
+
+def test_call_mcp_tool_preferred_label_and_equality_names_work():
+    context = call_mcp_tool("latex_label_lookup", {"root": str(FIXTURES), "label": "prop:transport-logdet"})
+    equality = call_mcp_tool("check_equality", {"lhs": "(a+b)*(a-b)", "rhs": "a*a - b*b"})
+
+    assert context["metadata"] == {"schema_version": "1.0", "contract": "latex_paragraph_context"}
+    assert context["label"] == "prop:transport-logdet"
+    assert equality["metadata"] == {"schema_version": "1.0", "contract": "proof_obligation_result"}
+    assert equality["status"] in {"equivalent", "verified", "inconclusive"}
 
 
 def test_call_mcp_tool_implementation_brief_returns_consistent_result():

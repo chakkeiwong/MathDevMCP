@@ -103,7 +103,7 @@ Use this first for queries like:
 - "find the proposition about the Jacobian correction"
 
 ### 2. Read the local mathematical neighborhood
-Use `extract-latex-neighborhood` or MCP `extract_latex_neighborhood` when you already know the label and want nearby explanatory prose.
+Use `extract-latex-neighborhood` or MCP `latex_label_lookup` when you already know the label and want nearby explanatory prose. The older MCP names `extract_latex_context` and `extract_latex_neighborhood` remain compatibility aliases, but new prompts should use `latex_label_lookup`.
 
 CLI:
 ```bash
@@ -119,7 +119,7 @@ Rule of thumb:
 - use `context` for exact local provenance.
 
 ### 3. Compare a document claim to code
-Use `compare-label-code` or MCP `compare_label_code` when you have a labeled statement and want to see whether the code visibly contains the required terms.
+Use `compare-label-code` or MCP `audit_implementation_label` when you have a labeled statement and want to see whether the code visibly contains the required terms. The older MCP name `compare_label_code` remains a compatibility alias.
 
 CLI:
 ```bash
@@ -224,9 +224,9 @@ Use this order:
 
 1. `search_latex`
    - find candidate definitions/propositions/equations.
-2. `extract_latex_neighborhood`
+2. `latex_label_lookup`
    - read the local explanation around the label.
-3. `compare_label_code`
+3. `audit_implementation_label`
    - check whether the implementation visibly includes the documented terms.
 4. `derive_label_step` if the agent wants to assert a concrete symbolic step.
 5. `implementation_brief`
@@ -325,12 +325,17 @@ MathDevMCP is available to another Claude Code agent through the project MCP set
 
 The MCP server exposes these tools:
 - `search_latex`
+- `latex_label_lookup`
 - `extract_latex_context`
 - `extract_latex_neighborhood`
 - `search_code_docs`
 - `compare_doc_code`
+- `audit_implementation_label`
 - `compare_label_code`
 - `derive_label_step`
+- `check_equality`
+- `check_proof_obligation`
+- `lean_check`
 - `audit_derivation_label`
 - `audit_derivation_v2_label`
 - `audit_kalman_recursion`
@@ -339,6 +344,20 @@ The MCP server exposes these tools:
 - `run_benchmarks`
 - `benchmark_gate`
 - `get_tool_matrix`
+- `doctor`
+- `release_corpus_manifest`
+- `validate_release_corpus`
+- `governance_policy`
+- `release_readiness`
+
+Preferred MCP names for new prompts are `latex_label_lookup`,
+`check_equality`, and `audit_implementation_label`. Deprecated compatibility
+names remain available for a migration cycle:
+
+- `extract_latex_context` -> `latex_label_lookup`,
+- `extract_latex_neighborhood` -> `latex_label_lookup`,
+- `check_proof_obligation` -> `check_equality`,
+- `compare_label_code` -> `audit_implementation_label`.
 
 Implementation lives in:
 - [src/mathdevmcp/mcp_server.py](../src/mathdevmcp/mcp_server.py)

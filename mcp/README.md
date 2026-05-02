@@ -1,46 +1,75 @@
 # MCP server
 
-MathDevMCP now has a true FastMCP stdio server in:
+MathDevMCP exposes a tiered FastMCP stdio interface. The goal is a small,
+intentional surface, not a three-tool-only surface. Deterministic primitives
+stay easy to call, while tested workflow tools remain available as structured
+contracts with provenance, abstention reasons, and benchmark coverage.
 
-- `src/mathdevmcp/mcp_server.py`
+Server: `src/mathdevmcp/mcp_server.py`
 
-The reusable tool dispatch layer remains in:
+Facade registry: `src/mathdevmcp/mcp_facade.py`
 
-- `src/mathdevmcp/mcp_facade.py`
+## Preferred stable surface
 
-Current MCP tools:
+### Primitive Tools
 
-- `search_latex`
-- `extract_latex_context`
-- `extract_latex_neighborhood`
-- `search_code_docs`
-- `compare_doc_code`
-- `compare_label_code`
-- `derive_label_step`
-- `implementation_brief`
-- `check_proof_obligation`
-- `audit_derivation_label`
-- `audit_derivation_v2_label`
-- `audit_kalman_recursion`
-- `typed_obligation_label`
-- `run_benchmarks`
-- `benchmark_gate`
-- `tool_matrix`
-- `get_tool_matrix`
-- `doctor`
-- `release_corpus_manifest`
-- `validate_release_corpus`
-- `governance_policy`
-- `release_readiness`
+- `search_latex` - search indexed LaTeX blocks with provenance.
+- `latex_label_lookup` - fetch a labeled LaTeX block plus paragraph
+  neighborhood and provenance.
+- `search_code_docs` - search code and document files together.
+- `check_equality` - check `lhs == rhs` with a deterministic symbolic backend
+  when available.
+- `lean_check` - compile supplied Lean source. Certifying only when Lean exits
+  0 and the source has no placeholder proof tokens.
 
-`tool_matrix` is the facade tool name. The FastMCP server keeps the legacy
-server alias `get_tool_matrix` for compatibility.
+### Workflow Tools
 
-Local launch command:
+- `audit_implementation_label` - audit a labeled document block against a code
+  implementation. This is the preferred name for code/document drift review.
+- `derive_label_step` - check a concrete expression-to-expression claim against
+  labeled document context.
+- `implementation_brief` - build a compact document-grounded handoff report.
+- `audit_derivation_label` - audit obligations extracted from a labeled block.
+- `audit_derivation_v2_label` - run the primary release-spine proof audit with
+  typed diagnostics, route decisions, backend evidence, and abstentions.
+- `audit_kalman_recursion` - audit AST-level Kalman recursion structure in code.
+- `typed_obligation_label` - build typed/dimensional diagnostics for a labeled
+  math obligation.
 
-```bash
-PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.mcp_server
-```
+### Operational Tools
+
+- `run_benchmarks` - return the full seeded benchmark report.
+- `benchmark_gate` - return the CI-friendly benchmark gate result.
+- `doctor` - report environment and optional backend capabilities.
+- `release_corpus_manifest` - return public/private release corpus metadata.
+- `validate_release_corpus` - validate corpus privacy and release-gate fields.
+- `release_readiness` - return a profile-specific release-readiness report.
+
+### Informational Tools
+
+- `tool_matrix` - facade name for the static problem/tool matrix.
+- `get_tool_matrix` - FastMCP server alias for `tool_matrix`.
+- `governance_policy` - return the security and governance policy.
+
+## Deprecated Compatibility Names
+
+Deprecated names remain available for a migration cycle. Prefer the new names
+in prompts, client rules, and new code.
+
+| Deprecated name | Preferred replacement |
+|---|---|
+| `extract_latex_context` | `latex_label_lookup` with tighter `before`/`after` values |
+| `extract_latex_neighborhood` | `latex_label_lookup` |
+| `check_proof_obligation` | `check_equality` |
+| `compare_label_code` | `audit_implementation_label` |
+
+Experimental or legacy workflow names that remain available but should be used
+carefully:
+
+- `compare_doc_code` - token/document overlap check; prefer a richer
+  implementation audit when a label and code path are available.
+
+## Launch
 
 Installed script entrypoint:
 
@@ -48,7 +77,13 @@ Installed script entrypoint:
 mathdevmcp-mcp
 ```
 
-Example Claude Code MCP config:
+From a checkout without installation:
+
+```bash
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.mcp_server
+```
+
+Claude Code MCP config from a checkout:
 
 ```json
 {
@@ -64,7 +99,6 @@ Example Claude Code MCP config:
 }
 ```
 
-The MCP server is intentionally thin: all substantive logic remains in the
-tested library modules under `src/mathdevmcp/`. The authoritative tool metadata
-lives in the facade registry and is checked against this README during the
-public industrial release gate.
+The MCP server is intentionally thin: substantive logic remains in tested
+library modules under `src/mathdevmcp/`. The facade registry is the source of
+truth for tool metadata and is checked against this README during tests.

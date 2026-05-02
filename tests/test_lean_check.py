@@ -3,7 +3,7 @@ import subprocess
 import pytest
 
 from mathdevmcp.doctor import doctor_report
-from mathdevmcp.lean_check import check_lean_source
+from mathdevmcp.lean_check import _uses_placeholder, check_lean_source
 
 
 def _requires_lean():
@@ -53,6 +53,26 @@ theorem placeholder (a b : Nat) : a + b = b + a := by
     assert result["status"] == "inconclusive"
     assert result["evidence"][0]["kind"] == "lean_placeholder"
     assert result["evidence"][0]["uses_sorry"] is True
+
+
+def test_placeholder_scanner_ignores_comments_strings_and_identifiers():
+    source = '''
+-- sorry in a line comment
+/- admit in a block comment -/
+def sorryCount := 1
+def admitTheoremName := 2
+#eval "sorry and admit in a string"
+theorem ok : True := by
+  trivial
+'''
+
+    assert _uses_placeholder(source) is False
+
+
+def test_placeholder_scanner_detects_placeholder_tokens():
+    assert _uses_placeholder("theorem t : True := by\n  sorry\n") is True
+    assert _uses_placeholder("theorem t : True := by\n  admit\n") is True
+    assert _uses_placeholder("/- outer /- nested sorry -/ still comment -/\ntheorem t : True := by trivial") is False
 
 
 def test_check_lean_source_allows_sorry_without_certification():

@@ -21,10 +21,13 @@ LeanDojo remains outside the base Python environment. Use the
 dependencies do not destabilize document, PDF, ML, or MCP workflows.
 
 The base and public profiles must stay usable when the optional backend stack is
-absent. Missing LeanDojo, LaTeXML, private corpora, or a Lean toolchain cache is
-a caveat in base/public evidence unless a strict profile explicitly requires
-that capability. MCP-facing installs use the optional `[mcp]` extra; base
-library imports remain lightweight.
+absent. Missing private corpora, LeanDojo, active-environment Lean caches, or
+backend dependency compatibility is recorded in raw doctor and corpus evidence,
+but it should not downgrade a public/base recommendation unless the selected
+profile requires that capability. The base profile may still report optional
+parser-worker caveats such as missing LaTeXML; the public profile relies on the
+public surface gate instead. MCP-facing installs use the optional `[mcp]` extra;
+base library imports remain lightweight.
 
 Direct Lean source rejection is a mismatch. Lean executable absence, toolchain download failures, timeouts, and placeholder proofs are diagnostic or inconclusive evidence, not mathematical refutations.
 
@@ -36,3 +39,17 @@ industrial release checks for packaging, CI, MCP surface consistency, support
 matrix coverage, documentation alignment, quality gates, and private path
 redaction. A public release should not be claimed unless the `public` profile
 is executable and has no blockers.
+
+## Profile-Scoped Caveats
+
+Release-readiness reports keep the complete `doctor_summary`, so unavailable
+tools and dependency conflicts remain visible to reviewers. The selected
+profile controls whether that evidence affects the release recommendation.
+Optional strict-profile evidence does not downgrade a public/base recommendation:
+
+- `base` and `public` do not require private corpus material, LeanDojo, or a
+  working Lean toolchain cache.
+- `backend` and `full` require isolated backend evidence and report
+  backend-relevant Lean/dependency caveats.
+- `latexml` and `full` require strict LaTeXML validation.
+- `private-corpus` and `full` require an external private or sanitized manifest.

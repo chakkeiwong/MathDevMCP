@@ -48,10 +48,25 @@ def release_readiness_report(root: str | Path, *, profile: str = "base") -> dict
     if dirty:
         caveats.append({"kind": "dirty_worktree", "severity": "medium"})
     lean = doctor["capabilities"].get("lean", {})
-    if lean.get("detail") != "available":
-        caveats.append({"kind": "lean_version_or_toolchain_caveat", "severity": "medium", "detail": lean.get("detail"), "version": lean.get("version")})
-    if doctor.get("conflicts"):
-        caveats.append({"kind": "dependency_conflicts", "severity": "medium", "conflicts": doctor["conflicts"]})
+    if lean.get("detail") != "available" and _profile_caveat_applies(profile_policy, "lean_toolchain"):
+        caveats.append(
+            {
+                "kind": "lean_version_or_toolchain_caveat",
+                "severity": "medium",
+                "detail": lean.get("detail"),
+                "version": lean.get("version"),
+                "profile_scope": "backend_or_full",
+            }
+        )
+    if doctor.get("conflicts") and _profile_caveat_applies(profile_policy, "active_env_dependency_conflict"):
+        caveats.append(
+            {
+                "kind": "dependency_conflicts",
+                "severity": "medium",
+                "conflicts": doctor["conflicts"],
+                "profile_scope": "backend_or_full",
+            }
+        )
     latexml = doctor["capabilities"].get("latexml", {})
     if not latexml.get("available"):
         latexml_finding = {
@@ -62,7 +77,7 @@ def release_readiness_report(root: str | Path, *, profile: str = "base") -> dict
         }
         if profile_policy["requires_latexml"]:
             blockers.append(latexml_finding | {"kind": "latexml_required_backend_unavailable", "severity": "high"})
-        else:
+        elif _profile_caveat_applies(profile_policy, "latexml"):
             caveats.append(latexml_finding)
     if profile_policy["requires_backend"]:
         # The backend profile validates LeanDojo through the documented isolated
@@ -110,12 +125,13 @@ def release_readiness_report(root: str | Path, *, profile: str = "base") -> dict
                     "detail": "The private manifest loaded, but no release-gated private entries are visible.",
                 }
             )
-    elif private_manifest.get("status") in {"not_configured", "missing"}:
+    elif private_manifest.get("status") in {"not_configured", "missing"} and _profile_caveat_applies(profile_policy, "private_corpus"):
         caveats.append(
             {
                 "kind": "private_corpus_not_configured",
                 "severity": "low",
                 "detail": private_manifest.get("status", "not_configured"),
+                "profile_scope": "private-corpus_or_full",
             }
         )
     if governance_validation.get("status") == "mismatch":
@@ -239,6 +255,21 @@ def _profile_policy(profile: str) -> dict:
         "required_capabilities": required,
         "optional_capabilities": optional,
     }
+
+
+def _profile_caveat_applies(profile_policy: dict, kind: str) -> bool:
+    """Return whether an optional evidence caveat should affect this profile."""
+
+    profile = profile_policy["profile"]
+    if kind == "lean_toolchain":
+        return profile_policy["requires_backend"]
+    if kind == "active_env_dependency_conflict":
+        return profile_policy["requires_backend"]
+    if kind == "latexml":
+        return profile not in {"public"} and not profile_policy["requires_latexml"]
+    if kind == "private_corpus":
+        return profile_policy["requires_private_corpus"]
+    return True
 
 
 def _evidence_commands(profile: str) -> list[str]:

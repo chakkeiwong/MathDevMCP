@@ -37,8 +37,8 @@ the whole codebase.
 - Keep optional tools optional unless a strict release profile requires them.
 - Keep LeanDojo in the backend environment.
 - Keep base/public release checks separate from strict backend checks. Missing
-  backend evidence is a caveat for base/public, but a blocker for `backend` and
-  `full`.
+  backend evidence remains visible in doctor output, but it should only affect
+  the release recommendation for profiles that require backend evidence.
 - Treat Lean toolchain download and availability failures as diagnostic
   `inconclusive` evidence. Only direct Lean rejection of supplied source is a
   `mismatch`.

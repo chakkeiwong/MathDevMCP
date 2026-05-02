@@ -44,6 +44,8 @@ def test_support_matrix_documents_backend_profile_boundary():
     assert "base and public profiles must stay usable" in text
     assert "MCP-facing installs use the optional `[mcp]` extra" in text
     assert "toolchain download failures" in text
+    assert "Profile-Scoped Caveats" in text
+    assert "does not downgrade a public/base recommendation" in text
 
 
 def test_release_readiness_report_records_policy_fields():

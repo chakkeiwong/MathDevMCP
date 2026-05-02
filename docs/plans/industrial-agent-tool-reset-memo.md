@@ -488,6 +488,298 @@ plan for the phase
 -> update this reset memo
 ```
 
+### Public release preflight Phase 1 checkpoint
+
+Phase plan:
+
+- Treat `.serena/` as local IDE/tool state, not release source.
+- Do not inspect, edit, or delete `.serena/`.
+- Add only a `.gitignore` entry and re-check worktree hygiene.
+
+Executed:
+
+- Added `.serena/` to `.gitignore`.
+
+Tests:
+
+```text
+git status --short --branch
+- .serena/ no longer appears
+- tracked changes are .gitignore, reset memo, and new plan/audit docs
+
+git diff --check
+- passed
+```
+
+Audit interpretation:
+
+- This removes local tool-cache noise from future release-readiness dirty-tree
+  caveats without mutating the tool cache itself.
+- The branch remains ahead of origin by two commits; that is a release-process
+  step, not a product readiness blocker.
+
+Tidy notes:
+
+- No generated artifacts were created.
+- `.serena/` remains local and untracked.
+
+Phase 2 remains justified because base/public release-readiness still mixes
+public release evidence with optional strict-profile caveats.
+
+### Public release preflight Phase 2 checkpoint
+
+Phase plan:
+
+- Keep `doctor_summary` unchanged so raw environment evidence remains visible.
+- Add profile-scoped caveat classification in release policy.
+- Remove private-corpus, Lean toolchain, and active-env dependency caveats from
+  base/public recommendations unless the selected profile actually requires
+  that evidence.
+- Preserve strict backend/full blockers and caveats.
+
+Executed:
+
+- Added `_profile_caveat_applies(...)` in `src/mathdevmcp/release_policy.py`.
+- Scoped Lean toolchain and active environment dependency-conflict caveats to
+  backend/full profiles.
+- Scoped private corpus missing caveats out of base/public; private-corpus and
+  full profiles still block when the manifest is absent.
+- Scoped optional LaTeXML caveats out of the public profile while leaving
+  LaTeXML strictness for `latexml` and `full`.
+- Added regression tests for base/public caveat noise and backend/private
+  strictness.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_release_caveat_closure.py tests/test_public_release_check.py tests/test_packaging_release_policy.py
+- 23 passed
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile base
+- status: ready_with_caveats
+- blockers: none
+- caveats: dirty_worktree
+- doctor_summary still records Lean version download failure and active-env
+  dependency conflict
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile public
+- status: ready_with_caveats
+- blockers: none
+- caveats: dirty_worktree
+- public surface requirements are present
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile backend
+- status: not_ready
+- blocker: backend_lean_dojo_unavailable
+- caveats: dirty_worktree, lean_version_or_toolchain_caveat,
+  dependency_conflicts
+
+git diff --check
+- passed
+```
+
+Audit interpretation:
+
+- The selected profile now controls whether optional evidence changes the
+  release recommendation.
+- Raw doctor evidence is still attached to the report, so the policy is not
+  hiding local Lean or dependency state.
+- Backend/full claims remain stricter than public/base claims; no strict
+  release claim is accidentally made.
+
+Tidy notes:
+
+- No generated evidence was committed.
+- The only public/base caveat in the dirty working tree is the expected
+  pre-commit `dirty_worktree` caveat.
+
+Phase 3 remains justified because the docs should now say this distinction
+explicitly instead of relying on readers to infer it from JSON.
+
+### Public release preflight Phase 3 checkpoint
+
+Phase plan:
+
+- Update release-facing docs so maintainers can distinguish public/base release
+  readiness from strict backend, LaTeXML, private-corpus, and full-profile
+  claims.
+- Keep branch publication as a process step, not a product gate.
+- Add focused assertions only for the new documentation distinction.
+
+Executed:
+
+- Updated `docs/mathdevmcp-support-matrix.md` with profile-scoped caveat
+  semantics.
+- Updated `docs/mathdevmcp-release-policy.md` to state that raw
+  `doctor_summary` remains visible while base/public recommendations are not
+  downgraded for strict-profile-only evidence.
+- Updated `docs/mathdevmcp-deployment-guide.md` and
+  `docs/mathdevmcp-maintainer-guide.md` with the same public-vs-strict
+  boundary.
+- Extended the packaging policy test to assert the support matrix names
+  profile-scoped caveats and public/base recommendation behavior.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_packaging_release_policy.py tests/test_public_release_check.py tests/test_release_caveat_closure.py
+- first run: 1 failed, 22 passed
+- failure: support matrix assertion expected an exact sentence that had been
+  line-wrapped in Markdown
+
+After making the policy phrases exact:
+PYTHONPATH=src pytest -q tests/test_packaging_release_policy.py tests/test_public_release_check.py tests/test_release_caveat_closure.py
+- 23 passed
+
+git diff --check
+- passed
+```
+
+Audit interpretation:
+
+- The docs now match the release policy: profile selection determines whether
+  optional environment evidence affects the recommendation.
+- The support matrix still states that strict profiles must supply their
+  required evidence.
+- No product scope was expanded; this is interpretation and release-process
+  clarity.
+
+Tidy notes:
+
+- No generated release evidence was created.
+- The only test failures in this phase were doc assertion wording issues,
+  resolved by making the intended phrases explicit.
+
+Phase 4 remains justified: implementation and documentation are complete, so
+the final suite, release checks, memo completion, and commit should run.
+
+### Public release preflight Phase 4 final checkpoint
+
+Phase plan:
+
+- Run full tests and release gates.
+- Confirm base/public profile caveats are now profile-scoped.
+- Confirm strict backend remains blocked without isolated backend evidence.
+- Update this memo with final interpretation and next hypotheses.
+- Commit the coherent changes.
+
+Final verification:
+
+```text
+PYTHONPATH=src pytest -q
+- 288 passed, 11 skipped
+
+PYTHONPATH=src python -m mathdevmcp.cli benchmark-gate --root "$PWD"
+- passed: true
+- total: 41
+- passed_count: 41
+- failed_count: 0
+
+PYTHONPATH=src python -m mathdevmcp.cli public-release-check --root "$PWD"
+- status: consistent
+- blockers: none
+- caveats: none
+
+PYTHONPATH=src python -m mathdevmcp.cli audit-mcp-aliases --root "$PWD"
+- status: consistent
+- active_instruction: 0
+- migration_section: 19
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile base
+- status: ready_with_caveats
+- blockers: none
+- caveats: dirty_worktree
+- raw doctor_summary still records Lean toolchain download failure and active
+  magic-pdf/pydantic conflict
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile public
+- status: ready_with_caveats
+- blockers: none
+- caveats: dirty_worktree
+- public release requirements are present
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile backend
+- status: not_ready
+- blocker: backend_lean_dojo_unavailable
+- caveats: dirty_worktree, lean_version_or_toolchain_caveat,
+  dependency_conflicts
+
+git diff --check
+- passed
+
+git status --short --branch
+- tracked changes only; .serena/ is ignored
+```
+
+Final interpretation:
+
+- No public product-surface blockers remain.
+- Base/public release readiness is now cleanly separated from strict backend,
+  private-corpus, and active environment caveats. In the pre-commit dirty tree,
+  the only base/public caveat is `dirty_worktree`; after commit, that caveat is
+  expected to disappear.
+- Strict backend/full claims are still not justified in this shell because no
+  isolated backend Python interpreter is configured.
+- Raw environment evidence remains visible in `doctor_summary`; the policy
+  change affects profile recommendations, not evidence collection.
+- The branch remains ahead of origin; pushing, tagging, or PR merge remains a
+  release-process action after this commit.
+
+Next hypotheses to test:
+
+1. Public/base release can proceed once the post-commit tree is clean.
+   Test by rerunning `release-readiness --profile public` and
+   `public-release-check` after commit; expected result is no blockers and no
+   public/base caveats.
+
+2. Backend profile can become releasable without changing the public surface.
+   Test by configuring `MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends` and a
+   working Lean toolchain cache, then rerunning `release-readiness --profile
+   backend`.
+
+3. Full profile remains a deliberate internal/deployment claim.
+   Test by supplying backend evidence, strict LaTeXML validation, and an
+   external private/sanitized manifest, then rerunning `release-readiness
+   --profile full`.
+
+4. The profile-scoped caveat helper should be extended rather than bypassed.
+   Test future caveats by adding focused release-policy tests that prove which
+   profiles they affect.
+
+5. Release publication remains separate from readiness.
+   Test by pushing the ahead commits and tagging/merging according to the
+   project release process; this should not change product-surface readiness
+   except for commit hash and dirty-tree status.
+
+Post-commit addendum before amend:
+
+```text
+Initial implementation commit: 3f5dd2e, "Clarify public release preflight caveats"
+
+git status --short --branch
+- ## main...origin/main [ahead 3]
+- no tracked or untracked release files reported
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile base
+- status: ready
+- git_commit: 3f5dd2e
+- dirty_worktree: false
+- blockers: none
+- caveats: none
+- raw doctor_summary still records Lean toolchain download failure and active
+  magic-pdf/pydantic conflict
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile public
+- status: ready
+- git_commit: 3f5dd2e
+- dirty_worktree: false
+- blockers: none
+- caveats: none
+```
+
+This addendum is included by amending the implementation commit, so the exact
+final commit hash is the result of `git rev-parse --short HEAD` after the amend.
+
 The pass must:
 
 - create a sibling plan-audit file before broad implementation,
@@ -4122,3 +4414,86 @@ Remaining hypotheses for the next pass:
 4. CLI preferred-name parity may be worth adding after MCP migration settles.
    Test whether adding CLI aliases such as `audit-implementation-label` improves
    operator ergonomics without confusing existing `compare-label-code` scripts.
+
+## Public release preflight gap-closure kickoff
+
+Active execution plan:
+
+```text
+docs/plans/public-release-preflight-gap-closure-execution-plan.md
+```
+
+Second-developer audit:
+
+```text
+docs/plans/public-release-preflight-gap-closure-plan-audit.md
+```
+
+Starting commit:
+
+```text
+20727b6 Close remaining MCP interface gaps
+```
+
+Starting timestamp:
+
+```text
+2026-05-02T12:09:27Z
+```
+
+Initial working tree state:
+
+```text
+## main...origin/main [ahead 2]
+?? .serena/
+```
+
+Initial checks:
+
+```text
+PYTHONPATH=src python -m mathdevmcp.cli public-release-check --root "$PWD"
+- status: consistent
+- blockers: none
+- caveats: none
+
+PYTHONPATH=src python -m mathdevmcp.cli audit-mcp-aliases --root "$PWD"
+- status: consistent
+- active_instruction: 0
+- migration_section: 19
+
+PYTHONPATH=src python -m mathdevmcp.cli benchmark-gate --root "$PWD"
+- passed: true
+- total: 41
+- passed_count: 41
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile base
+- status: ready_with_caveats
+- blockers: none
+- caveats: dirty_worktree, lean_version_or_toolchain_caveat,
+  dependency_conflicts, private_corpus_not_configured
+
+PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile public
+- status: ready_with_caveats
+- blockers: none
+- caveats: dirty_worktree, lean_version_or_toolchain_caveat,
+  dependency_conflicts, private_corpus_not_configured
+```
+
+Interpretation:
+
+- There are no public product-surface blockers.
+- Remaining uncertainty is a mixture of local hygiene, optional strict-profile
+  evidence, and release-process work such as pushing the branch.
+- The preflight pass will classify caveats by release profile while preserving
+  raw doctor evidence and strict-profile blockers.
+
+Required cycle for this pass:
+
+```text
+plan for the phase
+-> execute
+-> test
+-> audit
+-> tidy up
+-> update this reset memo
+```

@@ -134,7 +134,10 @@ PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli release-readiness \
 
 This public gate validates CI, packaging metadata, MCP surface consistency,
 support matrix coverage, documentation boundary language, quality checks, and
-generated-evidence redaction. It does not require private corpus material.
+generated-evidence redaction. It does not require private corpus material,
+LeanDojo, or a cached Lean toolchain unless a strict backend/full profile is
+being claimed. The raw `doctor_summary` still records those capabilities for
+reviewers.
 
 For no-intervention sanitized validation outside git:
 

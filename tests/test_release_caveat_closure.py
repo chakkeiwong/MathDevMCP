@@ -27,9 +27,31 @@ def test_release_readiness_defaults_to_base_profile(monkeypatch):
     assert "latexml" in report["optional_capabilities"]
     assert report["status"] in {"ready", "ready_with_caveats"}
     assert any(caveat["kind"] == "latexml_optional_backend_unavailable" for caveat in report["caveats"])
-    assert any(caveat["kind"] == "private_corpus_not_configured" for caveat in report["caveats"])
+    assert not any(caveat["kind"] == "private_corpus_not_configured" for caveat in report["caveats"])
+    assert not any(caveat["kind"] == "lean_version_or_toolchain_caveat" for caveat in report["caveats"])
+    assert not any(caveat["kind"] == "dependency_conflicts" for caveat in report["caveats"])
     assert not any(blocker["kind"] == "latexml_required_backend_unavailable" for blocker in report["blockers"])
     assert not any(blocker["kind"] == "backend_lean_dojo_unavailable" for blocker in report["blockers"])
+    assert report["doctor_summary"]["capabilities"]["lean"]["kind"] == "executable"
+
+
+def test_public_profile_omits_strict_profile_caveat_noise(monkeypatch):
+    monkeypatch.setenv("MATHDEVMCP_LATEXML_PATH", "/definitely/missing/latexml")
+    monkeypatch.delenv("MATHDEVMCP_PRIVATE_CORPUS_MANIFEST", raising=False)
+    monkeypatch.setenv("MATHDEVMCP_BACKEND_CONDA_ENV", "definitely-missing-backend-env")
+
+    report = release_readiness_report(ROOT, profile="public")
+    caveat_kinds = {caveat["kind"] for caveat in report["caveats"]}
+
+    assert report["profile"] == "public"
+    assert report["status"] in {"ready", "ready_with_caveats"}
+    assert "mcp_surface_consistency" in report["required_capabilities"]
+    assert "private_corpus_manifest" in report["optional_capabilities"]
+    assert "latexml_optional_backend_unavailable" not in caveat_kinds
+    assert "private_corpus_not_configured" not in caveat_kinds
+    assert "lean_version_or_toolchain_caveat" not in caveat_kinds
+    assert "dependency_conflicts" not in caveat_kinds
+    assert report["doctor_summary"]["capabilities"]["latexml"]["kind"] == "executable"
 
 
 def test_backend_environment_policy_records_base_vs_strict_boundary():
@@ -71,6 +93,7 @@ def test_backend_profile_uses_configured_backend_env(monkeypatch):
 
     assert report["profile"] == "backend"
     assert "lean_dojo_backend_env" in report["required_capabilities"]
+    assert "private_corpus_not_configured" not in {caveat["kind"] for caveat in report["caveats"]}
     backend_blockers = [blocker for blocker in report["blockers"] if blocker["kind"] == "backend_lean_dojo_unavailable"]
     if backend_blockers:
         assert report["status"] == "not_ready"

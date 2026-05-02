@@ -21,7 +21,7 @@ python -m mathdevmcp.cli release-readiness --root /path/to/MathDevMCP --profile 
 Release recommendations:
 
 - `ready`: no detected blockers or caveats,
-- `ready_with_caveats`: release gates pass but environment or dependency caveats exist,
+- `ready_with_caveats`: release gates pass but profile-relevant caveats exist,
 - `not_ready`: blocking release checks failed.
 
 Release profiles:
@@ -36,12 +36,13 @@ full             all optional evidence                  ready when all strict pr
 public           public product-surface evidence        ready when CI/docs/MCP/packaging checks pass
 ```
 
-The base profile keeps LaTeXML, LeanDojo, and private corpora optional. Strict profiles intentionally turn missing optional evidence into blockers.
-
-On the current release machine, LaTeXML and the isolated LeanDojo backend
-validate. The remaining profile-sensitive requirement is supplying
-`MATHDEVMCP_PRIVATE_CORPUS_MANIFEST` for private-corpus and full release
-validation.
+The base profile keeps LaTeXML, LeanDojo, and private corpora optional. Strict
+profiles intentionally turn missing optional evidence into blockers. The report
+always includes raw `doctor_summary` evidence, but base/public recommendations
+are not downgraded for private-corpus absence, Lean toolchain cache failures, or
+active-environment backend dependency conflicts unless the selected profile
+claims that evidence. Branch publication, tagging, and PR merge are release
+process steps outside the machine-readable product gate.
 
 ## Public Industrial Release Gate
 
@@ -67,3 +68,11 @@ PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profil
 
 Do not claim public industrial release readiness unless the `public` profile
 has no blockers.
+
+Current strict-profile interpretation:
+
+- `backend`: requires a validating isolated backend Python/LeanDojo environment.
+- `latexml`: requires a validating LaTeXML executable.
+- `private-corpus`: requires `MATHDEVMCP_PRIVATE_CORPUS_MANIFEST` pointing to an
+  external private or sanitized manifest.
+- `full`: requires all of the above.

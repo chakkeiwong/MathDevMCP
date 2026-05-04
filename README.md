@@ -74,8 +74,9 @@ deterministic primitives, tested workflow tools, and operational release tools:
   `typed_obligation_label`;
 - operations: `doctor`, `benchmark_gate`, `run_benchmarks`,
   `release_corpus_manifest`, `validate_release_corpus`, `release_readiness`,
-  `release_profile_analysis`;
-- informational: `tool_matrix`/`get_tool_matrix`, `governance_policy`.
+  `release_profile_analysis`, `lean_readiness`;
+- informational: `tool_matrix`/`get_tool_matrix`, `status_taxonomy`,
+  `governance_policy`.
 
 Compatibility aliases remain available for a migration cycle:
 `extract_latex_context` and `extract_latex_neighborhood` map to

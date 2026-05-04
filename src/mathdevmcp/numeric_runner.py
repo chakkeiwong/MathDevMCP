@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass
 import importlib.util
 import math
 from pathlib import Path
+import random
 import time
 from typing import Callable
 
@@ -31,6 +32,7 @@ class NumericDiagnosticPlanResult:
     reason: str
     results: list[dict]
     safety: dict
+    reproducibility: dict
 
 
 def _finish(status: str, reason: str, diagnostic: str, evidence: dict) -> dict:
@@ -156,6 +158,14 @@ def run_numeric_diagnostic_plan(plan: dict, *, allow_fixture_imports: bool = Fal
         "timeout_seconds": plan.get("timeout_seconds", 1.0),
         "executes_latex_generated_code": False,
     }
+    seed = int(plan.get("seed", 0))
+    random.seed(seed)
+    reproducibility = {
+        "seed": seed,
+        "tolerance": plan.get("tolerance"),
+        "timeout_seconds": safety["timeout_seconds"],
+        "diagnostic_boundary": "Numeric diagnostics are reproducible sanity checks, not mathematical proof.",
+    }
     if kind == "logdet_domain_check":
         matrix = artifact.get("matrix")
         if not isinstance(matrix, list):
@@ -186,6 +196,7 @@ def run_numeric_diagnostic_plan(plan: dict, *, allow_fixture_imports: bool = Fal
                 reason="Numeric diagnostic plan executed." if status != "inconclusive" else "Numeric diagnostic plan could not be fully executed.",
                 results=[result],
                 safety=safety,
+                reproducibility=reproducibility,
             )
         ),
         "numeric_diagnostic_plan_result",

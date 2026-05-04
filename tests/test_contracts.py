@@ -2,6 +2,7 @@ from pathlib import Path
 
 from mathdevmcp.consistency import compare_label_to_code
 from mathdevmcp.derivation import derive_step_for_label
+from mathdevmcp.status_taxonomy import classify_status, status_taxonomy
 
 
 FIXTURES = Path(__file__).resolve().parent.parent / "benchmarks" / "fixtures"
@@ -44,3 +45,20 @@ def test_derive_step_for_label_attaches_contract_metadata_and_provenance():
         "block_id": "doc_consistency_context.tex:4:proposition:prop:transport-implementation",
         "section_path": ["Transport implementation context"],
     }
+
+
+def test_status_taxonomy_reports_public_substatuses():
+    result = status_taxonomy()
+
+    assert result["metadata"] == {"schema_version": "1.0", "contract": "status_taxonomy"}
+    substatuses = {item["substatus"] for item in result["substatuses"]}
+    assert "unverified:missing_assumption" in substatuses
+    assert "mismatch:likely_formula_error" in substatuses
+    assert "inconclusive:backend_unavailable" in substatuses
+
+
+def test_classify_status_adds_next_action_for_blocked_result():
+    result = classify_status("inconclusive", "Backend timed out before checking the obligation.")
+
+    assert result["substatus"] == "inconclusive:timeout"
+    assert result["actions"][0]["kind"] == "inspect_status_blocker"

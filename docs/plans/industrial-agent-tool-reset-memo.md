@@ -434,7 +434,166 @@ This addendum is included by amending the implementation commit, so the final
 commit hash cannot be embedded in this file without changing the hash again.
 Use `git rev-parse --short HEAD` after the amend for the exact final `HEAD`.
 
-## Current remaining-gap closure request
+## Literature workflow execution kickoff
+
+Active execution plan:
+
+```text
+/home/chakwong/.claude/plans/mutable-inventing-bird.md
+```
+
+Starting commit: `a9c9063`.
+
+Initial working tree state:
+
+```text
+M .mcp.json
+ D docs/kalman-hessian-agent-guide.md
+ M docs/mathdevmcp-release-report.pdf
+ M docs/mathdevmcp-release-report.tex
+?? docs/proof-carrying-derivation-agent-guide.md
+```
+
+Initial document review:
+
+- Reviewed the approved implementation plan at `/home/chakwong/.claude/plans/mutable-inventing-bird.md`.
+- Reviewed the existing portable workflow rules in `src/mathdevmcp/_workflow_rules.py`.
+- Reviewed current contract constraints in `src/mathdevmcp/contracts.py`.
+- Reviewed current MCP surface constraints in `tests/test_mcp_surface_sync.py` and workflow-rules sync tests in `tests/test_workflow_rules.py`.
+
+## Independent plan audit before execution
+
+Method:
+
+- Requested an independent developer-style audit of the approved plan with no stake in defending it.
+- Cross-checked the audit against the current repo surfaces and tests.
+
+Independent audit findings:
+
+- The approved plan is directionally correct about the product need and the desired architecture: canonical pure library logic, thin CLI/MCP adapters, provenance-rich outputs, and explicit abstention states.
+- However, the plan overcommits on implementation order because the repo does not yet define a canonical literature workspace model.
+- The current codebase has no first-class paper/review/source-package identity model, no canonical review artifact format, no review freshness framework, and no agreed literature-specific contract vocabulary.
+- The plan also understated integration constraints:
+  - `contracts.py` currently encodes a narrow status vocabulary;
+  - `doctor.py` is environment-oriented and not root-aware;
+  - `tests/test_mcp_surface_sync.py` constrains preferred MCP surface size and doc sync;
+  - `tests/test_workflow_rules.py` requires packaged rules to match docs exactly.
+
+Required execution change:
+
+- Insert a Phase 0 feasibility/protocol phase before the original Phase 1.
+- Split the original foundations work into:
+  1. contract/status vocabulary and redaction policy design,
+  2. synthetic fixture/workspace-layout design,
+  3. only then identity reconciliation implementation.
+
+Why this change is necessary:
+
+- Without an explicit literature workspace model, implementing `reconcile_paper_identity(...)` would bake in hidden directory heuristics.
+- Without a shared literature contract helper, statuses such as `resolved`, `ambiguous`, `blocked`, and `insufficient_evidence` would drift across canonical library, CLI, MCP, and tests.
+- Without synthetic fixtures representing literature assets, later phases cannot be tested safely or deterministically.
+
+Decision:
+
+- The next phase is still justified, but only after reframing it as a feasibility/protocol phase.
+- Proceed with the adjusted phase sequence without human intervention unless this feasibility phase fails to support a stable contract and fixture model.
+
+## Adjusted phase sequence
+
+### Phase 0: literature workspace protocol and fixture foundation
+
+Plan for this phase:
+
+- Define a minimal literature asset model that the repo can actually support now.
+- Define the shared literature result schema and blocked-status vocabulary in a way that fits current contract helpers.
+- Define path-redaction rules for any literature-facing outputs.
+- Define a synthetic fixture layout that can represent identity resolution, ambiguity, conflict, missing artifacts, and future freshness cases.
+- Audit whether the resulting protocol supports the original Phase 1 identity goals without hidden heuristics.
+
+Hypotheses to test in Phase 0:
+
+- H1: a minimal literature identity schema can cover title-like key, local id, optional DOI/arXiv id, optional PDF path, optional source path, and optional review reference.
+- H2: literature-specific status values can be carried through current MathDevMCP contract patterns without breaking MCP envelopes.
+- H3: synthetic fixtures can express resolved, ambiguous, conflict, and missing states without relying on undocumented workspace conventions.
+- H4: a redaction policy can be applied consistently before any CLI/MCP literature packet/report writing is added.
+
+Success criteria for Phase 0:
+
+- A concrete, documented minimal literature workspace convention is implemented in fixtures and code.
+- A shared literature contract helper or equivalent canonical schema logic exists.
+- Identity fixtures exist for resolved, ambiguous, conflict, and missing-artifact states.
+- Tests demonstrate the protocol is stable enough to justify implementing identity reconciliation next.
+
+Failure modes for Phase 0:
+
+- The repo cannot support a coherent paper identity model without introducing too much new persistent infrastructure.
+- Contract integration becomes awkward enough that literature workflows should be scoped to a narrower experimental surface first.
+- Fixture design reveals that later phases need a simpler or more limited scope than the approved plan assumed.
+
+Next-step rule after Phase 0:
+
+- If the protocol and fixtures validate the hypotheses, continue to identity reconciliation.
+- If not, stop and ask for direction with a narrowed alternative.
+
+### Literature workflow Phase 0 checkpoint
+
+Phase plan:
+
+- Define a minimal literature workspace protocol before implementing the larger workflow stack.
+- Add a canonical literature identity/contract foundation that can be tested without hidden directory heuristics.
+- Add synthetic fixtures for resolved, ambiguous, conflict, missing, duplicate-id, and private-path redaction cases.
+- Audit whether the resulting protocol is stable enough to justify moving on to the original identity-reconciliation phase.
+
+Executed:
+
+- Added `src/mathdevmcp/literature_gate.py` with:
+  - minimal literature asset record model,
+  - identifier normalization for DOI/arXiv/title,
+  - path redaction for `private/` fixture artifacts,
+  - `load_literature_workspace(...)`,
+  - `reconcile_paper_identity(...)`,
+  - literature-specific contract attachment helper.
+- Added synthetic literature metadata fixtures under `benchmarks/fixtures/literature/metadata/` for:
+  - resolved identity,
+  - ambiguous shared-title candidates,
+  - conflict/redaction case,
+  - duplicate local ids.
+- Added `tests/test_literature_gate.py` to validate the new protocol.
+- Updated `benchmarks/fixtures/README.md` to document the minimal literature workspace convention and private-path redaction rule.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_literature_gate.py
+- 6 passed
+
+git diff --check
+- passed
+```
+
+Audit interpretation:
+
+- H1 is supported: the minimal synthetic schema successfully carries title-like key, local id, DOI, arXiv id, optional PDF/source/review paths, and notes.
+- H2 is partially supported in the intended direction: literature reports now use the same schema-version/contract metadata pattern as the rest of MathDevMCP, but they do not yet pass through CLI/MCP envelopes because this phase intentionally stopped before surface integration.
+- H3 is supported: fixtures now cover resolved, ambiguous, conflict, missing, duplicate-id, and redaction-sensitive cases without relying on undocumented workspace conventions.
+- H4 is supported for the current protocol layer: `private/` synthetic paths are redacted to `<redacted-private-path>` in loaded records and identity results.
+
+What this phase did not yet prove:
+
+- It did not yet prove that the new literature status vocabulary can fit cleanly into the preferred MCP surface without forcing doc/surface-governance changes.
+- It did not yet define the full blocked-status schema needed for `literature_gate_status(...)`, freshness reports, or review packets.
+- It did not yet solve persistence/output-path policy for generated negative-evidence reports or review packets.
+
+Tidy notes:
+
+- The fixtures are synthetic JSON records only; no PDFs, private data, or generated outputs were added.
+- The new code remains library-only, so no CLI/MCP duplication has been introduced yet.
+- Existing unrelated working-tree changes were preserved and not touched.
+
+Decision about the next phase:
+
+- The next phase remains justified.
+- The protocol foundation is now concrete enough to proceed to the original identity-reconciliation phase, but Phase 1 should still focus on deepening the shared literature schema before broadening into pipeline status or packet generation.
 
 The active request is to execute the newly added remaining-gap plan:
 
@@ -459,6 +618,656 @@ Base doctor:
 - Lean available at /home/chakwong/.elan/bin/lean, version 4.20.0.
 - Sage available at /usr/bin/sage, version 9.5.
 - LeanDojo unavailable in the base Python env.
+
+## MathDevMCP final implementation plan kickoff
+
+Active execution plan:
+
+```text
+docs/plans/mathdevmcp-final-implementation-plan-2026-05-04.md
+```
+
+Starting commit:
+
+```text
+a9c9063
+```
+
+Initial working tree state relevant to this pass:
+
+```text
+M .mcp.json
+M benchmarks/fixtures/README.md
+D docs/kalman-hessian-agent-guide.md
+M docs/mathdevmcp-release-report.pdf
+M docs/mathdevmcp-release-report.tex
+M docs/plans/industrial-agent-tool-reset-memo.md
+?? benchmarks/fixtures/literature/
+?? docs/plans/mathdevmcp-final-implementation-plan-2026-05-04.md
+?? docs/plans/mathdevmcp-improvement-review-and-product-plan.md
+?? docs/plans/mathdevmcp-macrofinance-product-roadmap-2026-05-04.md
+?? docs/proof-carrying-derivation-agent-guide.md
+?? src/mathdevmcp/literature_gate.py
+?? tests/test_literature_gate.py
+```
+
+Important dirty-tree interpretation:
+
+- Several files are pre-existing unrelated or partially related changes from
+  earlier work. They must not be reverted.
+- The implementation pass should stage and commit only coherent files required
+  for the final implementation plan unless later evidence shows a listed file
+  is necessary.
+- The final plan itself is untracked and should be included in this pass.
+
+Independent developer audit of the final implementation plan:
+
+- The plan is directionally sound and significantly stronger than either
+  source plan alone.
+- The key product invariant is correct: diagnostic evidence must remain
+  separate from certifying backend proof.
+- The platform/domain-pack split is necessary to avoid turning MathDevMCP into
+  a monolithic macro-finance package.
+- The plan is intentionally larger than one ordinary implementation cycle.
+  Therefore this pass should execute coherent v0/v1 slices for every phase:
+  stable public contracts, conservative APIs, focused fixtures, and tests.
+- The highest implementation risk is overclaiming: proof packets, templates,
+  numeric diagnostics, literature support, AST evidence, and Lean readiness
+  must all remain diagnostic unless a deterministic backend certifies the exact
+  obligation.
+- The second highest risk is source localization. Matrix IR and proof packets
+  should depend on explicit equation localization uncertainty rather than
+  nearby-text heuristics.
+
+Adjusted execution rule:
+
+- Execute each phase as a minimal, tested, public surface.
+- After each phase, update this memo with plan, executed work, tests, audit
+  interpretation, tidy notes, and whether the next phase remains justified.
+- Continue automatically unless a phase reveals that the next phase would
+  overclaim, require private data, or require destructive changes.
+
+## MathDevMCP final implementation Phase 0 checkpoint
+
+Phase plan:
+
+- Add shared status/substatus taxonomy without changing conservative top-level
+  statuses.
+- Add compact payload controls where they already exist.
+- Add stable next-action interpretation for proof-audit v2 results.
+- Preserve existing CLI/MCP contracts and avoid expanding MCP surface size in
+  this phase.
+
+Hypotheses:
+
+- H0.1: substatus can be added additively without breaking existing tests.
+- H0.2: proof-audit v2 can classify missing assumption, parser limit,
+  formula mismatch, and backend/toolchain blockers more precisely while
+  preserving top-level `verified`, `mismatch`, `unverified`, and
+  `inconclusive`.
+- H0.3: schema metadata can remain the existing `metadata.schema_version`
+  contract for this first slice.
+
+Executed:
+
+- Added `src/mathdevmcp/status_taxonomy.py` with public top-level statuses,
+  substatuses, severity, and classification helper logic.
+- Added informational CLI/MCP access through `status-taxonomy` and
+  `status_taxonomy`.
+- Extended proof-audit v2 obligations with additive `substatus` and
+  `severity` fields plus report-level `substatus_counts`.
+- Updated docs that are checked by MCP surface-sync tests.
+- Added focused tests for taxonomy payloads, timeout classification, and
+  proof-audit v2 substatus output.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_contracts.py tests/test_proof_audit_v2.py tests/test_mcp_surface_sync.py
+- 22 passed
+```
+
+Audit interpretation:
+
+- H0.1 is supported: substatus was added additively and focused tests pass.
+- H0.2 is supported for proof-audit v2. The first test run caught a useful
+  precedence bug where "Backend timed out" was classified as backend
+  unavailable instead of timeout; classifier precedence was fixed so timeout
+  wins.
+- H0.3 is supported for this slice: existing `metadata.schema_version` remains
+  the schema anchor, while richer schema governance remains future work.
+
+Tidy notes:
+
+- The new `status_taxonomy` tool is informational and does not enlarge the
+  certifying surface.
+- No top-level certification behavior was loosened.
+
+Decision about the next phase:
+
+- The next phase remains justified.
+- Phase 1 source localization and partial indexing are prerequisites for safe
+  matrix IR and proof-packet work.
+
+## MathDevMCP final implementation Phase 1 checkpoint
+
+Phase plan:
+
+- Add source-local equation localization as a prerequisite for matrix IR and
+  proof packets.
+- Integrate row counts and localization diagnostics into the existing LaTeX
+  index without breaking existing label lookup behavior.
+- Preserve uncertainty rather than treating localized rows as proof-ready.
+
+Hypotheses:
+
+- H1.1: display equations and multi-row `align` blocks can be localized with
+  file, line, row, label, and uncertainty metadata.
+- H1.2: the existing index can carry equation rows and diagnostics additively.
+- H1.3: parser/localization uncertainty can be represented without causing a
+  mathematical mismatch.
+
+Executed:
+
+- Added `src/mathdevmcp/equation_locator.py` with display-environment row
+  extraction and localization summary contracts.
+- Extended `src/mathdevmcp/latex_index.py` with `equation_rows`,
+  `n_equation_rows`, and `diagnostics.equation_localization`.
+- Added tests for `align` row splitting, source spans, macro uncertainty, and
+  additive index diagnostics.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_latex_index.py tests/test_parser_benchmark.py tests/test_proof_audit_v2.py
+- first run: 1 failed, 23 passed
+- failure: leading whitespace made row source span point to the environment body line rather than first math token
+- fix: row offset now accounts for stripped leading whitespace
+- second run: 24 passed
+```
+
+Audit interpretation:
+
+- H1.1 is supported for first-wave display environments. The failed first run
+  exposed and fixed an important provenance precision issue.
+- H1.2 is supported: existing index behavior remains compatible and carries
+  additive equation-row diagnostics.
+- H1.3 is supported by design: macro and alignment uncertainty is explicit in
+  row metadata and is not treated as formula evidence.
+
+Tidy notes:
+
+- The locator is intentionally narrow and provenance-first.
+- It does not expand macros or certify row semantics.
+
+Decision about the next phase:
+
+- The next phase remains justified.
+- Phase 2 can now attach assumptions, notation, conventions, and graph links
+  to labels and localized rows.
+
+## MathDevMCP final implementation Phase 2 checkpoint
+
+Phase plan:
+
+- Add v0 assumption manifest parsing and linting.
+- Add v0 sign-convention registry support.
+- Add a lightweight dependency graph linking labels, assumptions, conventions,
+  and packets.
+- Allow typed diagnostics to consume explicit assumption manifest context.
+
+Hypotheses:
+
+- H2.1: explicit assumption manifests can reduce missing constraint reports
+  without changing certification boundaries.
+- H2.2: convention records can identify labels that need re-audit after a
+  convention change.
+- H2.3: dependency graphs can be built from existing index/manifest data
+  without introducing persistent storage.
+
+Executed:
+
+- Added `src/mathdevmcp/assumption_manifest.py`.
+- Added `src/mathdevmcp/conventions.py`.
+- Added `src/mathdevmcp/dependency_graph.py`.
+- Extended `diagnose_typed_obligation(...)` and proof-audit v2 internals to
+  accept an optional assumption manifest.
+- Added tests for manifest parsing, missing-constraint reduction, manifest
+  linting, convention matching, and convention impact reports.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_assumption_manifest_graph.py tests/test_math_ir.py tests/test_proof_audit_v2.py
+- 18 passed
+```
+
+Audit interpretation:
+
+- H2.1 is supported for the v0 manifest path. The manifest is diagnostic
+  context and does not certify the identity.
+- H2.2 is supported for explicit convention-to-label links.
+- H2.3 is supported for an in-memory graph suitable for packets and impact
+  reports.
+
+Tidy notes:
+
+- The manifest parser supports JSON directly and YAML when PyYAML is present;
+  fixtures use JSON to keep tests dependency-light.
+- No private or persistent graph store was introduced.
+
+Decision about the next phase:
+
+- The next phase remains justified.
+- Matrix/operator IR can now use localized expressions plus explicit
+  assumptions/conventions as diagnostic inputs.
+
+## MathDevMCP final implementation Phase 3 checkpoint
+
+Phase plan:
+
+- Add a conservative matrix/operator IR v1 rather than overloading the existing
+  heuristic typed obligation model.
+- Preserve ordered noncommutative products.
+- Attach provenance to IR nodes when source-local information exists.
+- Integrate the IR into proof-audit v2 as diagnostic structure only.
+
+Hypotheses:
+
+- H3.1: inverse differentials and ordered products can be represented without
+  flattening into commutative scalar strings.
+- H3.2: proof-audit v2 can carry matrix IR additively without changing
+  top-level certification behavior.
+- H3.3: unresolved constructs can stay explicit and diagnostic.
+
+Executed:
+
+- Added `src/mathdevmcp/matrix_ir.py` with v1 parser helpers for `MatMul`,
+  `Inv`, `Transpose`, `Trace`, `LogDet`, `Differential`, and unresolved
+  constructs.
+- Extended proof-audit v2 obligations with a `matrix_ir` section.
+- Extended summary-only proof-audit v2 obligations with `matrix_ir_status`.
+- Added tests for ordered products, provenance, and proof-audit v2 integration.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_math_ir.py tests/test_proof_audit_v2.py tests/test_assumption_manifest_graph.py
+- 20 passed
+```
+
+Audit interpretation:
+
+- H3.1 is supported for v1 inverse/differential/product fixtures.
+- H3.2 is supported: the IR is nested diagnostic evidence and does not alter
+  certifying status.
+- H3.3 is supported by the `parsed_with_unresolved` path and explicit
+  certification boundary.
+
+Tidy notes:
+
+- This parser is intentionally narrow and should not be mistaken for a full
+  LaTeX algebra parser.
+- Later work should add more robust tokenization before expanding the operator
+  set.
+
+Decision about the next phase:
+
+- The next phase remains justified.
+- Proof and negative-evidence packets can now bundle status taxonomy,
+  localization, manifests, dependency links, numeric evidence, and matrix IR.
+
+## MathDevMCP final implementation Phase 4 checkpoint
+
+Phase plan:
+
+- Add durable proof packets over existing proof-audit v2 evidence.
+- Add negative-evidence packets for mismatches and blocked audits.
+- Add numeric diagnostic reproducibility metadata.
+- Keep packet evidence diagnostic unless nested backend evidence certifies the
+  exact scoped obligation.
+
+Hypotheses:
+
+- H4.1: proof packets can bundle source, audit, graph, actions, and boundary
+  language without changing verification status.
+- H4.2: negative-evidence packets can classify likely blockers for review.
+- H4.3: numeric diagnostic plans can record seed/tolerance/boundary metadata.
+
+Executed:
+
+- Added `src/mathdevmcp/proof_packet.py`.
+- Added `src/mathdevmcp/negative_evidence.py`.
+- Extended numeric diagnostic plan results with reproducibility metadata.
+- Added CLI commands `proof-packet-label` and `negative-evidence-label`.
+- Added tests for packet contents, mismatch classification, numeric
+  reproducibility, and optional packet output writing.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_proof_packet.py tests/test_proof_audit_v2.py tests/test_mcp_surface_sync.py
+- 22 passed
+```
+
+Audit interpretation:
+
+- H4.1 is supported for v1 packets. Packet status mirrors nested audit status
+  and does not certify beyond nested deterministic evidence.
+- H4.2 is supported for mismatch, parser-limit, and missing-assumption style
+  classifications.
+- H4.3 is supported for the existing numeric plan runner.
+
+Tidy notes:
+
+- Packet file writing is opt-in through CLI `--output`.
+- No generated packet artifacts were added to git.
+
+Decision about the next phase:
+
+- The next phase remains justified.
+- Domain templates can now be represented as generated diagnostic obligation
+  sets and attached to packets in later work.
+
+## MathDevMCP final implementation Phase 5 checkpoint
+
+Phase plan:
+
+- Add governed domain-template specs for first-wave recurring obligations.
+- Require templates to declare assumptions, notation, generated obligations,
+  diagnostic routes, failure modes, fixtures, and certification boundary.
+- Keep generated obligations unverified until backend-certified.
+
+Hypotheses:
+
+- H5.1: a small declarative template catalog can cover Kalman likelihood,
+  CIP/SDF sign conventions, and HMC transform/Jacobian obligations.
+- H5.2: template suggestions can match simple label/equation context.
+- H5.3: generated obligations can remain diagnostic and unverified by default.
+
+Executed:
+
+- Added `src/mathdevmcp/domain_templates.py`.
+- Added CLI commands:
+  - `domain-templates`
+  - `suggest-domain-templates`
+  - `generate-template-obligations`
+- Added tests for governance fields, template matching, and unverified
+  generated obligations.
+- Kept MCP surface stable in this phase.
+
+Tests and checks:
+
+```text
+PYTHONPATH=src pytest -q tests/test_domain_templates.py tests/test_mcp_surface_sync.py
+- 12 passed
+
+PYTHONPATH=src python -m mathdevmcp.cli suggest-domain-templates --label eq:dept-state-space-likelihood --equation-text 'logdet innovation covariance solve'
+- suggested kalman_loglikelihood_v1 first
+```
+
+Audit interpretation:
+
+- H5.1 is supported for the initial catalog.
+- H5.2 is supported for simple context matching; later work should improve
+  ranking using localized equation rows and section paths.
+- H5.3 is supported: generated obligations are explicitly `unverified` and
+  boundary-marked as diagnostic.
+
+Tidy notes:
+
+- The template layer is intentionally declarative.
+- Template expansion does not perform proof checking.
+
+Decision about the next phase:
+
+- The next phase remains justified.
+- Existing implementation audit already has strong scaffolding, so Phase 6 can
+  add explicit tensor/code contract diagnostics without replacing it.
+
+## MathDevMCP final implementation Phase 6 checkpoint
+
+Phase plan:
+
+- Add explicit code contract diagnostics for shape, dtype, batch axes,
+  XLA/custom-op boundaries, and finite target/gradient evidence.
+- Attach these diagnostics to the existing implementation audit.
+- Keep code contracts diagnostic and separate from mathematical proof.
+
+Hypotheses:
+
+- H6.1: code contract diagnostics can be derived from existing AST operation
+  graph evidence.
+- H6.2: implementation audits can carry the new evidence additively.
+- H6.3: missing dtype/batch/finite guards can be surfaced as unverified review
+  actions rather than mismatches or proofs.
+
+Executed:
+
+- Added `src/mathdevmcp/code_contracts.py`.
+- Extended implementation audit reports with `code_contracts`.
+- Added implementation-audit actions for missing/review-needed code contract
+  evidence.
+- Added tests for supported and missing code contracts.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_code_contracts.py tests/test_implementation_audit.py tests/test_ast_operation_graph.py
+- first run: 1 failed, 11 passed
+- failure: batch-axis evidence missed assignment target names
+- fix: contract diagnostic now includes AST node target names in source text
+- second run: 12 passed
+```
+
+Audit interpretation:
+
+- H6.1 is supported after including AST targets in the diagnostic text.
+- H6.2 is supported: existing implementation audit contract carries the new
+  `code_contracts` evidence additively.
+- H6.3 is supported: missing policies produce diagnostic `unverified` findings
+  and actions, not proof claims.
+
+Tidy notes:
+
+- Code contract evidence is intentionally coarse and should be refined with
+  framework-specific TensorFlow/JAX/TFP patterns later.
+
+Decision about the next phase:
+
+- The next phase remains justified.
+- Lean/backend readiness can be added as an offline diagnostic layer without
+  requiring optional backends for base tests.
+
+## MathDevMCP final implementation Phase 7 checkpoint
+
+Phase plan:
+
+- Add offline-friendly Lean readiness diagnostics.
+- Separate direct Lean, Lake project, and LeanDojo readiness.
+- Expose readiness through CLI/MCP as operational diagnostics.
+- Keep readiness separate from proof certification.
+
+Hypotheses:
+
+- H7.1: direct Lean, Lake, and LeanDojo readiness can be reported separately.
+- H7.2: readiness checks can run in base environments without requiring
+  optional LeanDojo availability.
+- H7.3: readiness output can be operational and non-certifying.
+
+Executed:
+
+- Added `src/mathdevmcp/lean_readiness.py`.
+- Added CLI command `lean-readiness`.
+- Added MCP tool `lean_readiness`.
+- Updated MCP/README documentation for the new operational tool.
+- Added focused tests for library, CLI, facade, and server outputs.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_lean_readiness.py tests/test_doctor.py tests/test_mcp_surface_sync.py
+- 17 passed, 1 skipped
+```
+
+Audit interpretation:
+
+- H7.1 is supported: report sections are separate.
+- H7.2 is supported: optional LeanDojo absence remains a diagnostic condition,
+  not a base-test failure.
+- H7.3 is supported: readiness boundary explicitly states it is not proof.
+
+Tidy notes:
+
+- The readiness check uses the existing direct Lean check only for a tiny local
+  theorem when Lean is locally available.
+- No network/toolchain installation is attempted.
+
+Decision about the next phase:
+
+- The next phase remains justified.
+- Existing `literature_gate.py` provides enough foundation to add
+  claim-support packets without private data or external fetching.
+
+## MathDevMCP final implementation Phase 8 checkpoint
+
+Phase plan:
+
+- Add local-only claim-support packets.
+- Classify claims separately from mathematical proof.
+- Keep citation and empirical evidence diagnostic unless linked to certified
+  scoped proof obligations.
+
+Hypotheses:
+
+- H8.1: claim support can classify exact identities, theorems from cited
+  sources, assumptions, empirical regularities, proposed extensions, and open
+  problems without external fetching.
+- H8.2: citation evidence can be useful without being labeled proof.
+- H8.3: claim support can run from CLI and tests using local synthetic inputs.
+
+Executed:
+
+- Added `src/mathdevmcp/claim_support.py`.
+- Added CLI command `claim-support`.
+- Added tests for model assumptions, empirical regularities, theorem/citation
+  claims, CLI output, and default open-problem classification.
+
+Tests:
+
+```text
+PYTHONPATH=src pytest -q tests/test_claim_support.py tests/test_literature_gate.py
+- 11 passed
+```
+
+Audit interpretation:
+
+- H8.1 is supported for local claim text and supplied citation ids.
+- H8.2 is supported: every packet carries explicit boundary language saying
+  citation support is not mathematical proof.
+- H8.3 is supported without network or private data.
+
+Tidy notes:
+
+- The claim-support pack does not fetch papers or mutate local review status.
+- Literature/source intake remains outside this implementation pass.
+
+Decision about final verification:
+
+- All implementation phases have executable v0/v1 slices.
+- Proceed to final audit, broad tests, tidy, reset-memo completion update, and
+  commit.
+
+## MathDevMCP final implementation completion checkpoint
+
+Final audit before commit:
+
+- Reviewed the final implementation plan as a different developer and treated
+  it as a multi-phase product program rather than a single monolithic patch.
+- Executed coherent v0/v1 slices for every phase:
+  1. contracts/status taxonomy/payload ergonomics,
+  2. large-root indexing plus equation localization,
+  3. assumption manifests, conventions, and dependency graph,
+  4. matrix/operator IR,
+  5. proof and negative-evidence packets plus numeric reproducibility,
+  6. governed domain templates,
+  7. code-document contract diagnostics,
+  8. Lean/backend readiness,
+  9. claim-support packets.
+- Preserved the proof boundary throughout: parser, IR, manifest, template,
+  numeric, AST, claim-support, and readiness evidence remain diagnostic unless
+  nested deterministic backend evidence certifies the exact scoped obligation.
+
+Final tests:
+
+```text
+git diff --check
+- passed
+
+PYTHONPATH=src pytest -q tests/test_contracts.py tests/test_latex_index.py tests/test_assumption_manifest_graph.py tests/test_math_ir.py tests/test_proof_audit_v2.py tests/test_proof_packet.py tests/test_domain_templates.py tests/test_code_contracts.py tests/test_implementation_audit.py tests/test_lean_readiness.py tests/test_claim_support.py tests/test_mcp_surface_sync.py
+- 61 passed
+
+PYTHONPATH=src pytest -q
+- 334 passed, 11 skipped
+
+PYTHONPATH=src python -m mathdevmcp.cli benchmark-gate --root "$PWD"
+- passed: true
+- total: 41
+- passed_count: 41
+- failed_count: 0
+```
+
+New CLI smoke checks:
+
+```text
+PYTHONPATH=src python -m mathdevmcp.cli status-taxonomy
+- contract: status_taxonomy
+- status: consistent
+
+PYTHONPATH=src python -m mathdevmcp.cli proof-packet-label eq:proof-audit-single --root benchmarks/fixtures --summary-only
+- contract: proof_packet
+- status: verified through nested proof-audit v2 deterministic evidence
+
+PYTHONPATH=src python -m mathdevmcp.cli lean-readiness --root .
+- contract: lean_readiness
+- direct_lean: inconclusive because local Lean version check attempted a
+  toolchain download and reported an error during download
+- lake_project: inconclusive for the same local toolchain reason
+- lean_dojo: available through the configured backend Python
+```
+
+Interpretation:
+
+- The implementation is release-safe as a diagnostic/product-surface expansion:
+  all new high-level artifacts have contract metadata and boundary language.
+- The direct Lean readiness result justifies keeping Lean proof checking
+  profile-scoped and readiness-reported rather than mandatory for base flows.
+- The next engineering phase is justified, but it should not broaden the proof
+  claim. It should deepen correctness of the new surfaces with better fixtures,
+  stronger schemas, and tighter parser/IR coverage.
+
+Files intentionally not staged by this final-plan commit:
+
+- `.mcp.json`
+- `docs/mathdevmcp-release-report.tex`
+- `docs/mathdevmcp-release-report.pdf`
+- `docs/kalman-hessian-agent-guide.md` deletion
+- `benchmarks/fixtures/literature/`
+- `docs/proof-carrying-derivation-agent-guide.md`
+- `src/mathdevmcp/literature_gate.py`
+- `tests/test_literature_gate.py`
+
+Reason:
+
+- These were pre-existing dirty-tree changes from earlier work. They are
+  preserved but kept out of the final-plan implementation commit unless a
+  later pass explicitly chooses to commit that literature/release-report work.
+
+Post-commit note:
+
+- The implementation commit is created after this checkpoint. As before, this
+  file cannot embed the final amended commit hash without changing that hash
+  again; use `git rev-parse --short HEAD` after commit for the exact value.
 - SymPy available, version 1.14.0.
 
 Backend-configured doctor:

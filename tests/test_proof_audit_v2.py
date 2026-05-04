@@ -21,8 +21,11 @@ def test_proof_audit_v2_scalar_verified_includes_release_spine_evidence():
     assert result["counts"]["verified"] == 1
     obligation = result["obligations"][0]
     assert obligation["metadata"] == {"schema_version": "1.0", "contract": "proof_audit_v2_obligation"}
+    assert obligation["substatus"] == "verified:deterministic_backend"
+    assert result["substatus_counts"]["verified:deterministic_backend"] == 1
     assert obligation["route_decision"]["route"] == "symbolic"
     assert obligation["typed_diagnostic"]["metadata"]["contract"] == "typed_math_obligation_diagnostic"
+    assert obligation["matrix_ir"]["metadata"]["contract"] == "matrix_ir"
     assert obligation["shape_diagnostic"]["metadata"]["contract"] == "shape_diagnostic_result"
     assert obligation["numeric_diagnostics"]["status"] == "not_applicable"
     assert obligation["backend_attempts"][0]["evidence"]["severity"] == "certifying"
@@ -33,6 +36,7 @@ def test_proof_audit_v2_false_claim_is_mismatch_with_refutation_action():
 
     assert result["status"] == "mismatch"
     assert result["counts"]["mismatch"] == 1
+    assert result["obligations"][0]["substatus"] == "mismatch:likely_formula_error"
     assert any(action["kind"] == "investigate_backend_refutation" for action in result["high_priority_actions"])
 
 
@@ -42,6 +46,7 @@ def test_proof_audit_v2_state_space_reports_missing_constraints_and_numeric_acti
     assert result["status"] == "unverified"
     obligation = result["obligations"][0]
     assert obligation["route_decision"]["route"] == "human_review"
+    assert obligation["substatus"] in {"unverified:missing_shape", "unverified:missing_assumption"}
     assert {item["kind"] for item in obligation["shape_diagnostic"]["missing_constraints"]} >= {"invertibility_required", "square_matrix_required"}
     kinds = {action["kind"] for action in result["high_priority_actions"]}
     assert {"state_or_verify_missing_constraint", "human_formalization_or_review", "logdet_domain_check", "linear_solve_residual_check"}.issubset(kinds)
@@ -54,6 +59,8 @@ def test_proof_audit_v2_summary_only_keeps_compact_obligation_shape():
     obligation = result["obligations"][0]
     assert result["status"] == "unverified"
     assert "route" in obligation
+    assert "substatus" in obligation
+    assert "matrix_ir_status" in obligation
     assert "typed_diagnostic" not in obligation
     assert obligation["metadata"] == {"schema_version": "1.0", "contract": "proof_audit_v2_obligation"}
 

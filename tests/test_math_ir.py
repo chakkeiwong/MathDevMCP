@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from mathdevmcp.math_ir import diagnose_typed_obligation, obligation_from_audit_obligation, validate_math_obligation
+from mathdevmcp.matrix_ir import matrix_ir_from_equation_row, parse_matrix_obligation
 from mathdevmcp.proof_audit import audit_derivation_for_label
 from mathdevmcp.typed_workflows import typed_obligation_for_label
 
@@ -75,3 +76,32 @@ def test_validate_math_obligation_rejects_malformed_payload():
     assert "kind is invalid" in errors
     assert "backend_suitability is invalid" in errors
     assert "diagnostic_status is invalid" in errors
+
+
+def test_matrix_ir_preserves_noncommutative_ordered_products():
+    result = parse_matrix_obligation(r"dS^{-1} = - S^{-1} dS S^{-1}")
+
+    assert result["metadata"] == {"schema_version": "1.0", "contract": "matrix_ir"}
+    assert result["status"] == "parsed"
+    assert result["rhs"]["kind"] == "MatMul"
+    assert result["rhs"]["properties"]["noncommutative"] is True
+    assert result["ordered_products"].count("S^{-1}") == 2
+    assert any(child["kind"] == "Inv" for child in result["rhs"]["children"])
+
+
+def test_matrix_ir_from_equation_row_carries_provenance():
+    result = matrix_ir_from_equation_row(
+        {
+            "file": "chapter.tex",
+            "line_start": 10,
+            "line_end": 10,
+            "label": "eq:test",
+            "row_index": 0,
+            "localization_status": "localized",
+            "text": r"\log \det S = y",
+        }
+    )
+
+    assert result["lhs"]["kind"] == "LogDet"
+    assert result["lhs"]["provenance"]["label"] == "eq:test"
+    assert "proof" not in result["certification_boundary"].lower() or "not proof" in result["certification_boundary"].lower()

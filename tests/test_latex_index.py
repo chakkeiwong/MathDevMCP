@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from mathdevmcp.equation_locator import locate_equations_in_text, summarize_equation_localization
 from mathdevmcp.latex_index import build_index, extract_context_for_label, extract_paragraph_context_for_label, search_index
 
 
@@ -22,10 +23,45 @@ P = A Q A^\top
     index = build_index(tmp_path)
 
     assert index["n_blocks"] == 4
+    assert index["n_equation_rows"] == 1
     assert "prop:logdet" in index["labels"]
     assert "eq:cov" in index["labels"]
     assert index["labels"]["prop:logdet"]["section_path"] == ["Transport Maps", "Jacobian identities"]
     assert index["labels"]["prop:logdet"]["block_id"].endswith("proposition:prop:logdet")
+    assert index["diagnostics"]["equation_localization"]["metadata"]["contract"] == "equation_localization_summary"
+
+
+def test_equation_locator_splits_align_rows_with_source_spans():
+    rows = locate_equations_in_text(
+        r"""
+\begin{align}
+a &= b + c \label{eq:first}\\
+d &= e^{-1} f
+\end{align}
+""",
+        relative_path="chapter.tex",
+    )
+
+    assert len(rows) == 2
+    assert rows[0]["label"] == "eq:first"
+    assert rows[0]["line_start"] == 3
+    assert rows[0]["localization_status"] == "localized_with_uncertainty"
+    assert "alignment_markers_preserved" in rows[0]["uncertainty"]
+    assert rows[1]["row_index"] == 1
+
+
+def test_equation_localization_summary_reports_uncertainty():
+    rows = locate_equations_in_text(
+        r"""\begin{equation}
+\foo{x} = y
+\end{equation}""",
+        relative_path="macro.tex",
+    )
+    summary = summarize_equation_localization(rows)
+
+    assert summary["metadata"] == {"schema_version": "1.0", "contract": "equation_localization_summary"}
+    assert summary["status"] == "localized_with_uncertainty"
+    assert summary["uncertain_row_count"] == 1
 
 
 def test_search_index_ranks_matching_blocks(tmp_path: Path):

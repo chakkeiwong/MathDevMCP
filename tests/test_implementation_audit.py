@@ -24,6 +24,7 @@ def test_implementation_audit_missing_solve_reports_mismatch():
     assert result["ast_operation_graph"]["metadata"]["contract"] == "ast_operation_graph"
     assert result["semantic_alignment"]["metadata"]["contract"] == "semantic_alignment_report"
     assert result["shape_semantics"]["metadata"]["contract"] == "shape_semantic_report"
+    assert result["code_contracts"]["metadata"]["contract"] == "code_contract_diagnostics"
     assert result["proof_audit_v2"]["metadata"]["contract"] == "proof_audit_v2_result"
     assert any(action["kind"] == "required_operation_missing" for action in result["actions"])
     assert "inverse_or_solve" in result["semantic_alignment"]["required_operations"]
@@ -45,6 +46,7 @@ def test_implementation_audit_good_fixture_is_diagnostic_not_verified():
     assert "logdet" in result["observed_operations"]
     assert "inverse_or_solve" in result["observed_operations"]
     assert "diagnostic" in result["verification_boundary"].lower()
+    assert result["code_contracts"]["status"] in {"consistent", "unverified"}
 
 
 def test_mcp_preferred_implementation_audit_has_new_contract_and_alias_stays_legacy():

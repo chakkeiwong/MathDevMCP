@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from .ast_operation_graph import build_ast_operation_graph_for_file
+from .code_contracts import diagnose_code_contracts
 from .consistency import compare_label_to_code
 from .contracts import attach_contract, contract_metadata
 from .proof_audit_v2 import audit_derivation_v2_for_label
@@ -33,6 +34,7 @@ class ImplementationAuditReport:
     ast_operation_graph: dict[str, Any]
     semantic_alignment: dict[str, Any]
     shape_semantics: dict[str, Any]
+    code_contracts: dict[str, Any]
     actions: list[dict[str, Any]]
     verification_boundary: str
     metadata: dict[str, str]
@@ -93,6 +95,20 @@ def _actions_from_shape_semantics(shape_semantics: dict[str, Any]) -> list[dict[
     return actions
 
 
+def _actions_from_code_contracts(code_contracts: dict[str, Any]) -> list[dict[str, Any]]:
+    actions: list[dict[str, Any]] = []
+    for finding in code_contracts.get("findings", []):
+        if finding.get("status") in {"unverified", "requires_review"}:
+            actions.append(
+                {
+                    "kind": finding.get("kind", "code_contract_gap"),
+                    "severity": finding.get("severity", "medium"),
+                    "reason": finding.get("reason", "Code contract evidence is missing or requires review."),
+                }
+            )
+    return actions
+
+
 def _actions_from_proof_audit(proof_audit_v2: dict[str, Any]) -> list[dict[str, Any]]:
     actions: list[dict[str, Any]] = []
     for action in proof_audit_v2.get("high_priority_actions", []):
@@ -128,6 +144,7 @@ def _aggregate_status(
     ast_graph: dict[str, Any],
     semantic_alignment: dict[str, Any],
     shape_semantics: dict[str, Any],
+    code_contracts: dict[str, Any],
     actions: list[dict[str, Any]],
 ) -> tuple[str, str]:
     statuses = {
@@ -136,6 +153,7 @@ def _aggregate_status(
         "AST operation graph": ast_graph.get("status"),
         "semantic alignment": semantic_alignment.get("status"),
         "shape semantics": shape_semantics.get("status"),
+        "code contracts": code_contracts.get("status"),
     }
     if any(status == "mismatch" for status in statuses.values()):
         return "mismatch", "At least one implementation-audit evidence layer reported a mismatch."
@@ -193,12 +211,14 @@ def audit_implementation_label(
         proof_audit_v2 = _diagnostic_error("proof_audit_v2_result", f"Proof-audit v2 could not run: {exc.__class__.__name__}.")
     semantic_alignment = align_document_to_code(proof_audit_v2, ast_graph, required_operations=required_operations)
     shape_semantics = analyze_shape_semantics(ast_graph, require_batch_policy=True, require_broadcasting_policy=True)
+    code_contracts = diagnose_code_contracts(ast_graph)
     actions = _rank_actions(
         [
             *_actions_from_term_comparison(term_comparison),
             *_actions_from_ast_graph(ast_graph),
             *_actions_from_semantic_alignment(semantic_alignment),
             *_actions_from_shape_semantics(shape_semantics),
+            *_actions_from_code_contracts(code_contracts),
             *_actions_from_proof_audit(proof_audit_v2),
         ]
     )
@@ -208,6 +228,7 @@ def audit_implementation_label(
         ast_graph=ast_graph,
         semantic_alignment=semantic_alignment,
         shape_semantics=shape_semantics,
+        code_contracts=code_contracts,
         actions=actions,
     )
     report = ImplementationAuditReport(
@@ -223,6 +244,7 @@ def audit_implementation_label(
         ast_operation_graph=ast_graph,
         semantic_alignment=semantic_alignment,
         shape_semantics=shape_semantics,
+        code_contracts=code_contracts,
         actions=actions,
         verification_boundary=(
             "This implementation audit is diagnostic. AST, term, semantic, and shape evidence can support review, "

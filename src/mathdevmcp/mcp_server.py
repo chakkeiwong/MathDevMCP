@@ -31,12 +31,14 @@ MCP_SERVER_EXPOSED_TOOLS = {
     "run_benchmarks",
     "benchmark_gate",
     "get_tool_matrix",
+    "status_taxonomy",
     "doctor",
     "release_corpus_manifest",
     "validate_release_corpus",
     "governance_policy",
     "release_readiness",
     "release_profile_analysis",
+    "lean_readiness",
 }
 
 
@@ -318,6 +320,11 @@ def get_tool_matrix() -> list[dict]:
     return call_mcp_tool("tool_matrix", {})
 
 
+@mcp.tool(description="Return the current MathDevMCP status and substatus taxonomy.", structured_output=False)
+def status_taxonomy() -> dict:
+    return call_mcp_tool("status_taxonomy", {})
+
+
 @mcp.tool(description="Report external backend capabilities and environment diagnostics.", structured_output=False)
 def doctor() -> dict:
     return call_mcp_tool("doctor", {})
@@ -346,6 +353,11 @@ def release_readiness(root: str, profile: str = "base") -> dict:
 @mcp.tool(description="Analyze every release profile and remaining profile gaps.", structured_output=False)
 def release_profile_analysis(root: str) -> dict:
     return call_mcp_tool("release_profile_analysis", {"root": root})
+
+
+@mcp.tool(description="Report direct Lean, Lake, and LeanDojo readiness separately.", structured_output=False)
+def lean_readiness(root: str | None = None) -> dict:
+    return call_mcp_tool("lean_readiness", {"root": root})
 
 
 def main(argv: list[str] | None = None) -> int:

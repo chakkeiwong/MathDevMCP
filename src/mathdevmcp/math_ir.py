@@ -301,15 +301,40 @@ def obligation_from_audit_obligation(obligation: dict, *, parser_backend: str = 
     return asdict(result)
 
 
-def diagnose_typed_obligation(obligation: dict, *, parser_backend: str = "current", context_text: str = "") -> dict:
+def _manifest_context(assumption_manifest: dict | None) -> str:
+    if not assumption_manifest:
+        return ""
+    parts: list[str] = []
+    for obj in assumption_manifest.get("objects", []):
+        name = obj.get("name")
+        if not name:
+            continue
+        if obj.get("kind"):
+            parts.append(f"{name} is a {obj['kind']}.")
+        shape = obj.get("shape")
+        if shape:
+            parts.append(f"{name} has shape {shape}.")
+        properties = obj.get("properties", {})
+        if properties.get("positive_definite") or properties.get("spd"):
+            parts.append(f"{name} is positive definite and invertible.")
+        if properties.get("symmetric"):
+            parts.append(f"{name} is symmetric.")
+    return " ".join(parts)
+
+
+def diagnose_typed_obligation(obligation: dict, *, parser_backend: str = "current", context_text: str = "", assumption_manifest: dict | None = None) -> dict:
     base = obligation_from_audit_obligation(obligation, parser_backend=parser_backend)
-    if context_text:
-        raw_with_context = f"{base['raw_text']}\n{context_text}"
+    manifest_context = _manifest_context(assumption_manifest)
+    combined_context = "\n".join(item for item in [context_text, manifest_context] if item)
+    if combined_context:
+        raw_with_context = f"{base['raw_text']}\n{combined_context}"
         unresolved = _unresolved(base["raw_text"])
         constraints = _dimension_constraints(raw_with_context, unresolved)
         base["dimension_constraints"] = constraints
         base["diagnostic_status"] = _diagnostic_status(constraints, unresolved)
         base["backend_route_hints"] = _route_hints(base["backend_suitability"], unresolved, constraints)
+        if assumption_manifest:
+            base["assumptions"] = list(assumption_manifest.get("objects", []))
     missing = [item for item in base["dimension_constraints"] if item.get("status") == "missing_assumption"]
     return {
         "status": "needs_assumptions" if missing else base["diagnostic_status"],

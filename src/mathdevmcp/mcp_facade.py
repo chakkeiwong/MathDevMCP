@@ -24,12 +24,14 @@ from .implementation_audit import audit_implementation_label
 from .kalman_workflows import audit_kalman_recursion
 from .latex_index import build_index, extract_context_for_label, extract_paragraph_context_for_label, search_index
 from .lean_check import check_lean_source
+from .lean_readiness import lean_readiness
 from .proof_obligations import check_proof_obligation
 from .proof_audit import audit_derivation_for_label
 from .proof_audit_v2 import audit_derivation_v2_for_label
 from .release_corpus import release_corpus_manifest, validate_release_corpus_manifest
 from .release_profile_analysis import release_profile_analysis
 from .release_policy import release_readiness_report
+from .status_taxonomy import status_taxonomy
 from .typed_workflows import typed_obligation_for_label
 from .tool_matrix import tool_matrix
 from .workflow import build_implementation_brief
@@ -306,6 +308,16 @@ def _tool_release_profile_analysis(args: dict[str, Any]) -> dict[str, Any]:
     return release_profile_analysis(Path(_required_string(args, "root")))
 
 
+def _tool_lean_readiness(args: dict[str, Any]) -> dict[str, Any]:
+    root = args.get("root")
+    return lean_readiness(root if isinstance(root, str) and root else None)
+
+
+def _tool_status_taxonomy(args: dict[str, Any]) -> dict[str, Any]:
+    _ = args
+    return status_taxonomy()
+
+
 MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
     MCPToolSpec("search_latex", _tool_search_latex, "Search indexed LaTeX blocks with provenance.", "latex_search_results", "primitive"),
     MCPToolSpec("latex_label_lookup", _tool_latex_label_lookup, "Fetch a labeled LaTeX block with paragraph neighborhood and provenance.", "latex_paragraph_context", "primitive"),
@@ -397,12 +409,14 @@ MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
     MCPToolSpec("run_benchmarks", _tool_run_benchmarks, "Run seeded consistency benchmarks.", "benchmark_results", "operational"),
     MCPToolSpec("benchmark_gate", _tool_benchmark_gate, "Return CI-friendly benchmark gate results.", "benchmark_gate", "operational"),
     MCPToolSpec("tool_matrix", _tool_tool_matrix, "Return the current MathDevMCP tool matrix.", "tool_matrix", "informational", server_name="get_tool_matrix"),
+    MCPToolSpec("status_taxonomy", _tool_status_taxonomy, "Return the current MathDevMCP status and substatus taxonomy.", "status_taxonomy", "informational"),
     MCPToolSpec("doctor", _tool_doctor, "Report external backend capabilities and environment diagnostics.", "doctor_report", "operational"),
     MCPToolSpec("release_corpus_manifest", _tool_release_corpus_manifest, "Return the release corpus manifest.", "release_corpus_manifest", "operational"),
     MCPToolSpec("validate_release_corpus", _tool_validate_release_corpus, "Validate release corpus privacy and gate metadata.", "release_corpus_validation_report", "operational"),
     MCPToolSpec("governance_policy", _tool_governance_policy, "Return security and governance policy.", "governance_policy", "informational"),
     MCPToolSpec("release_readiness", _tool_release_readiness, "Return an auditable release-readiness report.", "release_readiness_report", "operational"),
     MCPToolSpec("release_profile_analysis", _tool_release_profile_analysis, "Analyze every release profile and remaining profile gaps.", "release_profile_analysis", "operational"),
+    MCPToolSpec("lean_readiness", _tool_lean_readiness, "Report direct Lean, Lake, and LeanDojo readiness separately.", "lean_readiness", "operational"),
 )
 
 

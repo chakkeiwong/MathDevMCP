@@ -46,11 +46,14 @@ Facade registry: `src/mathdevmcp/mcp_facade.py`
 - `release_readiness` - return a profile-specific release-readiness report.
 - `release_profile_analysis` - analyze all release profiles and remaining
   profile gaps.
+- `lean_readiness` - report direct Lean, Lake, and LeanDojo readiness
+  separately.
 
 ### Informational Tools
 
 - `tool_matrix` - facade name for the static problem/tool matrix.
 - `get_tool_matrix` - FastMCP server alias for `tool_matrix`.
+- `status_taxonomy` - return the current status/substatus taxonomy.
 - `governance_policy` - return the security and governance policy.
 
 ## Deprecated Compatibility Names

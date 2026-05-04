@@ -13,12 +13,14 @@ from pathlib import Path
 
 from .contracts import attach_contract, contract_metadata
 from .math_ir import diagnose_typed_obligation
+from .matrix_ir import parse_matrix_obligation
 from .numeric_diagnostics import suggest_numeric_diagnostics
 from .numeric_runner import run_numeric_diagnostic_plan
 from .parser_policy import decide_parser_policy
 from .proof_audit import audit_derivation_for_label
 from .routing import route_typed_diagnostic
 from .shape_diagnostics import diagnose_shape_constraints
+from .status_taxonomy import classify_status
 
 
 _CERTIFYING_PARSER_STATUSES = {"selected", "selected_for_proof_audit"}
@@ -35,11 +37,14 @@ class ProofAuditV2Obligation:
     parser_backend: str | None
     parser_policy: dict
     typed_diagnostic: dict
+    matrix_ir: dict
     route_decision: dict
     shape_diagnostic: dict
     numeric_diagnostics: dict
     backend_attempts: list[dict]
     status: str
+    substatus: str
+    severity: str
     reason: str
     evidence_kind: str
     diagnostic_only: bool
@@ -57,6 +62,7 @@ class ProofAuditV2Report:
     status: str
     reason: str
     counts: dict[str, int]
+    substatus_counts: dict[str, int]
     high_priority_actions: list[dict]
     obligations: list[dict]
     parser_policy: dict
@@ -198,6 +204,14 @@ def _counts(obligations: list[dict]) -> dict[str, int]:
     return counts
 
 
+def _substatus_counts(obligations: list[dict]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for obligation in obligations:
+        substatus = str(obligation.get("substatus", "unknown"))
+        counts[substatus] = counts.get(substatus, 0) + 1
+    return counts
+
+
 def _aggregate(counts: dict[str, int]) -> tuple[str, str]:
     if counts["mismatch"]:
         return "mismatch", "At least one proof-audit v2 obligation was refuted by backend evidence."
@@ -213,11 +227,14 @@ def _compact_obligation(obligation: dict) -> dict:
         "id": obligation["id"],
         "label": obligation["label"],
         "status": obligation["status"],
+        "substatus": obligation["substatus"],
+        "severity": obligation["severity"],
         "reason": obligation["reason"],
         "evidence_kind": obligation["evidence_kind"],
         "diagnostic_only": obligation["diagnostic_only"],
         "verification_boundary": obligation["verification_boundary"],
         "route": obligation["route_decision"].get("route"),
+        "matrix_ir_status": obligation["matrix_ir"].get("status"),
         "missing_constraints": obligation["shape_diagnostic"].get("missing_constraints", []),
         "actions": obligation["actions"],
         "provenance": obligation["provenance"],
@@ -237,6 +254,7 @@ def audit_derivation_v2_for_label(
     parser_backends: list[str] | None = None,
     parser_expected_labels: Iterable[str] | None = None,
     numeric_artifacts: dict[str, dict] | None = None,
+    assumption_manifest: dict | None = None,
     summary_only: bool = False,
 ) -> dict:
     base = audit_derivation_for_label(
@@ -253,7 +271,16 @@ def audit_derivation_v2_for_label(
     context = _context_text(base.get("doc_context", {}))
     obligations: list[dict] = []
     for base_obligation in base.get("obligations", []):
-        typed = diagnose_typed_obligation(base_obligation, parser_backend=selected_backend, context_text=context)
+        typed = diagnose_typed_obligation(
+            base_obligation,
+            parser_backend=selected_backend,
+            context_text=context,
+            assumption_manifest=assumption_manifest,
+        )
+        matrix_ir = parse_matrix_obligation(
+            str(base_obligation.get("source_text") or f"{base_obligation.get('lhs', '')} = {base_obligation.get('rhs', '')}"),
+            provenance=base_obligation.get("provenance", {}),
+        )
         route = route_typed_diagnostic(typed, label=label)
         shape = diagnose_shape_constraints(typed)
         numeric = suggest_numeric_diagnostics(typed)
@@ -279,6 +306,16 @@ def audit_derivation_v2_for_label(
             numeric=numeric,
             status=status,
         )
+        classification = classify_status(
+            status,
+            reason,
+            parser_policy=parser,
+            base_obligation=base_obligation,
+            route=route,
+            shape=shape,
+            actions=actions,
+        )
+        actions = classification["actions"]
         backend_attempts = _backend_attempts(base_obligation)
         evidence_kind, diagnostic_only, certificate, verification_boundary = _evidence_boundary(status, backend_attempts, reason)
         obligation = ProofAuditV2Obligation(
@@ -291,11 +328,14 @@ def audit_derivation_v2_for_label(
             parser_backend=parser.get("selected_backend"),
             parser_policy=parser,
             typed_diagnostic=typed,
+            matrix_ir=matrix_ir,
             route_decision=route,
             shape_diagnostic=shape,
             numeric_diagnostics=numeric,
             backend_attempts=backend_attempts,
             status=status,
+            substatus=classification["substatus"],
+            severity=classification["severity"],
             reason=reason,
             evidence_kind=evidence_kind,
             diagnostic_only=diagnostic_only,
@@ -307,6 +347,7 @@ def audit_derivation_v2_for_label(
         )
         obligations.append(asdict(obligation))
     counts = _counts(obligations)
+    substatus_counts = _substatus_counts(obligations)
     status, reason = _aggregate(counts)
     high_priority_actions = [
         {**action, "obligation_id": obligation["id"]}
@@ -321,6 +362,7 @@ def audit_derivation_v2_for_label(
         status=status,
         reason=reason,
         counts=counts,
+        substatus_counts=substatus_counts,
         high_priority_actions=high_priority_actions,
         obligations=report_obligations,
         parser_policy=parser,

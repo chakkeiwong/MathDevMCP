@@ -15,24 +15,30 @@ from .benchmarks import (
     write_seeded_mismatch_benchmark,
 )
 from .code_search import search_files
+from .claim_support import build_claim_support_packet
 from .consistency import compare_files, compare_label_to_code
 from .derivation import derive_step_for_label, derive_step_from_files
 from .doctor import doctor_report
+from .domain_templates import generate_obligations_from_template, list_domain_templates, suggest_domain_templates
 from ._install_rules import install_rules
 from .kalman_workflows import audit_kalman_recursion
 from .latex_index import build_index, extract_context_for_label, extract_paragraph_context_for_label, search_index, write_index
+from .lean_readiness import lean_readiness
 from .mcp_alias_audit import audit_deprecated_alias_usage
 from .performance import index_performance_smoke
 from .parser_benchmark import compare_parser_backends
 from .proof_obligations import check_proof_obligation
 from .proof_audit import audit_derivation_for_label
 from .proof_audit_v2 import audit_derivation_v2_for_label
+from .proof_packet import build_proof_packet_label
+from .negative_evidence import build_negative_evidence_packet
 from .public_release import public_release_check
 from .governance import governance_policy, validate_governance
 from .release_corpus import release_corpus_manifest, validate_release_corpus_manifest
 from .release_hypotheses import release_hypothesis_check
 from .release_profile_analysis import release_profile_analysis
 from .release_policy import RELEASE_PROFILES, release_readiness_report
+from .status_taxonomy import status_taxonomy
 from .typed_workflows import typed_obligation_for_label
 from .tool_matrix import tool_matrix
 from .workflow import build_implementation_brief
@@ -110,6 +116,49 @@ def _cmd_compare_label(args: argparse.Namespace) -> int:
 
 def _cmd_tool_matrix(args: argparse.Namespace) -> int:
     print(json.dumps(tool_matrix(), indent=2))
+    return 0
+
+
+def _cmd_status_taxonomy(args: argparse.Namespace) -> int:
+    _ = args
+    print(json.dumps(status_taxonomy(), indent=2))
+    return 0
+
+
+def _cmd_domain_templates(args: argparse.Namespace) -> int:
+    print(json.dumps(list_domain_templates(), indent=2))
+    return 0
+
+
+def _cmd_suggest_domain_templates(args: argparse.Namespace) -> int:
+    result = suggest_domain_templates(
+        label=args.label or "",
+        section_path=[item.strip() for item in args.section_path if item.strip()],
+        equation_text=args.equation_text or "",
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_generate_template_obligations(args: argparse.Namespace) -> int:
+    result = generate_obligations_from_template(args.template_id, label=args.label)
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_claim_support(args: argparse.Namespace) -> int:
+    citations = [{"id": item} for item in args.citation]
+    result = build_claim_support_packet(
+        args.claim,
+        claim_id=args.claim_id or None,
+        citations=citations,
+        linked_labels=[item for item in args.label if item],
+        linked_packets=[item for item in args.packet if item],
+        empirical=args.empirical,
+        assumption=args.assumption,
+        proposed=args.proposed,
+    )
+    print(json.dumps(result, indent=2))
     return 0
 
 
@@ -257,6 +306,25 @@ def _cmd_audit_derivation_v2_label(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_proof_packet_label(args: argparse.Namespace) -> int:
+    result = build_proof_packet_label(args.root, args.label, summary_only=args.summary_only)
+    if args.output:
+        Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.output).write_text(json.dumps(result, indent=2), encoding="utf-8")
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_negative_evidence_label(args: argparse.Namespace) -> int:
+    audit = audit_derivation_v2_for_label(args.root, args.label, summary_only=True)
+    result = build_negative_evidence_packet(args.label, audit)
+    if args.output:
+        Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.output).write_text(json.dumps(result, indent=2), encoding="utf-8")
+    print(json.dumps(result, indent=2))
+    return 0
+
+
 def _cmd_audit_kalman_recursion(args: argparse.Namespace) -> int:
     required_operations = [item.strip() for item in args.required_operation if item.strip()]
     result = audit_kalman_recursion(args.code, required_operations=required_operations or None)
@@ -303,6 +371,11 @@ def _cmd_release_profile_analysis(args: argparse.Namespace) -> int:
     result = release_profile_analysis(args.root)
     print(json.dumps(result, indent=2))
     return 0 if result["status"] in {"ready", "ready_with_caveats"} else 1
+
+
+def _cmd_lean_readiness(args: argparse.Namespace) -> int:
+    print(json.dumps(lean_readiness(args.root or None), indent=2))
+    return 0
 
 
 def _cmd_public_release_check(args: argparse.Namespace) -> int:
@@ -391,6 +464,34 @@ def make_parser() -> argparse.ArgumentParser:
 
     p_matrix = sub.add_parser("tool-matrix", help="Print the current tool matrix")
     p_matrix.set_defaults(func=_cmd_tool_matrix)
+
+    p_status_taxonomy = sub.add_parser("status-taxonomy", help="Print the current status and substatus taxonomy")
+    p_status_taxonomy.set_defaults(func=_cmd_status_taxonomy)
+
+    p_domain_templates = sub.add_parser("domain-templates", help="Print governed domain template catalog")
+    p_domain_templates.set_defaults(func=_cmd_domain_templates)
+
+    p_suggest_templates = sub.add_parser("suggest-domain-templates", help="Suggest domain templates for label or equation context")
+    p_suggest_templates.add_argument("--label", default="", help="Optional source label")
+    p_suggest_templates.add_argument("--section-path", action="append", default=[], help="Section path element; can be repeated")
+    p_suggest_templates.add_argument("--equation-text", default="", help="Localized equation text")
+    p_suggest_templates.set_defaults(func=_cmd_suggest_domain_templates)
+
+    p_template_obligations = sub.add_parser("generate-template-obligations", help="Generate diagnostic obligations from a domain template")
+    p_template_obligations.add_argument("template_id", help="Template id")
+    p_template_obligations.add_argument("--label", required=True, help="Source label")
+    p_template_obligations.set_defaults(func=_cmd_generate_template_obligations)
+
+    p_claim_support = sub.add_parser("claim-support", help="Build a local claim-support packet")
+    p_claim_support.add_argument("claim", help="Claim text")
+    p_claim_support.add_argument("--claim-id", default="", help="Stable claim id")
+    p_claim_support.add_argument("--citation", action="append", default=[], help="Citation or local paper id; can be repeated")
+    p_claim_support.add_argument("--label", action="append", default=[], help="Linked label; can be repeated")
+    p_claim_support.add_argument("--packet", action="append", default=[], help="Linked packet id; can be repeated")
+    p_claim_support.add_argument("--empirical", action="store_true", help="Classify as empirical regularity")
+    p_claim_support.add_argument("--assumption", action="store_true", help="Classify as model assumption")
+    p_claim_support.add_argument("--proposed", action="store_true", help="Classify as proposed extension")
+    p_claim_support.set_defaults(func=_cmd_claim_support)
 
     p_doctor = sub.add_parser("doctor", help="Report external backend capabilities and environment diagnostics")
     p_doctor.set_defaults(func=_cmd_doctor)
@@ -489,6 +590,19 @@ def make_parser() -> argparse.ArgumentParser:
     p_audit_v2.add_argument("--summary-only", action="store_true", help="Return compact per-obligation summaries")
     p_audit_v2.set_defaults(func=_cmd_audit_derivation_v2_label)
 
+    p_proof_packet = sub.add_parser("proof-packet-label", help="Build a durable proof packet for a labeled document block")
+    p_proof_packet.add_argument("label", help="LaTeX label to audit")
+    p_proof_packet.add_argument("--root", default=".", help="Root directory containing LaTeX files")
+    p_proof_packet.add_argument("--summary-only", action="store_true", help="Store compact nested audit evidence")
+    p_proof_packet.add_argument("--output", default="", help="Optional JSON output path")
+    p_proof_packet.set_defaults(func=_cmd_proof_packet_label)
+
+    p_negative_packet = sub.add_parser("negative-evidence-label", help="Build a negative-evidence packet for a labeled document block")
+    p_negative_packet.add_argument("label", help="LaTeX label to audit")
+    p_negative_packet.add_argument("--root", default=".", help="Root directory containing LaTeX files")
+    p_negative_packet.add_argument("--output", default="", help="Optional JSON output path")
+    p_negative_packet.set_defaults(func=_cmd_negative_evidence_label)
+
     p_kalman_recursion = sub.add_parser("audit-kalman-recursion", help="Audit AST-level Kalman recursion structure in Python code")
     p_kalman_recursion.add_argument("code", help="Python code file path")
     p_kalman_recursion.add_argument("--required-operation", action="append", default=[], help="Required AST operation; can be repeated")
@@ -526,6 +640,10 @@ def make_parser() -> argparse.ArgumentParser:
     p_profile_analysis = sub.add_parser("release-profile-analysis", help="Analyze all release profiles and remaining profile gaps")
     p_profile_analysis.add_argument("--root", default=".", help="Project root")
     p_profile_analysis.set_defaults(func=_cmd_release_profile_analysis)
+
+    p_lean_readiness = sub.add_parser("lean-readiness", help="Report direct Lean, Lake, and LeanDojo readiness separately")
+    p_lean_readiness.add_argument("--root", default=".", help="Project root or Lean project root")
+    p_lean_readiness.set_defaults(func=_cmd_lean_readiness)
 
     p_public = sub.add_parser("public-release-check", help="Validate public release product-surface gates")
     p_public.add_argument("--root", default=".", help="Project root")

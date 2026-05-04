@@ -6,6 +6,8 @@ from pathlib import Path
 import re
 from typing import Iterable
 
+from .equation_locator import locate_equations_in_file, summarize_equation_localization
+
 
 @dataclass(frozen=True)
 class LatexBlock:
@@ -195,19 +197,66 @@ def extract_latex_blocks(root: Path) -> list[LatexBlock]:
     return sorted(blocks, key=lambda block: (block.file, block.line_start, block.kind))
 
 
+def locate_equations(root: Path) -> list[dict]:
+    root = root.resolve()
+    rows: list[dict] = []
+    for path in _discover_input_order(root):
+        try:
+            rows.extend(locate_equations_in_file(path, root=root))
+        except UnicodeDecodeError:
+            rows.append(
+                {
+                    "id": f"{path}:0:decode_error",
+                    "environment": "unknown",
+                    "file": str(path),
+                    "line_start": 0,
+                    "line_end": 0,
+                    "label": None,
+                    "row_index": 0,
+                    "text": "",
+                    "source_text": "",
+                    "localization_status": "failed",
+                    "uncertainty": ["decode_error"],
+                }
+            )
+    return sorted(rows, key=lambda row: (row.get("file", ""), row.get("line_start", 0), row.get("row_index", 0)))
+
+
+def _index_diagnostics(root: Path, blocks: list[LatexBlock], equation_rows: list[dict]) -> dict:
+    seen: dict[str, list[dict]] = {}
+    for block in blocks:
+        if block.label:
+            seen.setdefault(block.label, []).append({"file": block.file, "line_start": block.line_start, "block_id": block.block_id})
+    duplicate_labels = {label: locations for label, locations in seen.items() if len(locations) > 1}
+    tex_files = [str(path.relative_to(root)) for path in iter_tex_files(root)]
+    return {
+        "status": "indexed_with_diagnostics",
+        "parsed_files": tex_files,
+        "failed_files": [],
+        "skipped_files": [],
+        "duplicate_labels": duplicate_labels,
+        "equation_localization": summarize_equation_localization(equation_rows),
+    }
+
+
 
 
 
 
 def build_index(root: Path) -> dict:
+    root = root.resolve()
     blocks = extract_latex_blocks(root)
+    equation_rows = locate_equations(root)
     labels = {block.label: asdict(block) for block in blocks if block.label}
     return {
         "root": str(root.resolve()),
         "n_blocks": len(blocks),
         "n_labels": len(labels),
+        "n_equation_rows": len(equation_rows),
         "blocks": [asdict(block) for block in blocks],
         "labels": labels,
+        "equation_rows": equation_rows,
+        "diagnostics": _index_diagnostics(root, blocks, equation_rows),
     }
 
 

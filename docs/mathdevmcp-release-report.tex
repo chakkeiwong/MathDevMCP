@@ -36,18 +36,20 @@ evidence packets that a human can inspect, challenge, and reuse.
 
 The product promise is practical rather than grand. MathDevMCP helps a colleague
 find the right equation and its nearby assumptions, detect that code no longer
-carries a documented solve-like operation, explain why a derivation remains
-uncertified, and hand another reviewer a document-grounded implementation brief.
+carries a documented solve-like operation, decompose a derivation into typed
+obligations with explicit backend evidence or abstention, check scoped symbolic
+equalities with deterministic backends, and hand another reviewer a
+document-grounded implementation brief.
 It is most useful in review loops where unsupported claims are expensive and
 where a generic assistant is too willing to smooth over missing provenance.
 
 This is why the release claim is deliberately narrow and evidence based.
 MathDevMCP does not claim to prove arbitrary mathematical papers correct. Its
-value is that it preserves the distinction between retrieval, diagnostics,
-mismatch, abstention, and deterministic certification in machine-readable
-reports. In practice, that means colleagues can move faster without pretending
-that a search hit, a parser extraction, or a nearby symbolic pattern is already a
-proof.
+value is that it preserves the distinction between retrieval, typed obligation
+diagnostics, scoped equality checks, mismatch, abstention, and deterministic
+certification in machine-readable reports. In practice, that means colleagues can
+move faster without pretending that a search hit, a parser extraction, a typed
+shape diagnostic, or a nearby symbolic pattern is already a proof.
 
 The current full release profile is configured to require benchmark evidence,
 parser policy, governance validation, release-corpus metadata, LeanDojo backend
@@ -104,9 +106,10 @@ A productive MCP conversation usually has five turns:
 
 The important behavior is not that the agent sounds confident. The important
 behavior is that it chooses tools such as \texttt{search\_latex},
-\texttt{extract\_latex\_neighborhood}, \texttt{compare\_label\_code},
-\texttt{audit\_derivation\_v2\_label}, and \texttt{implementation\_brief} before
-making a mathematical claim.
+\texttt{latex\_label\_lookup}, \texttt{audit\_implementation\_label},
+\texttt{audit\_derivation\_v2\_label}, \texttt{typed\_obligation\_label},
+\texttt{check\_equality}, and \texttt{implementation\_brief} before making a
+mathematical claim.
 
 \section{A Realistic Review Transcript}
 
@@ -201,6 +204,11 @@ Turns a vague drift worry into matched and missing terms. \\
 Keeps the distinction between proof, diagnostic evidence, and abstention. \\
 "Give me a handoff note for review." & \path{implementation_brief} &
 Bundles search, context, comparison, and next action. \\
+"Run the release-profile-analysis and tell me which claims are ready versus
+which still need external evidence." &
+\path{release_profile_analysis} &
+Summarizes readiness across base, public, backend, LaTeXML, private-corpus,
+and full release claims. \\
 "Is this release ready?" & \path{release_readiness} &
 Reports blockers and caveats instead of informal readiness claims. \\
 \bottomrule
@@ -274,8 +282,8 @@ LLM-only answer would be incomplete.
         \path{logdet}, \path{solve}, \path{gradient}, \path{hamiltonian}, or
         \path{euler_residual}.
   \item The prompt asks for a status such as \path{consistent},
-        \path{mismatch}, \path{unverified}, \path{blocked}, or
-        \path{release_ready}.
+        \path{mismatch}, \path{unverified}, \path{ready},
+        \path{ready_with_caveats}, or \path{not_ready}.
   \item The prompt asks for derivation certification, typed obligations,
         backend evidence, abstentions, or proof boundaries.
   \item The prompt asks for release evidence, benchmark gates, private corpus
@@ -417,7 +425,9 @@ MCP-style transcript that a colleague can adapt directly in their own client.
 
 \chapter{Product Scope}
 
-MathDevMCP supports five colleague-facing activities:
+MathDevMCP supports five base colleague-facing activities plus first-wave
+productization surfaces for domain templates, proof packets, negative evidence,
+claim support, status taxonomy, and backend readiness:
 
 \begin{enumerate}[label=\arabic*.]
   \item locating mathematical context in LaTeX source trees;
@@ -427,7 +437,12 @@ MathDevMCP supports five colleague-facing activities:
   \item auditing derivation obligations with parser, typed, shape, numeric, and
         backend evidence;
   \item producing repeatable release evidence across base, backend, LaTeXML,
-        private-corpus, and full profiles.
+        private-corpus, and full profiles;
+  \item turning recurring domain families into explicit diagnostic obligations;
+  \item packaging proof state, negative evidence, and literature support without
+        confusing those packets with mathematical proof;
+  \item reporting local status vocabulary and Lean/Lake/LeanDojo readiness so an
+        agent knows which next step is actually available.
 \end{enumerate}
 
 In colleague terms, this means the tool helps answer five recurring workflow
@@ -439,7 +454,16 @@ questions:
   \item Does the code visibly carry the documented structure?
   \item If a derivation is not certified, why not?
   \item Can another reviewer reproduce the evidence without trusting my memory?
+  \item Which domain template, assumption manifest, convention registry, or
+        proof packet should be used next?
 \end{enumerate}
+
+The May 2026 implementation changes are important because the tool now has
+explicit vocabulary for product surfaces that were previously only plans:
+source-local equation rows, assumption manifests, convention registries,
+dependency graphs, matrix/operator IR diagnostics, proof and negative-evidence
+packets, code-contract diagnostics, a small domain-template catalog, local claim
+support packets, status/substatus taxonomy, and Lean readiness checks.
 
 The product is intentionally local-first. Source documents and code remain on
 the user's machine. Optional tools such as LaTeXML, Lean, LeanDojo, Sage, and
@@ -452,14 +476,32 @@ dependency stack does not destabilize the main working environment.
 The release includes:
 
 \begin{itemize}
-  \item a LaTeX indexer with label, environment, and context extraction;
+  \item a LaTeX indexer with label, environment, context extraction, and
+        source-local equation-row localization;
   \item code and document search utilities;
   \item code--document consistency checks;
   \item derivation-step checks with explicit \emph{unverified} and
         \emph{mismatch} outcomes;
-  \item proof obligation and proof-audit workflows;
+  \item proof obligation, scoped equality, typed-obligation, and proof-audit
+        workflows;
   \item typed and dimensional diagnostic workflows;
+  \item status and substatus taxonomy for conservative workflow reports;
+  \item assumption-manifest parsing and linting for label-level declarations;
+  \item notation and sign-convention registry primitives;
+  \item dependency-graph and impact-report primitives for labels, conventions,
+        assumptions, packets, and code references;
+  \item matrix/operator IR diagnostics for ordered products, inverses, log
+        determinants, solves, traces, quadratic forms, Jacobians, and related
+        unresolved constructs;
   \item AST operation extraction for mathematical implementation patterns;
+  \item code-contract diagnostics for shape, dtype, batch-axis, finite-value,
+        and XLA/custom-op boundaries;
+  \item proof-packet and negative-evidence packet builders;
+  \item a first-wave domain-template catalog for Kalman likelihood, CIP/SDF
+        sign conventions, and HMC transform/Jacobian obligations;
+  \item local claim-support packets for assumptions, empirical regularities,
+        proposed extensions, citations, labels, and proof packets;
+  \item direct Lean, Lake, and LeanDojo readiness diagnostics;
   \item parser benchmark and parser policy selection;
   \item release corpus manifest validation;
   \item private-corpus validation with redacted output;
@@ -537,6 +579,14 @@ facade that presents stable tools to users and agents. The third layer is a
 workflow and documentation layer that explains how to combine tools for
 colleague tasks.
 
+The new product split is a core-platform layer plus optional domain packs. The
+core platform owns contracts, statuses, provenance, equation localization,
+assumption manifests, convention records, dependency graphs, matrix/operator
+IR, proof packets, negative evidence, code contracts, claim support, and backend
+readiness. Domain packs should stay declarative: they use those primitives to
+generate review obligations for recurring mathematical families rather than
+embedding a separate macro-finance application inside the core.
+
 The architecture is intentionally plain. The project does not hide release logic
 inside a server process or a notebook. A release manager can run the same Python
 library functions through the CLI, through MCP wrappers, and through tests. This
@@ -558,10 +608,18 @@ The ownership map is practical:
 \path{release_corpus.py} owns public/private manifest assembly and path
 redaction; \path{parser_policy.py} chooses whether parser output is strong
 enough for proof-audit routing; \path{proof_audit_v2.py} carries the
-verification-boundary language; \path{mcp_facade.py} and \path{cli.py}
-expose the same library behavior to agents and humans. A maintainer changing a
-release claim should know which one of those files owns the claim before editing
-the report.
+verification-boundary language; \path{equation_locator.py} owns source-local
+equation rows; \path{assumption_manifest.py}, \path{conventions.py}, and
+\path{dependency_graph.py} own the diagnostic context graph;
+\path{matrix_ir.py} owns the first matrix/operator IR route;
+\path{proof_packet.py} and \path{negative_evidence.py} own durable review
+packets; \path{domain_templates.py} owns the first governed template catalog;
+\path{code_contracts.py} owns implementation-boundary diagnostics;
+\path{claim_support.py} owns non-proof citation and claim support packets;
+\path{lean_readiness.py} separates direct Lean, Lake, and LeanDojo readiness;
+\path{mcp_facade.py} and \path{cli.py} expose library behavior to agents and
+humans. A maintainer changing a release claim should know which one of those
+files owns the claim before editing the report.
 
 \section{CLI and MCP facades}
 
@@ -570,7 +628,18 @@ the same library functions so an agent can call them interactively. The facade
 does not grant unrestricted shell access. It exposes bounded tools such as
 \path{search_latex}, \path{audit_implementation_label},
 \path{audit_derivation_v2_label}, \path{benchmark_gate}, and
-\path{release_readiness}.
+\path{release_readiness}. The newly exposed MCP surfaces are intentionally
+narrow: \path{status_taxonomy} tells an agent which statuses and substatuses are
+allowed, and \path{lean_readiness} reports direct Lean, Lake, and LeanDojo
+availability separately.
+
+Several May 2026 surfaces are CLI/library-first rather than MCP tools:
+\path{proof-packet-label}, \path{negative-evidence-label},
+\path{domain-templates}, \path{suggest-domain-templates},
+\path{generate-template-obligations}, and \path{claim-support}. Keeping these
+packet and catalog builders CLI-first for the initial release is deliberate.
+They can produce larger artifacts, and they are easier to review in CI or as
+files before becoming default conversational tools.
 
 \section{Backend isolation}
 
@@ -605,6 +674,8 @@ the tests.
 The primary statuses are:
 
 \begin{description}
+  \item[verified] A deterministic backend accepted the exact scoped obligation
+    under explicit assumptions.
   \item[consistent] The requested terms or structure were found in the checked
     context.
   \item[equivalent] A scoped derivation step matched exactly after normalization
@@ -617,6 +688,76 @@ The primary statuses are:
 
 This vocabulary is central to the product. It prevents the agent from turning a
 nearby equation or diagnostic hint into a categorical mathematical claim.
+
+Substatuses make conservative results actionable without weakening that
+boundary. Examples include
+\texttt{unverified:missing\_assumption},
+\texttt{unverified:missing\_shape},
+\texttt{unverified:parser\_limit},
+\texttt{unverified:unsupported\_noncommutative\_algebra},
+\texttt{unverified:manual\_formalization\_required},
+\texttt{mismatch:likely\_formula\_error},
+\texttt{mismatch:normalization\_gap},
+\texttt{inconclusive:source\_label\_missing},
+\texttt{inconclusive:partial\_index\_only},
+\texttt{inconclusive:backend\_unavailable},
+\texttt{inconclusive:toolchain\_not\_ready}, and
+\texttt{inconclusive:timeout}. The \texttt{status-taxonomy} CLI command and
+\texttt{status\_taxonomy} MCP tool expose this vocabulary to agents.
+
+\section{Equation localization}
+
+The LaTeX index now carries equation-row diagnostics in addition to labeled
+blocks. Each row reports source file, line span, extracted equation text, a
+\texttt{localization\_status}, and uncertainty markers such as macro
+non-expansion or preserved alignment markers. This matters for real monographs:
+proof-audit and template suggestions should know whether they are looking at a
+precisely localized equation row or a row with parser uncertainty.
+
+The localization contract is still provenance evidence, not proof evidence. A
+row can make the source easier to inspect, but it does not guarantee that every
+macro, surrounding assumption, or semantic dependency has been understood.
+
+\section{Assumptions, conventions, and dependencies}
+
+Assumption manifests and convention registries are the bridge between local
+source retrieval and serious mathematical review. An assumption manifest can
+declare object kind, shape, symmetry, positive definiteness, invertibility, or
+domain-specific requirements near a label or chapter. A convention registry can
+record quote conventions, CIP basis signs, measure notation, yield units, or
+other choices that change the meaning of a formula.
+
+The dependency graph links labels, assumptions, conventions, packets, and code
+references. Its main product use is impact tracing: if a CIP basis sign
+convention changes, or if a symbol is reused in two roles, the graph can list
+which labels and proof packets should be re-audited. This is diagnostic context
+management; it is not an automatic proof repair mechanism.
+
+\section{Packets and claim support}
+
+Proof packets are durable review artifacts built around a label. They collect
+source provenance, parser policy, nested audit evidence, high-priority actions,
+and a certification boundary. Negative-evidence packets preserve mismatches,
+blocked audits, and likely causes so a team can avoid rediscovering the same
+failure. Claim-support packets are deliberately separate: they can link a claim
+to citations, labels, assumptions, or proof packets, but citation support is not
+mathematical proof unless it is tied to a certified scoped obligation.
+
+\section{Matrix IR and code contracts}
+
+The matrix/operator IR is a diagnostic representation for ordered matrix
+products and common finance/economics operators: inverse, solve, transpose,
+trace, determinant, log determinant, quadratic form, expectation, derivative,
+differential, and Jacobian. Its first job is to prevent noncommutative
+expressions from being flattened into scalar strings. Unsupported constructs
+should remain visible as unresolved IR nodes and should lead to
+\texttt{unverified} or \texttt{inconclusive} outcomes.
+
+Code-contract diagnostics complement mathematical audits by checking whether an
+implementation exposes shape, dtype, batch-axis, finite-value, or XLA/custom-op
+boundaries. These are implementation-quality signals. They can explain why a
+state-space, HMC, or neural-solver implementation deserves review, but they do
+not establish semantic equivalence to the document.
 
 \chapter{Parser Policy}
 
@@ -675,6 +816,174 @@ claims still belong in the roadmap.
 
 \lstinputlisting[caption={Benchmark gate summary},basicstyle=\ttfamily\footnotesize]{generated/release_report/benchmark-gate-summary.txt}
 
+\chapter{Specific Domain Tools and How To Use Them}
+
+The domain tools are designed for mathematical finance and economics work where
+a single displayed formula hides many smaller obligations. They do not replace
+the core proof-audit tools. They help an agent choose a review route, generate
+smaller obligations, attach assumptions and conventions, and package the result
+for another reviewer.
+
+The current first-wave template catalog is intentionally small:
+\path{kalman_loglikelihood_v1}, \path{cip_sdf_sign_v1}, and
+\path{hmc_transform_jacobian_v1}. These templates cover three recurring
+families in the BayesFilter, DSGE, and CIP monograph workflows: Gaussian
+prediction-error likelihoods, CIP/SDF sign-convention reconciliation, and
+posterior-geometry transform/Jacobian checks. The roadmap should add more
+templates, but the product pattern is already clear.
+
+\section{Template workflow}
+
+A safe domain-template workflow has four steps:
+
+\begin{enumerate}[label=\arabic*.]
+  \item locate the candidate label and equation row;
+  \item ask for a domain-template suggestion from the label, section path, or
+        equation text;
+  \item generate template obligations and attach assumptions, conventions, and
+        code-contract evidence;
+  \item build a proof packet or negative-evidence packet that records what was
+        certified, what was diagnostic, and what remains for human review.
+\end{enumerate}
+
+\begin{lstlisting}[language=bash,caption={Domain-template discovery and packet workflow}]
+PYTHONPATH=src python -m mathdevmcp.cli status-taxonomy
+
+PYTHONPATH=src python -m mathdevmcp.cli domain-templates
+
+PYTHONPATH=src python -m mathdevmcp.cli suggest-domain-templates \
+  --label eq:dept-state-space-likelihood \
+  --equation-text "logdet innovation covariance solve"
+
+PYTHONPATH=src python -m mathdevmcp.cli generate-template-obligations \
+  kalman_loglikelihood_v1 \
+  --label eq:dept-state-space-likelihood
+
+PYTHONPATH=src python -m mathdevmcp.cli proof-packet-label \
+  eq:dept-state-space-likelihood \
+  --root benchmarks/fixtures \
+  --summary-only
+\end{lstlisting}
+
+The output should be read as a review plan. For example, the Kalman template
+generates obligations such as log-det domain, linear-solve residual, quadratic
+form shape, and prediction-error decomposition. Each obligation begins as
+\texttt{unverified}. It becomes certifying only if a deterministic backend
+checks the exact scoped obligation under explicit assumptions.
+
+\section{Domain tool map}
+
+\begin{longtable}{p{0.24\textwidth}p{0.66\textwidth}}
+\toprule
+Domain family & Current tools and use pattern \\
+\midrule
+Filtering and state-space likelihoods &
+\path{suggest-domain-templates}, \path{generate-template-obligations},
+\path{audit_implementation_label}, \path{audit_kalman_recursion},
+\path{typed_obligation_label}, \path{proof-packet-label}, and
+\path{code_contracts}. Use the Kalman likelihood template to decompose a
+prediction-error likelihood
+into log-det, solve, quadratic-form, and innovation-covariance obligations.
+Then compare the label to code for required operations and use code-contract
+diagnostics to check shape, dtype, batch-axis, and finite-value boundaries. \\
+CIP, SDF, FX basis, and affine pricing &
+\path{cip_sdf_sign_v1}, \path{conventions}, \path{dependency_graph},
+\path{claim-support}, and \path{proof-packet-label}. Use the CIP/SDF template
+to force quote convention, basis sign convention,
+discount-factor definitions, and no-arbitrage identity into explicit review
+items. Use the convention registry and dependency graph to identify which
+labels must be re-audited after a sign-convention or measure-notation change. \\
+DSGE, macro equilibrium, and perturbation &
+\path{assumption_manifest}, \path{matrix_ir}, \path{dependency_graph},
+\path{typed_obligation_label}, and \path{code_contracts}. Use manifests to
+declare steady-state, determinacy, differentiability,
+conformability, and shock-process assumptions. Use matrix IR and typed
+diagnostics for Kronecker, Sylvester, Jacobian, Hessian, and policy-function
+obligations. Future templates should add Euler-equation, Taylor-rule,
+Blanchard-Kahn, and perturbation-specific decompositions. \\
+HMC, transforms, and posterior geometry &
+\path{hmc_transform_jacobian_v1}, \path{matrix_ir},
+\path{numeric_diagnostics}, \path{lean-readiness},
+\path{proof-packet-label}. Use the HMC transform template to separate
+change-of-variables, log-Jacobian,
+finite-target, and acceptance-ratio obligations. Use Lean readiness before
+asking for formal proof work, and preserve the distinction between approximate
+surrogate evidence and exact posterior correction. \\
+Particle methods, transport, and neural solvers &
+\path{negative-evidence-label}, \path{claim-support},
+\path{matrix_ir}, and \path{code_contracts}. Current support is mostly
+diagnostic. Use negative-evidence packets to record
+failed unbiasedness, resampling, support, or transformed-density checks. Future
+templates should cover ESS, differentiable resampling, Sinkhorn/OT objectives,
+flow log determinants, HJB residuals, and surrogate-correction boundaries. \\
+Literature, assumptions, and empirical claims &
+\path{claim-support}, local literature/review fixtures, and proof packets. Use
+claim-support packets to classify a statement as an assumption, empirical
+regularity, proposed extension, or cited support. Link packets to labels and
+proof packets, but do not treat citation support as mathematical proof. \\
+\bottomrule
+\end{longtable}
+
+\section{Using domain tools in MCP conversations}
+
+The MCP server currently exposes the core conversational checks plus
+\path{status_taxonomy} and \path{lean_readiness}. Template and packet commands
+are CLI/library-first in this release. A practical agent can still use them in
+two ways: call MCP tools for search, lookup, code comparison, typed obligation,
+proof audit, release readiness, and Lean readiness; then ask the operator or CI
+workflow to run the CLI packet/template commands when a durable artifact is
+needed.
+
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize,caption={MCP-style domain-tool conversation}]
+User:
+  This CIP chapter changed the sign convention for the basis. What should be
+  rechecked?
+
+Agent:
+  I will locate the labels and inspect the convention-linked context first.
+
+Tool: search_latex
+  query="CIP basis sign convention"
+
+Tool: latex_label_lookup
+  label=eq:cip-basis-definition
+
+Agent:
+  The next product step is to run the CIP/SDF domain template and convention
+  impact report. Those are diagnostic: they should list labels, assumptions,
+  and proof packets to re-audit, not claim the revised convention is correct.
+\end{lstlisting}
+
+\section{What the domain tools make easier}
+
+For future work like the CIP monograph and DSGE/HMC monograph, the needed
+capability list is broader than filtering:
+
+\begin{itemize}
+  \item notation and sign-convention management for overloaded finance symbols;
+  \item no-arbitrage, SDF, FX forward, basis, and affine-pricing obligations;
+  \item Riccati, OU transition, covariance-integral, and yield-from-price
+        checks;
+  \item Euler-equation, steady-state, perturbation, QZ, Sylvester, and
+        Kronecker diagnostics;
+  \item Kalman, square-root, SVD, UKF, particle, mixed-frequency, ragged-edge,
+        score, Hessian, and finite-safe likelihood checks;
+  \item stationarity, ergodicity, Lipschitz, spectral, and filter-stability
+        assumption manifests;
+  \item posterior geometry, constrained transforms, log-Jacobians, mass
+        matrices, HMC/NUTS, and finite-gradient contracts;
+  \item transport-map, neural-solver, flow-logdet, HJB-residual, surrogate, and
+        delayed-acceptance boundaries;
+  \item identification, measurement-system, empirical-design, and observable
+        moment packets;
+  \item literature and claim-support packets linked to proof packets and local
+        review status.
+\end{itemize}
+
+The important product rule is the same across all domains: templates make proof
+debt visible and repeatable. They do not convert a monograph-scale derivation
+into a theorem unless each generated obligation is separately certified.
+
 \part{Colleague Workflows}
 
 \chapter{Workflow 1: Find Mathematical Context}
@@ -718,7 +1027,7 @@ query or a document root, rather than fabricating a source.
 
 An agent handoff should cite the label and provenance from the output rather
 than paraphrasing from memory. It should not summarize the equation as verified
-until later workflows check implementation terms or proof obligations.
+until later workflows check implementation terms and derivation evidence.
 
 \chapter{Workflow 2: Read a Labeled Neighborhood}
 
@@ -730,7 +1039,7 @@ and false in another.
 
 \section*{When to use it}
 
-Use \texttt{extract-latex-neighborhood} after search and before proof or code
+Use \texttt{latex-label-lookup} after search and before proof or code
 claims. It is the right command when the colleague says, "Show me the surrounding
 assumptions" or "What notation does this equation rely on?"
 
@@ -767,8 +1076,10 @@ certification.
 
 Code--document drift is one of the highest-value release use cases. A colleague
 may trust a derivation in a note while the code has silently changed. The
-\texttt{compare-label-code} workflow asks a smaller, sharper question: do the
-required operations from a labeled document block appear in a chosen code file?
+\texttt{audit-implementation-label} workflow asks a smaller, sharper question: do
+the required operations from a labeled document block appear in a chosen code
+file, and if needed does the implementation expose the requested operation audit
+surface?
 
 \section*{When to use it}
 
@@ -806,12 +1117,15 @@ implementation did not expose that term. Please review whether the quadratic
 form is implemented with a numerically appropriate solve or an equivalent
 operation." That is useful, bounded, and honest.
 
-\chapter{Workflow 4: Audit a Derivation}
+\chapter{Workflow 5: Audit a Derivation}
 
 The v2 audit workflow is the product's strongest guard against false confidence.
 It combines parser policy, typed obligations, shape diagnostics, numeric
-suggestions, backend evidence, and verification-boundary text. It is the right
-surface when the colleague asks, "Is this certified, or just plausible?"
+suggestions, backend evidence, and verification-boundary text. Together with
+\texttt{typed-obligation-label} and \texttt{check-equality}, it gives an agent a
+proof-carrying ladder: extract obligations, inspect typed diagnostics, check
+scoped equalities, then summarize only what the evidence supports. It is the
+right surface when the colleague asks, "Is this certified, or just plausible?"
 
 \section*{When to use it}
 
@@ -831,9 +1145,12 @@ linear-solve residual constraints.
 \section*{How to read the output}
 
 The key field is the verification boundary. If the status is \texttt{unverified}
-or \texttt{diagnostic\_only}, the tool is telling the agent not to claim a proof.
+or \texttt{inconclusive}, the tool is telling the agent not to claim a proof.
 The high-priority actions are the review checklist. A colleague can turn them
 into assumptions to state, tests to add, or formal obligations to discharge.
+When a reviewer needs the next layer down, \texttt{typed-obligation-label}
+localizes dimensional and shape concerns, and \texttt{check-equality} can test a
+bounded algebraic step under explicit assumptions.
 
 \section*{Failure mode}
 
@@ -847,7 +1164,299 @@ The handoff should separate evidence from certification: "The parser located the
 label and the audit identified missing matrix constraints. No deterministic
 backend certificate is present, so this remains a human-review item."
 
-\chapter{Workflow 5: Build an Implementation Brief}
+\chapter{Workflow 6: Construct a Difficult Proof or Derivation}
+
+Many colleague workflows are not just about checking whether code visibly matches
+an equation. In a research monograph, the harder task is to build a trustworthy
+proof or derivation across a large document set: hundreds of chapters, repeated
+notation, hidden assumptions, and intermediate lemmas that may be spread across
+several files. This is the setting where a generic agent is most likely to sound
+plausible and least likely to be trustworthy.
+
+MathDevMCP is useful here because it gives the colleague a disciplined
+proof-carrying workflow rather than a single yes-or-no answer. The agent can
+locate candidate labels, pull local neighborhoods, extract typed obligations,
+check bounded equalities, route obligations to deterministic or diagnostic
+backends, and keep an explicit record of what is proved, what is only supported,
+and what remains open.
+
+\section*{When to use it}
+
+Use this workflow when the colleague is trying to construct or extend a difficult
+proof, not merely audit one finished equation. Typical examples are matrix
+calculus derivations, Kalman/HMC identities, SVD or eigenvalue perturbation
+lemmas, multistep Hessian expansions, or chapter-spanning arguments in a large
+monograph such as \path{/latex/CIP_monograph/main.tex}. In these settings the
+agent should not jump directly to a final formula. It should build a proof ladder
+with explicit obligations.
+
+\section*{Why the large-document setting is different}
+
+A 500--700 page monograph behaves differently from a short note.
+Definitions are reused across chapters, hypotheses may be stated once and used
+much later, and the same symbol may change meaning by section. A colleague needs
+an agent that can say:
+
+\begin{enumerate}[label=\arabic*.]
+  \item where the current claim is anchored;
+  \item which nearby assumptions are visible and which are still missing;
+  \item which subclaim has backend evidence;
+  \item which step is only heuristic or diagnostic;
+  \item what exact prompt the next reviewer should give to continue.
+\end{enumerate}
+
+That is the working style recommended by the proof-carrying derivation guide, and
+it is the right level of discipline for monograph-scale mathematical work.
+
+\section*{The colleague workflow}
+
+For a difficult proof, the recommended conversation with the agent has seven
+turns:
+
+\begin{enumerate}[label=\arabic*.]
+  \item identify the target theorem, proposition, or equation label;
+  \item retrieve nearby assumptions and notation with provenance;
+  \item restate the next proof step as a small proposition;
+  \item ask for a proof-audit status before asking for polished prose;
+  \item split the argument into typed obligations and bounded equalities;
+  \item route each obligation to the most appropriate backend or diagnostic;
+  \item ask for a handoff note that lists proved steps, open steps, and the next
+        prompt to run.
+\end{enumerate}
+
+The core principle is simple: the LLM may organize the derivation, but the proof
+boundary must be set by tool evidence. A polished paragraph is not a
+certificate.
+
+\section*{Detailed prompt pattern for colleagues}
+
+A strong prompt in the difficult-proof setting should name:
+
+\begin{itemize}
+  \item the repository or monograph root;
+  \item the label to prove or extend, if known;
+  \item the exact subclaim to construct next, not the whole chapter at once;
+  \item the assumptions the colleague believes are relevant;
+  \item the desired output form: obligations, equality checks, backend evidence,
+        or a reviewer handoff note.
+\end{itemize}
+
+A weak prompt is: ``Prove the theorem in Chapter 11.''
+A much better prompt is:
+
+\begin{quote}
+In \path{/latex/CIP_monograph/main.tex}, locate the label for the Gaussian
+score differential used in the filtering chapter. Extract nearby assumptions,
+restate the next missing step as a small proposition, run a derivation audit,
+then tell me which obligations are certified, which are only diagnostic, and
+what exact equality or shape checks we should run next.
+\end{quote}
+
+That prompt is effective because it forces the agent to retrieve, decompose, and
+audit before narrating.
+
+\section*{MCP conversation for proof construction}
+
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize,caption={MCP conversation for constructing a difficult derivation in a large monograph}]
+User:
+  In /latex/CIP_monograph/main.tex, help me construct the proof of the
+  Gaussian score differential used in the filtering chapter. Do not give me
+  polished prose first. I want the proof boundary explicit. Start by finding
+  the label, then extract nearby assumptions, then break the next missing step
+  into small obligations.
+
+Agent:
+  I will first locate the candidate label and inspect its local neighborhood
+  before proposing any proof step.
+
+Tool: search_latex
+  root=/latex/CIP_monograph
+  query="Gaussian score differential filtering likelihood"
+  limit=5
+
+Tool result:
+  label=eq:cip-gaussian-score-differential
+  file=chapters/filtering/gaussian_likelihood.tex
+  lines=...
+
+Agent:
+  I found a candidate label. I will retrieve the local context and then audit
+  the derivation boundary before constructing the next step.
+
+Tool: latex_label_lookup
+  root=/latex/CIP_monograph
+  label=eq:cip-gaussian-score-differential
+  before=1
+  after=1
+
+Tool result:
+  status=found
+  context includes the likelihood equation, solve variable alpha, and local SPD
+  assumptions for the covariance matrix
+
+Tool: audit_derivation_v2_label
+  root=/latex/CIP_monograph
+  label=eq:cip-gaussian-score-differential
+  summary_only=true
+
+Tool result:
+  status=unverified
+  high_priority_actions=[
+    "state or verify invertibility",
+    "state or verify conformable products",
+    "check square trace operand",
+    "split the derivation into smaller obligations"
+  ]
+
+Agent:
+  The current derivation is not certified as one block. I will restate the next
+  step as two smaller propositions and localize the typed obligations.
+
+Tool: typed_obligation_label
+  root=/latex/CIP_monograph
+  label=eq:cip-gaussian-score-differential
+
+Tool result:
+  status=consistent
+  obligations include solve-shape, trace-shape, and matrix-symmetry concerns
+
+Agent:
+  I will now test one bounded algebraic identity instead of the full proof.
+
+Tool: check_equality
+  lhs="d alpha"
+  rhs="solve(S, dv - dS alpha)"
+  assumptions=["S is invertible", "alpha = solve(S, v)", "dS is conformable"]
+  backend="sympy"
+
+Tool result:
+  status=verified
+  evidence=...
+
+Agent:
+  We now have one certified substep. The remaining score differential should be
+  handled as a separate obligation rather than merged into one paragraph proof.
+\end{lstlisting}
+
+\section*{How to work step by step with the agent}
+
+The proof-carrying guide recommends a specific discipline, and colleagues should
+expect the agent to follow it.
+
+\subsection*{Step 1: Anchor the claim}
+
+First ask the agent to find the exact label, not just the chapter topic. In a
+large monograph, several nearby equations may look similar. The label, file, and
+line span are what make the conversation auditable.
+
+\subsection*{Step 2: Retrieve only local context at first}
+
+Ask for the nearby paragraphs before asking for a proof. This prevents the agent
+from importing assumptions from memory or from another chapter. The local
+context may be incomplete; that incompleteness is itself useful evidence.
+
+\subsection*{Step 3: Restate one small proposition}
+
+Do not ask the agent to prove a page-long Hessian or a full chapter theorem in
+one turn. Ask it to restate the next missing step as a small proposition: a solve
+differential, a trace identity, a log-determinant differential, a symmetry fact,
+or one product-rule expansion.
+
+\subsection*{Step 4: Ask for audit status before prose}
+
+The important intermediate question is not ``Can you explain this?'' but ``Is
+this subclaim certified, unverified, inconclusive, or mismatched?'' That wording
+causes the agent to preserve the proof boundary.
+
+\subsection*{Step 5: Split obligations aggressively}
+
+If the audit returns \texttt{unverified}, that is usually healthy. It means the
+current claim is too large or too implicit. The next request should be to split
+the step into smaller obligations. For matrix calculus, that often means:
+
+\begin{enumerate}[label=\alph*.]
+  \item a shape or conformability obligation;
+  \item a solve or inverse differential identity;
+  \item a trace-cyclicity or scalarization step;
+  \item a final collection of terms.
+\end{enumerate}
+
+\subsection*{Step 6: Route the right obligation to the right backend}
+
+Colleagues should not expect one backend to do everything. A practical routing
+pattern is:
+
+\begin{itemize}
+  \item \texttt{typed-obligation-label} for dimensions, symmetry, and shape;
+  \item \texttt{check-equality} for a bounded symbolic step;
+  \item \texttt{audit-derivation-v2-label} for the release-facing summary of the
+        whole labeled block;
+  \item external finite-difference, AD, Sage, Z3, or Lean checks when the
+        proposition is stable enough to justify them.
+\end{itemize}
+
+This is exactly the style needed for difficult proofs: the agent should route,
+not bluff.
+
+\subsection*{Step 7: End each pass with a handoff note}
+
+At the end of each pass, ask the agent for a concise handoff note with:
+
+\begin{itemize}
+  \item the target label;
+  \item the proposition checked this pass;
+  \item assumptions used explicitly;
+  \item statuses of each tool call;
+  \item certified substeps;
+  \item open obligations;
+  \item the exact next prompt to run.
+\end{itemize}
+
+That handoff note is what lets another colleague continue after a reset without
+reconstructing the same uncertainty from scratch.
+
+\section*{What a good agent answer should look like}
+
+For a difficult proof, a good answer is not a long elegant derivation on the
+first turn. A good answer says something like:
+
+\begin{quote}
+I found label \path{eq:cip-gaussian-score-differential} in the filtering
+chapter. The local neighborhood supports the solve notation and SPD assumption,
+but the full derivation remains \path{unverified} as one block. One substep,
+\path{d alpha = solve(S, dv - dS alpha)}, is verified under the explicit
+invertibility and conformability assumptions. The next step is to isolate the
+trace-form differential and check it separately.
+\end{quote}
+
+That answer is useful because it distinguishes retrieval, certification, and the
+next proof obligation.
+
+\section*{Failure modes in monograph-scale proof construction}
+
+The most common failure modes are:
+
+\begin{enumerate}[label=\arabic*.]
+  \item asking for a whole difficult proof in one turn;
+  \item accepting nearby notation as if it were a proof;
+  \item failing to restate assumptions explicitly;
+  \item merging shape issues and algebraic issues into one giant claim;
+  \item treating \texttt{unverified} as permission to write polished certainty;
+  \item forgetting that a symbol may shift meaning across chapters;
+  \item treating a symbolic toy check as a theorem for all dimensions.
+\end{enumerate}
+
+Colleagues should treat these as workflow bugs, not only mathematical bugs.
+
+\section*{Boundary}
+
+MathDevMCP helps construct difficult proofs by keeping the work auditable. It
+does not replace expert judgment, and it does not turn a monograph-scale proof
+into one automatic backend call. Its value is that it lets a colleague and an
+agent collaborate in small certifiable steps, with explicit provenance and an
+explicit record of what remains open.
+
+\chapter{Workflow 7: Build an Implementation Brief}
 
 The implementation brief is the handoff format for a busy colleague. It bundles
 search, label selection, context extraction, consistency checking, and optional
@@ -892,7 +1501,7 @@ supports that claim.
 
 \part{Case Studies}
 
-\chapter{Kalman State-Space Likelihood}
+\chapter{Workflow 8: Kalman State-Space Likelihood}
 
 \section*{Colleague scenario}
 
@@ -1694,6 +2303,19 @@ The highest-risk modules are:
   \item \texttt{release\_corpus.py}, for privacy redaction and manifest shape;
   \item \texttt{parser\_policy.py}, for proof-audit parser routing;
   \item \texttt{proof\_audit\_v2.py}, for verification-boundary reporting;
+  \item \texttt{status\_taxonomy.py}, for public status and substatus
+        vocabulary;
+  \item \texttt{equation\_locator.py} and \texttt{latex\_index.py}, for
+        source-local equation provenance;
+  \item \texttt{assumption\_manifest.py}, \texttt{conventions.py}, and
+        \texttt{dependency\_graph.py}, for diagnostic context management;
+  \item \texttt{matrix\_ir.py}, for noncommutative operator diagnostics;
+  \item \texttt{proof\_packet.py}, \texttt{negative\_evidence.py}, and
+        \texttt{claim\_support.py}, for durable review artifacts;
+  \item \texttt{domain\_templates.py}, for governed domain decompositions;
+  \item \texttt{code\_contracts.py}, for implementation-boundary diagnostics;
+  \item \texttt{lean\_readiness.py}, for direct Lean, Lake, and LeanDojo
+        readiness separation;
   \item \texttt{mcp\_facade.py} and \texttt{cli.py}, for public tool surfaces.
 \end{itemize}
 
@@ -1946,11 +2568,21 @@ To add a new mathematical domain, follow this release path:
   \item Add a small public or sanitized fixture with at least one labeled
         mathematical block.
   \item Add paired code showing the relevant operations or a seeded mismatch.
+  \item Add an assumption-manifest and convention fixture if the domain relies
+        on shape, sign, measure, unit, or support conventions.
+  \item Add a domain-template entry only if the decomposition is reusable and
+        can name generated obligations, required assumptions, diagnostic routes,
+        failure modes, positive fixtures, negative fixtures, and certification
+        boundary text.
   \item Extend AST operation extraction only if the new operation is genuinely
         needed.
   \item Add benchmark cases for parser preservation, AST operation coverage,
         and expected abstention behavior.
+  \item Add matrix/operator IR or typed-diagnostic coverage if the domain uses
+        noncommutative algebra or shape-sensitive identities.
   \item Add release corpus metadata.
+  \item Add proof-packet or negative-evidence examples when the domain will be
+        used for colleague-facing review.
   \item Add a report case study and generated evidence snippet if the domain is
         release-facing.
   \item Update private manifest templates only with placeholder paths.
@@ -2082,12 +2714,24 @@ private paths redacted. \\
 Command & Purpose \\
 \midrule
 \texttt{doctor} & Report runtime capabilities and optional backend status. \\
+\texttt{status-taxonomy} & Print the public status and substatus taxonomy. \\
 \texttt{search-latex} & Search a LaTeX source tree for relevant context. \\
-\texttt{extract-latex-neighborhood} & Extract paragraph context around a label. \\
-\texttt{compare-label-code} & Compare labeled document terms to code. \\
+\texttt{index-latex} & Build a LaTeX index with labels, blocks, and equation-row localization. \\
+\texttt{latex-label-lookup} & Fetch a labeled block with paragraph context and provenance. \\
+\texttt{audit-implementation-label} & Audit labeled document terms and operations against code. \\
+\texttt{domain-templates} & Print the governed diagnostic domain-template catalog. \\
+\texttt{suggest-domain-templates} & Suggest domain templates from label, section path, or equation text. \\
+\texttt{generate-template-obligations} & Generate diagnostic obligations from a domain template. \\
+\texttt{typed-obligation-label} & Build typed and dimensional diagnostics for a labeled obligation. \\
+\texttt{check-equality} & Check a bounded equality under explicit assumptions. \\
 \texttt{audit-derivation-v2-label} & Build typed proof-audit evidence for a label. \\
+\texttt{proof-packet-label} & Build a durable proof packet around a labeled block. \\
+\texttt{negative-evidence-label} & Build a packet for blocked, mismatching, or otherwise negative evidence. \\
+\texttt{claim-support} & Build a local claim-support packet without treating citations as proof. \\
 \texttt{implementation-brief} & Bundle search, context, and code checks. \\
+\texttt{lean-readiness} & Report direct Lean, Lake, and LeanDojo readiness separately. \\
 \texttt{benchmark-gate} & Run the release benchmark gate. \\
+\texttt{release-profile-analysis} & Analyze current readiness across all release profiles. \\
 \texttt{validate-release-corpus} & Validate public and configured private corpus metadata. \\
 \texttt{release-readiness} & Produce a profile-specific release report. \\
 \bottomrule

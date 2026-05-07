@@ -446,7 +446,7 @@ def make_parser() -> argparse.ArgumentParser:
     p_code.add_argument("--limit", type=int, default=20, help="Maximum results")
     p_code.set_defaults(func=_cmd_search_code_docs)
 
-    p_compare = sub.add_parser("compare-doc-code", help="Compare document text against code text")
+    p_compare = sub.add_parser("compare-doc-code", help="Compare a document file against a code file")
     p_compare.add_argument("doc", help="Document file path")
     p_compare.add_argument("code", help="Code file path")
     p_compare.add_argument("--required-terms", default="", help="Comma-separated required terms")

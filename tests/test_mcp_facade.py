@@ -29,6 +29,10 @@ def test_list_mcp_tools_includes_implementation_brief():
     assert tools["compare_label_code"]["replacement"] == "audit_implementation_label"
     assert tools["check_proof_obligation"]["deprecated"] is True
     assert tools["check_proof_obligation"]["replacement"] == "check_equality"
+    compare_doc_code = tools["compare_doc_code"]
+    assert "filesystem paths" in compare_doc_code["description"]
+    assert "not raw text" in compare_doc_code["description"]
+    assert "document text against code text" not in compare_doc_code["description"]
 
 
 

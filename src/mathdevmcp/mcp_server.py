@@ -82,7 +82,7 @@ def search_code_docs(root: str, query: str, limit: int = 20) -> list[dict]:
     return call_mcp_tool("search_code_docs", {"root": root, "query": query, "limit": limit})
 
 
-@mcp.tool(description="Compare document text against code text.", structured_output=False)
+@mcp.tool(description="Compare a document file against a code file; doc and code must be filesystem paths, not raw text.", structured_output=False)
 def compare_doc_code(doc: str, code: str, required_terms: Sequence[str] | None = None) -> dict:
     return call_mcp_tool(
         "compare_doc_code",

@@ -342,7 +342,7 @@ MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
         replacement="latex_label_lookup",
     ),
     MCPToolSpec("search_code_docs", _tool_search_code_docs, "Search code and document files together.", "code_doc_search_results", "primitive"),
-    MCPToolSpec("compare_doc_code", _tool_compare_doc_code, "Compare document text against code text.", "doc_code_consistency_result", "workflow", stability="experimental"),
+    MCPToolSpec("compare_doc_code", _tool_compare_doc_code, "Compare a document file against a code file; doc and code must be filesystem paths, not raw text.", "doc_code_consistency_result", "workflow", stability="experimental"),
     MCPToolSpec("audit_implementation_label", _tool_audit_implementation_label, "Audit a labeled document block against a code implementation.", "implementation_audit_result", "workflow"),
     MCPToolSpec(
         "compare_label_code",

@@ -95,6 +95,7 @@ def test_call_mcp_tool_implementation_brief_returns_consistent_result():
     assert result["status"] == "consistent"
     assert result["selected_label"] == "prop:transport-logdet"
     assert result["metadata"] == {"schema_version": "1.0", "contract": "implementation_brief"}
+    assert result["partial_certification_summary"]["overall_status"] == "diagnostic_only"
     assert result["ok"] is True
 
 
@@ -125,6 +126,29 @@ def test_call_mcp_tool_implementation_brief_reuses_cache(tmp_path):
     assert cold["cache"] == {"path": str(cache), "hit": False}
     assert warm["cache"] == {"path": str(cache), "hit": True}
     assert warm["status"] == "consistent"
+
+
+def test_call_mcp_tool_implementation_brief_reports_partial_certification():
+    result = call_mcp_tool(
+        "implementation_brief",
+        {
+            "root": str(FIXTURES),
+            "query": "transport identity",
+            "label": "prop:transport-mismatch",
+            "code": str(FIXTURES / "doc_consistency_bad.py"),
+            "required_terms": ["logdet"],
+            "lhs": "log_pi + logdet",
+            "rhs": "log_pi + logdet",
+        },
+    )
+
+    summary = result["partial_certification_summary"]
+    assert result["status"] == "mismatch"
+    assert summary["overall_status"] == "partial_certification"
+    assert summary["certified"] == ["scoped derivation equality"]
+    assert "full LaTeX/code contract" in summary["not_certified"]
+    assert "label search" in summary["diagnostic_only"]
+    assert summary["recommended_next_tool"] == "audit_temporal_contract"
 
 
 def test_call_mcp_tool_audit_kalman_recursion_returns_ast_evidence():
@@ -217,3 +241,39 @@ def test_call_mcp_tool_returns_structured_error_for_invalid_arguments():
         "error": {"type": "invalid_arguments", "message": "Missing required string argument: code"},
         "metadata": {"schema_version": "1.0", "contract": "error"},
     }
+
+
+def test_call_mcp_tool_reports_recoverable_missing_label_stage():
+    result = call_mcp_tool(
+        "compare_label_code",
+        {
+            "root": str(FIXTURES),
+            "label": "sec:missing-label",
+            "code": str(FIXTURES / "doc_consistency_good.py"),
+        },
+    )
+
+    assert result["ok"] is False
+    assert result["error"] == {"type": "tool_execution_error", "message": "MathDevMCP tool failed during execution: compare_label_code"}
+    assert result["diagnostics"]["stage"] == "retrieve_label"
+    assert result["diagnostics"]["exception_type"] == "KeyError"
+    assert result["diagnostics"]["recoverable"] is True
+    assert "search_latex" in result["diagnostics"]["suggested_action"]
+    assert result["diagnostics"]["input_summary"]["code"]["looks_like_path"] is True
+
+
+def test_call_mcp_tool_reports_recoverable_missing_code_stage():
+    result = call_mcp_tool(
+        "audit_implementation_label",
+        {
+            "root": str(FIXTURES),
+            "label": "prop:transport-logdet",
+            "code": str(FIXTURES / "missing_code_file.py"),
+        },
+    )
+
+    assert result["ok"] is False
+    assert result["error"]["type"] == "tool_execution_error"
+    assert result["diagnostics"]["stage"] == "read_code"
+    assert result["diagnostics"]["exception_type"] == "FileNotFoundError"
+    assert result["diagnostics"]["input_summary"]["code"]["exists"] is False

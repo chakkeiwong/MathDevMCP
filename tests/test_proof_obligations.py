@@ -29,6 +29,44 @@ def test_check_proof_obligation_uses_sympy_for_commutative_identity():
     assert result["evidence"][0]["backend_status"] == "proved"
 
 
+def test_check_proof_obligation_certifies_sgu_euler_residual_normalization():
+    result = check_proof_obligation(
+        "(beta*(1+r)*exp(mu)*exp(lamp)-exp(lam))/exp(lam)",
+        "beta*(1+r)*exp(mu+lamp-lam)-1",
+        assumptions=["exp(lam) != 0"],
+        backend="sympy",
+    )
+
+    assert result["status"] == "equivalent"
+    evidence = result["evidence"][0]
+    assert evidence["kind"] == "backend_verified"
+    assert evidence["readable_rhs"] == "beta*(1+r)*exp(mu+lamp-lam)-1"
+    assert "exp(mu+lamp-lam)" in evidence["readable_rhs"]
+
+
+def test_check_proof_obligation_certifies_sgu_capital_foc_normalization():
+    result = check_proof_obligation(
+        "(q*exp(lam)-beta*rk*exp(mu)*exp(lamp))/exp(lam)",
+        "q-beta*rk*exp(mu+lamp-lam)",
+        assumptions=["exp(lam) != 0"],
+        backend="sympy",
+    )
+
+    assert result["status"] == "equivalent"
+    assert result["evidence"][0]["kind"] == "backend_verified"
+
+
+def test_check_proof_obligation_evidence_keeps_readable_exp_display():
+    result = check_proof_obligation(
+        "b*(1+r)*exp(m+lp-l)-1",
+        "b*(1+r)*exp(m+lp-l)-1",
+    )
+
+    evidence = result["evidence"][0]
+    assert evidence["readable_rhs"] == "b*(1+r)*exp(m+lp-l)-1"
+    assert evidence["normalized_rhs"] == "b*(1+r)*expm+lp-l-1"
+
+
 def test_check_proof_obligation_flags_numeric_mismatch_with_sympy():
     result = check_proof_obligation("1 + 1", "3", backend="sympy")
 

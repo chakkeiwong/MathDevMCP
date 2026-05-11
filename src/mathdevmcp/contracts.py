@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Literal
+from typing import Any, Literal
 
 Status = Literal["consistent", "mismatch", "unverified", "inconclusive", "equivalent"]
 ErrorType = Literal["invalid_arguments", "unknown_tool", "tool_execution_error"]
@@ -68,12 +68,15 @@ def attach_contract(result: dict, contract: str, doc_context: dict | None = None
     return result
 
 
-def error_result(error_type: ErrorType, message: str, *, contract: str = "error") -> dict:
-    return {
+def error_result(error_type: ErrorType, message: str, *, contract: str = "error", diagnostics: dict[str, Any] | None = None) -> dict:
+    result = {
         "ok": False,
         "error": asdict(ErrorEnvelope(type=error_type, message=message)),
         "metadata": contract_metadata(contract),
     }
+    if diagnostics:
+        result["diagnostics"] = diagnostics
+    return result
 
 
 def success_result(result: dict, *, contract: str | None = None, doc_context: dict | None = None) -> dict:

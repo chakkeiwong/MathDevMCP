@@ -899,8 +899,14 @@ DSGE, macro equilibrium, and perturbation &
 declare steady-state, determinacy, differentiability,
 conformability, and shock-process assumptions. Use matrix IR and typed
 diagnostics for Kronecker, Sylvester, Jacobian, Hessian, and policy-function
-obligations. Future templates should add Euler-equation, Taylor-rule,
-Blanchard-Kahn, and perturbation-specific decompositions. \\
+obligations. A May 2026 DSGE timing audit found a validated product gap:
+current tools can support scoped algebra, drift checks, and an experimental
+explicit-binding audit for current/next code names, but they do not certify
+time-indexed label/code semantics such as current \(\mu_t\) versus next-period
+\(\mu_{t+1}\) in SGU Euler residuals. Future templates should add richer
+Euler-equation, Taylor-rule, Blanchard-Kahn, perturbation-specific
+decompositions, and temporal-binding diagnostics before claiming Dynare-style
+reference equivalence. \\
 HMC, transforms, and posterior geometry &
 \path{hmc_transform_jacobian_v1}, \path{matrix_ir},
 \path{numeric_diagnostics}, \path{lean-readiness},
@@ -2372,6 +2378,14 @@ one is a proof of semantic equivalence. When a project uses domain-specific
 idioms such as factorizations, automatic differentiation, or generated kernels,
 the benchmark should grow to recognize those idioms explicitly.
 
+For DSGE and macro-finance code, this boundary also includes time indexing. A
+generic term comparison can see \texttt{mu}, \texttt{lambda}, or a normalized
+residual without proving that the implementation used the current state,
+next-period state, current jump variable, or policy-implied future jump variable
+intended by the document. The experimental temporal-binding audit checks only
+explicit current/next code-name contracts; richer reference-snippet comparison
+remains a roadmap item, not a current release certificate.
+
 \section{Operational boundary}
 
 Full release readiness depends on the operator's environment. LaTeXML, Lean,
@@ -2723,6 +2737,7 @@ Command & Purpose \\
 \texttt{suggest-domain-templates} & Suggest domain templates from label, section path, or equation text. \\
 \texttt{generate-template-obligations} & Generate diagnostic obligations from a domain template. \\
 \texttt{typed-obligation-label} & Build typed and dimensional diagnostics for a labeled obligation. \\
+\texttt{audit-temporal-contract} & Audit explicit current/next code-name bindings against a labeled context. \\
 \texttt{check-equality} & Check a bounded equality under explicit assumptions. \\
 \texttt{audit-derivation-v2-label} & Build typed proof-audit evidence for a label. \\
 \texttt{proof-packet-label} & Build a durable proof packet around a labeled block. \\

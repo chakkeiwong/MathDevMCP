@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+import re
 from typing import Any
 
 from .benchmarks import benchmark_gate_report, build_benchmark_report, run_derivation_benchmark, run_label_consistency_benchmark, run_seeded_mismatch_benchmark, run_workflow_benchmark, summarize_benchmark_results
@@ -32,6 +33,7 @@ from .release_corpus import release_corpus_manifest, validate_release_corpus_man
 from .release_profile_analysis import release_profile_analysis
 from .release_policy import release_readiness_report
 from .status_taxonomy import status_taxonomy
+from .temporal_contracts import audit_temporal_contract
 from .typed_workflows import typed_obligation_for_label
 from .tool_matrix import tool_matrix
 from .workflow import build_implementation_brief
@@ -63,6 +65,82 @@ def _required_string(args: dict[str, Any], name: str) -> str:
     if not isinstance(value, str) or not value:
         raise ValueError(f"Missing required string argument: {name}")
     return value
+
+
+def _looks_like_path(value: str) -> bool:
+    return (
+        "/" in value
+        or "\\" in value
+        or value.startswith(".")
+        or bool(re.search(r"\.(py|tex|md|json|txt|lean)\b", value))
+    )
+
+
+def _path_exists_for_summary(value: str) -> bool:
+    try:
+        return Path(value).exists()
+    except (OSError, ValueError):
+        return False
+
+
+def _redacted_input_summary(arguments: dict[str, Any]) -> dict[str, Any]:
+    summary: dict[str, Any] = {}
+    for key, value in arguments.items():
+        if isinstance(value, str):
+            looks_like_path = _looks_like_path(value)
+            summary[key] = {
+                "type": "str",
+                "chars": len(value),
+                "looks_like_path": looks_like_path,
+                "exists": _path_exists_for_summary(value) if looks_like_path else False,
+            }
+        elif isinstance(value, list):
+            summary[key] = {"type": "list", "items": len(value)}
+        elif value is None:
+            summary[key] = {"type": "null"}
+        else:
+            summary[key] = {"type": type(value).__name__}
+    return summary
+
+
+def _failure_stage(exc: Exception) -> str:
+    if isinstance(exc, KeyError):
+        return "retrieve_label"
+    if isinstance(exc, FileNotFoundError):
+        return "read_code"
+    if isinstance(exc, SyntaxError):
+        return "parse_code"
+    message = str(exc).lower()
+    if "label" in message:
+        return "retrieve_label"
+    if "latex" in message or "tex" in message:
+        return "parse_latex"
+    if "sympy" in message or "backend" in message:
+        return "backend"
+    return "compare"
+
+
+def _suggested_action(stage: str) -> str:
+    suggestions = {
+        "retrieve_label": "Verify the label with search_latex or rebuild the LaTeX index/cache.",
+        "read_code": "Check that the code argument is an existing readable file path.",
+        "parse_code": "Check that the code file is valid Python for AST-based audit.",
+        "parse_latex": "Inspect the LaTeX source and retry with a fresh index/cache.",
+        "backend": "Retry with a supported backend or inspect backend readiness diagnostics.",
+        "compare": "Check the tool arguments and narrow the requested comparison.",
+    }
+    return suggestions.get(stage, "Check the tool arguments and retry with a narrower request.")
+
+
+def _tool_failure_diagnostics(exc: Exception, arguments: dict[str, Any]) -> dict[str, Any]:
+    stage = _failure_stage(exc)
+    return {
+        "stage": stage,
+        "exception_type": exc.__class__.__name__,
+        "recoverable": True,
+        "suggested_action": _suggested_action(stage),
+        "input_summary": _redacted_input_summary(arguments),
+    }
 
 
 def _index_for_args(args: dict[str, Any]) -> dict[str, Any]:
@@ -262,6 +340,20 @@ def _tool_typed_obligation_label(args: dict[str, Any]) -> dict[str, Any]:
     )
 
 
+def _tool_audit_temporal_contract(args: dict[str, Any]) -> dict[str, Any]:
+    bindings = args.get("required_bindings")
+    if not isinstance(bindings, dict):
+        raise ValueError("required_bindings must be a mapping from temporal symbols to binding specs")
+    return audit_temporal_contract(
+        _required_string(args, "root"),
+        _required_string(args, "label"),
+        _required_string(args, "code"),
+        bindings,
+        before=int(args.get("before", 1)),
+        after=int(args.get("after", 1)),
+    )
+
+
 def _tool_run_benchmarks(args: dict[str, Any]) -> dict[str, Any]:
     root = Path(_required_string(args, "root"))
     return build_benchmark_report(root)
@@ -343,11 +435,11 @@ MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
     ),
     MCPToolSpec("search_code_docs", _tool_search_code_docs, "Search code and document files together.", "code_doc_search_results", "primitive"),
     MCPToolSpec("compare_doc_code", _tool_compare_doc_code, "Compare a document file against a code file; doc and code must be filesystem paths, not raw text.", "doc_code_consistency_result", "workflow", stability="experimental"),
-    MCPToolSpec("audit_implementation_label", _tool_audit_implementation_label, "Audit a labeled document block against a code implementation.", "implementation_audit_result", "workflow"),
+    MCPToolSpec("audit_implementation_label", _tool_audit_implementation_label, "Audit a labeled document block against a code file path.", "implementation_audit_result", "workflow"),
     MCPToolSpec(
         "compare_label_code",
         _tool_compare_label_code,
-        "Deprecated alias for audit_implementation_label.",
+        "Deprecated alias for audit_implementation_label; code must be a file path.",
         "label_consistency_result",
         "workflow",
         stability="deprecated",
@@ -355,7 +447,7 @@ MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
         replacement="audit_implementation_label",
     ),
     MCPToolSpec("derive_label_step", _tool_derive_label_step, "Check a derivation step against labeled document context.", "label_derivation_result", "workflow", certifying_capable=True),
-    MCPToolSpec("implementation_brief", _tool_implementation_brief, "Build a document-grounded implementation brief.", "implementation_brief", "workflow"),
+    MCPToolSpec("implementation_brief", _tool_implementation_brief, "Build a document-grounded implementation brief for a code file path.", "implementation_brief", "workflow"),
     MCPToolSpec(
         "check_equality",
         _tool_check_equality,
@@ -404,8 +496,9 @@ MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
         certifying_capable=True,
         optional_capability="symbolic_backend",
     ),
-    MCPToolSpec("audit_kalman_recursion", _tool_audit_kalman_recursion, "Audit AST-level Kalman recursion structure in Python code.", "kalman_recursion_audit", "workflow"),
+    MCPToolSpec("audit_kalman_recursion", _tool_audit_kalman_recursion, "Audit AST-level Kalman recursion structure in Python code text or a code file path.", "kalman_recursion_audit", "workflow"),
     MCPToolSpec("typed_obligation_label", _tool_typed_obligation_label, "Build typed/dimensional diagnostics for a labeled math obligation.", "typed_obligation_label_diagnostic", "workflow"),
+    MCPToolSpec("audit_temporal_contract", _tool_audit_temporal_contract, "Audit explicit current/next temporal bindings between a labeled DSGE-style document context and a code file path.", "temporal_contract_audit", "workflow", stability="experimental"),
     MCPToolSpec("run_benchmarks", _tool_run_benchmarks, "Run seeded consistency benchmarks.", "benchmark_results", "operational"),
     MCPToolSpec("benchmark_gate", _tool_benchmark_gate, "Return CI-friendly benchmark gate results.", "benchmark_gate", "operational"),
     MCPToolSpec("tool_matrix", _tool_tool_matrix, "Return the current MathDevMCP tool matrix.", "tool_matrix", "informational", server_name="get_tool_matrix"),
@@ -457,7 +550,11 @@ def call_mcp_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any] | list
         return _wrap_tool_result(handler(arguments))
     except ValueError as exc:
         return error_result("invalid_arguments", str(exc))
-    except Exception:
+    except Exception as exc:
         # MCP clients need a stable public envelope. Raw tracebacks and local
         # paths belong in logs/debug sessions, not in default tool responses.
-        return error_result("tool_execution_error", f"MathDevMCP tool failed during execution: {name}")
+        return error_result(
+            "tool_execution_error",
+            f"MathDevMCP tool failed during execution: {name}",
+            diagnostics=_tool_failure_diagnostics(exc, arguments),
+        )

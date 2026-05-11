@@ -9,6 +9,56 @@ from .index_cache import load_or_build_index
 from .latex_index import build_index, extract_paragraph_context_for_label, search_index
 
 
+def _partial_certification_summary(brief: dict) -> dict:
+    consistency = brief.get("checks", {}).get("consistency")
+    derivation = brief.get("checks", {}).get("derivation")
+    certified: list[str] = []
+    not_certified: list[str] = []
+    diagnostic_only: list[str] = []
+    tool_failures: list[str] = []
+
+    if brief.get("search_results"):
+        diagnostic_only.append("label search")
+    if brief.get("doc_context"):
+        context_status = brief["doc_context"].get("status")
+        diagnostic_only.append("fallback label context" if context_status == "fallback_text_context" else "label context")
+    if consistency is not None:
+        if consistency.get("status") == "mismatch":
+            not_certified.append("full LaTeX/code contract")
+        elif consistency.get("status") == "consistent":
+            diagnostic_only.append("code/document term comparison")
+        else:
+            not_certified.append("code/document term comparison")
+    if derivation is not None:
+        if derivation.get("status") == "equivalent":
+            certified.append("scoped derivation equality")
+        elif derivation.get("status") == "mismatch":
+            not_certified.append("scoped derivation equality")
+        else:
+            diagnostic_only.append("scoped derivation equality")
+    for name, check in brief.get("checks", {}).items():
+        if isinstance(check, dict) and check.get("ok") is False:
+            tool_failures.append(name)
+
+    if certified and (not_certified or diagnostic_only or tool_failures):
+        overall_status = "partial_certification"
+    elif not_certified or tool_failures:
+        overall_status = "not_certified"
+    elif certified:
+        overall_status = "certified_subclaims"
+    else:
+        overall_status = "diagnostic_only"
+    recommended_next_tool = "audit_temporal_contract" if not_certified else "audit_derivation_v2_label"
+    return {
+        "overall_status": overall_status,
+        "certified": certified,
+        "not_certified": not_certified,
+        "diagnostic_only": diagnostic_only,
+        "tool_failures": tool_failures,
+        "recommended_next_tool": recommended_next_tool,
+    }
+
+
 def build_implementation_brief(
     doc_root: str,
     query: str,
@@ -79,4 +129,5 @@ def build_implementation_brief(
         brief["reason"] = "The selected document context is consistent with the checked code terms."
     else:
         brief["reason"] = "The implementation brief could not reach a definitive status."
+    brief["partial_certification_summary"] = _partial_certification_summary(brief)
     return success_result(attach_contract(brief, "implementation_brief", doc_context=brief.get("doc_context")))

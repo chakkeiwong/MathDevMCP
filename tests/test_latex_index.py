@@ -131,6 +131,54 @@ For an invertible map $T$, the density includes $\log |\det J_T|$.
     assert context["block_id"].endswith("proposition:prop:logdet")
 
 
+def test_extract_context_for_section_label_falls_back_to_text_search(tmp_path: Path):
+    tex = tmp_path / "chapter.tex"
+    tex.write_text(
+        "\n".join(
+            [
+                r"\section{Marginal-Utility Timing and Dynare Comparison}",
+                r"\label{sec:sgu_marginal_utility_timing}",
+                "The Euler residual uses current mu and future lambda.",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    index = build_index(tmp_path)
+    context = extract_context_for_label(index, "sec:sgu_marginal_utility_timing", before=1, after=1)
+
+    assert context["status"] == "fallback_text_context"
+    assert context["label"] == "sec:sgu_marginal_utility_timing"
+    assert context["kind"] == "unknown"
+    assert context["block_id"] is None
+    assert context["file"] == "chapter.tex"
+    assert context["line_start"] == 2
+    assert "label_not_in_index" in context["warnings"]
+    assert any("Marginal-Utility Timing" in line["text"] for line in context["excerpt"])
+
+
+def test_extract_paragraph_context_for_section_label_falls_back_to_text_search(tmp_path: Path):
+    tex = tmp_path / "chapter.tex"
+    tex.write_text(
+        "\n".join(
+            [
+                r"\section{Marginal-Utility Timing and Dynare Comparison}",
+                r"\label{sec:sgu_marginal_utility_timing}",
+                "The Euler residual uses current mu and future lambda.",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    index = build_index(tmp_path)
+    context = extract_paragraph_context_for_label(index, "sec:sgu_marginal_utility_timing", before=0, after=0)
+
+    assert context["status"] == "fallback_text_context"
+    assert context["label"] == "sec:sgu_marginal_utility_timing"
+    assert context["paragraphs"][0]["line_start"] == 1
+    assert "latex_ast_block_parse_failed_or_stale_cache" in context["warnings"]
+
+
 
 def test_extract_paragraph_context_for_label_returns_neighboring_exposition(tmp_path: Path):
     tex = tmp_path / "chapter.tex"

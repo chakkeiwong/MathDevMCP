@@ -12,6 +12,8 @@ from .math_normalization import normalize_math_text
 BACKENDS = {"auto", "sympy", "sage", "z3"}
 MAX_EXPRESSION_LENGTH = 500
 _ALLOWED_EXPRESSION = re.compile(r"^[A-Za-z0-9_+\-*/()., ^]+$")
+_IDENTIFIER = re.compile(r"\b[A-Za-z_][A-Za-z0-9_]*\b")
+_SAFE_FUNCTIONS = {"exp", "log", "sin", "cos", "sqrt"}
 
 
 @dataclass(frozen=True)
@@ -26,16 +28,37 @@ class ProofObligation:
 
 
 def _backend_evidence(kind: str, backend: str, backend_status: str, reason: str, *, lhs: str, rhs: str, assumptions: list[str], severity: str) -> dict:
+    normalized_lhs = normalize_math_text(lhs)
+    normalized_rhs = normalize_math_text(rhs)
     return {
         "kind": kind,
         "backend": backend,
         "backend_status": backend_status,
         "reason": reason,
-        "normalized_lhs": normalize_math_text(lhs),
-        "normalized_rhs": normalize_math_text(rhs),
+        "normalized_lhs": normalized_lhs,
+        "normalized_rhs": normalized_rhs,
+        "readable_lhs": lhs,
+        "readable_rhs": rhs,
         "assumptions": assumptions,
         "severity": severity,
     }
+
+
+def _sympy_locals(lhs: str, rhs: str) -> dict[str, object]:
+    import sympy as sp
+
+    safe_functions = {
+        "exp": sp.exp,
+        "log": sp.log,
+        "sin": sp.sin,
+        "cos": sp.cos,
+        "sqrt": sp.sqrt,
+    }
+    identifiers = set(_IDENTIFIER.findall(lhs)) | set(_IDENTIFIER.findall(rhs))
+    locals_dict: dict[str, object] = {name: safe_functions[name] for name in identifiers & _SAFE_FUNCTIONS}
+    for name in sorted(identifiers - _SAFE_FUNCTIONS):
+        locals_dict[name] = sp.Symbol(name)
+    return locals_dict
 
 
 def _validate_expression_input(lhs: str, rhs: str) -> str | None:
@@ -76,8 +99,9 @@ def _sympy_check(lhs: str, rhs: str, assumptions: list[str]) -> tuple[str, dict]
         import sympy as sp
         from sympy.parsing.sympy_parser import parse_expr
 
-        lhs_expr = parse_expr(lhs, evaluate=False)
-        rhs_expr = parse_expr(rhs, evaluate=False)
+        locals_dict = _sympy_locals(lhs, rhs)
+        lhs_expr = parse_expr(lhs, local_dict=locals_dict, evaluate=False)
+        rhs_expr = parse_expr(rhs, local_dict=locals_dict, evaluate=False)
         difference = sp.simplify(lhs_expr - rhs_expr)
     except Exception as exc:
         evidence = _backend_evidence(

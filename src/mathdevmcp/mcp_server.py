@@ -28,6 +28,7 @@ MCP_SERVER_EXPOSED_TOOLS = {
     "audit_derivation_v2_label",
     "audit_kalman_recursion",
     "typed_obligation_label",
+    "audit_temporal_contract",
     "run_benchmarks",
     "benchmark_gate",
     "get_tool_matrix",
@@ -301,6 +302,28 @@ def typed_obligation_label(root: str, label: str, backend: str = "sympy", contex
             "label": label,
             "backend": backend,
             "context_text": context_text,
+        },
+    )
+
+
+@mcp.tool(description="Audit explicit current/next temporal bindings between a labeled DSGE-style document context and a code file path.", structured_output=False)
+def audit_temporal_contract(
+    root: str,
+    label: str,
+    code: str,
+    required_bindings: dict,
+    before: int = 1,
+    after: int = 1,
+) -> dict:
+    return call_mcp_tool(
+        "audit_temporal_contract",
+        {
+            "root": root,
+            "label": label,
+            "code": code,
+            "required_bindings": required_bindings,
+            "before": before,
+            "after": after,
         },
     )
 

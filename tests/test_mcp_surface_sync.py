@@ -107,8 +107,22 @@ def test_mcp_unexpected_exception_returns_stable_error(monkeypatch):
 
     result = call_mcp_tool("doctor", {})
 
-    assert result == {
-        "ok": False,
-        "error": {"type": "tool_execution_error", "message": "MathDevMCP tool failed during execution: doctor"},
-        "metadata": {"schema_version": "1.0", "contract": "error"},
-    }
+    assert result["ok"] is False
+    assert result["error"] == {"type": "tool_execution_error", "message": "MathDevMCP tool failed during execution: doctor"}
+    assert result["metadata"] == {"schema_version": "1.0", "contract": "error"}
+    assert result["diagnostics"]["exception_type"] == "RuntimeError"
+    assert "/home/chakwong/secret" not in str(result)
+
+
+def test_mcp_error_diagnostics_tolerate_invalid_path_like_input(monkeypatch):
+    def broken_handler(_args):
+        raise RuntimeError("boom")
+
+    monkeypatch.setitem(TOOL_HANDLERS, "doctor", broken_handler)
+
+    result = call_mcp_tool("doctor", {"code": "bad\x00path.py"})
+
+    assert result["ok"] is False
+    assert result["error"]["type"] == "tool_execution_error"
+    assert result["diagnostics"]["input_summary"]["code"]["looks_like_path"] is True
+    assert result["diagnostics"]["input_summary"]["code"]["exists"] is False

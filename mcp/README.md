@@ -35,6 +35,9 @@ Facade registry: `src/mathdevmcp/mcp_facade.py`
 - `audit_kalman_recursion` - audit AST-level Kalman recursion structure in code.
 - `typed_obligation_label` - build typed/dimensional diagnostics for a labeled
   math obligation.
+- `audit_temporal_contract` - experimentally audit explicit current/next
+  temporal bindings between a labeled DSGE-style document context and a code
+  file path. This is diagnostic and does not certify DSGE correctness.
 
 ### Operational Tools
 

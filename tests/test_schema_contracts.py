@@ -43,11 +43,12 @@ def test_mcp_facade_returns_structured_tool_execution_error(monkeypatch):
     monkeypatch.setitem(TOOL_HANDLERS, "doctor", broken_handler)
     result = call_mcp_tool("doctor", {})
 
-    assert result == {
-        "ok": False,
-        "error": {"type": "tool_execution_error", "message": "MathDevMCP tool failed during execution: doctor"},
-        "metadata": {"schema_version": "1.0", "contract": "error"},
-    }
+    assert result["ok"] is False
+    assert result["error"] == {"type": "tool_execution_error", "message": "MathDevMCP tool failed during execution: doctor"}
+    assert result["metadata"] == {"schema_version": "1.0", "contract": "error"}
+    assert result["diagnostics"]["exception_type"] == "RuntimeError"
+    assert result["diagnostics"]["stage"] == "compare"
+    assert "/home/chakwong/private/details" not in str(result)
     assert validate_contract_payload(result) == []
 
 

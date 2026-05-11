@@ -354,12 +354,49 @@ def extract_paragraph_context(root: Path, relative_path: str, line_start: int, l
     }
 
 
+def find_label_text_fallback(root: Path, label: str) -> dict | None:
+    root = root.resolve()
+    needle = rf"\label{{{label}}}"
+    for path in _discover_input_order(root):
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except UnicodeDecodeError:
+            continue
+        for index, line in enumerate(lines, start=1):
+            if needle in line:
+                return {
+                    "file": str(path.relative_to(root)),
+                    "line_start": index,
+                    "line_end": index,
+                    "label": label,
+                    "kind": "unknown",
+                    "block_id": None,
+                    "section_path": [],
+                    "status": "fallback_text_context",
+                    "warnings": ["label_not_in_index", "latex_ast_block_parse_failed_or_stale_cache"],
+                }
+    return None
+
+
+def _fallback_context(root: Path, label: str, before: int, after: int, *, paragraph: bool) -> dict:
+    fallback = find_label_text_fallback(root, label)
+    if fallback is None:
+        raise KeyError(f"Unknown label: {label}")
+    context = (
+        extract_paragraph_context(root, fallback["file"], fallback["line_start"], fallback["line_end"], before=before, after=after)
+        if paragraph
+        else extract_context(root, fallback["file"], fallback["line_start"], fallback["line_end"], before=before, after=after)
+    )
+    context.update(fallback)
+    return context
+
+
 
 def extract_paragraph_context_for_label(index: dict, label: str, before: int = 1, after: int = 1) -> dict:
     root = Path(index["root"])
     block = index.get("labels", {}).get(label)
     if not block:
-        raise KeyError(f"Unknown label: {label}")
+        return _fallback_context(root, label, before, after, paragraph=True)
     context = extract_paragraph_context(root, block["file"], block["line_start"], block["line_end"], before=before, after=after)
     context["label"] = label
     context["kind"] = block["kind"]
@@ -373,7 +410,7 @@ def extract_context_for_label(index: dict, label: str, before: int = 2, after: i
     root = Path(index["root"])
     block = index.get("labels", {}).get(label)
     if not block:
-        raise KeyError(f"Unknown label: {label}")
+        return _fallback_context(root, label, before, after, paragraph=False)
     context = extract_context(root, block["file"], block["line_start"], block["line_end"], before=before, after=after)
     context["label"] = label
     context["kind"] = block["kind"]

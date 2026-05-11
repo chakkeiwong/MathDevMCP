@@ -39,9 +39,20 @@ from .release_hypotheses import release_hypothesis_check
 from .release_profile_analysis import release_profile_analysis
 from .release_policy import RELEASE_PROFILES, release_readiness_report
 from .status_taxonomy import status_taxonomy
+from .temporal_contracts import audit_temporal_contract
 from .typed_workflows import typed_obligation_for_label
 from .tool_matrix import tool_matrix
 from .workflow import build_implementation_brief
+
+
+def _load_json_argument_or_file(value: str):
+    try:
+        path = Path(value)
+        if path.is_file():
+            return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        pass
+    return json.loads(value)
 
 
 def _cmd_index(args: argparse.Namespace) -> int:
@@ -338,6 +349,13 @@ def _cmd_typed_obligation_label(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_audit_temporal_contract(args: argparse.Namespace) -> int:
+    bindings = _load_json_argument_or_file(args.required_bindings)
+    result = audit_temporal_contract(args.root, args.label, args.code, bindings, before=args.before, after=args.after)
+    print(json.dumps(result, indent=2))
+    return 0
+
+
 def _cmd_release_corpus_manifest(args: argparse.Namespace) -> int:
     print(json.dumps(release_corpus_manifest(args.root, private_manifest=args.private_manifest or None), indent=2))
     return 0
@@ -614,6 +632,15 @@ def make_parser() -> argparse.ArgumentParser:
     p_typed_obligation.add_argument("--backend", choices=["auto", "sympy", "sage", "z3"], default="sympy", help="Backend preference for source proof audit")
     p_typed_obligation.add_argument("--context-text", default="", help="Optional explicit context/assumption text")
     p_typed_obligation.set_defaults(func=_cmd_typed_obligation_label)
+
+    p_temporal = sub.add_parser("audit-temporal-contract", help="Audit explicit current/next temporal bindings between a label and code")
+    p_temporal.add_argument("label", help="LaTeX label to inspect")
+    p_temporal.add_argument("code", help="Code file path")
+    p_temporal.add_argument("--root", default=".", help="Root directory containing LaTeX files")
+    p_temporal.add_argument("--required-bindings", required=True, help="JSON string or JSON file path with temporal binding specs")
+    p_temporal.add_argument("--before", type=int, default=1)
+    p_temporal.add_argument("--after", type=int, default=1)
+    p_temporal.set_defaults(func=_cmd_audit_temporal_contract)
 
     p_release_corpus = sub.add_parser("release-corpus-manifest", help="Print the release corpus manifest")
     p_release_corpus.add_argument("--root", default="benchmarks/fixtures", help="Root directory for public fixture entries")

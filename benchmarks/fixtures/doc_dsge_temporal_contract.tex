@@ -1,0 +1,7 @@
+\section{SGU Temporal Contract Fixture}
+\label{sec:sgu_marginal_utility_timing_fixture}
+
+The canonical SGU residual uses current preference wedge \(\mu_t\) and future
+policy-implied marginal utility \(\lambda_{t+1}\). A neural implementation must
+therefore use the current code binding \texttt{mu_cur} with future
+\texttt{lam_next}; using \texttt{mu_next} in the residual is a timing mismatch.

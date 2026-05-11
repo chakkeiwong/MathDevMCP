@@ -4,7 +4,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from .agent_workflows import audit_likelihood_implementation
-from .ast_operation_graph import build_ast_operation_graph_for_file
+from .ast_operation_graph import build_ast_operation_graph, build_ast_operation_graph_for_file
 from .contracts import attach_contract
 from .diagnostic_tests import suggest_diagnostic_tests
 from .notation import infer_symbol_hints
@@ -126,7 +126,8 @@ def audit_kalman_recursion(
     *,
     required_operations: list[str] | None = None,
 ) -> dict:
-    ast_graph = build_ast_operation_graph_for_file(code_path)
+    path = Path(code_path)
+    ast_graph = build_ast_operation_graph_for_file(path) if path.exists() else build_ast_operation_graph(code_path)
     if ast_graph["status"] == "inconclusive":
         result = KalmanRecursionAuditResult(
             status="inconclusive",

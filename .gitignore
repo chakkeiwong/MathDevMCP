@@ -27,3 +27,10 @@ artifacts/release-evidence/
 docs/algorithm.sty
 docs/algorithmicx.sty
 docs/algpseudocode.sty
+
+# Local agent scratch/work-in-progress artifacts.
+benchmarks/fixtures/literature/
+docs/plans/*-suggestion-memo-*.md
+docs/proof-carrying-derivation-agent-guide.md
+src/mathdevmcp/literature_gate.py
+tests/test_literature_gate.py

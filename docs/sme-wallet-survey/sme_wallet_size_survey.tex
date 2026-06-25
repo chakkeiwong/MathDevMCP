@@ -1,0 +1,2861 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage[numbers,sort&compress]{natbib}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue
+}
+
+\title{Estimating SME Banking Wallet Size and Product Propensity:\\
+A Survey of Relevant Literature and Modeling Approaches}
+\author{Chak Wong}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Retail banks that serve small and medium-sized enterprises (SMEs) often observe
+only a partial view of a business customer's financial life. A bank may know its
+own deposits, card spend, loans, treasury activity, and relationship history, but
+it rarely observes the customer's balances and product holdings at competing
+institutions. This creates a practical ``wallet size'' problem: estimate the
+products and balances an SME holds with competitors, with deposits as the main
+business object, and estimate how much of that wallet can realistically be moved
+to the focal bank. This survey
+reviews literatures that bear on the problem: cross-selling and next-product-to-buy
+models in financial services, share-of-wallet and customer-share models,
+structural bank deposit demand and bank competition, SME relationship lending,
+and causal response/uplift modeling. The main conclusion is that the exact
+end-to-end problem is not a single canonical academic model. It is better viewed
+as a composite decision system that combines latent wallet reconstruction,
+deposit and product demand estimation, offer-response modeling, and constrained
+profit optimization.
+\end{abstract}
+
+\section{Introduction}
+
+For a US retail bank serving SMEs, the commercially important question is
+deposit-led wallet opportunity. The bank wants to estimate the total financial
+wallet of the business, how much of that wallet sits with competitors, and how
+much of the competitor-held wallet is realistically movable to the focal bank.
+Deposits are the anchor product because they provide funding,
+transactional information, and a relationship platform for payments, lending,
+and treasury services. Other products matter, but the main use case in this
+paper is deposit-led wallet sizing rather than product-assortment design.
+
+The literature does not usually call this problem ``wallet size estimation.''
+Relevant work appears under several labels: cross-selling, cross-buying,
+next-product-to-buy, customer share, share-of-wallet, bank deposit demand,
+bank competition, and relationship lending. The practical modeling problem is
+therefore interdisciplinary. Marketing science contributes models of customer
+product ownership and campaign response. Industrial organization and banking
+economics contribute models of bank choice, deposit demand, and competition.
+SME finance contributes theories of relationship lending and the informational
+role of transaction accounts. Causal inference contributes methods for separating
+who is likely to buy from who is likely to buy because of a marketing action.
+
+This paper surveys these related literatures, organizes the model architectures
+that they imply, and then recommends an integrated architecture for a bank that
+wants to estimate competitor deposit wallet size and capture potential.
+
+\section{The SME Wallet-Size Problem}
+
+Let $i$ index an SME firm, $b$ index a bank, and $p$ index products such as
+demand deposits, savings deposits, credit cards, commercial real estate loans,
+term loans, lines of credit, merchant services, payroll, treasury management,
+and investment funds.
+Let
+\[
+  y_{ibp} \in \{0,1\}
+\]
+denote whether firm $i$ holds product $p$ at bank $b$, and let
+\[
+  a_{ibp} \geq 0
+\]
+denote the associated size, such as average deposit balance, outstanding loan
+balance, card spend, or assets under management. The total product-specific
+wallet is
+\[
+  W_{ip} = \sum_b a_{ibp}.
+\]
+For the focal bank $f$, the observed part is $a_{ifp}$ and $y_{ifp}$. The
+competitor component
+\[
+  W_{ip}^{-f} = \sum_{b \neq f} a_{ibp}
+\]
+is generally missing or only indirectly observed.
+
+In deployment, these objects should carry a time index because both product
+need and product size move over time. Write
+\[
+  A_{ipt}^{-f}=\sum_{b\neq f}a_{ibpt}
+\]
+for the competitor-held amount of product $p$ at decision time $t$. The
+business question is not only whether $A_{ipt}^{-f}$ is large. It is how much of
+that amount is addressable by a specific offer. Define
+\[
+  A_{ipo}^{\mathrm{addr}}(H)
+  =
+  M_{ipo}(H)A_{ipt}^{-f},
+  \qquad 0\leq M_{ipo}(H)\leq 1,
+\]
+where $M_{ipo}(H)$ is the structural offer- and horizon-specific movable
+fraction. This is not a generic purchase propensity. It is the fraction of
+competitor-held balances, borrowing, spend, or assets that can plausibly
+migrate to the focal bank under offer $o$ over horizon $H$. Operational reports
+may also show ratios such as moved dollars divided by estimated
+competitor-held dollars; those reporting ratios should be distinguished from
+the latent structural fraction $M_{ipo}(H)$.
+
+The decision problem has three parts. First, the bank wants an estimate of
+latent wallet state:
+\[
+  \Pr(y_{ibp}=1 \mid X_i,Z_{bt},A_{bpt},M_t), \qquad
+  \mathbb{E}[a_{ibp} \mid X_i,Z_{bt},A_{bpt},M_t,y_{ibp}=1],
+\]
+especially for competitor banks $b \neq f$, where $Z_{bt}$ and $A_{bpt}$
+summarize bank and bank-product attributes observed or imputed by the model.
+Second, it wants the distribution of product amounts already held at
+competitors, $A_{ipt}^{-f}$, and the addressable amount
+$A_{ipo}^{\mathrm{addr}}(H)$. Third, for an offer or marketing action
+$o$---for example a deposit-rate offer, relationship-manager outreach,
+onboarding support, or operating-account proposal---the bank wants
+outcome-specific incremental effects. For a generic outcome $Y$,
+\[
+  \tau_{ipo}^{Y}
+  =
+  \mathbb{E}[Y_{ip}(o)-Y_{ip}(0)\mid \mathcal{I}_{it}],
+\]
+where $Y$ may be product ownership, balance dollars, spend, risk-adjusted
+relationship value, runoff, or retention. Balance lift, moved competitor
+dollars, and value lift are therefore related but distinct estimands.
+
+The distinction between prediction and causal response is crucial. A model can
+predict that a firm is likely to buy a loan or maintain large deposits without
+showing that a campaign will cause the firm to move wallet to the focal bank.
+It can also estimate a large competitor-held wallet without identifying how much
+of that wallet is movable. The literature reviewed below supports different
+parts of this system.
+
+\section{Literature Survey}
+
+This section groups the main bodies of literature relevant to SME wallet
+estimation. The key point is that the literature does not support a single
+static ``wallet size'' object. It supports several linked objects: latent
+product need, observed product ownership, customer share, bank choice, dynamic
+liquidity demand, and causal marketing response.
+
+\subsection{Cross-Selling and Product-Ownership Models}
+
+The closest direct literature is financial-services cross-selling. Early work
+by \citet{kamakura1991latent} applies latent trait analysis to evaluate
+prospects for cross-selling financial services. This line of work treats
+observed product holdings as noisy signals of latent customer needs, financial
+maturity, or product propensity. For a bank, this is directly relevant because
+competitor holdings are often latent and must be inferred from partial signals.
+
+\citet{kamakura2003database} extend the database-marketing perspective using a
+mixed-data factor-analyzer approach for data augmentation and prediction. The
+important practical insight is that product holdings, demographics, and monetary
+variables can be modeled jointly, so that missing or unobserved product
+positions are not handled as independent binary classification problems. This
+matters for SME wallet estimation because deposits, lending, merchant services,
+and cards are correlated through firm size, cash-flow volatility, owner wealth,
+industry, life-cycle stage, and bank relationship depth.
+
+Another directly relevant stream is next-product-to-buy (NPTB) modeling.
+\citet{knott2002nptb} describe NPTB models for cross-selling applications and
+evaluate their use in a field setting. In banking, an NPTB model can rank likely
+products for each SME relationship. The limitation is that a next-product model
+usually optimizes product targeting, not total competitor wallet reconstruction.
+It answers ``what is the next product to offer?'' more directly than ``how large
+is the competitor-held deposit wallet?''
+
+\citet{li2005sequential} study cross-selling sequentially ordered products in
+consumer banking services using a structural multivariate probit framework. The
+paper is especially useful because banking products may follow life-cycle or
+business-maturity sequences: transaction accounts precede cards and merchant
+services; operating deposits may precede credit lines; treasury services may
+follow scale and complexity. For SME banking, the sequence is not identical to
+household financial maturity, but the modeling principle carries over: product
+ownership is dynamic and correlated across products.
+
+\subsection{Share-of-Wallet and Customer-Share Models}
+
+The share-of-wallet literature is relevant when the focal bank already has a
+relationship with the SME and wants to estimate the fraction of total financial
+activity captured by the bank. \citet{verhoef2003crm} examines how customer
+relationship perceptions and marketing instruments affect retention and
+customer share development over time. This literature separates retention from
+depth: keeping a customer is not the same as gaining a larger share of that
+customer's wallet.
+
+\citet{keiningham2003sow} study customer satisfaction and actual share-of-wallet
+in a business-to-business environment. This is relevant because SME banking is
+closer to relationship-managed B2B service than to anonymous retail product
+purchase. Satisfaction, relationship quality, and switching costs can affect
+whether an SME consolidates deposits, lending, cards, and treasury activity at
+one bank.
+
+For the bank's use case, customer-share models can be written as
+\[
+  s_{ipf} = \frac{a_{ifp}}{W_{ip}},
+\]
+where $s_{ipf}$ is the focal bank's share of the SME's product-$p$ wallet.
+When $W_{ip}$ is unknown, the model must combine internal balances with external
+signals, market benchmarks, credit bureau information, payments data, public
+records, firmographics, and statistical priors. This makes the share-of-wallet
+problem partly a missing-data problem and partly a market-demand problem.
+
+\subsection{Bank Deposit Demand and Competition}
+
+Deposit wallet estimation cannot be reduced to generic cross-selling because
+deposits have special economic features. Deposits are funding sources for banks,
+liquidity services for customers, and relationship anchors. They also respond to
+rates, fees, branch and digital convenience, safety perceptions, payment needs,
+and switching frictions.
+
+\citet{dick2008demand} estimates demand and welfare in the banking industry,
+providing a structural demand perspective for bank services. \citet{adams2007who}
+study competition among depository institutions, which is important for defining
+the relevant competitive set. For an SME in a local market, the competitors may
+not be all banks in the country; they may be nearby branch banks, digital banks,
+specialized lenders, card issuers, fintech payment providers, and industry
+specialists.
+
+\citet{egan2017deposit} estimate deposit competition and financial fragility in
+the US banking sector. Their work is relevant because deposit demand and bank
+competition affect how much of a customer's balances can realistically be moved
+by price or relationship offers. \citet{drechsler2017deposits} study the
+deposits channel of monetary policy, emphasizing the role of deposit market
+power and rate pass-through. For a wallet-size system, these papers motivate
+models that include deposit rates, local competition, account type, market
+concentration, and customer rate sensitivity.
+
+A practical deposit model often needs a two-part structure:
+\[
+  \Pr(a_{if,\mathrm{dep}}>0\mid X_i)
+\]
+for deposit relationship incidence and
+\[
+  \mathbb{E}[\log a_{if,\mathrm{dep}}\mid a_{if,\mathrm{dep}}>0,X_i]
+\]
+for conditional deposit size. If competitor balances are unobserved, the model
+may use market-level deposit data, firm revenue estimates, industry working
+capital ratios, payments volume, and observed inflows/outflows as indirect
+signals of total deposit wallet.
+
+\subsection{Dynamic Deposit Demand}
+
+A major weakness of the wallet-size analogy is the implicit constant-size
+assumption. For deposits, the assumption is particularly fragile. An SME's
+deposit balance is not only a product holding; it is a time-varying operating
+balance. It moves with revenues, payroll, vendor payments, seasonality, business
+growth, and the normal timing of cash inflows and outflows. A firm can need the
+same banking product in two periods but require very different deposit balances.
+
+The corporate liquidity literature gives a useful framework. \citet{opler1999cash}
+study determinants of corporate cash holdings and emphasize transaction and
+precautionary motives. \citet{almeida2004cash} develop the idea that financially
+constrained firms save cash out of cash flows, while \citet{han2007precautionary}
+study precautionary cash holdings under cash-flow risk. \citet{bates2009cash}
+show that cash holdings of US firms increased over time and relate this to
+riskier cash flows and changing firm characteristics. These papers are mostly
+about corporate cash rather than bank deposit accounts, but for SME banking the
+connection is useful: much of an SME's operating liquidity is expressed as bank
+deposits or near-deposit balances.
+
+Private-firm and smaller-firm evidence is especially relevant. \citet{mortal2020private}
+compare cash holdings of private and public firms internationally.
+\citet{poti2020privatecash} and \citet{lefebvre2021cash} study precautionary
+cash motives in private and smaller firms. These papers support the view that a
+deposit target should vary across industries, firm sizes, geographies, and
+business cycles rather than being treated as a fixed customer attribute. The
+more specialized question of deposit pricing and stress-period behavior is
+discussed separately below.
+
+This literature suggests that the focal object should be dynamic deposit demand,
+not fixed deposit wallet size. A more appropriate target is
+\[
+  D_{it}^{*}
+  =
+  g(X_{it}, M_t, R_{it}, C_{it}, B_{it}, \eta_i) + \varepsilon_{it},
+\]
+where $D_{it}^{*}$ is desired liquidity or deposit balance, $X_{it}$ are
+firm-level cash-flow and product variables, $M_t$ are market conditions, $R_{it}$
+captures rates and fees, $C_{it}$ captures financing conditions, $B_{it}$
+captures bank relationship and switching frictions, and $\eta_i$ is firm
+heterogeneity. Observed deposits are then a partial allocation of this
+desired liquidity across banks and instruments:
+\[
+  D_{ift} = s_{ift} D_{it}^{*},
+\]
+where $s_{ift}$ is the focal bank's dynamic share of deposit liquidity. In this
+view, wallet estimation decomposes into two moving parts: the time-varying size
+of the firm's liquidity demand and the focal bank's share of that demand.
+
+\subsection{SME Relationship Lending and the Role of Transaction Accounts}
+
+SME banking differs from mass retail banking because information asymmetry is
+central. Relationship lending theory explains why small firms benefit from
+long-lived bank relationships and why transaction data can be valuable for
+credit decisions. \citet{petersen1994benefits} and
+\citet{berger1995relationship} are foundational references on small-business
+lending relationships and lines of credit.
+
+Transaction accounts are particularly important. \citet{mester2007transactions}
+study transaction accounts and loan monitoring. \citet{norden2010creditline}
+examine credit-line usage, checking-account activity, and default risk. These
+papers motivate a wallet model in which deposits and payments are not merely
+products to be sold; they are information channels that can improve underwriting,
+monitoring, and relationship profitability.
+
+For an SME bank, this means a deposit offer may have value beyond spread income.
+Moving an SME's operating account to the focal bank can reveal cash-flow
+seasonality, payroll cycles, customer concentration, merchant activity, and early
+distress signals. A product-propensity model should therefore be joined with a
+relationship-value model.
+
+\subsection{Causal Response and Uplift Modeling}
+
+Cross-sell and wallet models estimate what an SME appears likely to buy or hold.
+Marketing decisions require a causal estimand: what the SME will buy because of
+the offer. A high-propensity customer may buy without being contacted; a
+low-propensity customer may be expensive to convert; and an offer may shift
+balances without increasing total relationship value. The relevant target is
+incremental contribution, not raw propensity:
+\[
+  \tau_{ip}(x) =
+  \mathbb{E}[Y_{ip}(1)-Y_{ip}(0)\mid X_i=x],
+\]
+where $Y_{ip}$ may be product adoption, deposit balance, risk-adjusted revenue,
+or lifetime value.
+
+The modern causal-ML literature provides tools for heterogeneous treatment
+effects. \citet{radcliffe2007uplift} and \citet{lo2002true} discuss uplift and
+true-lift modeling in marketing contexts. \citet{athey2016recursive} introduce
+recursive partitioning for heterogeneous causal effects, and
+\citet{wager2018causalforests} develop causal forests. These methods are useful
+when a bank has randomized campaigns, quasi-random offer variation, or credible
+experiments. Without such variation, a response model risks confusing selection
+with treatment effect.
+
+\subsection{Model Architectures Implied by the Literature}
+
+The preceding literatures imply several architectures. These architectures are
+not mutually exclusive. They answer different parts of the SME wallet problem,
+and the main design question is how to combine them without confusing latent
+need, observed product ownership, competitive share, and causal response.
+
+\subsubsection*{Architecture 1: Latent Wallet Reconstruction}
+
+The first architecture treats competitor wallet as a latent variable. A
+hierarchical model can describe product incidence and size jointly:
+\[
+  z_i \sim p(z_i\mid X_i),
+  \qquad
+  y_{ibp} \sim \mathrm{Bernoulli}(\pi_{bp}(z_i,X_i)),
+\]
+\[
+  \log a_{ibp}\mid y_{ibp}=1 \sim
+  \mathcal{N}(\mu_{bp}(z_i,X_i),\sigma_{bp}^2),
+\]
+where $z_i$ represents latent firm scale, financial sophistication, liquidity
+need, credit demand, and relationship preference. This architecture is closest
+in spirit to latent trait and mixed-data factor models in the cross-selling
+literature \citep{kamakura1991latent,kamakura2003database}. It also follows
+the econometric logic of two-part or hurdle models: product incidence and
+positive product size are distinct stochastic objects, so a bank should not
+convert a product-propensity score into dollars without a conditional amount
+model \citep{cragg1971limited}.
+
+For implementation, a bank could start with a simpler generalized linear mixed
+model or gradient-boosted two-part model and then move toward Bayesian
+hierarchical or variational models as the data maturity improves. The output is
+a posterior distribution for total wallet, competitor-held wallet, and product
+amount conditional on ownership, not just a point estimate. If positive amounts
+are modeled on the log scale, retransformation to dollar levels should be
+validated rather than handled by naive exponentiation; smearing-style
+corrections are a standard remedy \citep{duan1983smearing}.
+
+\subsubsection*{Architecture 2: Product Graph and Next-Best-Action System}
+
+The second architecture treats products as a graph or sequence. Product holdings
+form a vector
+\[
+  \mathbf{y}_i = (y_{i1},\ldots,y_{iP}),
+\]
+and the model predicts the next product or bundle conditional on the current
+state. This can be implemented using multivariate probit, discrete hazard
+models, recurrent models, or gradient-boosted ranking models. The academic
+foundation comes from cross-selling and NPTB models
+\citep{knott2002nptb,li2005sequential}.
+
+For SME banking, the graph should distinguish operating products from credit
+products and owner/household products. For example, a business checking account
+may lead to merchant services and payroll, while a line of credit may lead to
+equipment finance or treasury management. A product graph is useful for sales
+prioritization but insufficient for deposit sizing unless paired with balance
+models. For the current project, this architecture is secondary; it is included
+as background because it explains product correlations, not because assortment
+or bundle choice is the main objective.
+
+\subsubsection*{Architecture 3: Structural Deposit Demand and Competitive Response}
+
+The third architecture models the SME's bank choice and deposit allocation as a
+competitive demand problem. A simplified random-utility model is
+\[
+  U_{ibp} =
+  \alpha_i r_{bp}
+  - \phi_i F_{bp}
+  + \gamma_i Q_{bp}
+  - \kappa_i C_{ib}
+  + \epsilon_{ibp},
+\]
+where $r_{bp}$ is the rate or yield, $F_{bp}$ fees, $Q_{bp}$ service quality,
+and $C_{ib}$ switching or relationship cost. Structural banking papers motivate
+including local competition, bank characteristics, and market power
+\citep{dick2008demand,adams2007who,egan2017deposit,drechsler2017deposits}.
+
+This architecture is most useful for pricing and deposit offers. It can answer
+questions such as: how much incremental deposit balance should be expected if
+the bank offers a rate premium, fee waiver, or improved onboarding support? Its
+weakness is data intensity: credible estimation often needs variation in rates,
+fees, markets, and competitor conditions.
+
+\subsubsection*{Architecture 4: Dynamic Panel and Time-Series Deposit Demand}
+
+Because deposits are balances observed over time, a bank should not rely only on
+cross-sectional wallet models. A dynamic panel model can separate firm-specific
+liquidity level, time-varying business conditions, market-wide stress, and
+relationship share. A practical specification is
+\[
+  \log D_{ift}
+  =
+  \rho \log D_{if,t-1}
+  + \beta' X_{it}
+  + \theta' M_t
+  + \psi' O_{ift}
+  + \alpha_i
+  + \delta_t
+  + u_{ift},
+\]
+where $D_{ift}$ is the focal-bank deposit balance, $X_{it}$ includes observed
+firm cash-flow and transaction features, $M_t$ includes macro and market
+conditions, $O_{ift}$ includes the bank's offer and relationship terms,
+$\alpha_i$ captures persistent firm heterogeneity, and $\delta_t$ captures
+common shocks. This model can be extended with industry-by-time effects,
+geography-by-time effects, state-space components, or regime-switching terms for
+stress periods.
+
+If the target is total deposit demand rather than focal-bank deposits, the bank
+can model
+\[
+  \log D_{it}^{*}
+  =
+  \rho \log D_{i,t-1}^{*}
+  + \beta' X_{it}
+  + \theta' M_t
+  + \alpha_i
+  + \delta_t
+  + \nu_{it}
+\]
+as a latent state and then model the focal bank's observed share:
+\[
+  \mathrm{logit}(s_{ift}) =
+  \gamma' Z_{ift} + \mu_i + \xi_t.
+\]
+This separates the question ``how much liquidity does the SME want now?'' from
+``what share of that liquidity sits with our bank?'' It also allows stress
+periods to raise total precautionary balances while the focal bank's share may
+rise, fall, or stay flat.
+
+Time-series methods are useful, but they should usually be panel time-series
+methods rather than a separate univariate model for each SME. Individual SME
+series can be short, seasonal, lumpy, and affected by idiosyncratic events. A
+hierarchical panel, state-space, or mixed-effects model can pool information
+across similar firms while allowing customer-specific dynamics. For forecasting,
+machine-learning sequence models can be useful, but they should be benchmarked
+against transparent baselines such as seasonal naive forecasts, autoregressive
+distributed-lag models, and fixed-effects panel regressions.
+
+\subsubsection*{Architecture 5: Causal Uplift and Incremental Value}
+
+The fifth architecture starts from experiments or quasi-experiments. The bank
+randomizes or otherwise credibly varies offers and estimates heterogeneous
+treatment effects. The targeting rule is then based on expected incremental
+profit:
+\[
+  \mathrm{NPV}_{it}
+  =
+  \sum_p m_p \widehat{\Delta}_{ipt}
+  - c_t
+  - \lambda \widehat{\mathrm{Risk}}_{it},
+\]
+where $m_p$ is product margin or relationship value, $c_t$ is campaign and
+incentive cost, and the risk term captures credit, liquidity, operational, and
+conduct constraints. Uplift and causal-forest methods are natural candidates
+\citep{lo2002true,radcliffe2007uplift,athey2016recursive,wager2018causalforests}.
+
+This architecture is the most defensible for deciding whom to contact and what
+to offer, because it targets incremental response rather than raw propensity.
+Its prerequisite is disciplined experimentation and holdout design.
+
+\subsubsection*{Architecture 6: Integrated Decision System}
+
+The most complete architecture combines the preceding pieces:
+
+\begin{enumerate}[leftmargin=*]
+  \item Estimate total deposit wallet and competitor-held balances with a
+  latent wallet model, and treat deposit wallet as time varying.
+  \item Use product-adoption and product-graph models only as supporting
+  signals for firm scale and relationship context.
+  \item Estimate dynamic deposit demand using panel time-series models that
+  include firm cash-flow, seasonality, macro conditions, rates, and local market
+  conditions.
+  \item Estimate deposit-specific response to rates, fees, service, and
+  relationship actions with a demand model.
+  \item Estimate the movable fraction of competitor-held balances, borrowing,
+  spend, or assets from conversion events, account-transfer evidence,
+  relationship migrations, and experiments.
+  \item Estimate causal incremental lift from campaigns using randomized
+  holdouts.
+  \item Optimize offers under profitability, credit-risk, liquidity,
+  relationship-manager capacity, fairness, and compliance constraints.
+\end{enumerate}
+
+This system should produce uncertainty intervals and decision diagnostics, not
+only point scores. Relationship managers need to know whether a prospect has a
+high expected deposit wallet, a high probability of product need, high
+incremental responsiveness, or merely high observed similarity to existing
+large customers.
+
+\section{Data Sources and Feature Families}
+
+The data problem is at least as important as the model class. No single public
+or commercial data set observes the full SME wallet at competitor banks. The
+bank therefore needs a layered data design: internal customer data identify the
+focal-bank relationship, public data anchor local markets and stress
+conditions, third-party and consented data provide partial external-wallet
+signals, and experiments or conversion events identify move-over and
+incrementality. The Federal Reserve data portal is useful for this program
+because it provides official macro-financial, banking, interest-rate, lending,
+and payments data \citep{fed2026data}. Its role, however, is mostly to supply
+market conditions, rate regimes, credit conditions, payment trends, and stress
+context. It does not directly identify an individual SME's deposits at
+competitor banks.
+
+\subsection{Required Data Roles}
+
+The literature implies that an SME wallet-size model should combine several
+types of data, each with a different identification role:
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Internal relationship data.} Observed deposits, loan balances,
+  card spend, merchant transactions, treasury services, tenure, service events,
+  relationship-manager notes, customer-service history, onboarding channel,
+  historical offers, quoted rates, booked rates, fee waivers, and exceptions.
+  These data define the focal-bank labels and the information set available at
+  decision time.
+  \item \textbf{Transaction and operating-flow signals.} ACH, wire, payroll,
+  merchant, check, card, lockbox, remote-deposit, and cash-flow patterns can
+  proxy firm scale, seasonality, payroll intensity, supplier/customer networks,
+  and external-bank relationships. Inflow and outflow volatility, payroll
+  coverage, tax-payment timing, merchant settlement volume, and counterparty
+  concentration are especially important for estimating total liquidity demand.
+  \item \textbf{Firmographics and local business structure.} Industry,
+  geography, firm age, revenue band, payroll size, employee count, legal form,
+  ownership, seasonality, and local establishment density. Public sources such
+  as County Business Patterns, Business Dynamics Statistics, Business Formation
+  Statistics, and QCEW help calibrate industry-by-geography opportunity and
+  business-cycle exposure \citep{census2026cbp,census2026bds,census2026bfs,bls2026qcew}.
+  \item \textbf{Credit and public records.} Liens, UCC filings, commercial real
+  estate loans, commercial credit bureau data, SBA lending records, property
+  records, bankruptcy events, and public registrations where legally and
+  contractually usable. These data are useful for product incidence and size,
+  especially loans, lines, collateralized credit, commercial real estate
+  exposure, and distress events.
+  \item \textbf{Market, competitor, and branch data.} Local branch density,
+  branch-level deposit market share, competitor footprint, advertised rates,
+  fee schedules, product availability, digital-bank and fintech presence, and
+  local competitive intensity. FDIC Summary of Deposits is a natural public
+  anchor for branch-level deposits \citep{fdic2026sod}. The limitation is that
+  such aggregates usually mix consumer, small-business, commercial, and
+  wholesale deposits, so they should be used as noisy market-level anchors
+  rather than direct SME wallet labels.
+  \item \textbf{Rate and stress context.} Federal Reserve H.8 gives aggregate
+  commercial-bank balance-sheet conditions, H.15 gives selected interest rates,
+  and the Senior Loan Officer Opinion Survey gives credit-standard and
+  loan-demand context
+  \citep{fed2026h8,fed2026h15,fed2026sloos}. Call Reports from FDIC or FFIEC
+  provide bank-level balance-sheet and funding information
+  \citep{fdic2026callreports,ffiec2026cdr}. These data support market regimes,
+  competitor funding pressure, stress scenarios, and deposit-pricing variables.
+  \item \textbf{Payments and commerce benchmarks.} Federal Reserve payments
+  data, card-network benchmarks, merchant-acquirer data, payroll-provider
+  signals, and industry payment benchmarks help translate operating activity
+  into expected deposit balances and card or merchant-wallet opportunity
+  \citep{fed2026frps}. They are usually aggregate or vendor-provided, so they
+  need reconciliation against internal transaction data.
+  \item \textbf{Validation anchors.} Consented account aggregation,
+  customer-provided statements, treasury onboarding documents, balance-transfer
+  records, payoff letters, direct-deposit or ACH rerouting, account-closure
+  evidence, M\&A onboarding files, and post-conversion consolidated balances are
+  the most valuable data for validating competitor wallet estimates. Without
+  these anchors, the model may rank prospects but should not claim precise
+  competitor-dollar estimates.
+  \item \textbf{Campaign, quote, and experiment data.} Offer eligibility,
+  contact channel, price, incentive, quoted and unquoted terms,
+  relationship-manager activity, randomized holdouts, quasi-random rate cells,
+  and rejected offers. These data identify price sensitivity, causal uplift,
+  move-over, cannibalization, and runoff.
+\end{enumerate}
+
+\subsection{How Specific Public Data Help}
+
+Table~\ref{tab:data_sources} summarizes the most useful public and semi-public
+sources. The important point is not that these data replace bank data. They
+provide anchors, controls, market states, and validation benchmarks that make
+the internal model less circular.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\begin{tabular}{@{}
+  >{\raggedright\arraybackslash}p{0.23\linewidth}
+  >{\raggedright\arraybackslash}p{0.24\linewidth}
+  >{\raggedright\arraybackslash}p{0.25\linewidth}
+  >{\raggedright\arraybackslash}p{0.18\linewidth}
+@{}}
+\toprule
+Source & Useful variables & Role in the model & Main limitation \\
+\midrule
+Federal Reserve data portal & H.8, H.15, SLOOS, payments data, business-finance
+releases & Macro state, rate regime, credit conditions, payments context, stress
+scenario variables & Mostly aggregate, not SME wallet labels \\
+FDIC Summary of Deposits & Branch deposits, institution and geography footprint
+& Local deposit market share and branch competition anchor & Mixes consumer,
+SME, commercial, and wholesale deposits \\
+FDIC/FFIEC Call Reports & Bank-level deposits, loans, funding mix, uninsured
+deposit measures where reported & Competitor funding pressure, safety, pricing,
+and stress controls & Bank-level, not customer-level \\
+Census CBP/BDS/BFS and BLS QCEW & Establishments, firm births, employment,
+wages, industry geography & Local SME universe, market size, growth, seasonality
+and industry stress & Establishment-level aggregates, not bank relationships \\
+CRA, HMDA, and Section 1071 data & Small-business and mortgage lending
+geography, where available & Credit demand and market access context; future
+validation of small-business credit coverage
+\citep{ffiec2026cra,cfpb2026hmda,cfpb2023section1071} & Product scope and
+reporting definitions differ from deposit wallet \\
+Commercial/vendor data & Firmographics, credit bureau, card/merchant/payroll,
+web and business registry data & Product incidence, size priors, external-wallet
+signals, prospect universe & Cost, coverage bias, consent, privacy, and model
+risk review \\
+Consented or conversion data & External account balances, statement imports,
+ACH migration, payoff and transfer records & Direct validation of competitor
+wallet, move-over, cannibalization, and runoff & Sparse and selected sample \\
+\bottomrule
+\end{tabular}
+\caption{Data sources for SME wallet estimation and their identification roles.}
+\label{tab:data_sources}
+\end{table}
+
+\subsection{Data Architecture for the Recommended Model}
+
+For the recommended architecture, data should be organized around estimands
+rather than around source systems.
+
+\paragraph{Total deposit demand.}
+Estimate $D_{it}^{*}$ from internal transaction flows, firmographics, seasonal
+patterns, local industry conditions, rate regimes, credit conditions, and
+external business-density benchmarks. Federal Reserve rate and credit data enter
+as $M_t$ and stress-state variables; Census and BLS data enter as
+industry-geography controls; transaction flows identify firm-specific operating
+liquidity.
+
+\paragraph{Competitor share and local substitution.}
+Estimate $s_{ifpt}$ using focal-bank balances, branch footprint, competitor
+footprint, advertised rates, service attributes, branch-level market share, and
+bank-level balance-sheet controls. FDIC Summary of Deposits is useful here as a
+noisy local-market share anchor, while Call Reports and H.8/H.15 help measure
+funding and rate environments. These data cannot by themselves separate SME
+from consumer or wholesale share; the model must treat them as aggregate
+measurement equations.
+
+\paragraph{Product incidence and size.}
+Estimate product incidence and conditional dollar size from internal products,
+credit bureau and public-record features, SBA or public lending records where
+available, firmographics, and transaction proxies. For loans and credit lines,
+liens, UCC filings, property records, and credit bureau data are more direct
+than Fed aggregate data. For cards and merchant products, merchant settlement
+and payment-flow benchmarks are more relevant.
+
+\paragraph{Move-over, cannibalization, and runoff.}
+Estimate the movable fraction using data that reveal origin and displacement:
+account aggregation, conversion files, balance-transfer and payoff records,
+ACH/direct-deposit migration, customer onboarding statements, relationship-
+manager disposition codes, and randomized consolidation offers. This is the
+hardest part of the data problem. Public data can benchmark market size, but
+they cannot identify whether a given balance came from a competitor, from new
+liquidity demand, or from cannibalization of existing focal-bank balances.
+
+\paragraph{Pricing and stress.}
+Estimate pricing response from quoted rates, booked rates, fee waivers,
+rate-sheet changes, market rates, competitor advertised rates, and randomized
+or quasi-random offer variation. H.15, H.8, SLOOS, Call Reports, and FDIC market
+data provide the market and stress states. Internal balance decay and
+post-stress runoff are still required to value the deposits.
+
+\subsection{Practical Data Priorities}
+
+The most valuable next data investments are:
+\begin{enumerate}[leftmargin=*]
+  \item Build an account-level deposit and product panel with decision-time
+  snapshots, so the model never uses post-offer information in scoring.
+  \item Create a transaction-feature mart for cash-flow volatility, payroll
+  intensity, merchant settlement, ACH/wire counterparties, tax timing, and
+  inferred external-bank activity.
+  \item Geocode customers, branches, and competitors; join FDIC Summary of
+  Deposits, Census/BLS local business data, and competitor footprints.
+  \item Maintain a quote and offer ledger with offered rate, booked rate,
+  rejected terms, fee waivers, exceptions, relationship-manager action, and
+  eligibility rules.
+  \item Create validation samples through consented account aggregation,
+  onboarding statement capture, conversion events, and relationship-manager
+  migration codes.
+  \item Run small randomized or quasi-random pricing and consolidation tests to
+  identify elasticity, move-over, cannibalization, and runoff.
+\end{enumerate}
+
+Data governance is a first-order issue. A US bank must ensure that features,
+target definitions, offer decisions, and model monitoring comply with fair
+lending, privacy, consumer/commercial data-use restrictions, model-risk
+management, and customer consent requirements. The academic literature reviewed
+here does not by itself settle those compliance requirements.
+
+For deployment, the modeling program should be governed as a bank model-risk
+and customer-decisioning system, not only as a marketing model. SR 11-7 requires
+conceptual soundness, ongoing monitoring, and independent validation for models
+used in bank decisioning \citep{fed2011sr1107}. Third-party data and fintech
+components should be reviewed under third-party risk-management expectations
+\citep{fed2023sr2304}. If the model is used in connection with small-business
+credit decisions or covered data collection, implementation should also be
+reviewed against the CFPB small-business lending rulemaking under Section 1071
+\citep{cfpb2023section1071}.
+
+\section{Recommended Approach}
+
+The recommended approach is dynamic demand plus discrete choice. It begins by
+abandoning the idea that each SME has a fixed deposit wallet size. The bank
+should instead model two linked objects:
+\[
+  \text{Observed focal-bank deposits}_{ift}
+  =
+  \text{Total SME liquidity demand}_{it}
+  \times
+  \text{Focal-bank deposit share}_{ift}.
+\]
+The first object is a dynamic balance-sheet and cash-flow problem. The second
+object is a bank-choice and deposit-share problem. A third object is the
+deposit amount that can move from competitors, which is generally
+smaller than the competitor-held amount. This decomposition is the central
+modeling recommendation of this survey.
+
+\subsection{Layer 1: Dynamic SME Liquidity Demand}
+
+The first layer estimates the SME's desired liquidity or total deposit demand:
+\[
+  D_{it}^{*}
+  =
+  g(X_{it}, M_t, R_{it}, C_{it}, B_{it}, \eta_i) + \varepsilon_{it}.
+\]
+Here $D_{it}^{*}$ is the firm's desired liquid balance, $X_{it}$ includes
+firm-level cash-flow and transaction variables, $M_t$ includes macro and market
+conditions, $R_{it}$ includes relevant rates and fees, $C_{it}$ includes
+financing conditions, $B_{it}$ includes relationship variables, and $\eta_i$
+captures persistent firm heterogeneity. This layer should be estimated as a
+panel time-series, state-space, or hierarchical dynamic model. It should include
+seasonality, industry-by-time effects, geography-by-time effects, local market
+conditions, and relationship tenure. Pricing and stress extensions can be added
+after the baseline model is stable.
+
+This layer answers questions such as: how much liquidity does the SME need now,
+how does that need vary with business scale and seasonality, and how much of a
+balance increase reflects normal cash-flow timing rather than wallet movement
+from a competitor?
+
+\subsection{Layer 2: Discrete Choice for Bank and Deposit Share}
+
+The second layer estimates how the SME allocates that liquidity and product
+demand across banks and outside options. This is where discrete
+choice demand estimation is useful. The alternative set must be declared before
+estimation. In the deposit use case, let $\mathcal{J}_{imt}^{B}$ denote modeled
+bank-relationship alternatives, let $\mathcal{J}_{imt}^{BP}$ denote
+bank-product alternatives when products are modeled separately, let
+$j=\mathrm{res}$ denote residual unmodeled-bank balances, and let
+$j=0$ denote true nonbank or outside liquidity such as money-market funds,
+cash-management vehicles, or no active movement. These categories should not
+be pooled unless the reporting question only requires total non-focal
+balances.
+
+A simplified utility specification for SME $i$ choosing alternative $j$ in
+market $m$ and time $t$ is
+\[
+  U_{ijmt}
+  =
+  \beta_i' A_{jmt}
+  - \alpha_i P_{ijmt}
+  + \xi_{jmt}
+  + \epsilon_{ijmt},
+\]
+where $A_{jmt}$ are observed bank/product attributes, $P_{ijmt}$ is the
+SME-specific price or offer term, $\xi_{jmt}$ is an unobserved product-market
+demand shock, and $\epsilon_{ijmt}$ is idiosyncratic taste. Alternatives may be
+defined as competing operating-account relationships or bank-product bundles,
+but the same model should not switch among these definitions without changing
+the share normalization and diversion interpretation.
+
+\citet{ma2024discrete} is useful here because financial products often involve
+individual-specific or relationship-specific prices. In SME banking, effective
+prices may include negotiated deposit rates, treasury fees,
+minimum-balance requirements, fee waivers, and relationship pricing. If these
+prices vary systematically with firm size, risk, income, relationship tenure,
+or financing conditions, a standard BLP model that treats all
+customers in a market as facing the same product price can misestimate price
+sensitivity. Ma's two-step framework---first estimating individual-specific
+prices, then using a modified BLP-style demand model with selectivity
+correction---is therefore relevant for estimating SME choice among financial
+product alternatives.
+
+Because \citet{ma2024discrete} is an unpublished working paper, it should be
+treated as a useful template for handling individual-specific financial-product
+prices rather than as settled banking practice. A bank should validate the
+two-step price and demand estimates against its own quote, booking, and
+campaign data before using them for pricing or targeting decisions.
+
+For plain retail deposit products where all customers in a market truly face
+the same posted rate, a traditional BLP-style model may be sufficient. For SME
+relationship banking, however, prices and service terms are often negotiated or
+relationship-specific, so the individual-specific-price issue is likely
+material.
+
+\subsection{Layer 3: Product Size, Addressable Wallet, and Move-Over Amount}
+
+The third layer estimates dollars, balances, spend, commitments, or assets
+conditional on product need. For every product $p$, the model should separate
+incidence from severity:
+\[
+\begin{aligned}
+  r_{ipt}^{*} &= 1\{W_{ipt}^{*}>0\},\\
+  \Pr(r_{ipt}^{*}=1\mid h_{it},X_{it},M_t) &= \pi_p(h_{it},X_{it},M_t),\\
+  \log W_{ipt}^{*}\mid r_{ipt}^{*}=1
+    &\sim F_p(\mu_p(h_{it},X_{it},M_t),\sigma_p^2).
+\end{aligned}
+\]
+This two-part structure follows the limited-dependent-variable logic of
+\citet{cragg1971limited}. It prevents a common mistake in wallet sizing:
+treating a product-propensity score as if it were a dollar balance. For
+products with highly skewed positive amounts, the model should output means,
+quantiles, and interval forecasts. If the severity model is fit in logs, dollar
+forecasts should use validated retransformation, such as smearing corrections,
+rather than naive exponentiation \citep{duan1983smearing}.
+
+Given a draw of total product wallet and focal-bank share, the model produces
+the competitor-held amount
+\[
+  A_{ipt}^{-f(s)}
+  =
+  \max\{W_{ipt}^{*(s)}-a_{ifpt}^{\mathrm{obs}},0\}.
+\]
+If the bank needs bank-specific competitor estimates, this amount can be
+allocated across competitors using the discrete-choice shares:
+\[
+  a_{ibpt}^{(s)}
+  =
+  s_{ibpt}^{(s)} A_{ipt}^{-f(s)}
+  \bigg/
+  \sum_{c\neq f}s_{icpt}^{(s)},
+  \qquad b\neq f.
+\]
+This allocation is only over modeled banks. If important banks are not modeled,
+include a residual unmodeled-bank category in the denominator and report it
+separately. A true nonbank outside option should be allocated dollars only when
+the wallet definition includes nonbank liquidity; otherwise it belongs in the
+share model but not in bank-specific competitor balances.
+
+The move-over amount is a separate estimand. For offer $o$ and horizon $H$,
+write
+\[
+  \Delta a_{iop}^{\mathrm{move}}(H)
+  =
+  M_{iop}(H)A_{ipt}^{-f},
+  \qquad 0\leq M_{iop}(H)\leq 1.
+\]
+The fractional response $M_{iop}(H)$ can be modeled with a fractional-logit,
+beta-regression, hierarchical Bayesian, or causal-forest layer using offer
+terms, switching costs, relationship depth, competitor attributes, price gaps,
+and product frictions. It must be estimated from data that observe or identify
+movement: conversion events, balance-transfer or payoff records, account
+aggregation before and after onboarding, ACH or wire migration patterns,
+relationship migrations, merger/acquisition integrations, or randomized offer
+cells.
+
+Observed focal-bank balance growth is not itself the move-over amount. The
+accounting identity should be
+\[
+  \Delta a_{ifp,t:t+H}^{\mathrm{obs}}(o)
+  =
+  \Delta a_{iop}^{\mathrm{move}}(H)
+  +\Delta a_{iop}^{\mathrm{expand}}(H)
+  -\Delta a_{iop}^{\mathrm{cann}}(H)
+  +u_{iopH},
+\]
+where $\Delta a^{\mathrm{move}}$ is migrated competitor wallet,
+$\Delta a^{\mathrm{expand}}$ is expansion of the SME's total demand for product
+$p$, and $\Delta a^{\mathrm{cann}}$ is cannibalization of existing focal-bank
+balances or organic growth. Thus a deposit initiative can create large observed
+growth because the firm expanded, because it moved competitor balances, or
+because it shifted value from existing focal-bank balances. These components
+have different profitability, funding, liquidity, and credit implications.
+
+\subsection{Layer 4: Counterfactual Offer and Wallet-Share Simulation}
+
+Once the demand, choice, and amount layers are estimated, the bank can run
+counterfactuals. For a candidate deposit action $o$,
+\[
+  \widehat{D}_{ifo,t+1}
+  =
+  \widehat{D}^{*}_{i,t+1}
+  \times
+  \widehat{s}_{ifo,t+1},
+\]
+where $\widehat{D}^{*}_{i,t+1}$ comes from the dynamic liquidity-demand layer
+and $\widehat{s}_{ifo,t+1}$ comes from the discrete-choice share layer. This
+lets the bank distinguish three cases that look similar in a static wallet
+score:
+
+\begin{enumerate}[leftmargin=*]
+  \item The SME has high total liquidity demand, but the focal bank has low
+  share because the bank's price, service, or relationship position is
+  uncompetitive.
+  \item The SME has low current liquidity demand, but high future demand under
+  seasonal growth.
+  \item The SME has high observed balances at the focal bank, but low
+  incremental response to marketing because it would have stayed anyway.
+\end{enumerate}
+
+The discrete-choice layer can also quantify willingness to pay for attributes:
+branch access, relationship-manager quality, digital onboarding, faster credit
+decisions, integrated treasury tools, deposit-rate premium, fee waivers, or
+onboarding support. These willingness-to-pay estimates are useful for
+evaluating deposit capture actions rather than only ranking prospects.
+
+\subsection{Layer 5: Causal Uplift and Risk-Adjusted Decisioning}
+
+The dynamic demand and discrete-choice layers estimate demand and substitution.
+They do not by themselves prove that a marketing action causes incremental
+balances. The final layer should use randomized holdouts or credible
+quasi-experiments to estimate incremental response:
+\[
+  \tau_{io}^{Y}
+  =
+  \mathbb{E}[Y_i(o)-Y_i(0)\mid \mathcal{I}_{it}].
+\]
+The superscript matters: $\tau_{io}^{D}$ is a deposit-balance contrast,
+$\tau_{io}^{\mathrm{move}}$ is migrated competitor wallet, and
+$\tau_{io}^{V}$ is risk-adjusted value. They need not have the same sign or
+the same identification support.
+The recommended targeting criterion is risk-adjusted incremental value:
+\[
+  \mathrm{NPV}_{io}
+  =
+  m_D \widehat{\Delta D}_{io}
+  + \sum_p m_p \widehat{\Delta a}_{iop}
+  - c_o
+  - \lambda \widehat{\mathrm{Risk}}_{io},
+\]
+where $\widehat{\Delta D}_{io}$ is incremental deposit balance, $m_D$ is the
+deposit margin or funding value, $m_p$ are product margins, $c_o$ is offer cost,
+and the risk term captures credit, liquidity, conduct, and compliance
+constraints.
+
+Thus the recommended system is:
+\[
+\resizebox{0.96\linewidth}{!}{$\displaystyle
+  \boxed{
+  \text{Dynamic liquidity demand}
+  \;+\;
+  \text{discrete choice deposit share}
+  \;+\;
+  \text{product amount and move-over}
+  \;+\;
+  \text{causal uplift}
+  \;+\;
+  \text{risk-adjusted optimization}.}
+$}
+\]
+This framework keeps the core economic distinction clear: deposit balances are
+dynamic demand, while wallet capture is a competitive choice and response
+problem.
+
+\subsection{Summary of the Recommended Model}
+
+The recommended model combines the surveyed architectures into one
+generative-and-decision system. This subsection gives the compact version; the
+next two subsections state the estimands, estimator interfaces, and validation
+gates. The key notation is:
+\begin{center}
+\footnotesize
+\begin{tabular}{@{}p{0.18\linewidth}p{0.74\linewidth}@{}}
+\toprule
+Symbol & Meaning \\
+\midrule
+$W_{ipt}^{*}$ & Latent total wallet for product $p$ \\
+$A_{ipt}^{-f}$ & Competitor-bank-held amount, excluding true nonbank outside liquidity unless stated \\
+$D_{it}^{*}$ & Latent total SME deposit demand \\
+$s_{ifpt}(o)$ & Focal-bank share of product $p$ under offer $o$ \\
+$M_{iop}(H)$ & Structural fraction of competitor-held product $p$ that moves under offer $o$ \\
+$\mu_{iop}(H)$ & Expected moved dollars \\
+$\tau_{io}^{Y}$ & Causal contrast for explicitly named outcome $Y$ \\
+$J_{io}(H)$ & Risk-adjusted incremental relationship value \\
+\bottomrule
+\end{tabular}
+\end{center}
+Let $h_{it}$ denote a latent SME state containing
+firm scale, liquidity need, credit demand, relationship preference, price
+sensitivity, and switching cost. The state evolves over time:
+\[
+  h_{it}
+  =
+  F(h_{i,t-1},X_{it},M_t,L_{it},\omega_{it}),
+\]
+where $X_{it}$ are firm signals, $M_t$ are market conditions, $L_{it}$ captures
+financing conditions and liquidity constraints, and $\omega_{it}$ is an
+innovation. Deposit need and total product wallet are generated from this state:
+\[
+  W_{ipt}^{*} \sim p(W_{ipt}^{*}\mid h_{it},X_{it},M_t),
+  \qquad
+  y_{ipt}^{*} \sim p(y_{ipt}^{*}\mid h_{it},W_{ipt}^{*}).
+\]
+For deposits, the product-wallet equation should be specialized as dynamic
+liquidity demand:
+\[
+  D_{it}^{*}(M_t)
+  =
+  g(h_{it},\text{cash-flow risk}_{it},M_t,\text{relationship}_{it}).
+\]
+The allocation of that demand across the focal bank, competitors, and outside
+options is then governed by a discrete-choice share model. Let
+$\mathcal{B}_{mt}^{\mathrm{mod}}$ be the modeled bank set, let
+$j=\mathrm{res}$ denote residual unmodeled-bank balances, and let $j=0$ denote
+true nonbank outside liquidity. Then
+\[
+  s_{ibpt}(o)
+  =
+  q_{bp}(A_{bpt},P_{ibpt}(o,M_t),B_{ibt},h_{it},M_t,\xi_{bpt}),
+  \qquad
+  a_{ibpt}(o,M_t)=s_{ibpt}(o,M_t)W_{ipt}^{*}(M_t).
+\]
+Thus deposit pricing and stress enter through both total demand
+$D_{it}^{*}(M_t)$ and captured share $s_{ifpt}(o,M_t)$.
+The competitor-held and addressable components are
+\[
+  A_{ipt}^{-f}(0)=
+  \sum_{b\in\mathcal{B}_{mt}^{\mathrm{mod}},\,b\neq f}a_{ibpt}(0)
+  +a_{i,\mathrm{res},pt}(0),
+  \qquad
+  A_{ipo}^{\mathrm{addr}}(H)=M_{ipo}(H)A_{ipt}^{-f}(0).
+\]
+The nonbank outside option $j=0$ is included in $A_{ipt}^{-f}$ only if the
+business definition of wallet includes nonbank liquidity. Otherwise it affects
+choice normalization but is reported separately from competitor-bank wallet.
+The causal move-over amount satisfies the accounting decomposition
+\[
+  \Delta a_{ifp,t:t+H}(o)
+  =
+  \Delta a_{iop}^{\mathrm{move}}(H)
+  +\Delta a_{iop}^{\mathrm{expand}}(H)
+  -\Delta a_{iop}^{\mathrm{cann}}(H),
+\]
+where only the first term is migrated competitor wallet. The second term is
+growth in total product demand, and the third term is cannibalization of
+existing focal-bank balances.
+Finally, campaign experiments or quasi-experiments estimate the incremental
+effect of taking action $o$ on explicitly named outcomes. For risk-adjusted
+relationship value,
+\[
+  \tau_{io}^{V}
+  =
+  \mathbb{E}\{V_i(o)-V_i(0)\mid h_{it},X_{it}\},
+\]
+where $V_i(o)$ is risk-adjusted relationship value. This is distinct from
+$\tau_{io}^{D}$ for deposit balances and $\tau_{io}^{\mathrm{move}}$ for
+migrated competitor dollars. The decision rule is to
+choose offers that maximize expected incremental value subject to eligibility,
+fairness, liquidity, risk, capital, and relationship-manager capacity
+constraints.
+
+This combined model is more complete than any single surveyed architecture.
+Latent wallet reconstruction fills the missing competitor-balance problem.
+Dynamic liquidity demand prevents the deposit target from being treated as a
+fixed stock. Two-part amount modeling estimates the size of each product
+conditional on ownership. Discrete choice supplies the substitution and pricing
+mechanism needed for counterfactual deposit actions. Section 6 extends this
+same demand-and-share decomposition to stress-condition pricing, rate
+sensitivity, and runoff. Move-over modeling distinguishes
+competitor balances that exist from balances that can be captured. Causal
+uplift prevents the bank from confusing high propensity with incremental
+response. Relationship-lending research supplies the reason to optimize the
+deposit relationship rather than the deposit margin in isolation.
+
+\subsection{Why This Approach Is Preferable: Estimands and Losses}
+
+The practical decision is not to estimate a scalar ``wallet size.'' It is to
+choose an offer $o$ from a feasible set $\mathcal{O}_{it}$ using information
+$\mathcal{I}_{it}$ available at decision time. A rigorous target is the
+conditional incremental relationship value over horizon $H$:
+\[
+  J_{io}(H)
+  =
+  \mathbb{E}\!\left[
+    V_{i,t+H}(o)-V_{i,t+H}(0)
+    \mid \mathcal{I}_{it},\, o\in\mathcal{O}_{it}
+  \right],
+\]
+where $V$ includes deposit funding value, product margin, servicing cost,
+credit loss, liquidity stability, incentive cost, and compliance constraints.
+The policy target is
+\[
+  \pi^{*}(\mathcal{I}_{it})
+  =
+  \arg\max_{o\in\mathcal{O}_{it}}
+  J_{io}(H)
+  \quad
+  \text{subject to risk, fairness, capacity, and eligibility constraints.}
+\]
+A score is decision-relevant only to the extent that it is monotone in
+$J_{io}(H)$ for feasible offers. A fixed wallet-size score generally is not,
+because it omits dynamic liquidity demand, competitive substitution, treatment
+response, product-specific amount distributions, movable competitor wallet, and
+risk-adjusted value.
+
+For deposits, the decomposition makes the failure precise. Let
+$D_{ift}(o)=s_{ift}(o)D_{it}^{*}(o)$ denote the focal-bank deposit balance under
+offer $o$, where $D_{it}^{*}$ is total SME liquidity demand and $s_{ift}$ is the
+focal bank's share. Relative to no action,
+\[
+\begin{aligned}
+  \Delta D_{if,t+H}(o)
+  &=
+  D_{i,t+H}^{*}(0)\Delta s_{if,t+H}(o)
+  + s_{if,t+H}(0)\Delta D_{i,t+H}^{*}(o) \\
+  &\quad
+  + \Delta s_{if,t+H}(o)\Delta D_{i,t+H}^{*}(o),
+\end{aligned}
+\]
+where $\Delta s_{if,t+H}(o)=s_{if,t+H}(o)-s_{if,t+H}(0)$ and
+$\Delta D_{i,t+H}^{*}(o)=D_{i,t+H}^{*}(o)-D_{i,t+H}^{*}(0)$. A static wallet
+model may forecast net focal-bank balance changes, but it does not separately
+identify these channels. In particular, it cannot tell whether the observed
+change came from share capture, changes in the firm's total liquidity demand,
+the interaction of the two, or causal incrementality of the offer without
+additional structure or experimental variation.
+
+For non-deposit products the same issue appears as an incidence-size-movement
+decomposition. Let $r_{ipt}^{*}=1\{W_{ipt}^{*}>0\}$ and let $M_{iop}(H)$ denote
+the movable fraction of competitor-held product $p$. The gross move-over target
+is
+\[
+  G_{iop}(H)
+  =
+  \mathbb{E}\!\left[
+  1\{r_{ipt}^{*}=1\}A_{ipt}^{-f}M_{iop}(H)
+  \mid \mathcal{I}_{it},o
+  \right].
+\]
+This formula shows why three models are required: product incidence, conditional
+amount, and offer-specific movable fraction. Estimating only the first factor
+answers ``who may need the product,'' not ``how many dollars are at competitors''
+or ``how many dollars are likely to move.'' A factorized approximation can be
+used for transparency, but it should be validated because competitor-held
+amount and movable fraction are likely correlated through firm size, switching
+costs, relationship depth, and competitor lock-in.
+
+The fixed-wallet approach is valid only under strong assumptions:
+\begin{enumerate}[leftmargin=*]
+  \item $D_{i,t+H}^{*}(o)=D_{it}^{*}$, so the firm's liquidity demand is fixed
+  over the horizon and unaffected by market conditions or the offer.
+  \item $s_{if,t+H}(o)$ depends only on an observed propensity score, not on
+  unobserved competitor attributes, negotiated prices, switching frictions, or
+  relationship-manager actions.
+  \item Product incidence is enough to determine dollar size, so conditional
+  amount distributions and retransformation uncertainty can be ignored.
+  \item The movable fraction $M_{ipo}(H)$ is either one or a known constant,
+  so all competitor-held balances are treated as equally addressable.
+  \item The offer assignment mechanism is ignorable:
+  $Y_i(o)\perp O_i\mid \mathcal{I}_{it}$, or there is randomized or
+  quasi-random variation that identifies the counterfactual.
+  \item Product margins, balance stability, credit risk, and servicing cost are
+  either constant across SMEs or irrelevant to the decision.
+  \item Moving deposits does not substitute away from other profitable products
+  or cannibalize existing focal-bank balances.
+\end{enumerate}
+The literatures surveyed above weaken these assumptions: corporate liquidity
+research rejects time-invariant cash demand
+\citep{opler1999cash,almeida2004cash,bates2009cash,acharya2020dash};
+structural demand models treat price and product attributes as drivers of share
+\citep{berry1995automobile,dick2008demand}; causal-response methods separate
+propensity from treatment effect
+\citep{lo2002true,athey2016recursive,wager2018causalforests}; and
+relationship-lending research implies that deposits, monitoring, and credit
+products jointly affect value
+\citep{petersen1994benefits,berger1995relationship,mester2007transactions,norden2010creditline}.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\begin{tabular}{@{}
+  >{\raggedright\arraybackslash}p{0.18\linewidth}
+  >{\raggedright\arraybackslash}p{0.22\linewidth}
+  >{\raggedright\arraybackslash}p{0.26\linewidth}
+  >{\raggedright\arraybackslash}p{0.22\linewidth}
+@{}}
+\toprule
+Model class & Estimand it targets & Failure mode for SME deposits & Role in recommended system \\
+\midrule
+Fixed wallet score & Rank or point estimate of total balances & Assumes liquidity demand and wallet are stable; confounds size and share & Baseline comparator only \\
+Cross-sell/NPTB & Product incidence or next-product probability & Predicts need, not balance size or causal response & Product graph and incidence prior \\
+Two-part amount model & $W_{ipt}^{*}$, $A_{ipt}^{-f}$, and conditional product size & Needs anchors and careful dollar retransformation & Product-size and competitor-wallet layer \\
+Dynamic deposit model & $D_{it}^{*}$ or $D_{ift}$ over time & Forecasts balances but not competitive substitution by itself & Liquidity-demand layer \\
+Discrete choice & $s_{ibpt}(o)$ and substitution elasticities & Needs prices, attributes, and identification of price effects & Deposit-share and offer-simulation layer \\
+Move-over/uplift & $M_{ipo}(H)$, $\mu_{iop}(H)$, $J_{io}(H)$, or $\tau_{io}^{Y}$ under an action & Needs migration evidence and randomized or credible quasi-random variation & Campaign-response and policy layer \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{How the Literature Components Fit Together: Estimation and Interfaces}
+
+The architecture should be written as a set of estimators with explicit
+interfaces. Let
+\[
+  \mathcal{I}_{it}
+  =
+  \sigma\{X_{i,1:t},M_{1:t},A_{1:t},P_{i,1:t}^{\mathrm{obs}},
+  a_{if,1:t}^{\mathrm{obs}},Y_{i,1:t}^{\mathrm{obs}},O_{i,1:t-1}\}
+\]
+denote the information available before the period-$t$ decision. The system
+must not use information realized after the offer when estimating a decision
+score. Let $\mathcal{A}_{it}$ denote anchoring data, such as account-aggregation
+records, post-conversion balances, customer self-reports, bureau or public
+records, branch-level market shares, and market-cell totals. These anchors are
+essential because internal balances alone do not identify competitor balances.
+Branch-level market share is informative but mixed: it usually combines
+consumer, SME, commercial, and wholesale deposits. It should therefore enter as
+an aggregate constraint or noisy measurement, not as a direct SME label.
+
+\paragraph{Module A: latent wallet and state filtering.}
+The target is the filtering distribution
+\[
+  F_{it}^{W,h}
+  =
+  p(h_{it},\{W_{ipt}^{*},A_{ipt}^{-f}\}_p,D_{it}^{*}
+  \mid \mathcal{I}_{it},\mathcal{A}_{it}),
+\]
+not a point estimate. A useful measurement system is
+\[
+\begin{aligned}
+  r_{ipt}^{*} &= 1\{W_{ipt}^{*}>0\},\\
+  \log W_{ipt}^{*}\mid r_{ipt}^{*}=1
+    &= \mu_p(h_{it},X_{it},M_t)+u_{ipt},\\
+  a_{ifpt}^{\mathrm{obs}}
+    &= s_{ifpt}W_{ipt}^{*}+\varepsilon_{ifpt}^{a},\\
+  A_{ipt}^{\mathrm{anchor}}
+    &= W_{ipt}^{*}+\varepsilon_{ipt}^{A}
+    \quad \text{when an anchor is observed,}\\
+  S_{fmt}^{\mathrm{branch}}
+    &= \sum_g \omega_{gmt}S_{fgmt}+\varepsilon_{fmt}^{S}.
+\end{aligned}
+\]
+The anchor equations are what provide level information for the latent wallet.
+Without individual anchors, branch-market aggregates, or credible market-cell
+restrictions, the model may rank SMEs but cannot claim point identification of
+total competitor wallet. Mixed branch aggregates should be treated as noisy
+constraints, not as direct SME wallet observations. The
+estimator can be maximum likelihood with EM, Bayesian data augmentation, or a
+mixed-data factor model
+\citep{kamakura1991latent,kamakura2003database,dempster1977em}. For product
+amounts, the incidence and positive-size equations should be estimated and
+validated separately, as in two-part limited dependent variable models
+\citep{cragg1971limited}. Its required output is a set of draws
+\[
+  \{h_{it}^{(s)},W_{ipt}^{*(s)},A_{ipt}^{-f(s)},D_{it}^{*(s)}\}_{s=1}^{S},
+\]
+which preserves wallet uncertainty for downstream choice and policy
+simulation.
+
+\paragraph{Module B: dynamic deposit demand.}
+For deposits, write $d_{it}^{*}=\log D_{it}^{*}$. A minimal panel state equation
+is
+\[
+  d_{it}^{*}
+  =
+  \rho d_{i,t-1}^{*}
+  +\beta'X_{it}
+  +\gamma'M_t
+  +\lambda_{g(i),t}
+  +\alpha_i
+  +\eta_{it},
+\]
+where $\lambda_{g(i),t}$ is an industry- or geography-by-time effect and
+$\alpha_i$ is persistent firm heterogeneity. The focal-bank observation is a
+measurement equation:
+\[
+  \log a_{if,\mathrm{dep},t}^{\mathrm{obs}}
+  =
+  d_{it}^{*}
+  +\log s_{if,\mathrm{dep},t}
+  +\varepsilon_{it}^{D}.
+\]
+This equation shows the identification problem directly: observed focal-bank
+deposits identify $d_{it}^{*}+\log s_{ift}$, not its two components, unless the
+model has share anchors, conversion observations, account-aggregation data, or
+credible restrictions on $s_{ift}$. Dynamic-panel estimators, hierarchical
+state-space models, and stress-regime interactions are then estimation choices;
+the statistical interface is the predictive distribution
+\[
+  p(D_{i,t+h}^{*}\mid \mathcal{I}_{it},\mathcal{A}_{it}),\qquad h=1,\ldots,H.
+\]
+Arellano-Bond-style dynamic panels are useful when many SMEs are observed for a
+moderate number of periods and lagged balances interact with firm effects
+\citep{arellano1991panel}.
+
+\paragraph{Module C: discrete choice and deposit share.}
+Given draws of $h_{it}$ and $D_{it}^{*}$, the choice module estimates how wallet
+is allocated across the focal bank, competitors, residual unmodeled banks, and
+true outside options. In a bank-level deposit model, $j$ indexes bank
+relationships plus residual and outside alternatives. In a bank-product model,
+$j$ indexes bank-product bundles. The interpretation of shares and diversion
+must follow that choice-set definition. For alternative $j$ in market $m$,
+\[
+  U_{ijmt}(o)
+  =
+  \delta_{jmt}
+  +\beta_i'A_{jmt}
+  -\alpha_iP_{ijmt}(o)
+  +\kappa_i'B_{ijmt}
+  +\xi_{jmt}
+  +\epsilon_{ijmt},
+\]
+so that
+\[
+  \Pr(c_{it}=j\mid o,\mathcal{I}_{it})
+  =
+  \int
+  \frac{\exp(V_{ijmt}(o;\nu))}
+       {\sum_{\ell\in\mathcal{J}_{imt}}\exp(V_{i\ell mt}(o;\nu))}
+  \,dF_{\nu}(\nu).
+\]
+The focal-bank product share is
+\[
+  s_{ifpt}(o)
+  =
+  \sum_{j\in\mathcal{J}_{fpt}}
+  \Pr(c_{it}=j\mid o,\mathcal{I}_{it}).
+\]
+BLP-style models supply the counterfactual substitution structure
+\citep{berry1995automobile}; simulation methods are standard for heterogeneous
+choice models \citep{train2009discrete}. Ma's framework is relevant when
+$P_{ijmt}$ is individual-specific and unchosen prices must be inferred or
+selection-corrected \citep{ma2024discrete}. The module must output not only
+$s_{ifpt}(o)$ but also the diversion matrix
+\[
+  \mathcal{D}_{jk}(x)
+  =
+  -\frac{\partial s_k(x)/\partial P_j}
+        {\partial s_j(x)/\partial P_j},
+\]
+where $x$ denotes the segment, market, or individual state at which diversion is
+evaluated. Because deposit capture depends on where balances are diverted from,
+the diversion matrix should add up over the same alternative set used in the
+choice model. In the main deposit use case, it is used to distinguish balances
+captured from modeled competitors, residual unmodeled banks, true outside
+options, and balances shifted within the focal bank.
+
+\paragraph{Module D: move-over amount and causal response.}
+The choice model predicts substitution under specified prices and attributes;
+it does not by itself identify the effect of marketing contact or
+relationship-manager action. For an offer $o$, define
+\[
+  e_o(x)=\Pr(O_i=o\mid \mathcal{I}_{it}=x),\qquad
+  m_o(x)=\mathbb{E}[V_i\mid O_i=o,\mathcal{I}_{it}=x].
+\]
+Under consistency, overlap, and randomized or conditionally ignorable assignment
+given $\mathcal{I}_{it}$, an orthogonal score for the value difference between
+offer $o$ and no offer is
+\[
+\begin{aligned}
+  \psi_i(o)
+  &=
+  m_o(X_i)-m_0(X_i)
+  +\frac{1\{O_i=o\}}{e_o(X_i)}\{V_i-m_o(X_i)\}\\
+  &\quad
+  -\frac{1\{O_i=0\}}{e_0(X_i)}\{V_i-m_0(X_i)\}.
+\end{aligned}
+\]
+This score is a debiased estimating equation for an average value contrast, or
+for a segment contrast after pre-specified conditioning. Turning it into
+individualized uplift requires a separate heterogeneous-effect step, such as a
+causal forest or an orthogonalized regression of the score on the decision-time
+state, and that step should be validated as a policy rule rather than treated as
+automatic identification of customer-level treatment effects. This connects
+classical
+propensity-score logic \citep{rosenbaum1983propensity}, uplift modeling
+\citep{lo2002true}, causal forests \citep{wager2018causalforests}, and
+orthogonal/double machine learning \citep{chernozhukov2018dml}. The module
+outputs a stated estimand---average lift for a segment, conditional lift
+$\widehat{\tau}_{o}^{Y}(x)$, or an individualized policy score
+$\widehat{J}_{io}$---with uncertainty, overlap diagnostics, and a flag
+indicating whether the estimate is experimental, quasi-experimental, or only
+associational.
+
+For product-size decisions, the outcome vector should decompose the observed
+change:
+\[
+  Y_{iopH}
+  =
+  \left(
+    \Delta a_{iop}^{\mathrm{move}},
+    \Delta a_{iop}^{\mathrm{expand}},
+    \Delta a_{iop}^{\mathrm{cann}},
+    \Delta \mathrm{NPV}_{iop}
+  \right).
+\]
+The move-over estimand is
+\[
+  \mu_{iop}(H)
+  =
+  \mathbb{E}\!\left[
+  \Delta a_{iop}^{\mathrm{move}}(H)
+  \mid \mathcal{I}_{it},o
+  \right],
+  \qquad
+  \widetilde{m}_{iop}(H)=
+  \frac{\mu_{iop}(H)}
+       {\mathbb{E}[A_{ipt}^{-f}\mid\mathcal{I}_{it}]},
+\]
+where $\widetilde{m}_{iop}(H)$ is an operational reporting ratio, not generally
+the same object as the structural fraction $M_{iop}(H)$. A ratio of posterior
+means need not equal the posterior mean of a latent fraction under
+heterogeneity. The ratio should be truncated to $[0,1]$ only as a reporting
+convention and only when the denominator is identified. When data do not
+separately observe migrated competitor balances, the model should report net
+incremental balance, not label it move-over. The
+required training data are events that identify origin or displacement:
+account-transfer records, payoff of competitor debt, balance-transfer activity,
+pre/post account aggregation, direct-deposit or ACH migration, or randomized
+offers with follow-up account consolidation evidence.
+
+\paragraph{Module E: policy optimization and uncertainty propagation.}
+The policy layer consumes simulation draws, not point predictions:
+\[
+  \left\{
+  D_{i,t+h}^{*(s)}, W_{ip,t+h}^{*(s)},
+  A_{ip,t+h}^{-f(s)}, s_{ifp,t+h}^{(s)}(o),
+  M_{iop}^{(s)}(H), \Delta a_{iop}^{\mathrm{move}(s)},
+  \tau_{io}^{Y,(s)}, R_{io}^{(s)}
+  \right\}_{s=1}^{S}.
+\]
+For each feasible offer,
+\[
+  \widehat{J}_{io}(H)
+  =
+  \frac{1}{S}\sum_{s=1}^{S}
+  \left[
+    V_{i,t+H}^{(s)}(o)-V_{i,t+H}^{(s)}(0)
+  \right].
+\]
+The recommended action is
+\[
+  \widehat{\pi}(\mathcal{I}_{it})
+  =
+  \arg\max_{o\in\mathcal{O}_{it}}\widehat{J}_{io}(H)
+\]
+subject to chance and resource constraints such as
+\[
+  \Pr(R_{io}>r_{\max}\mid\mathcal{I}_{it})\le\alpha_R,\qquad
+  \sum_i 1\{\widehat{\pi}(\mathcal{I}_{it})=o\}\le C_o.
+\]
+The required policy output is the chosen offer, expected incremental value,
+credible interval, second-best action, margin of victory, and binding
+constraints. If the credible interval for the margin of victory includes zero,
+the system should recommend experimentation or relationship-manager review
+rather than automatic targeting.
+
+\subsection{Potential Issues and Remedies: Identification Gates}
+
+The model should pass explicit gates before it is used for material pricing or
+targeting. Each gate has a null failure mode, a diagnostic statistic, and a
+permitted action if the gate fails.
+
+\paragraph{Gate 1: latent wallet scale.}
+Null failure mode: the model has learned relative customer size but not the
+level of competitor wallet. Let $\mathcal{V}_{gp}$ be an external validation
+set for product $p$ and segment $g$. Define relative bias and interval coverage:
+\[
+  B_{gp}
+  =
+  \frac{1}{|\mathcal{V}_{gp}|}
+  \sum_{i\in\mathcal{V}_{gp}}
+  \frac{\widehat{W}_{ipt}^{*}-W_{ipt}^{A}}{W_{ipt}^{A}},
+  \qquad
+  C_{gp}(\alpha)
+  =
+  \frac{1}{|\mathcal{V}_{gp}|}
+  \sum_{i\in\mathcal{V}_{gp}}
+  1\{W_{ipt}^{A}\in I_{ipt}^{1-\alpha}\}.
+\]
+The gate passes only if $|B_{gp}|\le b_{\max}$ and
+$|C_{gp}(\alpha)-(1-\alpha)|\le c_{\max}$ for material segments. If it fails,
+the model may be used for ranking or exploratory relationship planning, but not
+for dollar wallet claims. The remedy is more anchor data, a simpler segment
+model, or a sensitivity interval for $W_{ipt}^{*}$
+\citep{kamakura1991latent,dempster1977em}.
+
+\paragraph{Gate 2: missing-not-at-random competitor wallet.}
+Null failure mode: missing competitor information is systematically related to
+the unobserved wallet. One sensitivity model is
+\[
+  \operatorname{logit}\Pr(R_{ipt}^{A}=1\mid X_{it},W_{ipt}^{*})
+  =
+  \zeta'X_{it}+\lambda\log W_{ipt}^{*},
+\]
+where $R_{ipt}^{A}$ indicates anchor observation and $\lambda$ controls
+selection on the latent wallet. The diagnostic is the policy range
+\[
+  \Delta_{\Lambda}
+  =
+  \sup_{\lambda\in\Lambda}\widehat{J}_{io}^{(\lambda)}
+  -
+  \inf_{\lambda\in\Lambda}\widehat{J}_{io}^{(\lambda)}.
+\]
+If the recommended action changes for plausible $\lambda$, the action is not
+identified from the available data. The remedy is to collect validation anchors
+or restrict the deployment to segments where the policy is stable over
+$\Lambda$.
+
+\paragraph{Gate 3: price selection.}
+Null failure mode: unchosen prices are missing selectively. Let $R_{ijmt}^{P}$
+indicate that the effective price for alternative $j$ is observed. A selection
+correction requires variables $Z_{ijmt}^{P}$ that affect price observation or
+quote generation but do not directly enter demand after conditioning on
+$\mathcal{I}_{it}$:
+\[
+  R_{ijmt}^{P}
+  =
+  1\{\pi'Z_{ijmt}^{P}+v_{ijmt}>0\}.
+\]
+The diagnostic is whether $R_{ijmt}^{P}$ remains predictable from risk, size,
+industry, or relationship variables after the proposed correction. If no
+credible exclusion or randomized quote variation exists, price elasticities
+should be labeled associational. Ma's selectivity correction and Heckman's
+sample-selection framework give the relevant templates
+\citep{heckman1979selection,ma2024discrete}.
+
+\paragraph{Gate 4: endogenous prices and offers.}
+Null failure mode: $E[C_{ijmt}\xi_{jmt}]\neq0$, so estimated price sensitivity
+loads on unobserved demand or unobserved quality. With instruments $Z_{jmt}$,
+the core moment is
+\[
+  \mathbb{E}[Z_{jmt}\xi_{jmt}(\theta)]=0.
+\]
+Diagnostics include first-stage strength, sign stability under alternative
+instrument sets, placebo effects before rate-sheet changes, and comparison with
+randomized offer cells. If the instrument set fails, the model may simulate
+attribute preference but should not be used for rate optimization. Remedies are
+randomized price tests, cost or rate-sheet instruments, policy-threshold
+variation, or a reduced-form campaign experiment
+\citep{berry1995automobile,dick2008demand}.
+
+\paragraph{Gate 5: dynamic forecast validity.}
+Null failure mode: the deposit model confuses persistence, seasonality, and
+wallet growth. Because $D_{it}^{*}$ is latent for most SMEs, the gate must be
+defined on an observable implication unless an anchored validation sample is
+available. For horizon $h$, compare the model loss with a transparent baseline
+class $\mathcal{B}$:
+\[
+  R_h
+  =
+  \frac{\sum_{(i,t)\in\mathcal{T}_{\mathrm{test}}}
+    L(a_{if,\mathrm{dep},t+h}^{\mathrm{obs}},
+      \widehat{D}_{i,t+h}^{*}\widehat{s}_{if,\mathrm{dep},t+h})}
+  {\min_{b\in\mathcal{B}}\sum_{(i,t)\in\mathcal{T}_{\mathrm{test}}}
+    L(a_{if,\mathrm{dep},t+h}^{\mathrm{obs}},
+      \widehat{a}_{if,\mathrm{dep},t+h}^{\,b})}.
+\]
+For anchored samples with observed or credible proxy total demand
+$D_{i,t+h}^{A}$, a separate latent-demand loss
+$L(D_{i,t+h}^{A},\widehat{D}_{i,t+h}^{*})$ should be reported. The two losses
+answer different questions and should not be pooled.
+The gate requires $R_h<1$ for the horizons used in decisioning, calibrated
+prediction intervals, no material residual autocorrelation, and separate
+stress-window performance. If it fails, use the dynamic model only as a feature
+generator and fall back to the best transparent baseline. Dynamic-panel tests
+and lagged dependent variable methods are relevant here
+\citep{arellano1991panel}.
+
+\paragraph{Gate 6: substitution and cannibalization.}
+Null failure mode: the choice model predicts adoption but not where balances
+come from. The diversion matrix
+\[
+  \mathcal{D}_{jk}
+  =
+  -\frac{\partial s_k/\partial P_j}{\partial s_j/\partial P_j}
+\]
+should have economically plausible signs and satisfy adding-up over the
+inside and outside alternatives. The gate also requires post-offer accounting:
+\[
+  \Delta a_{ifp}^{\mathrm{net}}
+  =
+  \Delta a_{ifp}^{\mathrm{new}}
+  -\Delta a_{ifp}^{\mathrm{cannibalized}}.
+\]
+If diversion or cannibalization cannot be measured, the model may rank deposit
+interest but should not forecast incremental captured balances. Remedies include
+nested choice sets, random coefficients, explicit outside options, and deposit
+offer experiments \citep{berry1995automobile,train2009discrete}.
+
+\paragraph{Gate 7: move-over amount identification.}
+Null failure mode: the model observes focal-bank growth after an offer and
+mislabels it as competitor wallet moved over. Let
+$Z_{iopH}^{\mathrm{mig}}$ denote migration-origin evidence, such as account
+transfer records, payoff of competitor debt, balance-transfer activity,
+account-aggregation before and after conversion, or direct-deposit and ACH
+rerouting. The measurement equation is
+\[
+  Z_{iopH}^{\mathrm{mig}}
+  =
+  \Delta a_{iop}^{\mathrm{move}}(H)+\epsilon_{iopH}^{\mathrm{mig}},
+\]
+when such evidence is observed. The gate requires the reconciled decomposition
+\[
+  \Delta a_{ifp,t:t+H}^{\mathrm{obs}}
+  =
+  \widehat{\Delta a}_{iop}^{\mathrm{move}}
+  +\widehat{\Delta a}_{iop}^{\mathrm{expand}}
+  -\widehat{\Delta a}_{iop}^{\mathrm{cann}}
+  +\widehat{u}_{iopH}
+\]
+to have small residuals in validation samples, economically plausible signs,
+and the cap
+\[
+  0\leq \widehat{\Delta a}_{iop}^{\mathrm{move}}
+  \leq \widehat{A}_{ipt}^{-f}
+\]
+except for measured new-product demand or measurement-error allowances. If this
+gate fails, the bank may report net incremental balances but should not report
+``dollars moved from competitors.'' Remedies are explicit migration questions in
+onboarding, account-aggregation validation samples, balance-transfer and payoff
+tracking, relationship-manager disposition codes, and randomized consolidation
+offers.
+
+\paragraph{Gate 8: causal incrementality.}
+Null failure mode: high predicted propensity is mistaken for treatment effect.
+For each offer, require overlap
+\[
+  \epsilon < e_o(\mathcal{I}_{it}) < 1-\epsilon
+\]
+on the deployment population, standardized mean differences below a chosen
+threshold after weighting or matching, no placebo effect on pre-treatment
+outcomes, and decision-relevant lift estimates in randomized holdouts with
+calibrated uncertainty. The requirement is credible identification and
+calibration, not uniformly positive lift in every subgroup. If the gate fails,
+the output must be labeled propensity or association, not uplift. Randomized
+holdouts are the preferred remedy; when they are unavailable, use propensity
+score adjustment, causal forests, or orthogonal scores with explicit overlap
+and placebo diagnostics
+\citep{rosenbaum1983propensity,lo2002true,wager2018causalforests,chernozhukov2018dml}.
+
+\paragraph{Gate 9: risk-adjusted policy validity.}
+Null failure mode: the model maximizes balance while violating profitability,
+liquidity, credit, conduct, or fairness constraints. The policy must satisfy
+constraints such as
+\[
+  \mathbb{E}[\mathrm{NPV}_{io}\mid\mathcal{I}_{it}]>0,\quad
+  \Pr(\mathrm{Runoff}_{io}>r_{\max}\mid\mathcal{I}_{it})\le\alpha_R,
+  \quad
+  |\mathrm{Calib}_g-\mathrm{Calib}_{g'}|\le\delta
+\]
+for monitored groups $g,g'$, where $\mathrm{Calib}_g$ is the chosen calibration
+error for group $g$ on the governed target, such as predicted incremental value,
+approval probability, balance lift, or adverse outcome rate. Diagnostics include
+balance decay, runoff under stress, credit migration, complaint rates, subgroup
+calibration, and relationship-manager override patterns. If this gate fails,
+targeting should be limited to manual review or randomized learning cells until
+the binding risk is understood.
+
+\section{Deposit Pricing and Stress-Condition Demand Extension}
+
+The recommended model in Section 5 gives the baseline architecture:
+\[
+  D_{ift}(o,M_t)=D_{it}^{*}(M_t)\,s_{ift}(o,M_t).
+\]
+This section extends that architecture for deposit pricing and stress
+conditions. The extension is not a separate business question. It answers the
+same wallet-capture question under a richer environment: given market condition
+$M_t$, stress state $R_t$, and deposit action $o$, how much total SME deposit
+demand exists, what share can the focal bank capture, what price is required,
+and how stable is the captured balance?
+The stress-pricing problem is therefore a joint problem of \emph{quantity},
+\emph{share}, \emph{price}, and \emph{duration}. A high offered rate is
+attractive only if the resulting balances are incremental, sufficiently stable,
+and valuable after funding, liquidity, cannibalization, and relationship costs.
+
+\subsection{Pricing Objective and Decision Estimands}
+
+Let $r_{io}$ denote the effective deposit rate, earnings credit, fee waiver, or
+relationship-pricing term embedded in action $o$. A pricing decision should
+maximize incremental relationship value, not gross balance:
+\[
+\begin{aligned}
+  J_{io}^{\mathrm{price}}(H)
+  =
+  \mathbb{E}\Big[
+  &\sum_{h=1}^{H}
+    \delta^h
+    \{v_{t+h}^{F}D_{if,t+h}(o,R_{t+h})
+    - c^{r}_{io,t+h}D_{if,t+h}(o,R_{t+h}) \\
+  &\quad
+    + \Pi_{i,t+h}^{\mathrm{rel}}(o)
+    - \mathrm{EL}_{i,t+h}(o)
+    - \mathrm{LC}_{i,t+h}(o)\}
+    - C_{io}
+  \mid \mathcal{I}_{it}\Big],
+\end{aligned}
+\]
+where $v_{t+h}^{F}$ is the funding or liquidity value of deposits, $c^{r}_{io}$
+is the rate or pricing cost, $\Pi^{\mathrm{rel}}$ is non-deposit relationship
+profit, $\mathrm{EL}$ is expected credit loss, $\mathrm{LC}$ is liquidity or
+runoff cost, and $C_{io}$ is campaign or onboarding cost. The decision rule is
+\[
+  o_i^{*}
+  =
+  \arg\max_{o\in\mathcal{O}_{it}}
+  J_{io}^{\mathrm{price}}(H)
+\]
+subject to conduct, fair-lending, liquidity, concentration, relationship-manager
+capacity, and profitability constraints. This prevents the pricing model from
+recommending expensive balances that are transient, risky, or cannibalized from
+existing focal-bank deposits.
+
+The target should be an \emph{incremental} pricing estimand. Let
+\[
+  \Delta D_{ifo,t+h}^{r}
+  =
+  D_{if,t+h}^{r}(o)-D_{if,t+h}^{r}(0)
+\]
+denote incremental focal-bank deposits in scenario $r$. The object to be priced
+is not this total alone, but the decomposition
+\[
+  \Delta D_{ifo,t+h}^{r}
+  =
+  \Delta D_{ifo,t+h}^{\mathrm{move},r}
+  +\Delta D_{ifo,t+h}^{\mathrm{expand},r}
+  -\Delta D_{ifo,t+h}^{\mathrm{cann},r}
+  +\epsilon_{io,t+h}^{r}.
+\]
+The first term is competitor wallet moved to the focal bank, the second is
+growth in the SME's total liquidity demand, and the third is cannibalization of
+existing focal-bank balances or organic inflows. Stress pricing should report
+all three terms. Otherwise, the bank may pay a premium rate for balances it
+already would have retained or for temporary balances that leave as soon as
+market conditions normalize.
+
+\subsection{Economic Pricing Logic and Marginal Value}
+
+A useful way to discipline the pricing decision is to write the period
+contribution margin as
+\[
+  \pi_{io,t+h}^{r}
+  =
+  v_{t+h}^{F,r}D_{if,t+h}^{r}(o)
+  -r_{io,t+h}D_{if,t+h}^{r}(o)
+  -\Phi_{io,t+h}^{r}(D_{if,t+h}^{r},o)
+  +\Pi_{io,t+h}^{\mathrm{rel},r},
+\]
+where $\Phi$ includes servicing cost, incentive cost, liquidity charge,
+operational cost, and runoff or concentration penalties. Holding the feasible
+offer class fixed, an interior rate choice must satisfy
+\[
+\begin{aligned}
+  0
+  =
+  \mathbb{E}\!\Bigg[
+  \sum_{h=1}^{H}\delta^h
+  \Big\{
+    &(v_{t+h}^{F,r}-r_{io,t+h})
+    \frac{\partial D_{if,t+h}^{r}}{\partial r_{io}}
+    -D_{if,t+h}^{r} \\
+    &-\frac{\partial \Phi_{io,t+h}^{r}}{\partial r_{io}}
+    +\frac{\partial \Pi_{io,t+h}^{\mathrm{rel},r}}{\partial r_{io}}
+  \Big\}
+  \mid\mathcal{I}_{it}\Bigg].
+\end{aligned}
+\]
+This condition is useful for management because it separates the \emph{marginal
+balance effect} from the \emph{infra-marginal cost}: raising the rate may
+attract or retain deposits, but the higher rate is usually paid on the full
+eligible balance, not only on the marginal dollars. In stress conditions this
+tradeoff becomes sharper because $v^{F,r}$, runoff cost, and competitor price
+responses can change at the same time. The condition also shows why a simple
+deposit-beta forecast is insufficient: the pricing decision needs the dollar
+response, the margin on those dollars, and the stability of those dollars.
+
+\subsection{Integrating Pricing with Discrete Choice}
+
+In the Section 5 discrete-choice model, separate cost-like price terms from
+quality and safety attributes. Let the effective deposit-price vector be
+\[
+  C_{ijmt}(o)
+  =
+  \big(r_{ijmt}(o), f_{ijmt}(o), \mathrm{minbal}_{ijmt}(o),
+  \mathrm{feecredit}_{ijmt}(o)\big),
+\]
+where $r$ is the deposit rate or earnings credit, $f$ are fees, $\mathrm{minbal}$
+is the minimum-balance requirement, and $\mathrm{feecredit}$ captures explicit
+or implicit relationship pricing. Let
+\[
+  Q_{jmt}(o)
+  =
+  \big(\mathrm{safety}_{jmt}(o),\mathrm{service}_{jmt}(o),
+  \mathrm{digital}_{jmt}(o),\mathrm{treasury}_{jmt}(o)\big)
+\]
+collect quality attributes. The safety component includes deposit insurance
+structure, collateralization, sweep arrangements, operational continuity,
+perceived bank soundness, and relationship-manager credibility.
+Classic bank-run theory makes the safety and liquidity dimension central
+\citep{diamond1983bankruns}; depositor-level evidence also shows that
+relationships and depositor networks matter during runs \citep{iyer2012bankruns}.
+The utility for deposit relationship $j$ is
+\[
+  U_{ijmt}(o)
+  =
+  \delta_{jmt}
+  +\beta_i'A_{jmt}
+  +\zeta_i'Q_{jmt}(o)
+  -\alpha_i'C_{ijmt}(o)
+  +\kappa_i'B_{ijmt}
+  +\xi_{jmt}
+  +\epsilon_{ijmt}.
+\]
+The focal-bank share response is then
+\[
+  s_{ift}(o)
+  =
+  \sum_{j\in\mathcal{J}_{fmt}}
+  \Pr(c_{it}=j\mid C_{ijmt}(o),Q_{jmt}(o),A_{jmt},B_{ijmt},\mathcal{I}_{it}).
+\]
+The balance response to pricing is not the same as the choice probability. It
+is the product of total demand and share:
+\[
+  \frac{\partial D_{ift}}{\partial r_{io}}
+  =
+  \frac{\partial D_{it}^{*}}{\partial r_{io}}s_{ift}
+  +
+  D_{it}^{*}\frac{\partial s_{ift}}{\partial r_{io}}.
+\]
+For ordinary operating balances, the first term may be small if the price
+mainly reallocates balances across banks. During stress, the first term can be
+material if the pricing or safety signal affects the SME's desired liquidity.
+This equation is the reason stress pricing must be combined with the main
+dynamic-demand and discrete-choice model.
+
+The same equation also clarifies how to distinguish three common pricing
+stories. If $\partial D_{it}^{*}/\partial r_{io}\approx 0$ and
+$\partial s_{ift}/\partial r_{io}>0$, pricing mainly reallocates existing SME
+liquidity from competitors. If both terms are positive, the offer both attracts
+share and induces larger desired balances, perhaps through perceived liquidity
+support or safety. If the share term is positive but the post-offer survival of
+balances is low, the bank has bought rate-sensitive hot money rather than a
+durable operating relationship.
+
+\subsection{Heterogeneous Rate Sensitivity and Deposit Beta}
+
+A reduced-form pricing equation useful for implementation is
+\[
+  \log D_{ifmt}
+  =
+  \alpha_i+\delta_m+\lambda_t
+  +\beta_{r,i}(R_t) r_{ifmt}
+  +\beta_c C_{fmt}
+  +\beta_q Q_{fmt}
+  +\beta_b B_{ift}
+  +u_{ifmt},
+\]
+where $m$ is a local market, $R_t$ is the regime, $C_{fmt}$ is local competition,
+$Q_{fmt}$ captures branch, digital, and service quality, and $B_{ift}$ captures
+relationship depth and switching frictions. The rate coefficient should vary by
+customer and regime:
+\[
+  \beta_{r,i}(R_t)
+  =
+  \beta_0
+  +\beta_x'X_i
+  +\beta_m'M_m
+  +\beta_R R_t
+  +\beta_{xR}'(X_i\otimes R_t)
+  +\zeta_i.
+\]
+This specification lets the model represent SMEs whose operating balances are
+rate insensitive in normal periods but become rate sensitive during liquidity
+competition, as well as SMEs that prioritize safety or operating continuity
+over rate. Deposit-competition and monetary-policy papers motivate this focus
+on market power, rate pass-through, and deposit betas
+\citep{hannan1991rigidity,neumark1992market,egan2017deposit,drechsler2017deposits};
+structural banking demand
+papers motivate the explicit role of prices, attributes, and local competition
+\citep{dick2008demand,adams2007who}.
+
+For implementation, it is important to separate the \emph{deposit beta} from
+the \emph{customer balance elasticity}. A deposit beta is a pass-through object,
+for example
+\[
+  b_{if}^{r}
+  =
+  \frac{\partial r_{ifmt}}{\partial r_{t}^{\mathrm{mkt}}}
+  \quad\text{or}\quad
+  \frac{\Delta r_{ifmt}}{\Delta r_{t}^{\mathrm{mkt}}},
+\]
+where $r_t^{\mathrm{mkt}}$ is a market policy or wholesale-rate benchmark. The
+balance elasticity is
+\[
+  \varepsilon_{if}^{r}
+  =
+  \frac{\partial \log D_{ifmt}^{r}}{\partial r_{ifmt}}.
+\]
+Stress pricing needs both. A high beta can be a defensive pass-through policy
+with little balance response, while a high balance elasticity can imply a large
+response to small pricing differences. The recommended model should therefore
+estimate a response surface
+\[
+  \varepsilon_{if}^{r}
+  =
+  e(X_i,M_m,R_t,\mathrm{Safety}_{fm,t},
+  \mathrm{SwitchCost}_{if,t},\mathrm{Uninsured}_{i,t}),
+\]
+where $\mathrm{Uninsured}_{i,t}$ measures the portion of balances exposed to
+deposit-insurance limits or uninsured operational risk when the bank has such
+data or can approximate it. Monetary-tightening stress and uninsured depositor
+run evidence make this exposure especially relevant
+\citep{jiang2023monetary}.
+
+\subsection{Branch Market Share as a Noisy Anchor}
+
+The bank may observe branch-level deposit market share at granular geography,
+but such shares usually mix consumer, SME, commercial, and wholesale deposits.
+They should therefore anchor local competition and broad share, not be treated
+as direct SME labels. Let $\mathcal{G}$ denote segments such as consumer, SME,
+commercial, and wholesale. A measurement equation is
+\[
+  S_{fmt}^{\mathrm{branch}}
+  =
+  \sum_{g\in\mathcal{G}}\omega_{gmt}S_{fgmt}
+  +e_{fmt},
+\]
+where $S_{fgmt}$ is segment-specific focal-bank share and $\omega_{gmt}$ is the
+local deposit mix. If $\omega_{gmt}$ is not directly observed, the model should
+estimate it using branch location, account mix, relationship-manager portfolio,
+public market data, and internal segment tags. The deployment output should
+distinguish:
+\[
+  \Pr(S_{f,\mathrm{SME},m,t}\mid S_{fmt}^{\mathrm{branch}},\mathcal{I}_{mt})
+  \quad\text{from}\quad
+  S_{fmt}^{\mathrm{branch}}.
+\]
+Confusing these two objects would overstate how much branch-level share
+identifies SME wallet share.
+
+\subsection{Stress Regimes and Deposit Demand}
+
+Stress conditions change both total deposit demand and focal-bank share. Let
+\[
+  R_t\in
+  \{\mathrm{normal},\mathrm{rate\ shock},\mathrm{credit\ stress},
+  \mathrm{liquidity\ stress},\mathrm{flight\ to\ safety}\}
+\]
+denote the regime. The total-demand layer can be written as
+\[
+\begin{aligned}
+  \log D_{i,t+h}^{*}
+  &=
+  \rho \log D_{it}^{*}
+  +\gamma'X_{i,t+h}
+  +\lambda_{g(i),t+h}
+  +\theta_R'R_{t+h} \\
+  &\quad
+  +\theta_E'\mathrm{Exposure}_{i,t+h}
+  +\theta_L'\mathrm{Liquidity}_{i,t+h}
+  +\eta_i+\nu_{i,t+h}.
+\end{aligned}
+\]
+The share layer should then allow the same regime to alter price sensitivity,
+safety preference, and switching frictions. It is cleaner to write the stress
+utility directly from primitives rather than adding stress terms to a baseline
+utility that may already contain price:
+\[
+\begin{aligned}
+  U_{ijm,t+h}^{R}(o)
+  &=
+  \delta_{jm,t+h}^{R}
+  +\beta_i^{R\prime}A_{jm,t+h}
+  +\zeta_i^{R\prime}Q_{jm,t+h}(o)
+  -\alpha_i^{R\prime}C_{ijm,t+h}(o) \\
+  &\quad
+  +\kappa_i^{R\prime}B_{ijm,t+h}
+  +\chi_C'(R_{t+h}\otimes C_{ijm,t+h}(o))\\
+  &\quad
+  +\chi_Q'(R_{t+h}\otimes Q_{jm,t+h}(o))
+  +\chi_S'(R_{t+h}\otimes \mathrm{SwitchCost}_{ijm,t+h})
+  +\xi_{jm,t+h}^{R}
+  +\epsilon_{ijm,t+h}.
+\end{aligned}
+\]
+Any regime term common to all alternatives is normalized into the outside
+option or omitted, because it cancels in a standard logit share. A regime
+matters for share only through alternative-specific attributes, interactions,
+or an explicit outside-option normalization.
+During stress, the sign of deposit change is not universal. Some SMEs may build
+balances through precautionary saving, policy inflows, or credit-line draws;
+others may burn cash as revenue falls. Evidence from COVID-period corporate
+studies documents liquidity draws and a ``dash for cash''
+\citep{acharya2020dash,li2020banks}; broader theory links bank lending
+commitments and deposit-taking \citep{kashyap2002liquidity}; and credit-line
+research treats lines as liquidity insurance
+\citep{sufi2009creditlines,acharya2014creditlines}. For SMEs, the model should
+estimate this heterogeneity by industry, cash-flow exposure, credit access,
+relationship depth, and geography rather than imposing a single stress
+multiplier.
+
+For stress pricing, the regime variable should not be only a historical label.
+It should be part of a scenario generator. One implementation is a transition
+model
+\[
+  \Pr(R_{t+1}=k\mid R_t,\mathcal{Z}_t)
+  =
+  \frac{\exp(a_{kR_t}+b_k'\mathcal{Z}_t)}
+       {\sum_{\ell}\exp(a_{\ell R_t}+b_\ell'\mathcal{Z}_t)},
+\]
+where $\mathcal{Z}_t$ includes market rates, local unemployment, industry
+stress, credit spreads, deposit outflow indicators, competitor rate gaps, and
+bank-specific safety indicators. A management stress scenario can override this
+transition model by conditioning on a path
+$\{R_{t+1},\ldots,R_{t+H}\}$ and corresponding paths for rates, credit
+conditions, and competitor actions. This keeps the statistical model and the
+management scenario internally consistent.
+
+\subsection{Runoff, Duration, and Stable Balance Value}
+
+Stress-condition pricing is incomplete without a runoff model. Let
+$T_{io}^{r}$ be the time until the incremental balance generated by offer $o$
+runs off in scenario $r$. Define the survival curve
+\[
+  S_{io}^{r}(h)
+  =
+  \Pr(T_{io}^{r}>h\mid
+  \mathcal{I}_{it},o,R_{t:t+h}=r)
+\]
+and the stable-balance contribution
+\[
+  \mathrm{SBD}_{io}^{r}(H)
+  =
+  \sum_{h=1}^{H}\delta^h
+  S_{io}^{r}(h)\,
+  \Delta D_{ifo,0}^{\mathrm{move},r}.
+\]
+Here $\Delta D_{ifo,0}^{\mathrm{move},r}$ is the originated moved balance
+before runoff. If the model instead forecasts a realized post-runoff path
+$\Delta D_{ifo,t+h}^{\mathrm{move},r}$, then the stable-balance contribution
+should be $\sum_h\delta^h\Delta D_{ifo,t+h}^{\mathrm{move},r}$ without another
+multiplication by $S_{io}^{r}(h)$. Mixing these two conventions double counts
+runoff.
+The model should estimate separate survival curves for moved competitor
+balances, expanded liquidity demand, and cannibalized balances:
+\[
+  S_{io}^{k,r}(h),\qquad
+  k\in\{\mathrm{move},\mathrm{expand},\mathrm{cann}\}.
+\]
+This distinction matters because a rate promotion may generate large first-week
+or first-month inflows but weak stable-balance value. A practical hazard model
+is
+\[
+\begin{aligned}
+  &\Pr(T_{io}^{k,r}=h\mid T_{io}^{k,r}\ge h,\mathcal{I}_{it}) \\
+  &\quad =
+  \Lambda\!\left(
+    a_{krh}
+    +b_{kr}'X_i
+    +c_{kr}'\mathrm{Offer}_{io}
+    +d_{kr}'\mathrm{CompetitorGap}_{mt+h}
+    +e_{kr}'\mathrm{Relationship}_{if,t+h}
+  \right),
+\end{aligned}
+\]
+where $\Lambda$ is a logit or complementary-log-log link. The pricing objective
+should value balances by expected survival, not merely by day-one inflow.
+Thus a serious stress-pricing report should show both
+$\widehat{\Delta D}_{ifo}^{r}(H)$ and $\widehat{\mathrm{SBD}}_{io}^{r}(H)$.
+
+\subsection{Stress Offer Design: Rate, Safety, and Relationship Terms}
+
+In stress conditions, the bank should not treat ``price'' as only the posted
+rate. The action vector should be
+\[
+  o
+  =
+  (r,\mathrm{fee},\mathrm{earnings\ credit},
+  \mathrm{sweep},\mathrm{collateral},\mathrm{operating\ support},
+  \mathrm{relationship\ terms}).
+\]
+For some SMEs, especially operating-account customers with payroll, payables,
+and merchant settlement needs, reliability, funds availability, credit-line
+access, and deposit-insurance or sweep structure can dominate a small rate
+difference. For other SMEs with excess cash and low switching costs, the rate
+gap may dominate. The model should therefore estimate substitution between
+rate and safety or relationship terms, not only the level effect of rate.
+A useful willingness-to-pay contrast is
+\[
+  \mathrm{WTP}_{i}^{\mathrm{safety},r}
+  =
+  \frac{
+    \partial U_{ijmt}^{R}/\partial Q_{jmt}^{\mathrm{safety}}}
+       {\partial U_{ijmt}^{R}/\partial r_{ijmt}},
+\]
+interpreted as the rate concession or premium that holds utility fixed for a
+one-unit safety improvement, with the sign determined by the rate convention.
+If higher $r$ is better for depositors, the denominator is positive; if $r$ is
+entered as a bank cost, the sign should be reversed. The scale of the safety
+measure must be reported for the WTP number to be meaningful.
+This connects the stress extension back to the discrete-choice model and to
+Ma's individual-specific financial-product pricing framework
+\citep{ma2024discrete}.
+
+\subsection{Scenario Outputs for Management}
+
+For each stress scenario $r$ and offer $o$, the model should produce a
+decomposition:
+\[
+\begin{aligned}
+  \widehat{\Delta D}_{ifo}^{r}(H)
+  &=
+  \widehat{D}_{i,t+H}^{*,r}(0)\widehat{\Delta s}_{ifo}^{r}(H)
+  +\widehat{s}_{if,t+H}^{r}(0)\widehat{\Delta D}_{io}^{*,r}(H) \\
+  &\quad
+  +\widehat{\Delta s}_{ifo}^{r}(H)
+   \widehat{\Delta D}_{io}^{*,r}(H),
+\end{aligned}
+\]
+where the first term is share capture, the second is total-demand expansion,
+and the third is interaction. Management should see these as separate numbers,
+not only a single incremental-balance forecast. The pricing package should also
+report:
+\[
+  \{\widehat{\Delta D}^{r},\widehat{\mathrm{SBD}}^{r},
+  \widehat{\mathrm{NPV}}^{r},
+  \widehat{\mathrm{Runoff}}^{r},
+  \widehat{\mathrm{Cannibalization}}^{r},
+  \widehat{\mathrm{LiquidityValue}}^{r},
+  \widehat{\mathrm{ConfidenceInterval}}^{r}\}.
+\]
+This output answers the practical question: whether a higher offered rate is
+buying durable SME operating deposits, temporary hot money, balances that would
+have arrived without pricing, or balances cannibalized from existing focal-bank
+relationships.
+
+The scenario package should also report break-even pricing. Because demand,
+runoff, cannibalization, and relationship spillovers can make value nonmonotone
+in the offered rate, the primary object should be the acceptable-rate set:
+\[
+  \mathcal{R}_{io}^{\mathrm{BE},r}
+  =
+  \{r\in\mathcal{R}_{io}:
+  \widehat{J}_{io}^{\mathrm{price},r}(H)\ge 0\}.
+\]
+Only when this set is an interval, or when the model explicitly assumes local
+monotonicity over the feasible offer range, should the report summarize it by
+$r_{io}^{\mathrm{BE},r}=\sup \mathcal{R}_{io}^{\mathrm{BE},r}$. If the proposed
+offer rate lies outside $\mathcal{R}_{io}^{\mathrm{BE},r}$, the model should
+explain which assumption makes the action still acceptable, such as
+relationship profit, strategic retention, liquidity value, or a management
+override. If no such assumption is documented, the offer is not economically
+justified even if it is expected to grow balances.
+
+\subsection{Identification and Validation Requirements}
+
+Stress pricing requires stronger evidence than normal-period ranking. The key
+identification threats are endogenous pricing, endogenous relationship-manager
+attention, unobserved competitor rates, segment mixing in branch market share,
+and regime-specific selection. A serious implementation should use at least one
+of the following sources of identifying variation:
+
+\begin{enumerate}[leftmargin=*]
+  \item randomized or quasi-random deposit-rate and fee-waiver tests;
+  \item rate-sheet changes or policy thresholds that create exogenous price
+  variation;
+  \item competitor-rate shocks or local market shocks used as structural demand
+  shifters, or as instruments only when an explicit exclusion restriction is
+  credible after conditioning on local demand and quality;
+  \item branch or relationship-manager capacity variation that affects contact
+  but not latent deposit demand after controls;
+  \item pre/post conversion evidence that identifies gross migrated balances,
+  post-stress runoff, and cannibalization.
+\end{enumerate}
+
+Validation should include normal and stress windows separately. Required gates
+are:
+\[
+  \mathrm{Bias}_{gr}
+  =
+  \frac{1}{|V_{gr}|}\sum_{i\in V_{gr}}
+  \frac{\widehat{D}_{i}^{r}-D_i^{r}}{D_i^{r}},
+  \qquad
+  \mathrm{Coverage}_{gr}(\alpha)
+  =
+  \frac{1}{|V_{gr}|}\sum_{i\in V_{gr}}
+  1\{D_i^{r}\in I_i^{r,1-\alpha}\},
+\]
+for segment $g$ and regime $r$. The pricing model should not be used for
+material stress pricing unless dollar calibration, interval coverage,
+rate-elasticity signs, runoff forecasts, and cannibalization decomposition pass
+in the relevant segment. If those gates fail, the model can still support
+learning-cell design and management overlays, but not automated stress pricing.
+
+For governance, stress pricing should have explicit promotion thresholds:
+\[
+\begin{gathered}
+  |\mathrm{Bias}_{gr}|\le b_{\max},\qquad
+  |\mathrm{Coverage}_{gr}(\alpha)-(1-\alpha)|\le c_{\max},\\
+  \operatorname{sign}(\widehat{\varepsilon}_{if}^{r})
+    \ \text{stable across accepted specifications},\qquad
+  \Pr(\widehat{\mathrm{NPV}}_{io}^{r}<0)\le q_{\max},\\
+  \left|
+  \widehat{\mathrm{Runoff}}_{gr}^{\mathrm{stress}}
+  -
+  \mathrm{Runoff}_{gr}^{\mathrm{realized}}
+  \right|\le u_{\max}.
+\end{gathered}
+\]
+The last line is especially important: a model that captures first-month
+inflows but misses post-stress decay can overstate the value of stress pricing.
+When historical stress observations are sparse, validation should use
+backtests across rate-hiking cycles, local market shocks, industry downturns,
+competitor rate changes, and deliberately randomized learning cells. The result
+should be labeled by evidence grade: randomized, quasi-experimental,
+historically backtested, scenario-only, or management overlay.
+
+\section{Estimation Problems Specific to the Recommended Model}
+
+The proposed architecture is useful only if the bank estimates the right
+objects. A large premium bank faces a particularly important identification
+problem: its observed SME customers are not a random sample of the SME market.
+They may be larger, more complex, more urban, more digitally active, more
+relationship-oriented, more multi-product, or more sensitive to brand and
+operational reliability than SMEs served by regional and community banks. If the
+model is fit only on focal-bank customers, it can learn the behavior of SMEs
+that already selected a premium bank, not the behavior of competitor-bank
+customers the bank wants to win.
+
+This section states the estimation problems in the notation of Sections 5 and
+6. The main point is that selection, unobserved quality, and endogenous prices
+enter every component of
+\[
+  D_{ift}(o,M_t,R_t)
+  =
+  D_{it}^{*}(M_t,R_t)\,s_{ift}(o,M_t,R_t),
+\]
+and therefore directly affect estimated competitor wallet, pricing response,
+move-over, and risk-adjusted value.
+
+The closest literatures each solve part of the problem, but none solves the
+full SME wallet-acquisition problem alone. BLP-style banking demand models use
+market shares, product attributes, and instruments to handle unobserved
+product-market quality \citep{berry1995automobile,dick2008demand,nevo2001cereal}.
+Ma extends this logic to financial products with individual-specific prices and
+selectively observed chosen-product prices \citep{ma2024discrete}. Sample
+selection and external-validity literatures clarify why estimates from one
+selected population need not transport to another
+\citep{heckman1979selection,hotz2005predicting,manski1990bounds}. Causal
+response methods separate propensity from incremental treatment effects
+\citep{rosenbaum1983propensity,wager2018causalforests,chernozhukov2018dml}.
+Our setting must combine all of these: a selected premium-bank panel, latent
+competitor wallets, negotiated SME prices, branch-level aggregate anchors, and
+campaign interventions.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\begin{tabular}{@{}
+  >{\raggedright\arraybackslash}p{0.19\linewidth}
+  >{\raggedright\arraybackslash}p{0.25\linewidth}
+  >{\raggedright\arraybackslash}p{0.25\linewidth}
+  >{\raggedright\arraybackslash}p{0.20\linewidth}
+@{}}
+\toprule
+Model component & What the literature typically does & Why it is insufficient here & Required adaptation \\
+\midrule
+Share model $s_{ift}$ & BLP/micro-BLP uses market shares, product attributes,
+and instruments for prices & SME bank quality and relationship value are
+partly unobserved and premium-bank clients are selected & Product-market
+quality controls, instruments, and target-population diagnostics \\
+Price vector $C_{ijmt}$ & Financial-product demand models allow individual-
+specific prices and selected observed prices & SME prices include negotiated
+rates, fee waivers, treasury terms, and rejected quotes & Quote ledger,
+price-imputation validation, and selectivity correction \\
+Wallet $W_{ipt}^{*}$ & Cross-sell and latent-factor models infer missing
+product ownership or amount & Competitor dollar balances are latent and branch
+shares mix segments & External anchors, segment-mix measurement equations, and
+uncertainty intervals \\
+Dynamic demand $D_{it}^{*}$ & Dynamic panels forecast balances from lags and
+market conditions & Premium-bank customers may have different growth,
+seasonality, and stress behavior & Stratified out-of-time tests and separation
+of demand growth from share movement \\
+Move-over and policy $J_{io}$ & Uplift and causal models estimate treatment
+effects under assignment assumptions & RM attention, pricing exceptions, and
+campaigns are targeted & Randomized learning cells, overlap diagnostics, and
+orthogonal scores \\
+\bottomrule
+\end{tabular}
+\caption{How existing estimation approaches map into the recommended SME wallet model.}
+\label{tab:estimation_literature_map}
+\end{table}
+
+\subsection{Premium-Bank Selection and Transportability}
+
+Let $B_i=f$ denote that SME $i$ is observed as a focal-bank customer. The bank
+usually estimates on
+\[
+  p(Y_i,X_i\mid B_i=f),
+\]
+but deployment requires predictions for prospects currently held by competitors:
+\[
+  p(Y_i(o),X_i\mid B_i\neq f).
+\]
+The selection problem is that
+\[
+  p(h_{it}\mid X_i,B_i=f)
+  \neq
+  p(h_{it}\mid X_i,B_i\neq f),
+\]
+where $h_{it}$ is the latent state containing liquidity need, price sensitivity,
+switching cost, service preference, and relationship depth. A Chase-like bank's
+customers may have systematically higher operating complexity and stronger
+preference for scale, branch/digital reliability, treasury integration, and
+brand safety. A model trained only on these customers may overstate the
+competitor-bank prospect's willingness to move for the same offer, or understate
+the rate premium needed to dislodge a relationship at a regional bank.
+
+The remedy is not to ``adjust for bank size'' with one control variable. The
+model needs a target-population correction. Let $T_i=1$ denote the target
+population for a campaign or prospect universe, and let $S_i=1$ denote
+membership in the estimation sample. A transparent first correction is
+importance weighting:
+\[
+  w_i
+  =
+  \frac{\Pr(T_i=1\mid X_i)}
+       {\Pr(S_i=1\mid X_i)}.
+\]
+The weighted estimating equations for any module parameter $\theta$ become
+\[
+  \sum_{i,t} w_i\,\psi(Y_{it},X_{it};\theta)=0.
+\]
+This is the analogue of reweighting or transporting estimates from one sample
+to another in program-evaluation settings \citep{hotz2005predicting}. It helps
+only for selection on observed variables. If unobserved service preference or
+switching cost differs between premium-bank customers and regional-bank
+customers, the problem becomes partially identified; the honest output is a
+sensitivity range or bound, not a single point estimate \citep{manski1990bounds}.
+Therefore the bank should also use external anchor samples: consented account
+aggregation, onboarding statements, win/loss files, branch-market aggregates,
+market-cell benchmarks, and conversion events. The target-population diagnostic
+is segment calibration:
+\[
+  \mathrm{Bias}_{gp}^{T}
+  =
+  \frac{1}{|V_{gp}^{T}|}
+  \sum_{i\in V_{gp}^{T}}
+  \frac{\widehat{W}_{ipt}^{*}-W_{ipt}^{A}}{W_{ipt}^{A}},
+\]
+computed on validation samples that resemble the prospect population, not only
+current focal-bank customers. If this diagnostic fails, the model should be
+reported as a within-bank relationship-deepening model, not as a competitor
+wallet-acquisition model.
+
+\subsection{Unobserved Bank Quality in the Share Model}
+
+The discrete-choice layer contains unobserved bank-market quality:
+\[
+  U_{ijmt}
+  =
+  \delta_{jmt}
+  +\beta_i'A_{jmt}
+  +\zeta_i'Q_{jmt}
+  -\alpha_i'C_{ijmt}
+  +\kappa_i'B_{ijmt}
+  +\xi_{jmt}
+  +\epsilon_{ijmt}.
+\]
+For a premium bank, $\xi_{jmt}$ is not a nuisance term. It may include brand
+trust, perceived safety, treasury-service reliability, digital uptime,
+relationship-manager quality, geographic convenience for owners and employees,
+and the value of being with a systemically important bank. These attributes are
+partly observed by customers and relationship managers but not fully observed
+by the econometrician. If cost-like prices or offers are correlated with
+$\xi_{jmt}$,
+then
+\[
+  \mathbb{E}[C_{ijmt}\xi_{jmt}]\neq0,
+\]
+and the estimated price coefficient confounds price sensitivity with unobserved
+quality. This is the standard differentiated-product demand issue in BLP-style
+models \citep{berry1995automobile,nevo2001cereal}, and it is especially
+important in banking because service and safety quality are central parts of
+the product.
+
+The model should therefore estimate product-market fixed effects or mean
+utilities $\delta_{jmt}$, use instruments or control functions for endogenous
+price, and include explicit quality proxies where possible. Candidate quality
+controls include branch density, digital-service incidents, service response
+times, relationship-manager coverage, treasury implementation time, complaint
+rates, local deposit outflow stress, bank credit ratings, uninsured-deposit
+exposure, and customer-service capacity. Candidate instruments include
+rate-sheet rules, funding-cost shifters, policy thresholds, centralized pricing
+changes, and cost interactions with product attributes. Competitor-rate shocks
+should usually enter as demand-environment variables or competitor-response
+scenarios; they are instruments only with a documented exclusion restriction.
+The identifying moment is
+\[
+  \mathbb{E}[Z_{jmt}\xi_{jmt}(\theta)]=0.
+\]
+This is the same role played by instruments in differentiated-product demand
+estimation: they separate price variation caused by supply or cost shifters
+from price variation caused by unobserved demand quality
+\citep{berry1995automobile,nevo2001cereal}. In banking applications such as
+\citet{dick2008demand} and \citet{egan2017deposit}, local competition, product
+attributes, and banking-market structure provide part of that identifying
+variation. For SME wallet capture, the additional difficulty is that the
+premium-bank brand and relationship quality are themselves central attributes,
+so the quality controls must be richer than in a simple posted-rate deposit
+model.
+When that moment is not credible, the output should be labeled as descriptive
+preference or association. It should not be used for rate optimization.
+Control-function approaches are another way to handle endogenous prices in
+choice models \citep{petrin2010control,wooldridge2015control}.
+
+\subsection{Individual-Specific Prices and Selectively Observed Quotes}
+
+For SME banking, the effective cost-like price vector
+\[
+  C_{ijmt}(o)
+  =
+  (r,f,\mathrm{minbal},\mathrm{feecredit})
+\]
+is often negotiated; safety and service belong in the quality vector
+$Q_{jmt}(o)$. The econometrician may observe booked prices for chosen products
+and perhaps some rejected quotes, but not the full menu of prices each SME
+would have faced at all competitors. This is exactly why the Ma framework is
+relevant: in financial products, customers can face individual-specific prices,
+and using a common market price can bias estimated price sensitivity when those
+prices are correlated with demographics, risk, or income
+\citep{ma2024discrete}.
+
+For the recommended model, the first-stage pricing equation should be written
+for every feasible bank-product alternative:
+\[
+  C_{ijmt}^{k}
+  =
+  q_k(Z_{ijmt}^{P},X_i,A_{jmt},M_t)+v_{ijmt}^{k},
+  \qquad
+  k\in\{r,f,\mathrm{minbal},\mathrm{feecredit}\}.
+\]
+The problem is that $C_{ijmt}^{k}$ is often observed only when a quote is
+generated or a product is chosen. Let $R_{ijmt}^{P}=1$ indicate observed price.
+Then
+\[
+  R_{ijmt}^{P}
+  =
+  1\{\pi'Z_{ijmt}^{R}+\nu_{ijmt}>0\}.
+\]
+If quote observation depends on latent demand or bargaining ability,
+$\mathbb{E}[v_{ijmt}^{k}\mid R_{ijmt}^{P}=1]\neq0$. Ma's estimator treats this
+as a selectivity problem distinct from the classic Heckman market-entry problem:
+the customer is in the market, but the econometrician observes only the chosen
+product's individualized price \citep{heckman1979selection,ma2024discrete}. In
+our SME setting, the same issue appears when we observe the booked treasury or
+deposit terms but not the competitor terms and rejected focal-bank quotes. The
+remedy is to maintain a quote ledger that records offered, rejected, expired,
+and exception-approved terms, and to use selectivity correction or control
+functions when unchosen prices must be imputed. For governance, the
+price-imputation layer should have its own out-of-sample loss:
+\[
+  L_P
+  =
+  \frac{1}{|Q|}
+  \sum_{(i,j,m,t)\in Q}
+  \|C_{ijmt}^{\mathrm{obs}}-\widehat{C}_{ijmt}\|^2,
+\]
+where $Q$ is a held-out quote sample. Poor price prediction should veto
+counterfactual pricing even if the final choice model has good in-sample fit.
+
+\subsection{Latent Competitor Wallet and Segment Mixing}
+
+The model uses latent competitor wallet
+\[
+  A_{ipt}^{-f}=W_{ipt}^{*}-a_{ifpt}^{\mathrm{obs}}.
+\]
+This object is not directly observed for most prospects. Public and branch
+market-share data help anchor local totals, but they mix consumer, SME,
+commercial, and wholesale balances. Thus the measurement equation is
+\[
+  S_{fmt}^{\mathrm{branch}}
+  =
+  \sum_{g\in\mathcal{G}}\omega_{gmt}S_{fgmt}+e_{fmt},
+\]
+not $S_{f,\mathrm{SME},m,t}=S_{fmt}^{\mathrm{branch}}$. If the segment weights
+$\omega_{gmt}$ are misspecified, the model can incorrectly infer that a branch
+market is weak in SME share when the weakness is actually consumer deposits, or
+vice versa.
+
+The remedy is a hierarchical measurement model with sensitivity analysis over
+segment-mix assumptions:
+\[
+  p(W^{*},S,\omega\mid
+  a^{\mathrm{obs}},S^{\mathrm{branch}},A^{\mathrm{anchor}},X).
+\]
+This is closest in spirit to latent-trait and mixed-data factor models in the
+cross-selling literature \citep{kamakura1991latent,kamakura2003database}, but
+the SME wallet version has a harder level-identification problem because the
+missing variable is a dollar competitor balance, not only an unobserved product
+affinity. EM or Bayesian data augmentation can estimate the latent structure
+\citep{dempster1977em}, but the level of $W_{ipt}^{*}$ still requires anchors.
+The output should include posterior or bootstrap intervals for
+$A_{ipt}^{-f}$, not only a point estimate. Management reports should distinguish
+three evidence grades: directly anchored competitor wallet, market-anchored
+competitor wallet, and model-imputed competitor wallet. Only the first two
+should be used for dollar claims in high-stakes targeting.
+
+\subsection{Dynamic Demand Versus Share Movement}
+
+Observed deposit growth after an offer is
+\[
+  \Delta D_{if,t:t+H}^{\mathrm{obs}}
+  =
+  \Delta D_{i}^{*,H}s_{if}^{0}
+  +D_{i}^{*,0}\Delta s_{if}^{H}
+  +\Delta D_{i}^{*,H}\Delta s_{if}^{H}
+  +u_{iH}.
+\]
+The first term is growth in total liquidity demand, the second is share
+movement, and the third is interaction. In a premium bank, large clients may
+grow faster or experience different seasonality than regional-bank clients.
+If the model attributes all observed balance growth to $\Delta s_{if}^{H}$, it
+will overstate competitor capture. If it attributes all stress-period balance
+growth to $D_i^{*}$, it will understate the effect of safety and relationship
+share.
+
+The remedy is to estimate the dynamic demand layer and share layer jointly, or
+to use a two-step estimator with generated-regressor uncertainty carried
+forward. Dynamic-panel methods such as \citet{arellano1991panel} address
+persistence and fixed effects, while corporate-liquidity studies motivate why
+cash and deposits vary with financing constraints and shocks
+\citep{opler1999cash,almeida2004cash,bates2009cash}. Those literatures do not
+identify competitor share movement by themselves. Required diagnostics include
+forecast error for $D_i^{*}$, share-anchor residuals, and reconciliation of
+observed balance changes into move, expansion, and cannibalization. Out-of-time
+tests should be stratified by incumbent-bank type, prospect channel, industry,
+geography, and relationship size.
+
+\subsection{Campaign Assignment, Relationship-Manager Attention, and Uplift}
+
+The action $o$ is usually not random. Relationship managers contact customers
+who look promising, price exceptions are granted to strategically important
+firms, and premium banks may selectively pursue clients already likely to move.
+Thus
+\[
+  O_i \not\!\perp\!\!\!\perp
+  \{Y_i(o):o\in\mathcal{O}\}\mid \mathcal{I}_{it}
+\]
+can fail. In that case, propensity, predicted wallet, and treatment effect are
+not the same object.
+
+The preferred remedy is randomized or quasi-random learning cells for deposit
+offers, pricing, onboarding support, and consolidation campaigns. When random
+assignment is not feasible, use overlap diagnostics and orthogonal scores:
+\[
+\begin{aligned}
+  \psi_i(o)
+  &=
+  m_o(X_i)-m_0(X_i)
+  +\frac{1\{O_i=o\}}{e_o(X_i)}\{Y_i-m_o(X_i)\}\\
+  &\quad
+  -\frac{1\{O_i=0\}}{e_0(X_i)}\{Y_i-m_0(X_i)\}.
+\end{aligned}
+\]
+This score is credible only if overlap holds and the conditioning set contains
+the variables that drove assignment. This is the same distinction made in the
+uplift and causal-inference literatures between response propensity and
+incremental response \citep{rosenbaum1983propensity,lo2002true,wager2018causalforests,chernozhukov2018dml}.
+The model should report the effective sample size after weighting, standardized
+differences before and after adjustment, placebo effects on pre-treatment
+balances, and lift in holdout cells. Otherwise, the model may be used for
+prioritization but not causal incrementality.
+
+\subsection{Equilibrium and Competitor Response}
+
+Counterfactual pricing assumes something about competitor behavior. If the
+focal bank raises rates for selected SMEs, competitors may match, selectively
+retain high-value accounts, or respond through service and credit terms. The
+share simulation
+\[
+  s_{ift}(o)
+\]
+is therefore conditional on a competitor-response scenario. A unilateral
+simulation is useful for small tests but can overstate capture in broad
+campaigns.
+
+The remedy is to define counterfactual regimes explicitly:
+\[
+  s_{ift}^{r}(o,o_{-f}^{0}),\qquad
+  s_{ift}^{r}(o,o_{-f}^{\mathrm{match}}),\qquad
+  s_{ift}^{r}(o,o_{-f}^{\mathrm{retain}}).
+\]
+Management should see wallet capture under no-response, rate-match, and
+selective-retention scenarios. A recommendation that works only under
+no-response assumptions should be treated as a testable hypothesis, not a base
+case.
+
+\subsection{Minimum Estimation Standard}
+
+Before the recommended model is used for material targeting or pricing, the
+bank should require the following estimation ledger:
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Selection ledger:} comparison of current focal-bank customers,
+  target prospects, won prospects, and lost prospects; target-population weights
+  and sensitivity to unobserved selection.
+  \item \textbf{Price ledger:} quote coverage, rejected quotes, exception rates,
+  price-imputation accuracy, and evidence on price exogeneity or instruments.
+  \item \textbf{Quality ledger:} observed quality proxies, unobserved
+  product-market fixed effects, and sensitivity of price elasticities to quality
+  controls.
+  \item \textbf{Wallet ledger:} source of each competitor-wallet estimate:
+  directly observed, anchored, or imputed.
+  \item \textbf{Dynamic ledger:} decomposition of balance changes into total
+  liquidity demand, share movement, interaction, cannibalization, and residual.
+  \item \textbf{Causal ledger:} randomized evidence, quasi-random evidence, or
+  associational status for each offer and segment.
+  \item \textbf{Counterfactual ledger:} competitor-response scenario, stress
+  regime, price assumptions, and uncertainty interval for every policy output.
+\end{enumerate}
+
+These ledgers make the estimation problem auditable. They also prevent the
+largest practical mistake in this project: presenting a precise-looking wallet
+or pricing number when the identifying evidence supports only a ranking, a
+sensitivity range, or a learning-cell recommendation.
+
+\section{Validation and Evaluation}
+
+Validation should be separated into ledgers that match the estimands.
+
+\paragraph{Wallet reconstruction.}
+Evaluate whether estimated wallet sizes match external validation samples,
+customer self-reports, bureau data, account aggregation data, or post-acquisition
+observations when a customer consolidates accounts. Metrics include calibration,
+rank ordering, interval coverage, and error by industry and firm size.
+
+\paragraph{Product amount and severity.}
+Evaluate the conditional amount model separately from product incidence. Metrics
+should include balance-weighted error, mean and quantile calibration, prediction
+interval coverage, segment-level relative bias, and retransformation diagnostics
+for log-dollar models. A high adoption AUC does not validate estimated deposit
+balances, loan balances, card spend, or assets under management.
+
+\paragraph{Dynamic deposit demand.}
+Evaluate deposit-balance forecasts out of time and across stress regimes.
+Metrics should include calibration of prediction intervals, error by industry
+and season, stress-period stability, and decomposition of forecast error into
+total-liquidity demand error versus focal-bank share error. A model that ranks
+large deposit customers well in normal times may still fail if it treats stress
+liquidity as a fixed wallet stock.
+
+\paragraph{Stress-condition pricing.}
+Evaluate rate sensitivity, deposit beta, and runoff separately by stress regime.
+Metrics should include dollar calibration by scenario, rate-elasticity sign and
+magnitude stability, branch-share anchor residuals, balance decay after stress,
+and NPV sensitivity to funding value and pricing cost. Stress pricing should not
+be promoted from normal-period elasticity alone.
+
+\paragraph{Product prediction.}
+Evaluate product adoption, balance growth, and sequence prediction using
+out-of-time samples. Metrics include AUC, precision at top $k$, calibration,
+balance-weighted error, and next-product hit rate. These are predictive metrics,
+not proof of causal campaign effectiveness.
+
+\paragraph{Causal response.}
+Evaluate campaigns with randomized holdouts or credible quasi-experiments.
+Metrics include incremental adoption, incremental balances, risk-adjusted
+profit, retention, and adverse outcomes. A campaign should not be promoted based
+only on high propensity scores or backtested correlation.
+
+\paragraph{Move-over decomposition.}
+Evaluate whether predicted moved amounts match observed evidence about migration
+origin in conversion samples. Metrics include cap violations
+($\widehat{\Delta a}^{\mathrm{move}}>\widehat{A}^{-f}$), reconciliation error in
+the move, expansion, and cannibalization identity; gross and net balance lift;
+post-offer decay of migrated balances; and product-level diversion from existing
+focal-bank products. Without this validation, the model should report
+incremental net balances rather than competitor dollars captured.
+
+\section{Research Gaps}
+
+Several gaps remain for the exact US SME banking use case.
+
+\begin{enumerate}[leftmargin=*]
+  \item Most direct cross-selling papers use consumer or general financial
+  services data, not modern US SME banking panels.
+  \item Competitor product holdings and balances are usually unobserved, so
+  validation is difficult.
+  \item Even when competitor-held balances are estimated, the movable fraction
+  of those balances is usually not identified without conversion, transfer,
+  account-aggregation, or experimental evidence.
+  \item Deposit size is not merely another product label; it is continuous,
+  rate-sensitive, liquidity-sensitive, and operationally tied to payments.
+  It should be treated as dynamic demand, not as a constant wallet stock.
+  \item The literature on SME-specific deposit dynamics during stress is less
+  direct than the broader corporate cash, credit-line, and bank-liquidity
+  literature. A bank should validate stress behavior with its own panel data.
+  \item Marketing propensity and causal treatment effect are frequently
+  conflated in practice.
+  \item Relationship lending creates joint value across deposits, payments,
+  lending, and monitoring; product-by-product models may understate this
+  complementarity.
+  \item Product-assortment, next-best-product, and bundle design are useful
+  extensions, but they are not the main problem addressed here. They should be
+  treated as further research after the deposit-wallet and deposit-capture
+  estimands are validated.
+  \item Compliance, fair-lending, privacy, and model-risk constraints are
+  central in bank deployment but are not the main subject of the academic
+  cross-sell literature.
+\end{enumerate}
+
+\section{Recommended Implementation Roadmap}
+
+A bank can proceed in stages.
+
+\paragraph{Stage 1: Define the wallet taxonomy.}
+Start with a deposit-centered taxonomy: operating deposits, savings and
+liquidity products, treasury-linked balances, and externally held competitor
+balances. Define incidence, size, competitor-held amount, movable amount, net
+incremental amount, runoff, and profitability measures. Other products can be
+added as relationship context or later extensions.
+
+\paragraph{Stage 2: Build baseline wallet and liquidity proxies.}
+Use internal balances, transaction flows, industry benchmarks, revenue
+estimates, and market-level deposit data to create transparent baseline wallet
+estimates. For deposits, construct dynamic liquidity proxies such as trailing
+cash inflow volatility, payroll coverage months, working-capital intensity,
+seasonality, and local market position. These baselines are necessary
+comparators for later machine-learning models.
+
+\paragraph{Stage 3: Fit deposit incidence and size models.}
+Use two-part models for deposit relationships: an incidence model for whether
+the SME has relevant deposits and a severity model for positive balances. Use
+other products as covariates or latent relationship context. Report uncertainty
+intervals, conditional-amount calibration, quantile calibration, and
+segment-level dollar bias.
+
+\paragraph{Stage 4: Estimate dynamic deposit demand.}
+Fit panel time-series models for deposit balances and total liquidity demand.
+Include lagged deposits, transaction flows, industry-by-time effects,
+geography-by-time effects, rate environment, local competition, and relationship
+terms. Benchmark against seasonal naive and fixed-effects baselines before using
+more complex sequence models.
+
+\paragraph{Stage 5: Estimate deposit pricing and share response.}
+Use rate, fee, service, branch-market, and relationship variation to estimate
+deposit share response. Treat branch-level market share as a noisy aggregate
+anchor when it cannot separate consumer, SME, commercial, and wholesale
+deposits.
+
+\paragraph{Stage 6: Stress-test deposit demand.}
+Estimate stress scenarios for balance growth, cash burn, flight-to-safety
+migration, and post-stress runoff. Validate these scenarios with the bank's own
+panel history and management judgment.
+
+\paragraph{Stage 7: Introduce randomized campaign holdouts.}
+For each major deposit action, maintain holdouts and estimate incremental lift.
+Avoid using raw purchase propensity as the promotion criterion.
+
+\paragraph{Stage 8: Estimate move-over and cannibalization.}
+Use conversion events, account-transfer evidence, payoff and balance-transfer
+records, account aggregation, direct-deposit or ACH migration, and randomized
+consolidation offers to estimate the fraction of competitor-held balances that
+move under each offer. Separate migrated competitor wallet from total-demand
+expansion and cannibalization of existing focal-bank balances.
+
+\paragraph{Stage 9: Optimize for risk-adjusted relationship value.}
+Combine expected incremental balances, fee revenue, interest margin, funding
+value, credit risk, servicing cost, liquidity value, and compliance constraints.
+
+\paragraph{Stage 10: Monitor drift and fairness.}
+Monitor calibration, response, customer complaints, adverse action patterns,
+industry/geographic stability, stress-regime performance, and
+relationship-manager override behavior.
+
+\section{Conclusion}
+
+There is substantial literature relevant to SME deposit wallet-size estimation,
+but it is distributed across marketing science, banking economics, SME finance,
+and causal inference. The direct cross-selling literature provides models for
+latent product need and wallet context, while share-of-wallet research clarifies
+the distinction between customer retention and relationship depth.
+Deposit-demand and bank-competition research explain why deposits require
+special treatment. Corporate liquidity and credit-line research shows why
+deposits should not be treated as a fixed-size wallet bucket: firms adjust cash
+balances and liquidity demand as conditions change. Relationship-lending papers
+show why SME transaction accounts and credit products are jointly valuable.
+Causal uplift methods are needed to decide which deposit actions will actually
+move wallet.
+
+The recommended solution is therefore not a single score. It is a modular
+decision system: latent wallet estimation, dynamic deposit demand,
+focal-bank share response, deposit pricing, campaign uplift, and constrained
+profit optimization. Such a system should be validated with external or
+post-conversion wallet evidence, branch-market-share anchors used cautiously,
+out-of-time deposit forecasts, stress-regime diagnostics, and randomized
+marketing holdouts before it is used for major pricing or targeting decisions.
+
+\section*{Scope Note}
+
+This document is a technical literature synthesis for problem formulation and
+model design, not a full systematic review. It emphasizes sources that are
+directly useful for banking cross-selling, wallet share, deposit competition,
+SME relationship lending, dynamic liquidity demand, and causal response. Before
+using the document as a formal literature-review artifact, the bank should
+complete a documented source-support ledger, backward and forward snowballing,
+retraction/erratum checks, and an omission-risk register.
+
+\bibliographystyle{plainnat}
+\bibliography{sme_wallet_refs}
+
+\end{document}

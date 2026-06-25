@@ -2,13 +2,13 @@
   "mcpServers": {
     "mathdevmcp": {
       "type": "stdio",
-      "command": "python",
+      "command": "/home/chakwong/anaconda3/envs/tf-gpu/bin/python",
       "args": [
         "-m",
         "mathdevmcp.mcp_server"
       ],
       "env": {
-        "PYTHONPATH": "src"
+        "PYTHONPATH": "/home/chakwong/MathDevMCP/src"
       }
     }
   }

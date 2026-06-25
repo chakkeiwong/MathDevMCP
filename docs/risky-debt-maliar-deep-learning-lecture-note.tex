@@ -1,0 +1,2801 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{natbib}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!70!black,
+  citecolor=green!40!black,
+  urlcolor=blue!70!black
+}
+
+\newtheorem{proposition}{Proposition}
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\1}{\mathbf{1}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{Solving a Risky-Debt Corporate Finance Model with Deep Learning\\
+{\large a toy example on the possibility of applying machine learning to finance problems}}
+\author{Chak Wong}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+These notes explain how to adapt the deep-learning method of
+\citet{maliar2021deep} to the risky-debt dynamic corporate finance model in
+Section 3.6 of \citet{strebulaev2012dynamic}. The goal is not to prove that a
+particular neural network will always converge. The goal is more modest and
+more useful for computation: we rewrite the firm's recursive problem, the
+limited-liability default condition, and the lender's zero-profit debt-pricing
+condition as residual equations that can be minimized by stochastic gradient
+descent. The exposition is written for early undergraduates. It uses functions,
+sums, informal derivatives, expected values, and a small amount of optimization
+language; each specialized idea is introduced before it is used.
+\end{abstract}
+
+\tableofcontents
+
+\section{What problem are we solving?}
+
+Dynamic corporate finance models describe a firm that makes decisions today,
+then faces uncertainty tomorrow. In the simple investment model of
+\citet[Section 3.1]{strebulaev2012dynamic}, the firm chooses next period's
+capital stock. In the risky-debt model of
+\citet[Section 3.6]{strebulaev2012dynamic}, the firm chooses both next period's
+capital and next period's debt, and debt is risky because the firm may default.
+
+The difficult object is the \emph{value function}. A value function is a rule
+that assigns a number to each state of the firm. For example,
+\[
+  V(k,b,z)
+\]
+means the equity value of a firm with capital \(k\), debt \(b\), and productivity
+shock \(z\). The state variables are:
+\begin{itemize}[leftmargin=2em]
+  \item \(k\): beginning-of-period capital;
+  \item \(b\): debt due at the beginning of the period, with negative \(b\)
+  interpreted as cash;
+  \item \(z\): a productivity or profitability shock.
+\end{itemize}
+
+\citet[Definition 2.8 and Algorithm 1]{maliar2021deep} show how a dynamic
+economic model can be turned into a residual-minimization problem. The broad
+idea is:
+\begin{enumerate}[leftmargin=2em]
+  \item Write the economic model as equations.
+  \item Approximate unknown functions, such as \(V\), by neural networks.
+  \item Measure how badly the neural networks violate the model equations.
+  \item Train the networks to make those violations small.
+\end{enumerate}
+
+The central question of this note is: can we do this for the risky-debt model?
+The answer is yes, with one important qualification. We must not minimize only
+the Bellman equation. We must also impose the lender's debt-pricing equation,
+because the risky interest rate is itself an equilibrium object.
+
+\section{Expected values and the shock process}
+
+The firm does not know next period's shock \(z'\) when it makes today's choices.
+Following \citet[eq. (3.9)]{strebulaev2012dynamic}, assume that the shock follows
+the log autoregression
+\begin{equation}
+  \log z' = \rho \log z + \varepsilon',
+  \label{eq:ar1-shock}
+\end{equation}
+where \(\rho\) is a persistence parameter and \(\varepsilon'\) is a random
+innovation. If we know today's \(z\), then \cref{eq:ar1-shock} gives the
+distribution of tomorrow's \(z'\).
+
+If \(F(z')\) is any function of tomorrow's shock, then
+\[
+  \E[F(z')\mid z]
+\]
+means the average value of \(F(z')\), using the probabilities implied by today's
+state \(z\). If the shock has finitely many possible next values
+\[
+  z'_1,\ldots,z'_n
+\]
+with probabilities \(p_1,\ldots,p_n\), then
+\[
+  \E[F(z')\mid z] = p_1F(z'_1)+\cdots+p_nF(z'_n).
+\]
+In the continuous case, the sum becomes an integral. These notes use expectation
+notation because it covers both cases.
+
+\section{Warm-up: the basic investment Bellman equation}
+
+In the basic model of \citet[Section 3.1]{strebulaev2012dynamic}, the firm has
+capital \(k\), chooses next period's capital \(k'\), and therefore invests
+\begin{equation}
+  I = k'-(1-\delta)k,
+  \label{eq:investment-law}
+\end{equation}
+where \(\delta\) is the depreciation rate. The one-period cash flow is
+\begin{equation}
+  e(k,k',z)
+  =
+  \pi(k,z)-\psi(k'-(1-\delta)k,k)-\bigl(k'-(1-\delta)k\bigr).
+  \label{eq:basic-cash-flow}
+\end{equation}
+Here \(\pi(k,z)\) is profit and \(\psi(I,k)\) is an adjustment cost.
+
+Let
+\[
+  \beta = \frac{1}{1+r},
+\]
+where \(r\) is the risk-free interest rate. The number \(\beta\) is the one-period
+discount factor.
+
+\begin{proposition}[Bellman equation for the basic investment model]
+\label{prop:basic-bellman}
+Suppose the firm maximizes the expected discounted sum of future cash flows.
+Then the value function satisfies
+\begin{equation}
+  V(k,z)
+  =
+  \max_{k'}
+  \left\{
+    e(k,k',z)
+    +\beta \E[V(k',z')\mid z]
+  \right\}.
+  \label{eq:basic-bellman}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+The value of the firm is the value of today's cash flow plus the discounted
+value of all future cash flows. If the firm chooses \(k'\), today's cash flow is
+\(e(k,k',z)\). Tomorrow the firm will be in state \((k',z')\), so tomorrow's
+value is \(V(k',z')\). Because \(z'\) is random, the firm uses the average value
+\(\E[V(k',z')\mid z]\). Because tomorrow's value is one period in the future, it
+is multiplied by \(\beta\). Finally, the firm chooses the \(k'\) that gives the
+largest total. This gives \cref{eq:basic-bellman}.
+\end{proof}
+
+This has the same recursive structure as
+\citet[eq. (3.10)]{strebulaev2012dynamic}, but written with \(\beta\) instead
+of \(1/(1+r)\).
+
+\section{The risky-debt model}
+
+Now add one-period debt. The firm starts the period with debt \(b\), chooses next
+period's capital \(k'\), and chooses next period's debt \(b'\). The important new
+feature in \citet[Section 3.6]{strebulaev2012dynamic} is that debt is risky. A
+lender will charge a risky interest rate
+\[
+  \widetilde r(z,k',b')
+\]
+that depends on today's shock \(z\) and on the firm's promised next-period
+capital and debt \((k',b')\).
+
+\subsection{Cash flow with risky debt}
+
+\citet[eq. (3.26)]{strebulaev2012dynamic} define the one-period cash flow as
+\begin{align}
+  e(k,k',b,b',z;\widetilde r)
+  &=
+  (1-\tau)\pi(k,z)
+  -\psi(k'-(1-\delta)k,k)
+  -\bigl(k'-(1-\delta)k\bigr) \notag\\
+  &\quad
+  +\frac{b'}{1+\widetilde r(z,k',b')}
+  +\frac{\tau \widetilde r(z,k',b')b'}
+  {(1+\widetilde r(z,k',b'))(1+r)}
+  -b .
+  \label{eq:risky-cash-flow}
+\end{align}
+
+The terms have simple interpretations:
+\begin{itemize}[leftmargin=2em]
+  \item \((1-\tau)\pi(k,z)\) is after-tax profit.
+  \item \(\psi(k'-(1-\delta)k,k)\) is the adjustment cost of investment.
+  \item \(k'-(1-\delta)k\) is physical investment.
+  \item \(b'/(1+\widetilde r)\) is the amount of cash raised today by issuing
+  a promise to repay \(b'\) next period.
+  \item The term with \(\tau \widetilde r b'\) is the present value of the
+  interest tax deduction used in the Section 3.6 model.
+  \item The final \(-b\) is repayment of debt already due today.
+\end{itemize}
+
+The firm may also face costly external equity finance. To avoid confusing the
+cash-flow function \(e(\cdot)\) with the argument of the financing-cost function,
+write a generic pre-financing cash flow as \(x\). Let \(\eta(x)\) be the
+additional value effect of external financing costs. In many corporate finance
+models, \(\eta(x)=0\) when \(x\ge 0\), because the firm is distributing cash, and
+\(\eta(x)\le 0\) when \(x<0\), because the firm must raise costly outside equity.
+The exact functional form is not needed for the derivation below.
+
+\subsection{Default and recovery}
+
+If the firm defaults next period, the lender recovers
+\begin{equation}
+  R(k',z')
+  =
+  (1-\alpha)\bigl((1-\tau)\pi(k',z')+(1-\delta)k'\bigr),
+  \label{eq:recovery}
+\end{equation}
+where \(\alpha\in[0,1]\) measures deadweight default costs. This is the recovery
+formula stated in \citet[Section 3.6]{strebulaev2012dynamic}.
+
+Limited liability means equityholders can walk away instead of accepting a
+negative equity value. Thus equity value is never below zero.
+
+\begin{remark}[Do not mix up equity value and debt value]
+\label{rem:equity-debt-total-value}
+This is the point at which the notation can become confusing. In these notes,
+\(V(k,b,z)\) is the \emph{equity} value. It is the value to shareholders, not the
+value of the lender's debt claim and not the total value of all claims on the
+firm. Therefore, if the firm defaults, shareholders receive zero by limited
+liability. The recovery \(R(k',z')\) in \cref{eq:recovery} is paid to lenders, so it
+belongs in the debt-pricing equation, not as a positive payoff inside the equity
+continuation value.
+
+If instead we were writing a value function for lenders, or a total firm value
+function that adds equity and debt together, then default recovery would appear
+directly in that object's payoff. The Section 3.6 Bellman equation is an equity
+Bellman equation, so default gives equityholders zero while recovery affects
+equity indirectly through the risky interest rate.
+\end{remark}
+
+\begin{definition}[Policy function]
+\label{def:policy-function}
+A \emph{policy function} is a rule that tells the firm what to do at every
+possible state. In the risky-debt model, a stationary Markov policy is a pair of
+functions
+\[
+  h(k,b,z)=\bigl(h^k(k,b,z),h^b(k,b,z)\bigr),
+\]
+where \(h^k(k,b,z)\) is the next-period capital chosen at state \((k,b,z)\), and
+\(h^b(k,b,z)\) is the next-period debt chosen at that state. The word
+\emph{stationary} means that the same rule is used in every period. The word
+\emph{Markov} means that the rule depends only on the current state
+\((k,b,z)\), not on the full past history.
+\end{definition}
+
+\begin{definition}[Policy-specific and optimal going-concern values]
+\label{def:going-concern-value}
+There are two different objects that should not be confused.
+
+First, suppose the firm is committed to a particular policy \(h\). Given a
+policy-specific equity value \(V^h\) and a risky rate \(\widetilde r\), define
+the value of taking action \((k',b')\) today and then following policy \(h\) from
+tomorrow onward by
+\begin{equation}
+  Q^h(k,b,z;k',b')
+  =
+  e(k,k',b,b',z;\widetilde r)
+  +\eta(e(k,k',b,b',z;\widetilde r))
+  +\beta \E[V^h(k',b',z')\mid z].
+  \label{eq:policy-q-value}
+\end{equation}
+If the firm follows the policy \(h\) today, it chooses
+\((h^k(k,b,z),h^b(k,b,z))\), so its policy-specific going-concern value is
+\begin{equation}
+  G^h(k,b,z)
+  =
+  Q^h(k,b,z;h^k(k,b,z),h^b(k,b,z)).
+  \label{eq:policy-going-concern}
+\end{equation}
+Policy evaluation therefore uses no maximization over actions:
+\begin{equation}
+  V^h(k,b,z)=\max\{0,G^h(k,b,z)\}.
+  \label{eq:policy-bellman}
+\end{equation}
+
+Second, if we are solving for the best policy, we use Bellman optimality. Let
+\(V^\star\) denote the optimal equity value. Define
+\begin{equation}
+  Q^\star(k,b,z;k',b')
+  =
+  e(k,k',b,b',z;\widetilde r)
+  +\eta(e(k,k',b,b',z;\widetilde r))
+  +\beta \E[V^\star(k',b',z')\mid z].
+  \label{eq:q-value}
+\end{equation}
+This is the optimal action-value expression. It asks: if the firm takes the
+particular action \((k',b')\) today, and then behaves optimally from tomorrow
+onward, what is today's equity value? The continuation term
+\(\E[V^\star(k',b',z')\mid z]\) is already an equity value with limited
+liability built into it. It averages next period's shareholder value, which is
+zero in future default states. Define the best going-concern equity value by
+\begin{equation}
+  G^\star(k,b,z) = \max_{k',b'} Q^\star(k,b,z;k',b').
+  \label{eq:best-going-concern}
+\end{equation}
+When the maximum is attained, an optimal policy \(h^\star\) chooses an
+action that attains it at every state:
+\[
+  h^\star(k,b,z)
+  \in
+  \argmax_{k',b'} Q^\star(k,b,z;k',b').
+\]
+\end{definition}
+
+\begin{remark}[Connection with dynamic programming and reinforcement learning]
+\label{rem:dp-rl-policy}
+In reinforcement-learning notation, \(Q^h\) is the action-value function for a
+fixed policy, while \(Q^\star\) is the optimal action-value function. Evaluating
+an existing policy uses \(Q^h\) and \(V^h\). Improving or solving for the optimal
+policy uses the maximization in \(G^\star\). To match the notation in
+\citet[Section 3.6]{strebulaev2012dynamic}, the rest of these notes often drops
+the star and writes \(V,Q,G,h\) for the optimal objects
+\(V^\star,Q^\star,G^\star,h^\star\). Whenever we evaluate a fixed nonoptimal
+policy, we keep the superscript \(h\).
+\end{remark}
+
+\begin{proposition}[Risky-debt Bellman equation]
+\label{prop:risky-bellman}
+In the risky-debt model, optimal equity value satisfies
+\begin{equation}
+  V^\star(k,b,z)
+  =
+  \max\{0,G^\star(k,b,z)\}.
+  \label{eq:risky-bellman}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+If the firm continues, the best value it can obtain is \(G^\star(k,b,z)\),
+because \(G^\star\) is defined as the best equity value over all choices of
+\((k',b')\), followed by optimal behavior in the future. If that value is
+negative, equityholders prefer to default and receive zero rather than keep a
+negative-value equity claim. Therefore equityholders choose the larger of zero
+and the optimal going-concern equity value. This gives
+\cref{eq:risky-bellman}, matching \citet[eq. (3.28)]{strebulaev2012dynamic}.
+The lender's recovery is not missing; it enters the lender's pricing equation
+below and changes current equity value through the risky rate
+\(\widetilde r(z,k',b')\). It also matters recursively because future equity
+values are computed using future debt-pricing equations.
+\end{proof}
+
+\section{Debt pricing}
+
+The risky interest rate is not chosen freely by the firm. Competitive lenders
+must break even. If the lender gives the firm cash today in exchange for a
+promise \(b'\), then the expected payoff next period must equal what the lender
+could earn at the risk-free rate.
+In this note, as in the Section 3.6 formula, \(b'\) denotes the debt position
+chosen today for next period. We use the paper's payoff convention directly:
+when the firm is solvent next period, lenders receive \(b'(1+\widetilde r)\);
+when the firm defaults, lenders receive the recovery value.
+
+Let
+\[
+  D(k',b',z')=
+  \begin{cases}
+    1, & \text{if the firm defaults next period},\\
+    0, & \text{if the firm remains solvent next period}.
+  \end{cases}
+\]
+Equivalently, using \cref{eq:risky-bellman}, the next-period state is a default
+state when its best going-concern equity value is nonpositive:
+\begin{equation}
+  D(k',b',z')=\1\{G^\star(k',b',z')\le 0\}.
+  \label{eq:default-set}
+\end{equation}
+
+\begin{proposition}[Zero-profit risky debt pricing]
+\label{prop:risky-pricing}
+For \(b'>0\), the zero-profit condition for the risky debt rate is
+\begin{equation}
+  b'(1+r)
+  =
+  \E\left[
+    D(k',b',z')R(k',z')
+    +(1-D(k',b',z'))b'(1+\widetilde r(z,k',b'))
+    \mid z
+  \right].
+  \label{eq:risky-pricing}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+The left side, \(b'(1+r)\), is the payoff a lender requires next period to earn
+the risk-free return on the chosen debt position \(b'\). On the right side,
+there are two cases. If the firm defaults, \(D=1\), and the lender receives the
+recovery value \(R(k',z')\). If the firm is solvent, then \(D=0\), and the lender
+receives the promised payoff \(b'(1+\widetilde r)\). The lender prices debt so
+that the expected payoff equals the required risk-free payoff. This is
+\citet[eq. (3.27)]{strebulaev2012dynamic} written with an indicator variable.
+\end{proof}
+
+\begin{remark}[Solving explicitly for the risky rate]
+\label{rem:explicit-rate}
+If \(b'>0\) and the probability of solvency is positive, then
+\cref{eq:risky-pricing} can be rearranged as
+\begin{equation}
+  1+\widetilde r(z,k',b')
+  =
+  \frac{
+    b'(1+r)-\E[D(k',b',z')R(k',z')\mid z]
+  }{
+    b'\E[1-D(k',b',z')\mid z]
+  }.
+  \label{eq:explicit-rate}
+\end{equation}
+This formula shows why the risky rate depends on default probabilities. If
+default becomes more likely, the denominator falls and the risky rate generally
+rises, all else equal. If \(b'\le 0\), the firm is not issuing positive debt in
+this simplified pricing equation; a separate cash-return convention should be
+specified.
+\end{remark}
+
+\begin{proposition}[The risky-debt model is a coupled fixed point]
+\label{prop:coupled-fixed-point}
+A solution of the risky-debt model is a pair \((V^\star,\widetilde r)\), together
+with optimal policies, satisfying all of the following statements at the same
+time:
+\begin{align}
+  V^\star(k,b,z)
+  &=
+  \max\{0,G^\star(k,b,z)\}, \label{eq:fixed-point-equity}\\
+  D(k,b,z)
+  &=
+  \1\{G^\star(k,b,z)\le 0\}, \label{eq:fixed-point-default}\\
+  b'(1+r)
+  &=
+  \E\left[
+    D(k',b',z')R(k',z')
+    +(1-D(k',b',z'))b'(1+\widetilde r(z,k',b'))
+    \mid z
+  \right],
+  \label{eq:fixed-point-pricing}
+\end{align}
+where \(G^\star\) is computed from \cref{eq:best-going-concern} using the same
+\(V^\star\) and \(\widetilde r\). The pricing equation is evaluated for each
+positive promised debt choice \(b'>0\), in particular for the policy choice made
+by the firm.
+\end{proposition}
+
+\begin{proof}
+\Cref{eq:fixed-point-equity} is the limited-liability equity Bellman equation.
+\Cref{eq:fixed-point-default} says that default is chosen exactly when
+continuing gives shareholders no positive value. \Cref{eq:fixed-point-pricing}
+is the lender's zero-profit condition. These equations must hold together
+because each object uses the others: \(V^\star\) determines the default set, the
+default set determines the risky rate through lender recovery, and the risky
+rate enters the cash flow used to compute \(G^\star\) and therefore
+\(V^\star\). This channel operates both today and in future continuation values.
+Thus the problem is not a one-way recursion. It is a fixed point in which the
+equity value, default rule, optimal policy, and risky interest rate are solved
+jointly.
+\end{proof}
+
+\section{Writing default as equations}
+
+The expression \(V=\max\{0,G\}\) is intuitive, but neural-network training often
+works better when a condition is written as equations. We can rewrite the max
+condition using a standard complementarity idea.
+
+\begin{proposition}[Limited liability as complementarity]
+\label{prop:limited-liability-complementarity}
+For two real numbers \(V\) and \(G\), the statement
+\[
+  V=\max\{0,G\}
+\]
+is equivalent to the three conditions
+\begin{equation}
+  V\ge 0,\qquad V-G\ge 0,\qquad V(V-G)=0.
+  \label{eq:complementarity}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+First suppose \(V=\max\{0,G\}\). If \(G\ge 0\), then \(V=G\), so \(V\ge 0\),
+\(V-G=0\), and \(V(V-G)=0\). If \(G<0\), then \(V=0\), so \(V\ge 0\),
+\(V-G=-G>0\), and again \(V(V-G)=0\).
+
+Now suppose the three conditions in \cref{eq:complementarity} hold. Since
+\(V(V-G)=0\), at least one of \(V\) and \(V-G\) must be zero. If \(V=0\), then
+\(V-G\ge 0\) implies \(G\le 0\), so \(V=\max\{0,G\}\). If \(V-G=0\), then
+\(V=G\), and \(V\ge 0\), so \(G\ge 0\) and again \(V=\max\{0,G\}\).
+\end{proof}
+
+One smooth way to combine the three complementarity conditions is the
+Fischer-Burmeister function
+\begin{equation}
+  \operatorname{FB}(a,c)=\sqrt{a^2+c^2}-a-c.
+  \label{eq:fb}
+\end{equation}
+It equals zero exactly when \(a\ge 0\), \(c\ge 0\), and \(ac=0\). Maliar et al.
+use this function for inequality constraints in their Bellman-equation example
+\citep[Section 4.5]{maliar2021deep}.
+
+\section{Neural-network approximations}
+
+Now approximate the unknown objects by functions with trainable parameters
+\(\theta\). The functions \(\widehat h^k_\theta\) and \(\widehat h^b_\theta\)
+approximate the optimal policy functions introduced in
+\cref{def:policy-function}. The value network approximates \(V^\star\), not the
+value of an arbitrary initial policy.
+Write
+\begin{align}
+  \widehat V_\theta(k,b,z) &\approx V^\star(k,b,z), \label{eq:v-network}\\
+  \widehat h^k_\theta(k,b,z) &\approx \text{optimal }k', \label{eq:k-policy-network}\\
+  \widehat h^b_\theta(k,b,z) &\approx \text{optimal }b', \label{eq:b-policy-network}\\
+  \widehat r_\theta(z,k',b') &\approx \widetilde r(z,k',b').
+  \label{eq:rate-network}
+\end{align}
+The hats remind us that these are approximations.
+
+At a state \(s=(k,b,z)\), define the network-implied controls
+\begin{equation}
+  \widehat k'=\widehat h^k_\theta(k,b,z),
+  \qquad
+  \widehat b'=\widehat h^b_\theta(k,b,z).
+  \label{eq:network-policies}
+\end{equation}
+
+In an implementation, one often uses transformations to enforce constraints.
+For example, if capital must satisfy \(\underline k\le k'\le \overline k\), one
+can set
+\[
+  \widehat h^k_\theta(k,b,z)
+  =
+  \underline k+(\overline k-\underline k)\sigma(N^k_\theta(k,b,z)),
+\]
+where \(N^k_\theta\) is an unrestricted neural network and
+\(\sigma(x)=1/(1+e^{-x})\) maps every real number into \((0,1)\).
+
+\section{Residuals for the risky-debt model}
+
+The model contains three main mathematical requirements:
+\begin{enumerate}[leftmargin=2em]
+  \item optimal equity value must satisfy limited liability and the Bellman
+  optimality equation;
+  \item the chosen policy \((\widehat k',\widehat b')\) must maximize the
+  going-concern value;
+  \item the risky rate must satisfy the lender zero-profit condition.
+\end{enumerate}
+We now turn each requirement into a residual. A residual is zero when the
+equation is satisfied and nonzero when the equation is violated.
+
+\subsection{Bellman and default residual}
+
+Define the network-implied optimal going-concern value at state \(s=(k,b,z)\):
+\begin{align}
+  \widehat G_\theta(k,b,z)
+  &=
+  e(k,\widehat k',b,\widehat b',z;\widehat r_\theta)
+  +\eta(e(k,\widehat k',b,\widehat b',z;\widehat r_\theta)) \notag\\
+  &\quad
+  +\beta \E[
+    \widehat V_\theta(\widehat k',\widehat b',z')
+    \mid z].
+  \label{eq:network-going-concern}
+\end{align}
+Then the limited-liability Bellman residual is
+\begin{equation}
+  \mathcal B_\theta(k,b,z)
+  =
+  \operatorname{FB}\left(
+    \widehat V_\theta(k,b,z),
+    \widehat V_\theta(k,b,z)-\widehat G_\theta(k,b,z)
+  \right).
+  \label{eq:bellman-fb-residual}
+\end{equation}
+This residual is zero exactly when
+\[
+  \widehat V_\theta(k,b,z)=\max\{0,\widehat G_\theta(k,b,z)\}.
+\]
+For a future state \((k',b',z')\), the expression
+\(\widehat G_\theta(k',b',z')\) means the same construction applied at that
+future state, using the network's candidate optimal policy choices for the
+period after that. It is the network analogue of \(G^\star\), not the value of a
+fixed initial policy \(h\).
+
+\subsection{Debt-pricing residual}
+
+Default next period occurs when the next-period optimal equity value is zero:
+\[
+  V^\star(k',b',z')=0.
+\]
+Using the optimal Bellman relation \(V^\star=\max\{0,G^\star\}\), this is
+equivalent to \(G^\star(k',b',z')\le 0\). Therefore the default indicator implied
+by the network is
+\begin{equation}
+  \widehat D_\theta(k',b',z')
+  =
+  \1\{\widehat G_\theta(k',b',z')\le 0\}.
+  \label{eq:default-indicator}
+\end{equation}
+This is an implementation choice based on the Section 3.6 default logic: the
+paper states that the firm defaults when equity value is zero, while the network
+uses the approximated going-concern value to classify that event. In the exact
+model, \(V^\star=0\) and \(G^\star\le 0\) are equivalent. For the approximating
+functions, this equivalence is exact only when the Bellman residual is zero, and
+otherwise it is an approximation whose quality should be checked. For numerical
+training, the sharp indicator can be replaced by a smooth approximation, for
+example
+\[
+  \widehat D_{\theta,\kappa}(k',b',z')
+  =
+  \frac{1}{1+\exp(\kappa \widehat G_\theta(k',b',z'))},
+\]
+where large \(\kappa>0\) makes the smooth function close to an indicator. With
+the sharp indicator, the pricing equation below represents the original default
+classification; with the smooth indicator, it represents a smoothed approximate
+model.
+
+For positive promised debt \(b'>0\), define the pricing residual
+\begin{align}
+  \mathcal P_\theta(z,k',b')
+  &=
+  b'(1+r) \notag\\
+  &\quad
+  -
+  \E\left[
+    \widehat D_\theta(k',b',z')R(k',z')
+    +(1-\widehat D_\theta(k',b',z'))b'(1+\widehat r_\theta(z,k',b'))
+    \mid z
+  \right].
+  \label{eq:pricing-residual}
+\end{align}
+The residual \(\mathcal P_\theta\) is zero when the lender breaks even.
+For fixed current \(z\) and chosen \((k',b')\), the expectation integrates over
+future shocks \(z'\), because those shocks determine whether the future state
+\((k',b',z')\) is a default state or a solvent state.
+
+\subsection{Policy maximization residual}
+
+To keep the lecture self-contained, we use a direct maximization residual rather
+than first-order conditions. The idea is simple: the chosen action should do at
+least as well as any alternative action.
+
+For any candidate alternative \(a=(\bar k',\bar b')\), define
+\[
+  \widehat Q_\theta(k,b,z;a)
+\]
+by taking the right side of \cref{eq:q-value}, replacing \(V\) and
+\(\widetilde r\) by their neural-network approximations, and using the action
+\(a\). The policy loss against the alternative \(a\) is
+\begin{equation}
+  \mathcal M_\theta(k,b,z;a)
+  =
+  \max\left\{
+    0,\,
+    \widehat Q_\theta(k,b,z;a)
+    -
+    \widehat Q_\theta(k,b,z;(\widehat k',\widehat b'))
+  \right\}.
+  \label{eq:policy-residual}
+\end{equation}
+
+\begin{proposition}[Direct policy residual]
+\label{prop:direct-policy-loss}
+Fix a state \((k,b,z)\). If
+\[
+  \mathcal M_\theta(k,b,z;a)=0
+\]
+for every feasible alternative action \(a=(\bar k',\bar b')\), then the
+network-chosen action \((\widehat k',\widehat b')\) maximizes
+\(\widehat Q_\theta(k,b,z;\cdot)\) over the feasible action set.
+\end{proposition}
+
+\begin{proof}
+The equation \(\mathcal M_\theta(k,b,z;a)=0\) means
+\[
+  \widehat Q_\theta(k,b,z;a)
+  -
+  \widehat Q_\theta(k,b,z;(\widehat k',\widehat b'))
+  \le 0
+\]
+for that alternative action \(a\). Therefore
+\[
+  \widehat Q_\theta(k,b,z;(\widehat k',\widehat b'))
+  \ge
+  \widehat Q_\theta(k,b,z;a).
+\]
+If this holds for every feasible \(a\), then no feasible alternative gives a
+higher value. That is exactly the definition of a maximizer.
+\end{proof}
+
+\begin{remark}[Sampled alternatives are not global proof]
+The proposition is an exact mathematical statement because it assumes every
+feasible alternative action is checked. In computation, we usually test only a
+finite sample of alternatives. Zero residuals on that finite test set certify
+only that the chosen policy beats the sampled alternatives, not that it is a
+global maximizer over all possible \((k',b')\).
+\end{remark}
+
+\subsection{Euler residuals from first-order conditions}
+\label{subsec:euler-residuals}
+
+Directly minimizing Bellman residuals can be numerically difficult. This is one
+reason Euler-equation methods are common in dynamic economics and reinforcement
+learning. Maliar et al. also describe Euler-residual minimization
+\citep[Definitions 2.6 and 2.7]{maliar2021deep}. In the risky-debt model, Euler
+residuals are useful, but only in the smooth part of the problem: the firm must
+be continuing, the policy choice must be interior, and the risky rate and value
+function must be differentiable. At default boundaries, borrowing limits, or
+other kinks, one needs complementarity conditions, subgradients, or smoothing.
+
+Let
+\[
+  m(e)=1+\eta'(e)
+\]
+be the marginal value of one more dollar of current cash flow. If external
+finance is costly, then \(m(e)\) is high when the firm is short of cash. For an
+interior continuation state, define
+\[
+  \bar e
+  =
+  e(k,k',b,b',z;\widetilde r(z,k',b')).
+\]
+The total derivative of current cash flow with respect to a choice must include
+the effect of that choice on the risky rate:
+\begin{align}
+  \frac{d\bar e}{dk'}
+  &=
+  -(1+\psi_I(I,k))
+  +e_{\widetilde r}\frac{\partial \widetilde r(z,k',b')}{\partial k'},
+  \label{eq:cashflow-total-k}\\
+  \frac{d\bar e}{db'}
+  &=
+  \frac{1}{1+\widetilde r}
+  +\frac{\tau\widetilde r}{(1+\widetilde r)(1+r)}
+  +e_{\widetilde r}\frac{\partial \widetilde r(z,k',b')}{\partial b'},
+  \label{eq:cashflow-total-b}
+\end{align}
+where \(I=k'-(1-\delta)k\), \(\psi_I\) is the derivative of \(\psi\) with
+respect to investment, and
+\begin{equation}
+  e_{\widetilde r}
+  =
+  \frac{b'}{(1+\widetilde r)^2}
+  \left(-1+\frac{\tau}{1+r}\right).
+  \label{eq:cashflow-rate-derivative}
+\end{equation}
+All terms in \cref{eq:cashflow-total-k,eq:cashflow-total-b,eq:cashflow-rate-derivative}
+are evaluated at \((k,k',b,b',z)\).
+
+\begin{proposition}[Interior first-order conditions]
+\label{prop:interior-foc}
+Suppose the current state is a continuation state, the optimal action
+\((k',b')\) is interior, and the relevant functions are differentiable. Then the
+optimal policy satisfies
+\begin{align}
+  0
+  &=
+  m(\bar e)\frac{d\bar e}{dk'}
+  +\beta \E[V^\star_k(k',b',z')\mid z],
+  \label{eq:foc-k}\\
+  0
+  &=
+  m(\bar e)\frac{d\bar e}{db'}
+  +\beta \E[V^\star_b(k',b',z')\mid z].
+  \label{eq:foc-b}
+\end{align}
+\end{proposition}
+
+\begin{proof}
+At an interior continuation state, the firm chooses \((k',b')\) to maximize
+\[
+  e+\eta(e)+\beta \E[V^\star(k',b',z')\mid z].
+\]
+Differentiate this expression with respect to \(k'\) and \(b'\). The derivative
+of \(e+\eta(e)\) is \((1+\eta'(e))de=m(e)de\). The derivative of the continuation
+term is the expected derivative of \(V^\star\) with respect to the next state.
+Setting both derivatives equal to zero gives
+\cref{eq:foc-k,eq:foc-b}.
+\end{proof}
+
+The first-order conditions still contain derivatives of the value function.
+Those derivatives can be obtained by automatic differentiation of a value
+network. Alternatively, in smooth continuation states, we can use envelope
+conditions to eliminate them.
+
+\begin{proposition}[Envelope derivatives]
+\label{prop:envelope-derivatives}
+Away from the default boundary, write
+\[
+  h^{k\star}=h^{k\star}(k,b,z),
+  \qquad
+  h^{b\star}=h^{b\star}(k,b,z),
+\]
+and define
+\[
+  A(k,b,z)
+  =
+  (1-\tau)\pi_k(k,z)
+  +(1-\delta)(1+\psi_I(I,k))
+  -\psi_k(I,k),
+\]
+where \(I=h^{k\star}(k,b,z)-(1-\delta)k\). Then
+\begin{align}
+  V^\star_k(k,b,z)
+  &=
+  (1-D(k,b,z))\,m(e(k,h^{k\star},b,h^{b\star},z;\widetilde r))\,A(k,b,z),
+  \label{eq:envelope-k}\\
+  V^\star_b(k,b,z)
+  &=
+  -(1-D(k,b,z))\,m(e(k,h^{k\star},b,h^{b\star},z;\widetilde r)).
+  \label{eq:envelope-b}
+\end{align}
+\end{proposition}
+
+\begin{proof}
+In a default state, \(V^\star=0\) locally, so the derivative is zero away from
+the boundary. In a continuation state, \(V^\star=G^\star\). The envelope theorem
+says that when differentiating with respect to the current state variables
+\((k,b)\), we can hold the optimal choices fixed. Differentiating current cash
+flow with respect to \(k\) gives \(A(k,b,z)\), and differentiating with respect
+to beginning-of-period debt \(b\) gives \(-1\). Multiplying by the marginal value
+of cash flow \(m(e)\) gives \cref{eq:envelope-k,eq:envelope-b}.
+\end{proof}
+
+Combining the first-order conditions and the envelope derivatives gives an
+Euler-residual objective. For a network policy, let
+\begin{equation}
+  \widehat{\mathcal E}^k_\theta(k,b,z)
+  =
+  \widehat m_t\frac{d\widehat e_t}{dk'}
+  +\beta \E[
+    (1-\widehat D_{\theta,t+1})\widehat m_{t+1}\widehat A_{t+1}
+    \mid z],
+  \label{eq:euler-residual-k}
+\end{equation}
+and
+\begin{equation}
+  \widehat{\mathcal E}^b_\theta(k,b,z)
+  =
+  \widehat m_t\frac{d\widehat e_t}{db'}
+  -\beta \E[
+    (1-\widehat D_{\theta,t+1})\widehat m_{t+1}
+    \mid z].
+  \label{eq:euler-residual-b}
+\end{equation}
+Here \(\widehat e_t\) is current cash flow under the network policy,
+\(\widehat m_t=1+\eta'(\widehat e_t)\), and the \(t+1\) quantities are computed
+at the future state \((\widehat k',\widehat b',z')\) using the network's next
+policy choices. The derivative terms \(d\widehat e_t/dk'\) and
+\(d\widehat e_t/db'\) include the derivative of the risky rate network with
+respect to the action. In practice, automatic differentiation can compute these
+terms.
+
+An Euler-style loss can replace the direct policy maximization loss on states
+where the policy is smooth and interior:
+\begin{align}
+  \mathcal L^{\mathrm{Euler}}(\theta)
+  =
+  \E_{(k,b,z)\sim\mu}
+  \Big[
+    w_E^k(\widehat{\mathcal E}^k_\theta)^2
+    +w_E^b(\widehat{\mathcal E}^b_\theta)^2
+    +w_P\mathcal P_\theta^2
+    +w_B\mathcal B_\theta^2
+  \Big].
+  \label{eq:euler-training-objective}
+\end{align}
+The Bellman/default residual \(\mathcal B_\theta\) is still useful because Euler
+equations do not by themselves locate the default boundary or pin down the
+level of equity value. In applications one may put most of the weight on the
+Euler and pricing residuals in smooth continuation regions, and use
+\(\mathcal B_\theta\) mainly to discipline limited liability and default. Thus
+\cref{eq:euler-training-objective} should be read as the interior part of the
+method, not as the full risky-debt training objective.
+
+\subsection{Training with Euler residuals and nonsmooth regions}
+\label{subsec:euler-kkt-training}
+
+The practical solver should not train Euler residuals everywhere. Instead, it
+should use different residuals in different regions of the state space. Let
+\[
+  C_\theta(k,b,z)=\1\{\widehat G_\theta(k,b,z)>0\}
+\]
+be the network's continuation indicator, and let
+\[
+  I_\theta(k,b,z)
+\]
+be an interior indicator that equals one when the policy choices are safely away
+from imposed numerical bounds, such as \(\underline k<\widehat k'<\overline k\)
+and \(\underline b<\widehat b'<\overline b\). The Euler residual should receive
+full weight only when
+\[
+  S_\theta(k,b,z)=C_\theta(k,b,z)I_\theta(k,b,z)=1.
+\]
+In code, the sharp indicators above are often replaced by smooth gates. For
+example, a smooth continuation gate can be
+\[
+  C_{\theta,\kappa}(k,b,z)
+  =
+  \frac{1}{1+\exp(-\kappa \widehat G_\theta(k,b,z))},
+\]
+where large \(\kappa\) makes the gate close to the sharp continuation
+indicator.
+
+If the firm continues but the action is not interior, the first-order condition
+\(0=\partial Q/\partial a\) should be replaced by a
+Karush-Kuhn-Tucker condition. If the firm defaults, the action FOC is not the
+right condition, because shareholders are choosing the outside option with value
+zero. That region is disciplined by the limited-liability Bellman residual.
+
+For a scalar choice \(x\in[\underline x,\overline x]\), where \(x\) stands for
+either \(k'\) or \(b'\), let
+\[
+  g_x(k,b,z)
+  =
+  \left.
+  \frac{\partial \widehat Q_\theta(k,b,z;k',b')}
+  {\partial x}
+  \right|_{(k',b')=(\widehat k',\widehat b')}
+\]
+be the network-implied derivative with respect to that choice, holding the other
+choice fixed at its network value. Here \(g_x\) is the derivative of the
+objective being maximized, not the derivative of the negative objective. At a
+maximum, the derivative must satisfy
+\[
+  g_x\le 0 \quad\text{at }x=\underline x,\qquad
+  g_x=0 \quad\text{inside the interval},\qquad
+  g_x\ge 0 \quad\text{at }x=\overline x.
+\]
+Equivalently, with lower and upper multipliers \(\lambda_x^L,\lambda_x^U\ge0\),
+\begin{align}
+  0&=g_x+\lambda_x^L-\lambda_x^U, \label{eq:kkt-stationarity}\\
+  0&=\lambda_x^L(x-\underline x), \label{eq:kkt-lower}\\
+  0&=\lambda_x^U(\overline x-x). \label{eq:kkt-upper}
+\end{align}
+These equations can be implemented by adding multiplier networks and using
+Fischer-Burmeister residuals for the lower and upper bounds:
+\begin{align}
+  \mathcal K^x_\theta(k,b,z)
+  &=
+  \bigl(g_x+\lambda_x^L-\lambda_x^U\bigr)^2 \notag\\
+  &\quad
+  +\operatorname{FB}\bigl(\lambda_x^L,x-\underline x\bigr)^2
+  +\operatorname{FB}\bigl(\lambda_x^U,\overline x-x\bigr)^2.
+  \label{eq:kkt-residual-x}
+\end{align}
+The full action-bound residual is
+\[
+  \mathcal K_\theta=\mathcal K^{k'}_\theta+\mathcal K^{b'}_\theta,
+\]
+with each term evaluated at the network action. This is the same
+complementarity idea used earlier for limited liability.
+
+The training idea is now simple. At a safe interior continuation state, a good
+policy should make the Euler residuals small. At a continuation state on an
+action boundary, a good policy should make the KKT residual small instead. At a
+default state, the policy action is economically irrelevant to shareholders
+because they choose the outside option, so the Bellman/default residual is the
+main condition. The debt-pricing residual is separate: whenever the chosen debt
+is positive, lenders must break even under the default probabilities implied by
+the same value and policy networks.
+
+The hybrid Euler-KKT loss is therefore
+\begin{align}
+  \mathcal L^{\mathrm{hybrid}}(\theta)
+  =
+  \E_{(k,b,z)\sim\mu}
+  \Big[
+    &w_E S_\theta
+      \big((\widehat{\mathcal E}^k_\theta)^2
+      +(\widehat{\mathcal E}^b_\theta)^2\big) \notag\\
+    &+w_K C_\theta(1-I_\theta)\mathcal K_\theta(k,b,z)
+      +w_P\mathcal P_\theta(z,\widehat k',\widehat b')^2
+      +w_B\mathcal B_\theta(k,b,z)^2
+  \Big],
+  \label{eq:hybrid-euler-kkt-objective}
+\end{align}
+where the KKT term is weighted only in continuation states. More explicitly, if
+\[
+  J_\theta(k,b,z)=\1\{\widehat b'_\theta(k,b,z)>0\}
+\]
+is a positive-debt gate, then many implementations use
+\[
+  w_PJ_\theta\mathcal P_\theta(z,\widehat k',\widehat b')^2
+\]
+in place of the ungated pricing term. If \(b'\le0\), the pricing term is either
+omitted or replaced by the chosen cash-return convention; for positive debt
+choices it is always enforced.
+If the implementation uses action transformations that always keep
+\(\widehat k'\) and \(\widehat b'\) strictly inside their bounds, then
+\(\mathcal K_\theta\) may be unnecessary, but the Euler residual can become weak
+near the artificial boundary because the transformation saturates.
+
+\begin{proposition}[What the hybrid residuals certify]
+\label{prop:hybrid-residuals}
+Suppose the Bellman/default residual, pricing residual, Euler residuals on
+smooth interior continuation states, and KKT residuals on constrained states are
+all zero on a region. Then the approximating functions satisfy the local
+necessary optimality conditions, limited liability, and debt-pricing conditions
+on that region.
+\end{proposition}
+
+\begin{proof}
+On smooth interior continuation states, zero Euler residuals are exactly the
+first-order conditions from \cref{prop:interior-foc}. On constrained states,
+zero KKT residuals are the first-order necessary conditions with active bounds.
+Zero Bellman/default residual enforces the limited-liability default condition,
+and zero pricing residual enforces lender break-even. Together these conditions
+are the local necessary conditions for the risky-debt problem.
+\end{proof}
+
+\begin{remark}[Euler residuals are not a global optimality certificate]
+\label{rem:euler-not-global}
+Euler and KKT residuals are local conditions. They can miss a better distant
+action when the objective is nonconcave. For that reason, a practical solver
+should still test the trained policy against random alternative actions, report
+out-of-sample Bellman and pricing residuals, and simulate the model to check
+that default and leverage behavior are economically sensible.
+\end{remark}
+
+\subsection{Hard constraints as output transformations}
+\label{subsec:hard-constraints}
+
+The KKT residuals above are one way to handle action bounds. A different idea,
+emphasized by \citet{hallhoffarth2023hard}, is to give constraints
+\emph{lexicographic priority}: first restrict the neural network so that its
+outputs are feasible by construction, and only then train the remaining
+optimality residuals. In the language of the paper, these are
+\emph{hard constraints}, in contrast to \emph{soft constraints} that are enforced
+only through penalty terms such as Fischer-Burmeister losses.
+
+The simplest examples are scalar bounds. If the raw neural network output is an
+unrestricted number \(n_k(k,b,z)\), define
+\begin{equation}
+  \widehat k'
+  =
+  \underline k+(\overline k-\underline k)
+  \sigma(n_k(k,b,z)),
+  \qquad
+  \sigma(x)=\frac{1}{1+\exp(-x)}.
+  \label{eq:hard-k-bound}
+\end{equation}
+Then \(\underline k<\widehat k'<\overline k\) automatically. Similarly,
+\begin{equation}
+  \widehat b'
+  =
+  \underline b+(\overline b-\underline b)
+  \sigma(n_b(k,b,z))
+  \label{eq:hard-b-bound}
+\end{equation}
+automatically satisfies \(\underline b<\widehat b'<\overline b\). If a variable
+only needs to be positive, a softplus transformation can be used:
+\begin{equation}
+  x=\epsilon+\log(1+\exp(n_x)),
+  \qquad \epsilon>0.
+  \label{eq:softplus-positive}
+\end{equation}
+For example, one may parameterize the risky gross rate as
+\[
+  1+\widehat r_\theta(z,k',b')
+  =
+  \epsilon_r+\log(1+\exp(n_r(z,k',b'))),
+\]
+which ensures a positive gross promised return.
+
+The smooth sigmoid transformation is best interpreted as a way to impose
+artificial numerical bounds. If a bound is a genuine economic constraint that
+may bind in equilibrium, a strictly interior sigmoid may be too restrictive
+because it cannot place the choice exactly on the boundary. In that case one
+can use a transformation that allows binding, such as a clipped positive output,
+or keep the KKT/complementarity residual for that economic constraint. Clipping
+can create nondifferentiable or flat-gradient regions, so it is a practical
+trade-off rather than a free improvement. This is the same reason
+\citet{hallhoffarth2023hard} distinguishes hard feasibility from ordinary
+penalty-based constraint handling.
+
+\begin{proposition}[Hard numerical bounds remove numerical-bound KKT residuals]
+\label{prop:hard-bounds-remove-kkt}
+Suppose the policy networks are parameterized by
+\cref{eq:hard-k-bound,eq:hard-b-bound}. Then the numerical bounds on \(k'\) and
+\(b'\) are satisfied at every state and every parameter value. If the
+transformation stays strictly inside artificial numerical bounds that are not
+intended to bind as economic constraints, the usual interior Euler conditions
+replace the numerical-bound KKT residuals on those controls.
+\end{proposition}
+
+\begin{proof}
+The sigmoid function always lies between zero and one. Therefore
+\(\underline k+(\overline k-\underline k)\sigma(n_k)\) always lies strictly
+between \(\underline k\) and \(\overline k\), and the same argument applies to
+\(b'\). Since the transformed choices are interior points of the numerical
+interval, no lower or upper numerical bound is active. Thus, for those artificial
+box bounds, there is no active bound multiplier to learn. The relevant local
+optimality condition is the Euler first-order condition with respect to the
+free raw network output, equivalently the chain-rule version of the interior
+condition with respect to the transformed control when the transformation has a
+nonzero derivative. Numerically, a saturating sigmoid can still make gradients
+very small near the artificial boundary.
+\end{proof}
+
+This hard-constraint idea is useful whenever part of a model can be solved by
+algebra. For example, if an accounting identity gives one variable as an exact
+function of the others, it is usually better to build that identity into the
+network output than to ask the network to rediscover it from a penalty term.
+The principle is: do not ask the network to learn equations that can be
+satisfied exactly by construction.
+
+For the risky-debt model, hard constraints are useful but not sufficient. They
+can enforce:
+\begin{itemize}[leftmargin=2em]
+  \item numerical bounds on \(k'\) and \(b'\);
+  \item positivity of quantities such as gross risky returns;
+  \item accounting identities or algebraic definitions that can be solved
+  explicitly from other variables.
+\end{itemize}
+They cannot, by themselves, solve the default free-boundary condition
+\[
+  V(k,b,z)=\max\{0,G(k,b,z)\}.
+\]
+The reason is that default is not merely a bound on a single output. It is a
+regime choice: in continuation states equity value equals going-concern value,
+while in default states equity value equals zero. A transformation such as
+\(\widehat V_\theta=\operatorname{softplus}(n_V)\) guarantees
+\(\widehat V_\theta\ge0\), but it does not guarantee
+\(\widehat V_\theta=\widehat G_\theta\) in continuation states or
+\(\widehat V_\theta=0\) in default states. Therefore the Bellman/default
+residual \(\mathcal B_\theta\) remains necessary. Even if one hard-codes
+\(\widehat V_\theta=\max\{0,\widehat G_\theta\}\) with a smooth approximation,
+one still has to learn the correct continuation object \(\widehat G_\theta\) and
+the default boundary consistently with debt pricing.
+
+The recommended practical objective is therefore a hard-constrained hybrid
+loss:
+\begin{align}
+  \mathcal L^{\mathrm{hard\text{-}hybrid}}(\theta)
+  =
+  \E_{(k,b,z)\sim\mu}
+  \Big[
+    &w_E C_\theta
+      \big((\widehat{\mathcal E}^k_\theta)^2
+      +(\widehat{\mathcal E}^b_\theta)^2\big) \notag\\
+    &+w_PJ_\theta
+      \mathcal P_\theta(z,\widehat k',\widehat b')^2
+      +w_B\mathcal B_\theta(k,b,z)^2
+  \Big],
+  \label{eq:hard-hybrid-objective}
+\end{align}
+where the action-bound KKT term is omitted because the relevant bounds are
+already enforced by the output layer. If some genuine economic inequality is not
+hard-coded, or if the implementation uses clipping that creates flat-gradient
+regions, then the corresponding KKT or complementarity residual should be kept.
+
+\begin{remark}[Hard constraints do not prove optimality]
+\label{rem:hard-constraints-not-optimality}
+Hard constraints guarantee feasibility, not optimality. They make it impossible
+for the network to violate selected constraints, which can greatly improve
+training stability. The Euler, pricing, Bellman/default, and validation
+diagnostics are still needed to check whether the feasible policy is close to an
+economic solution.
+\end{remark}
+
+\section{The training objective}
+
+Let \(\mu\) be a distribution over states \((k,b,z)\). It may be a fixed training
+distribution over a chosen rectangle, or it may be the simulated ergodic
+distribution generated by the current policy, as in the stochastic simulation
+logic emphasized by \citet[Section 3]{maliar2021deep}.
+
+There are now two natural training choices. The first uses sampled alternative
+actions to test optimality directly. Let \(\nu(\cdot\mid k,b,z)\) be a
+distribution over alternative actions used to test whether the policy is close
+to optimal. The theoretical risk is
+\begin{align}
+  \mathcal L(\theta)
+  &=
+  \E_{(k,b,z)\sim\mu}
+  \Big[
+    w_B \mathcal B_\theta(k,b,z)^2
+    +w_P \mathcal P_\theta(z,\widehat k',\widehat b')^2
+  \notag\\
+  &\qquad\qquad
+    +w_M
+    \E_{a\sim\nu(\cdot\mid k,b,z)}
+    [\mathcal M_\theta(k,b,z;a)^2]
+  \Big],
+  \label{eq:training-objective}
+\end{align}
+where \(w_B,w_P,w_M>0\) are weights chosen so that the different residuals have
+comparable numerical scale. This is called a \emph{weighted scalarization}: many
+requirements are collapsed into one number before the optimizer sees them. It is
+simple, but the choice of weights can be difficult. The pricing residual,
+Bellman/default residual, Euler residuals, and direct maximization residuals can
+have different units, different numerical sizes, and different training speeds.
+
+The second choice uses the hybrid Euler-KKT objective in
+\cref{eq:hybrid-euler-kkt-objective}. This is often cheaper in high-dimensional
+action spaces because it avoids searching over many alternative actions.
+However, it gives local first-order evidence, not global maximization evidence.
+If the policy outputs are hard-constrained as in
+\cref{subsec:hard-constraints}, the hard-constrained hybrid objective in
+\cref{eq:hard-hybrid-objective} can be used instead.
+
+The empirical training loss with \(N\) sampled states for the direct
+maximization version is
+\begin{equation}
+  \mathcal L_N(\theta)
+  =
+  \frac{1}{N}\sum_{i=1}^N
+  \left[
+    w_B \mathcal B_\theta(s_i)^2
+    +w_P \mathcal P_\theta(z_i,\widehat k'_i,\widehat b'_i)^2
+    +w_M \mathcal M_\theta(s_i;a_i)^2
+  \right].
+  \label{eq:empirical-objective}
+\end{equation}
+The empirical hybrid Euler-KKT loss replaces the policy-maximization term by
+Euler and KKT terms:
+\begin{align}
+  \mathcal L^{\mathrm{hybrid}}_N(\theta)
+  &=
+  \frac{1}{N}\sum_{i=1}^N
+  \Big[
+    w_E S_\theta(s_i)
+      \big((\widehat{\mathcal E}^k_\theta(s_i))^2
+      +(\widehat{\mathcal E}^b_\theta(s_i))^2\big) \notag\\
+  &\qquad
+    +w_KC_\theta(s_i)(1-I_\theta(s_i))\mathcal K_\theta(s_i)
+    +w_PJ_\theta(s_i)
+      \mathcal P_\theta(z_i,\widehat k'_i,\widehat b'_i)^2 \notag\\
+  &\qquad
+    +w_B\mathcal B_\theta(s_i)^2
+  \Big].
+  \label{eq:empirical-hybrid-objective}
+\end{align}
+Training means approximately solving either
+\begin{equation}
+  \theta^\star\in \argmin_\theta \mathcal L_N(\theta).
+  \label{eq:train-min}
+\end{equation}
+or the same minimization with \(\mathcal L^{\mathrm{hybrid}}_N\) in place of
+\(\mathcal L_N\).
+If hard output constraints are used, the empirical analogue of
+\cref{eq:hard-hybrid-objective} is
+\begin{align}
+  \mathcal L^{\mathrm{hard\text{-}hybrid}}_N(\theta)
+  &=
+  \frac{1}{N}\sum_{i=1}^N
+  \Big[
+    w_E C_\theta(s_i)
+      \big((\widehat{\mathcal E}^k_\theta(s_i))^2
+      +(\widehat{\mathcal E}^b_\theta(s_i))^2\big) \notag\\
+  &\qquad
+    +w_PJ_\theta(s_i)
+      \mathcal P_\theta(z_i,\widehat k'_i,\widehat b'_i)^2
+    +w_B\mathcal B_\theta(s_i)^2
+  \Big].
+  \label{eq:empirical-hard-hybrid-objective}
+\end{align}
+
+\subsection{Replacing fixed weights by multi-objective training}
+\label{subsec:multiobjective-training}
+
+The fixed weights in
+\cref{eq:training-objective,eq:empirical-hybrid-objective,eq:empirical-hard-hybrid-objective}
+are often the least pleasant part of the computation. If \(w_P\) is too small,
+the equity policy may look good while the debt price violates lender break-even.
+If \(w_B\) is too small, the default boundary may drift. If \(w_E\) is too large,
+the solver may chase local Euler equations while ignoring the level of the value
+function. There is no universal scale that makes these choices automatic.
+
+A practical alternative is \emph{multi-objective optimization} (MOO). Instead
+of relying only on one permanent weighted sum, we keep the residual losses
+separate and let the current gradients help decide the update direction. This
+is the viewpoint of the multiple-gradient descent algorithm of
+\citet{desideri2012mgda}; \citet{sener2018mtlmoo} use the same broad
+multi-objective perspective for neural-network multi-task learning. For example,
+with hard output constraints one may define the mini-batch objectives
+\begin{align}
+  \mathcal L_E(\theta)
+  &=
+  \frac{1}{N}\sum_{i=1}^N
+  C_\theta(s_i)
+  \left[
+    \bigl(\widehat{\mathcal E}^k_\theta(s_i)\bigr)^2
+    +\bigl(\widehat{\mathcal E}^b_\theta(s_i)\bigr)^2
+  \right],
+  \label{eq:moo-euler-loss}\\
+  \mathcal L_P(\theta)
+  &=
+  \frac{1}{N}\sum_{i=1}^N
+  J_\theta(s_i)
+  \mathcal P_\theta(z_i,\widehat k'_i,\widehat b'_i)^2,
+  \label{eq:moo-pricing-loss}\\
+  \mathcal L_B(\theta)
+  &=
+  \frac{1}{N}\sum_{i=1}^N
+  \mathcal B_\theta(s_i)^2.
+  \label{eq:moo-bellman-loss}
+\end{align}
+If action-bound KKT terms, direct policy-check terms, or local-anchor terms are
+needed, each can be added as another objective. Thus the optimizer sees a vector
+\[
+  \mathcal L(\theta)
+  =
+  \bigl(\mathcal L_1(\theta),\ldots,\mathcal L_m(\theta)\bigr),
+\]
+not just the scalar sum \(\sum_{j=1}^m w_j\mathcal L_j(\theta)\).
+For gradient-based training, the gates \(C_\theta\) and \(J_\theta\) are usually
+implemented as smooth approximations, or the derivative statement below is read
+as applying away from the default and zero-debt kinks.
+
+The intuition is simple. Each residual loss pulls the network parameters in a
+direction. Fixed weights decide in advance which pull is louder. MOO computes
+the pulls on the current mini-batch and combines them adaptively.
+
+\begin{definition}[Common descent and Pareto stationarity]
+\label{def:common-descent}
+Let \(g_j(\theta)=\nabla_\theta \mathcal L_j(\theta)\) be the gradient of the
+\(j\)-th objective. A direction \(p\) is a \emph{common descent direction} if
+\[
+  g_j(\theta)^\top p < 0
+  \qquad\text{for every }j.
+\]
+This means that a small move from \(\theta\) in direction \(p\) lowers every
+objective to first order. A point is \emph{first-order Pareto stationary} if no
+common descent direction exists.
+\end{definition}
+
+The easiest MOO rule to write down is the minimum-norm gradient rule used in
+MGDA \citep{desideri2012mgda}. Let
+\[
+  \Delta_m
+  =
+  \left\{
+    \alpha\in\R^m:
+    \alpha_j\ge0,\quad
+    \sum_{j=1}^m\alpha_j=1
+  \right\}
+\]
+be the probability simplex. At a training step, compute all objective gradients
+\[
+  g_1,\ldots,g_m.
+\]
+MGDA chooses
+\begin{equation}
+  \alpha^\star
+  \in
+  \argmin_{\alpha\in\Delta_m}
+  \left\|
+    \sum_{j=1}^m \alpha_j g_j
+  \right\|^2,
+  \qquad
+  d^\star=\sum_{j=1}^m\alpha_j^\star g_j.
+  \label{eq:mgda-alpha}
+\end{equation}
+Then the neural-network optimizer uses \(d^\star\) as the combined gradient, so
+the parameter update is roughly
+\[
+  \theta_{\mathrm{new}}
+  =
+  \theta-\gamma d^\star
+\]
+for a learning rate \(\gamma>0\), possibly after Adam or another stochastic
+optimizer rescales the coordinates.
+
+\begin{proposition}[MGDA gives a balanced first-order update]
+\label{prop:mgda-common-descent}
+Suppose the objectives are differentiable at the current parameter vector
+\(\theta\), and let \(d^\star\) be defined by \cref{eq:mgda-alpha}.
+If \(d^\star=0\), then \(\theta\) is first-order Pareto stationary. If
+\(d^\star\ne0\), then \(-d^\star\) is a common descent direction:
+\begin{equation}
+  g_j^\top(-d^\star)\le -\|d^\star\|^2<0
+  \qquad\text{for every }j.
+  \label{eq:mgda-common-descent}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+The vector \(d^\star\) is the point in the convex hull of
+\(\{g_1,\ldots,g_m\}\) that is closest to zero. Take any other point \(y\) in
+this convex hull. For \(0<t<1\), the point
+\[
+  d_t=(1-t)d^\star+ty
+\]
+is also in the convex hull. Since \(d^\star\) is the closest point to zero,
+\(\|d_t\|^2\ge \|d^\star\|^2\). Expanding this inequality gives
+\[
+  2t(d^\star)^\top(y-d^\star)+t^2\|y-d^\star\|^2\ge0.
+\]
+Divide by \(t\) and let \(t\) become very small. We get
+\[
+  (d^\star)^\top y\ge \|d^\star\|^2.
+\]
+Each gradient \(g_j\) is itself a point in the convex hull, so
+\[
+  g_j^\top d^\star\ge \|d^\star\|^2.
+\]
+If \(d^\star\ne0\), multiplying by \(-1\) gives
+\cref{eq:mgda-common-descent}.
+
+Now suppose \(d^\star=0\). Then zero is a convex combination of the gradients:
+\[
+  0=\sum_{j=1}^m\alpha_j^\star g_j.
+\]
+If a common descent direction \(p\) existed, then \(g_j^\top p<0\) for every
+\(j\), and therefore
+\[
+  0
+  =
+  \left(\sum_{j=1}^m\alpha_j^\star g_j\right)^\top p
+  =
+  \sum_{j=1}^m\alpha_j^\star g_j^\top p
+  <0,
+\]
+which is impossible. Hence no common descent direction exists.
+\end{proof}
+
+This proposition is a first-order statement. It says what happens for an
+infinitesimally small step when the objectives are smooth. It does not say that
+a finite Adam step always lowers every loss on every mini-batch, and it does not
+prove that a neural network has solved the economic model. It does, however,
+explain why MOO is attractive: it reduces reliance on hand-tuned fixed weights
+by using an adaptive combination based on the current gradient conflict.
+
+A practical MGDA training step is as follows. First form one loss for each
+economic condition. Then compute one gradient vector for each loss and build the
+Gram matrix
+\[
+  G_{ij}=g_i^\top g_j,
+\]
+solve \cref{eq:mgda-alpha} for the simplex weights \(\alpha^\star\), and update
+the network using the combined gradient \(d^\star\). The Gram matrix is useful
+because it lets us compute the MGDA objective
+\[
+  \left\|\sum_{j=1}^m\alpha_j g_j\right\|^2
+  =
+  \alpha^\top G\alpha
+\]
+without writing out every coordinate of every gradient in the lecture note.
+During training one should record diagnostics such as each objective loss,
+heldout objective losses, gradient norms, the gradient cosine matrix, the
+simplex weights \(\alpha_j^\star\), and the directional derivatives
+\(g_j^\top d^\star\). These diagnostics matter because MOO reduces manual
+weight tuning; it does not remove the need to monitor whether every economic
+equation is improving. In practice, MOO should be read as reducing sensitivity
+to weights, not abolishing all scale and normalization choices.
+
+For the risky-debt solver, the practical recipe is:
+\begin{enumerate}[leftmargin=2em]
+  \item Use hard output transformations for simple feasibility requirements
+  whenever possible.
+  \item Split the remaining conditions into separate objectives: Euler
+  residuals, debt-pricing residuals, Bellman/default residuals, KKT or
+  complementarity residuals when needed, and direct policy-check or local-anchor
+  residuals when global policy errors are a concern.
+  \item Choose economically meaningful scales for the objective components.
+  MOO reduces the need for fixed weights, but it does not magically fix bad
+  units. For example, an Euler residual measured in marginal values and a
+  pricing residual measured in promised debt payments should not be compared
+  blindly without considering their natural economic scales.
+  \item On each mini-batch, compute one gradient \(g_j\) for each objective and
+  aggregate the gradients by the MGDA rule in \cref{eq:mgda-alpha}.
+  \item Keep per-objective validation diagnostics. A small aggregate update is
+  not enough; pricing, default, Euler, and action-check residuals should all be
+  reported separately.
+  \item Use economic veto rules when selecting a final network. For example, if
+  the pricing residual or Bellman/default residual deteriorates beyond an
+  acceptable tolerance on heldout states, reject the network even if an average
+  scalar loss looks good.
+\end{enumerate}
+
+This makes the method more practical because the researcher no longer has to
+guess a single permanent set of weights for all residuals. The remaining choices
+are more interpretable: how to group the objectives, how to normalize them, what
+heldout diagnostics must pass, and which MOO aggregation rule is stable for the
+problem size.
+
+\begin{proposition}[Zero direct residuals imply a solved approximate model]
+\label{prop:zero-loss-solution}
+Suppose the residuals
+\[
+  \mathcal B_\theta,\qquad \mathcal P_\theta,\qquad \mathcal M_\theta
+\]
+are all zero for every state in the training region and for every feasible
+alternative action used in the maximization test. Then the approximating
+functions \(\widehat V_\theta\), \(\widehat h^k_\theta\),
+\(\widehat h^b_\theta\), and \(\widehat r_\theta\) satisfy the risky-debt
+Bellman equation, the lender zero-profit condition, and the policy optimality
+condition on that region.
+\end{proposition}
+
+\begin{proof}
+If \(\mathcal B_\theta=0\), then by the Fischer-Burmeister equivalence the
+approximated value function satisfies
+\[
+  \widehat V_\theta(k,b,z)
+  =
+  \max\{0,\widehat G_\theta(k,b,z)\}.
+\]
+This is the limited-liability Bellman equation for the approximating functions.
+
+If \(\mathcal P_\theta=0\), then the expected payoff to the lender equals
+\(b'(1+r)\). This is exactly the zero-profit debt-pricing condition.
+
+If \(\mathcal M_\theta=0\) for every feasible alternative action, then
+\cref{prop:direct-policy-loss} says that the network policy maximizes the
+network-implied going-concern value. Combining the three statements gives the
+claim.
+\end{proof}
+
+\section{Comparison with Duarte and Fonseca's structural-estimation algorithm}
+\label{sec:duarte-fonseca-comparison}
+
+A recent paper by \citet{duartefonseca2026ai} applies a closely related neural
+idea to structural estimation. Their application is a dynamic corporate finance
+model with leverage, investment, cash, endogenous default, costly equity
+issuance, and non-convex adjustment costs. The paper is especially useful for
+us because it studies a model with many of the same computational difficulties
+as the risky-debt problem in this note: a value function, policy functions,
+default, risky debt prices, and nonsmooth payoffs. Since the paper is a recent
+working paper, we use it here as a carefully cited algorithmic reference, not
+as a theorem that all such neural estimators must converge.
+
+\subsection{What their algorithm does}
+
+The algorithm in \citet[Section 3]{duartefonseca2026ai} has three main blocks.
+
+First, it solves the firm's dynamic problem by neural policy iteration. The
+value network is written as a function not only of the economic state, but also
+of the structural parameters:
+\[
+  V(z,k,b,\beta;\Theta_V),
+\]
+where \(\beta\) denotes model parameters and \(\Theta_V\) denotes neural-network
+weights. This is sometimes called a \emph{universal value function}: one network
+represents many parameter-specific value functions. For a fixed policy, the
+value-network weights are trained to reduce a squared Bellman residual
+\citep[Section 3.1.1 and eqs. (14)--(15)]{duartefonseca2026ai}. Then, holding the
+value network fixed, policy networks are trained to increase the right-hand side
+of the Bellman equation \citep[Section 3.1.2 and eqs. (16)--(17)]{duartefonseca2026ai}.
+The algorithm alternates between these two steps.
+
+Second, the trained value and policy networks are used to simulate firm panels
+for many parameter vectors. In their application, the authors refine the neural
+solution on a grid before simulation. The refinement uses exact nonsmoothed
+payoffs, local policy improvement, policy evaluation, and recomputation of bond
+prices \citep[Section 3.2.1 and Appendix A.5]{duartefonseca2026ai}.
+
+Third, the paper trains separate \emph{moment networks}. If \(m_j\) is the
+\(j\)-th simulated moment, the moment network approximates
+\[
+  g_j(\beta) = \E[m_j\mid \beta].
+\]
+These networks turn simulated model moments into differentiable functions of
+the parameters. Estimation then minimizes the usual weighted distance between
+data moments and model moments,
+\begin{equation}
+  \widehat\beta
+  \in
+  \argmin_\beta
+  \bigl(\widehat m-g(\beta)\bigr)^\top
+  W
+  \bigl(\widehat m-g(\beta)\bigr),
+  \label{eq:duarte-moment-objective}
+\end{equation}
+using gradients of the moment networks
+\citep[Section 3.3 and eqs. (18)--(21)]{duartefonseca2026ai}. For a general
+equilibrium extension, they also treat the wage as a pseudo parameter and add a
+market-clearing imbalance as another target moment
+\citep[Section 3.4]{duartefonseca2026ai}. Finally, they use minimum-loss
+functions to shrink parameter bounds and diagnose identification
+\citep[Sections 3.5--3.6]{duartefonseca2026ai}.
+
+\subsection{How this compares with the first approach in this note}
+
+The first approach in this note is the direct value-and-policy approach: learn
+\[
+  \widehat V_\theta,\qquad
+  \widehat h^k_\theta,\qquad
+  \widehat h^b_\theta,\qquad
+  \widehat r_\theta
+\]
+by minimizing Bellman/default, debt-pricing, and policy-maximization residuals.
+At the level of the \emph{model solution block}, this is very close in spirit to
+the first block of \citet{duartefonseca2026ai}. Both methods use neural networks
+for value and policy functions. Both train with stochastic gradients and
+automatic differentiation. Both can sample states instead of storing the value
+function on a full grid. Both can smooth nonsmooth pieces during training and
+then check accuracy with more direct policy or grid diagnostics.
+
+So your intuition is essentially right, with one important qualification. If
+our only goal is to solve one risky-debt model at one fixed parameter vector,
+if we use the direct Bellman/policy objective rather than Euler residuals, and
+if both methods impose the same lender zero-profit pricing equation, then the
+solution step is not fundamentally different from the value/policy part of
+\citet{duartefonseca2026ai}. The difference is mostly numerical organization:
+this note writes the Bellman/default, pricing, and policy conditions as
+residuals to be minimized jointly, while \citet{duartefonseca2026ai} present an
+alternating policy-evaluation and policy-improvement procedure, with a lagged
+bond-price target during training and a grid-refinement check afterward.
+
+However, the full Duarte--Fonseca algorithm is more than a solver. It is a
+structural-estimation pipeline. It solves across many parameter values at once,
+simulates moments, trains moment-surrogate networks, estimates parameters using
+\cref{eq:duarte-moment-objective}, treats general-equilibrium prices as pseudo
+parameters when needed, and uses minimum-loss functions for global
+identification diagnostics. Those parts are not contained in the basic
+Maliar--Maliar--Winant solution method by themselves. They are built on top of
+a neural solution method.
+
+\begin{proposition}[Solver equivalence, but not estimation equivalence]
+\label{prop:duarte-maliar-comparison}
+For a fixed parameter vector and the same lender zero-profit pricing equation,
+a direct Bellman/policy neural solver of the kind described in this note and
+the value/policy block of \citet{duartefonseca2026ai} attack the same
+mathematical fixed point: value, policy, default, and risky debt prices must be
+mutually consistent. They differ mainly in training organization. But the full
+Duarte--Fonseca structural-estimation algorithm contains additional moment,
+estimation, market-clearing, and identification steps that are not implied by
+solving the Bellman equation alone.
+\end{proposition}
+
+\begin{proof}
+Both solver blocks try to find a value function and policy functions satisfying
+the same type of Bellman optimality condition: the value equals current payoff
+plus discounted expected continuation value under optimal controls, with
+limited liability/default handled through a max or default rule. In a risky
+debt model, the debt price must also satisfy the lender's zero-profit pricing
+equation, because that price enters the firm's payoff and is itself determined
+by future default. A direct residual method minimizes violations of these
+conditions and violations of policy optimality. Neural policy iteration
+alternates between fitting the value under the current policy and improving
+the policy using the fitted value. If both procedures converge exactly and use
+the same debt-pricing condition, they satisfy the same Bellman, pricing, and
+policy optimality equations.
+
+The moment-network and estimation steps are different objects. They take a
+solved model, simulate model-implied moments, approximate the parameter-to-
+moment map, and estimate parameters by matching moments. These steps are not
+needed to define the firm's dynamic programming problem, and they do not follow
+from solving the Bellman equation at one parameter vector. Hence the solver
+blocks are closely related, while the full estimation algorithms are not the
+same.
+\end{proof}
+
+\subsection{Is it suitable for the risky-debt problem?}
+
+The method is promising for the risky-debt problem, especially if the researcher
+wants to estimate parameters rather than merely compute one solution. The reason
+is that risky-debt models are expensive to solve repeatedly. A neural solution
+conditioned on parameters could amortize this cost: after training, one could
+evaluate policies and simulate moments for many parameter values quickly.
+
+For the narrower goal of solving the risky-debt model in this note, the method
+is suitable only after addressing several gaps.
+
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{Debt-pricing fixed point.} In risky-debt models, the risky debt
+  price depends on future default, while default depends on equity value, and
+  equity value depends on the debt price. \citet[Appendix A.3.4]{duartefonseca2026ai}
+  handle this circularity with a lagged target network for bond prices during
+  training, followed by grid refinement. This is a useful numerical device, but
+  for our note it should be treated as an approximation strategy, not a proof
+  that the debt-pricing fixed point has been solved. We would still need
+  out-of-sample pricing residuals.
+
+  \item \textbf{Default boundary and nonsmooth payoffs.}
+  \citet[Section 3.1.3 and Appendix A.4]{duartefonseca2026ai} smooth indicator
+  functions during training and then refine using exact nonsmooth payoffs. This
+  is natural for default and financing-cost kinks. The gap is that smoothing can
+  bias the learned boundary, while grid refinement can become expensive as the
+  number of state and control variables grows.
+
+  \item \textbf{Local versus global policy improvement.} A neural policy
+  improvement step can improve the policy where gradients point in the right
+  direction, but the risky-debt objective can be nonconcave. A policy network
+  may therefore settle near a local optimum. This note's direct policy-check
+  residuals and the Duarte--Fonseca grid-refinement idea are both ways to test
+  for better actions away from the network choice.
+
+  \item \textbf{Parameter conditioning increases dimension.} Conditioning the
+  value and policy networks on structural parameters is powerful for estimation,
+  but it enlarges the input space. For the risky-debt model, parameters such as
+  default costs, tax rates, adjustment-cost parameters, and financing-cost
+  parameters may interact strongly. The network must be accurate not just at one
+  parameter vector, but across the whole training region.
+
+  \item \textbf{Moment networks add a second approximation.} If we use the full
+  structural-estimation pipeline, then parameter estimates depend not only on
+  value and policy approximation errors, but also on moment-network errors. The
+  cross-validation and minimum-loss diagnostics in \citet[Sections 3.3 and
+  3.6]{duartefonseca2026ai} are important, but they do not remove the need to
+  validate estimates by direct simulation from the solved model.
+
+  \item \textbf{General-equilibrium pseudo prices are not the same as risky debt
+  price functions.} Treating a wage as a pseudo parameter works because the wage
+  is a low-dimensional equilibrium object in their general equilibrium
+  extension. In the risky-debt model, the debt price or risky rate is a function
+  of state and promised actions, such as \(q(z,k',b')\) or
+  \(\widetilde r(z,k',b')\). That object cannot usually be replaced by one
+  scalar pseudo parameter. The lender zero-profit condition still needs to be
+  enforced as a functional equation.
+\end{enumerate}
+
+Thus, for solving a fixed risky-debt model, Duarte--Fonseca should be viewed as
+a close cousin of the direct Bellman/policy approach already in this note. For
+estimating a risky-debt model, it suggests an important extension: condition the
+solution on parameters, simulate moments, learn a differentiable moment map, and
+then estimate parameters by matching moments. The main open work is to make the
+default boundary, debt-pricing fixed point, nonconvex policy choice, and moment
+surrogate errors visible in diagnostics rather than hidden inside a single
+training loss.
+
+\section{Parameter-conditioned Maliar--Maliar--Winant solvers}
+\label{sec:parameter-conditioned-solver}
+
+The preceding comparison was for one fixed parameter vector. But the neural
+residual method of \citet{maliar2021deep} does not require the unknown
+functions to depend only on economic states. We can enlarge the input of the
+neural networks so that model parameters enter just like additional inputs.
+This gives a \emph{parameter-conditioned} solver.
+
+Let
+\[
+  \omega
+  =
+  (\delta,\tau,\alpha,\rho,\sigma_\varepsilon,\text{adjustment-cost parameters},
+  \text{financing-cost parameters},\ldots)
+\]
+collect the structural parameters. Instead of learning one value function
+\[
+  V(k,b,z)
+\]
+for one fixed \(\omega\), we learn a family of value functions with one neural
+network:
+\[
+  \widehat V_\theta(k,b,z,\omega).
+\]
+Likewise, we learn parameter-conditioned policy and pricing functions
+\begin{equation}
+  \widehat h^k_\theta(k,b,z,\omega),\qquad
+  \widehat h^b_\theta(k,b,z,\omega),\qquad
+  \widehat r_\theta(z,k',b',\omega).
+  \label{eq:parameter-conditioned-networks}
+\end{equation}
+For each fixed value of \(\omega\), these functions should satisfy the same
+Bellman, default, policy-optimality, and lender-pricing equations as before.
+The training loss therefore becomes an average not only over states, but also
+over parameters:
+\begin{equation}
+  \mathcal L(\theta)
+  =
+  \E_{(k,b,z,\omega)\sim \mu}
+  \left[
+    \mathcal B_\theta(k,b,z,\omega)^2
+    +
+    \mathcal P_\theta(k,b,z,\omega)^2
+    +
+    \mathcal M_\theta(k,b,z,\omega)^2
+  \right],
+  \label{eq:parameter-conditioned-loss}
+\end{equation}
+where \(\mu\) is the distribution from which we draw training points. Here
+\(\mathcal B_\theta\) is the Bellman/default residual, \(\mathcal P_\theta\) is
+the debt-pricing residual, and \(\mathcal M_\theta\) is the policy-improvement
+or direct policy-check residual, now evaluated at the parameter vector
+\(\omega\).
+
+\begin{proposition}[Parameter conditioning gives the same solution block]
+\label{prop:parameter-conditioned-equivalence}
+Suppose a parameter-conditioned neural solver and the value/policy block of
+\citet{duartefonseca2026ai} use the same state variables, the same structural
+parameter vector, the same feasible action set, and the same lender
+zero-profit pricing equation. Then both methods are trying to approximate the
+same parameter-indexed fixed point
+\[
+  \omega
+  \mapsto
+  \bigl(V_\omega,h^k_\omega,h^b_\omega,\widetilde r_\omega\bigr).
+\]
+Thus, at the model-solution level, a parameter-conditioned
+Maliar--Maliar--Winant residual solver is the same kind of object as the
+Duarte--Fonseca neural solution block. The Duarte--Fonseca paper then adds
+simulation, moment networks, estimation, and identification diagnostics on top
+of this block.
+\end{proposition}
+
+\begin{proof}
+Fix any parameter vector \(\omega\). Once \(\omega\) is fixed, the
+parameter-conditioned networks in \cref{eq:parameter-conditioned-networks}
+become ordinary functions of the economic state and promised actions. Setting
+the residuals in \cref{eq:parameter-conditioned-loss} to zero at this fixed
+\(\omega\) gives exactly the risky-debt Bellman/default equation, the
+lender-pricing equation, and the policy-optimality condition for that
+parameter vector. Duarte and Fonseca's value/policy block also seeks a value
+function and policies indexed by parameters
+\citep[Section 3.1 and eq. (13)]{duartefonseca2026ai}. Therefore both solve
+the same family of parameter-specific dynamic programs. The remaining blocks
+of their algorithm act after the model is solved: they simulate panels, learn
+the parameter-to-moment map, and estimate parameters. Those blocks are not
+part of the Bellman fixed point itself.
+\end{proof}
+
+This proposition is the clean answer to the question: yes, once the
+Maliar--Maliar--Winant style solver is extended to take model parameters as
+inputs, it becomes the same type of neural \emph{solution} object as the first
+block of Duarte and Fonseca. The equality is not an equality of every numerical
+detail. A residual solver may train all residuals jointly; neural policy
+iteration may alternate policy evaluation and improvement. One may concatenate
+states and parameters; another may use an architecture in which parameters
+modulate the state network. These are different numerical designs for
+approximating the same parameter-indexed solution map.
+
+\subsection{Why parameter sampling is difficult}
+
+The difficult new object in \cref{eq:parameter-conditioned-loss} is the
+sampling distribution \(\mu\). For a fixed model, we only have to decide which
+states \((k,b,z)\) to sample. For a parameter-conditioned model, we must decide
+which pairs
+\[
+  (k,b,z,\omega)
+\]
+to sample. This is much harder.
+
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{The dimension grows quickly.} If the original risky-debt model
+  has three state variables and we add eight parameters, the input space has
+  eleven dimensions. A training set that looks dense in three dimensions can
+  be extremely sparse in eleven dimensions. This is the usual curse of
+  dimensionality, even though we are using neural networks rather than grids.
+  Duarte and Fonseca explicitly emphasize this enlargement of the input space
+  in their solution block \citep[Section 3.1]{duartefonseca2026ai}.
+
+  \item \textbf{Parameters should not be sampled independently without thought.}
+  A rectangular box such as
+  \[
+    \omega_j\in[\underline\omega_j,\overline\omega_j]
+  \]
+  is easy to sample from, but many combinations inside the box may be
+  economically unimportant, weakly identified, or numerically pathological.
+  For example, high debt benefits, low recovery, high productivity volatility,
+  and low adjustment costs may create much more default activity than other
+  combinations. Uniform sampling over a wide box can spend most computation on
+  parameter regions that will never matter for estimation.
+
+  \item \textbf{The relevant state region depends on parameters.} The typical
+  range of capital, debt, and productivity is not the same for all
+  \(\omega\). If shocks are very persistent, the relevant range of \(z\) may be
+  wider. If adjustment costs are high, capital moves less. If default costs are
+  low, high-debt states may be more common. Therefore the state-sampling rule
+  should usually depend on the sampled parameter vector:
+  \[
+    \omega \sim \mu_\omega,
+    \qquad
+    (k,b,z)\sim \mu_x(\cdot\mid \omega).
+  \]
+  Duarte and Fonseca use parameter-dependent state bounds in their training
+  procedure \citep[Appendix A.2 and Appendix A.3.1]{duartefonseca2026ai}.
+
+  \item \textbf{Some parameters change the shape of the solution sharply.}
+  Near a default boundary, a small change in recovery, volatility, or tax
+  benefits can move the boundary a lot. A network trained on a coarse parameter
+  sample may average across these changes and produce a smoothed default rule
+  in the wrong place. This is especially dangerous for risky debt because the
+  default boundary feeds back into the debt price.
+
+  \item \textbf{Accuracy is not needed equally everywhere.} If the goal is
+  estimation, the solver must be accurate near parameter values that match the
+  data. It may be less important to solve remote parameter regions precisely.
+  But we do not know the important region before estimating the model. This is
+  the chicken-and-egg problem in parameter sampling. Duarte and Fonseca address
+  this by starting from wide parameter bounds, sampling parameters inside those
+  bounds, and then narrowing the bounds using minimum-loss functions with
+  safeguards against excluding plausible or weakly identified regions
+  \citep[Sections 3.5--3.6 and Appendix A.9]{duartefonseca2026ai}.
+
+  \item \textbf{Weak identification makes shrinking dangerous.} Suppose a
+  parameter barely affects the targeted moments. Then many values of that
+  parameter fit the data almost equally well. If we shrink the training region
+  too aggressively, we may accidentally throw away valid parameter values.
+  Parameter sampling is therefore not only a numerical issue; it is also an
+  identification issue.
+\end{enumerate}
+
+A practical parameter-conditioned solver should therefore report diagnostics
+by parameter region. For example, after training, one should evaluate Bellman
+residuals, pricing residuals, direct policy checks, and simulation moments on a
+held-out sample of parameter vectors. It is not enough to report one average
+loss over all sampled \((k,b,z,\omega)\). A small average can hide large errors
+near default boundaries, high-leverage regions, or weakly identified parameter
+directions.
+
+\section{An alternative estimation route: state-space models, filtering, and HMC}
+\label{sec:ssm-hmc-estimation}
+
+Duarte and Fonseca's approach estimates parameters by learning a differentiable
+map from parameters to simulated moments. There is another natural route. After
+we solve the risky-debt model, the solved policy functions give laws of motion
+for capital and debt. Together with the shock process, these laws of motion can
+be treated as a \emph{state-space model}. Then we can estimate structural
+parameters using filtering and Bayesian simulation methods such as Hamiltonian
+Monte Carlo (HMC).
+
+This is the same broad logic used in many likelihood-based dynamic models:
+first solve the economic decision problem, then use the solved model as the
+transition law for hidden economic states. State-space likelihood methods are a
+standard way to handle latent states \citep{durbinkoopman2012ssm}. HMC is a
+standard gradient-based method for sampling continuous posterior distributions
+\citep{neal2011hmc}. When the state-space model is nonlinear or non-Gaussian,
+particle filters and particle MCMC methods are often used
+\citep{andrieu2010pmcmc}.
+
+\subsection{From solved policies to a state-space model}
+
+Let \(\omega\) denote the structural parameter vector. Suppose that, for each
+\(\omega\), the neural solver gives approximate policy and pricing functions
+\[
+  \widehat h^k_\omega(k,b,z),\qquad
+  \widehat h^b_\omega(k,b,z),\qquad
+  \widehat r_\omega(z,k',b').
+\]
+For firm \(i\) at date \(t\), define the latent state
+\[
+  x_{i,t}=(k_{i,t},b_{i,t},z_{i,t},a_{i,t}),
+\]
+where \(a_{i,t}\in\{0,1\}\) is an indicator for whether the firm is active. If
+the firm is active, the solved policies imply
+\begin{align}
+  k_{i,t+1}
+  &=
+  \widehat h^k_\omega(k_{i,t},b_{i,t},z_{i,t}), \label{eq:ssm-k-law}\\
+  b_{i,t+1}
+  &=
+  \widehat h^b_\omega(k_{i,t},b_{i,t},z_{i,t}), \label{eq:ssm-b-law}\\
+  \log z_{i,t+1}
+  &=
+  \rho \log z_{i,t}+\sigma_\varepsilon\varepsilon_{i,t+1},
+  \qquad \varepsilon_{i,t+1}\sim N(0,1). \label{eq:ssm-z-law}
+\end{align}
+Default is determined by the solved continuation value. For example, using the
+going-concern value \(\widehat G_\omega\) from \cref{def:going-concern-value},
+one can write the next-period default indicator as
+\begin{equation}
+  d_{i,t+1}
+  =
+  \1\{\widehat G_\omega(k_{i,t+1},b_{i,t+1},z_{i,t+1})<0\}.
+  \label{eq:ssm-default-indicator}
+\end{equation}
+If the firm defaults, the econometrician must specify what happens in the data:
+the firm may exit the sample, be replaced by a new draw, or remain observed
+with a default flag. This choice is not part of the Bellman equation; it is part
+of the statistical observation model.
+
+Let \(y_{i,t}\) denote observed data, such as book assets, leverage, investment,
+equity issuance, market value, or a default indicator. A simple measurement
+equation is
+\begin{equation}
+  y_{i,t}
+  =
+  m_\omega(x_{i,t})+u_{i,t},
+  \qquad
+  u_{i,t}\sim N(0,\Sigma_u),
+  \label{eq:ssm-measurement}
+\end{equation}
+where \(m_\omega\) maps the model state into observable quantities. If the data
+include a binary default observation, then that component is better written as
+a Bernoulli measurement equation rather than a Gaussian one.
+
+\begin{proposition}[Solved risky-debt model as a state-space model]
+\label{prop:risky-debt-ssm}
+Fix a parameter vector \(\omega\). If the policy functions, debt-pricing
+function, shock law, default rule, and measurement equation are specified, then
+the risky-debt model defines a state-space model
+\[
+  p_\omega(x_{t+1}\mid x_t),
+  \qquad
+  p_\omega(y_t\mid x_t).
+\]
+Therefore the likelihood of a time-series or panel dataset can be written as
+\begin{equation}
+  p_\omega(y_{1:T})
+  =
+  \int
+  p_\omega(x_1)
+  \prod_{t=1}^T
+    p_\omega(y_t\mid x_t)
+  \prod_{t=1}^{T-1}
+    p_\omega(x_{t+1}\mid x_t)
+  \,dx_{1:T}.
+  \label{eq:ssm-likelihood}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Equations \cref{eq:ssm-k-law,eq:ssm-b-law,eq:ssm-z-law} describe how the hidden
+state evolves. The next state depends on the current state and the new shock,
+so it defines a transition law \(p_\omega(x_{t+1}\mid x_t)\), allowing for
+exit, replacement, or default flags if those are included in the state. Some
+parts of this law may be deterministic: for example, conditional on the current
+state and the shock, next period's capital and debt are pinned down by the
+policy functions.
+Equation \cref{eq:ssm-measurement} describes the distribution of observables
+conditional on the hidden state, so it defines \(p_\omega(y_t\mid x_t)\). The
+joint density of states and observations is therefore the initial density times
+all transition densities times all measurement densities. Integrating out the
+unobserved states gives \cref{eq:ssm-likelihood}.
+\end{proof}
+
+\subsection{Filtering and HMC}
+
+The filtering recursion updates beliefs about the hidden state as data arrive:
+\begin{align}
+  p_\omega(x_t\mid y_{1:t-1})
+  &=
+  \int
+  p_\omega(x_t\mid x_{t-1})
+  p_\omega(x_{t-1}\mid y_{1:t-1})
+  \,dx_{t-1}, \label{eq:ssm-predict}\\
+  p_\omega(x_t\mid y_{1:t})
+  &\propto
+  p_\omega(y_t\mid x_t)
+  p_\omega(x_t\mid y_{1:t-1}). \label{eq:ssm-update}
+\end{align}
+In a linear Gaussian model these equations reduce to the Kalman filter. The
+risky-debt model is not linear Gaussian because policies are nonlinear and
+default creates a discrete event. Therefore a particle filter is usually the
+more natural filtering tool.
+
+For Bayesian estimation, place a prior \(p(\omega)\) on the structural
+parameters. The posterior is
+\begin{equation}
+  p(\omega\mid y_{1:T})
+  \propto
+  p(\omega)\,p_\omega(y_{1:T}).
+  \label{eq:ssm-posterior}
+\end{equation}
+If \(p_\omega(y_{1:T})\) and its gradient can be evaluated accurately and
+smoothly, HMC can sample from \cref{eq:ssm-posterior}. This is attractive
+because HMC uses gradients to move efficiently through a high-dimensional
+continuous parameter space.
+
+\subsection{Can we do this for the risky-debt model?}
+
+Yes, but it is harder than writing down \cref{eq:ssm-posterior}. The main
+difficulties are the following.
+
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{The likelihood needs more than the solved Bellman equation.}
+  Solving the firm problem gives policy functions. It does not by itself give
+  measurement errors, replacement rules after default, sample-selection rules,
+  or the distribution of initial firm states. These are statistical modeling
+  choices.
+
+  \item \textbf{Default makes the model non-Gaussian and partly discrete.}
+  HMC works naturally for continuous differentiable posterior densities. A hard
+  default indicator creates kinks and discrete events. One can either smooth
+  the default rule for differentiable HMC, integrate default events with a
+  filter, or use particle MCMC methods that are designed for nonlinear and
+  non-Gaussian state-space models.
+
+  \item \textbf{A particle-filter likelihood is noisy.} Particle filters give a
+  simulation-based likelihood estimate. That estimate can be useful, but its
+  Monte Carlo noise can make gradient-based HMC unstable unless the filter is
+  carefully designed. Particle MCMC methods are a more direct fit when the
+  likelihood is estimated by particles \citep{andrieu2010pmcmc}.
+
+  \item \textbf{The neural solution depends on parameters.} In a likelihood or
+  posterior evaluation at a new \(\omega\), the policies
+  \(\widehat h^k_\omega\), \(\widehat h^b_\omega\), and prices
+  \(\widehat r_\omega\) must be accurate at that \(\omega\). This again points
+  toward a parameter-conditioned solver and held-out residual diagnostics by
+  parameter region.
+
+  \item \textbf{Approximation error enters the likelihood.} The likelihood in
+  \cref{eq:ssm-likelihood} is the likelihood of the \emph{approximated} solved
+  model. If the neural policy is wrong near the default boundary, the filter
+  may fit the data by moving parameters in a biased direction. A serious
+  estimation exercise should therefore report both filtering diagnostics and
+  solver residual diagnostics.
+\end{enumerate}
+
+Thus the answer is yes in principle: after solving the risky-debt model, we can
+turn it into a state-space model and estimate it with filtering plus HMC or
+particle MCMC. This is different from Duarte and Fonseca's moment-network route.
+Their route learns a parameter-to-moment map and matches moments. The
+state-space route writes a likelihood for the time-series or panel data and
+estimates from that likelihood. The price of the likelihood route is that we
+must specify a full observation model and handle the nonlinear, nonsmooth, and
+partly discrete default structure.
+
+\section{A full-scale state-space specification}
+\label{sec:full-scale-ssm}
+
+This section gives one complete specification. It is not the only possible
+specification, but it is complete enough that the likelihood is well defined.
+It is designed to address the five problems listed above.
+
+\subsection{Data and parameters}
+
+Suppose we observe a panel of firms \(i=1,\ldots,N\) over dates
+\(t=1,\ldots,T_i\). Let the observed vector be
+\[
+  y_{i,t}
+  =
+  \bigl(
+    \log A_{i,t}^{obs},
+    L_{i,t}^{obs},
+    I_{i,t}^{obs}/A_{i,t}^{obs},
+    Q_{i,t}^{obs},
+    D_{i,t}^{obs}
+  \bigr),
+\]
+where \(A^{obs}\) is an accounting measure of assets, \(L^{obs}\) is leverage,
+\(I^{obs}/A^{obs}\) is the investment rate, \(Q^{obs}\) is a market-value or
+valuation ratio, and \(D^{obs}\in\{0,1\}\) is an observed default or exit
+indicator. If some components are missing, the likelihood simply omits those
+components for that firm-date.
+
+Let the estimated parameter vector be
+\[
+  \phi=(\omega,\Sigma_y,\mu_0,\Sigma_0,\pi_{01},\pi_{10},\kappa).
+\]
+Here \(\omega\) contains the economic parameters in the risky-debt model,
+\(\Sigma_y\) contains measurement-error variances, \((\mu_0,\Sigma_0)\)
+describe the initial distribution of latent states, \(\pi_{01}\) and
+\(\pi_{10}\) are default-observation error probabilities, and \(\kappa>0\) is a
+smoothing parameter used only in the differentiable approximation described
+below. If one uses the exact discrete default model, \(\kappa\) can be omitted.
+
+\subsection{Latent state and initial distribution}
+
+For each firm, define the latent state
+\[
+  x_{i,t}=(k_{i,t},b_{i,t},z_{i,t},a_{i,t}),
+\]
+where \(a_{i,t}=1\) means the firm is active and \(a_{i,t}=0\) means the firm
+has defaulted or exited. The initial state distribution is
+\begin{align}
+  \log k_{i,1} &\sim N(\mu_{k,0},\sigma_{k,0}^2),\\
+  b_{i,1}/k_{i,1} &\sim N(\mu_{\ell,0},\sigma_{\ell,0}^2),\\
+  \log z_{i,1} &\sim N(\mu_{z,0},\sigma_{z,0}^2),\\
+  a_{i,1} &= 1.
+\end{align}
+These normal distributions can be replaced by truncated normal distributions
+if the researcher wants to rule out economically impossible initial states.
+
+\subsection{Solved policy transition}
+
+For a proposed economic parameter vector \(\omega\), use the
+parameter-conditioned neural solver to obtain
+\[
+  \widehat V_\omega,\qquad
+  \widehat G_\omega,\qquad
+  \widehat h^k_\omega,\qquad
+  \widehat h^b_\omega,\qquad
+  \widehat r_\omega.
+\]
+For an active firm, draw a productivity innovation
+\(\varepsilon_{i,t+1}\sim N(0,1)\) and set
+\begin{align}
+  k^*_{i,t+1}
+  &=
+  \widehat h^k_\omega(k_{i,t},b_{i,t},z_{i,t}),\\
+  b^*_{i,t+1}
+  &=
+  \widehat h^b_\omega(k_{i,t},b_{i,t},z_{i,t}),\\
+  \log z^*_{i,t+1}
+  &=
+  \rho\log z_{i,t}+\sigma_\varepsilon\varepsilon_{i,t+1}.
+\end{align}
+The exact model default indicator is
+\begin{equation}
+  d^*_{i,t+1}
+  =
+  \1\{\widehat G_\omega(k^*_{i,t+1},b^*_{i,t+1},z^*_{i,t+1})<0\}.
+  \label{eq:full-ssm-exact-default}
+\end{equation}
+If \(d^*_{i,t+1}=0\), then
+\[
+  x_{i,t+1}=(k^*_{i,t+1},b^*_{i,t+1},z^*_{i,t+1},1).
+\]
+If \(d^*_{i,t+1}=1\), use an absorbing exit rule:
+\[
+  a_{i,t+1}=0.
+\]
+All later observations for that firm are treated as missing except the default
+or exit indicator. This absorbing-exit rule is natural for firm-level data in
+which defaulted firms leave the sample. If instead the model is being simulated
+as a stationary artificial panel, replace the defaulted firm by a new draw from
+the initial distribution. The important point is that the rule must be stated
+before estimation.
+
+\subsection{Measurement equations}
+
+For an active firm, define model-implied observables by
+\begin{align}
+  \log A_{i,t}^{mod}
+  &=
+  \log k_{i,t},\\
+  L_{i,t}^{mod}
+  &=
+  b_{i,t}/k_{i,t},\\
+  (I/A)_{i,t}^{mod}
+  &=
+  \frac{\widehat h^k_\omega(k_{i,t},b_{i,t},z_{i,t})
+  -(1-\delta)k_{i,t}}{k_{i,t}},\\
+  Q_{i,t}^{mod}
+  &=
+  \frac{\widehat V_\omega(k_{i,t},b_{i,t},z_{i,t})+b_{i,t}}{k_{i,t}}.
+\end{align}
+The last equation uses equity plus debt divided by capital as a simple
+model-implied valuation ratio. If the data define \(Q\) differently, then this
+measurement equation should be changed to match the data definition.
+
+The continuous observations satisfy
+\begin{equation}
+  y^{cont}_{i,t}
+  =
+  m^{cont}_\omega(x_{i,t})
+  +
+  u_{i,t},
+  \qquad
+  u_{i,t}\sim N(0,\Sigma_y).
+  \label{eq:full-ssm-cont-measurement}
+\end{equation}
+For the binary default observation, allow small classification errors:
+\begin{equation}
+\begin{aligned}
+  \Pr(D_{i,t+1}^{obs}=1\mid d^*_{i,t+1}=0) &= \pi_{01},\\
+  \Pr(D_{i,t+1}^{obs}=0\mid d^*_{i,t+1}=1) &= \pi_{10}.
+\end{aligned}
+\label{eq:full-ssm-default-measurement}
+\end{equation}
+These probabilities keep the likelihood from becoming exactly zero when data
+and model default dates disagree by a small amount.
+
+\subsection{Exact filtering specification}
+
+The exact-discrete version uses \cref{eq:full-ssm-exact-default} as written. A
+particle filter approximates
+\[
+  p_\phi(x_{i,t}\mid y_{i,1:t})
+\]
+by particles \(x_{i,t}^{(m)}\), \(m=1,\ldots,M\). At each date:
+\begin{enumerate}[leftmargin=2em]
+  \item Propagate each particle using the solved policy transition and a new
+  shock draw.
+  \item Compute the observation likelihood from
+  \cref{eq:full-ssm-cont-measurement,eq:full-ssm-default-measurement}.
+  \item Reweight particles by the observation likelihood.
+  \item Resample if the effective sample size is too small.
+\end{enumerate}
+This gives an estimated likelihood
+\[
+  \widehat p_\phi(y_{i,1:T_i})
+\]
+for each firm. If firms are conditionally independent given \(\phi\), the panel
+likelihood is
+\begin{equation}
+  \widehat p_\phi(Y)
+  =
+  \prod_{i=1}^N
+  \widehat p_\phi(y_{i,1:T_i}).
+  \label{eq:full-ssm-panel-likelihood}
+\end{equation}
+
+The Bayesian posterior is
+\begin{equation}
+  p(\phi\mid Y)
+  \propto
+  p(\phi)\,p_\phi(Y).
+  \label{eq:full-ssm-panel-posterior}
+\end{equation}
+Because the likelihood is estimated by particles, the most faithful sampler is
+a particle MCMC method, such as particle marginal Metropolis-Hastings
+\citep{andrieu2010pmcmc}. This directly addresses the discreteness of default
+and the non-Gaussian state-space likelihood. Plain HMC is not the safest
+choice for this exact-discrete likelihood because resampling and hard default
+events make the likelihood rough.
+
+\subsection{Smoothed HMC specification}
+
+If the researcher wants HMC, use a differentiable approximation. Replace the
+hard default indicator by the smooth default probability
+\begin{equation}
+  p^D_{\kappa,i,t+1}
+  =
+  \frac{1}{1+\exp\{\widehat G_\omega(k^*_{i,t+1},b^*_{i,t+1},z^*_{i,t+1})/\kappa\}}.
+  \label{eq:full-ssm-soft-default}
+\end{equation}
+When \(\widehat G_\omega\) is very negative, the default probability is close to
+one. When \(\widehat G_\omega\) is very positive, it is close to zero. As
+\(\kappa\downarrow0\), this approaches the hard default rule.
+
+In the smoothed likelihood, use
+\[
+  D_{i,t+1}^{obs}
+  \sim
+  \operatorname{Bernoulli}(p^D_{\kappa,i,t+1})
+\]
+or combine \(p^D_{\kappa,i,t+1}\) with the classification-error probabilities
+\(\pi_{01}\) and \(\pi_{10}\). If the resulting filtering likelihood is
+differentiable in \(\phi\), HMC can target the approximate posterior
+\begin{equation}
+  \widetilde p_\kappa(\phi\mid Y)
+  \propto
+  p(\phi)\,\widetilde p_{\phi,\kappa}(Y).
+  \label{eq:full-ssm-soft-posterior}
+\end{equation}
+The smoothing parameter is not harmless. A serious analysis should repeat the
+estimation for smaller \(\kappa\) and check whether posterior conclusions are
+stable. If conclusions change materially as \(\kappa\) changes, the smoothed
+HMC posterior is a numerical approximation, not reliable evidence about the
+exact default model.
+
+\subsection{How this specification addresses the five problems}
+
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{More than the Bellman equation.} The model now specifies
+  initial states, transitions, default/exit, measurement errors, default
+  observation errors, and missing-data handling. The likelihood is therefore a
+  statistical object, not merely a solved dynamic program.
+
+  \item \textbf{Default discreteness.} The exact version uses a particle filter
+  and particle MCMC, which are designed for nonlinear and non-Gaussian
+  state-space models. The HMC version uses a smooth default probability and
+  must be checked against the exact version.
+
+  \item \textbf{Particle-filter noise.} The exact version uses the
+  particle-filter likelihood inside particle MCMC rather than pretending that
+  the likelihood is deterministic. In practice one should increase the number
+  of particles until the log-likelihood estimate is stable enough for the
+  sampler being used.
+
+  \item \textbf{Parameter-dependent neural solution.} The solver must be
+  parameter-conditioned on \(\omega\). During estimation, the posterior draws of
+  \(\omega\) should remain inside the region where held-out Bellman, pricing,
+  and policy-check residuals are small.
+
+  \item \textbf{Approximation error.} Before accepting posterior draws, compute
+  a solver diagnostic such as
+  \[
+    R_{0.95}(\omega)
+    =
+    \text{95th percentile of held-out solver residuals at }\omega.
+  \]
+  If \(R_{0.95}(\omega)\) is too large in posterior regions, the solution
+  network must be retrained or refined there. The likelihood should not be
+  trusted in parameter regions where the economic model has not actually been
+  solved accurately.
+\end{enumerate}
+
+\begin{proposition}[A well-defined full-scale estimator]
+\label{prop:full-scale-estimator}
+Once the structural parameters, solved policy functions, initial-state law,
+transition law, default/exit rule, measurement equations, and prior are
+specified as above, the risky-debt model defines either an exact-discrete
+particle-filter likelihood \(p_\phi(Y)\) or a smoothed likelihood
+\(\widetilde p_{\phi,\kappa}(Y)\). Therefore estimation by particle MCMC or by
+HMC on the smoothed posterior is mathematically well defined.
+\end{proposition}
+
+\begin{proof}
+The initial-state law gives \(p_\phi(x_{i,1})\). The solved policy transition,
+shock law, and default/exit rule give \(p_\phi(x_{i,t+1}\mid x_{i,t})\). The
+continuous and binary measurement equations give \(p_\phi(y_{i,t}\mid x_{i,t})\).
+Multiplying these terms and integrating over latent states gives a likelihood.
+Combining the likelihood with a prior gives a posterior. Particle MCMC targets
+the posterior associated with the exact-discrete state-space likelihood, while
+HMC targets the posterior associated with the differentiable smoothed
+likelihood.
+\end{proof}
+
+\section{Likelihood filtering versus moment matching}
+\label{sec:likelihood-vs-moments}
+
+We now have two estimation routes for the risky-debt model.
+
+The \emph{moment-matching route} solves the model for many parameter values,
+simulates firm panels, computes selected moments, learns a differentiable
+moment map, and estimates parameters by matching data moments. This is the
+route emphasized by \citet[Section 3]{duartefonseca2026ai}. In our notation,
+it estimates
+\begin{equation}
+  \widehat\omega_{\mathrm{MM}}
+  \in
+  \argmin_\omega
+  \bigl(\widehat m-g(\omega)\bigr)^\top W
+  \bigl(\widehat m-g(\omega)\bigr),
+  \label{eq:mm-estimator}
+\end{equation}
+where \(\widehat m\) are empirical moments and \(g(\omega)\) is the
+model-implied moment function or its neural approximation.
+
+The \emph{likelihood-filtering route} solves the model, embeds the solved
+policies in a state-space model, filters latent states, and estimates from the
+likelihood. In Bayesian form it estimates the posterior
+\begin{equation}
+  p(\phi\mid Y)
+  \propto
+  p(\phi)\,p_\phi(Y),
+  \label{eq:likelihood-route-posterior}
+\end{equation}
+where \(p_\phi(Y)\) is obtained by a Kalman filter in special linear Gaussian
+cases, by a particle filter in nonlinear non-Gaussian cases, or by a smoothed
+differentiable approximation when using HMC.
+
+\begin{proposition}[Different statistical objects]
+\label{prop:mm-vs-likelihood-object}
+Moment matching and likelihood filtering use the same solved economic model,
+but they estimate different statistical objects. Moment matching compares a
+small vector of selected features of the data with the same features in
+simulated data. Likelihood filtering specifies a full probability law for the
+observed panel and uses that law to evaluate the probability of the entire
+observed path.
+\end{proposition}
+
+\begin{proof}
+In \cref{eq:mm-estimator}, the data enter only through \(\widehat m\). If two
+datasets have the same selected moments, the objective gives them the same
+value. In \cref{eq:likelihood-route-posterior}, the data enter through the full
+likelihood \(p_\phi(Y)\). The likelihood depends on the order of observations,
+the timing of default, the path of latent states, and measurement errors. Thus
+the two routes use the solved model differently: one through selected moments,
+the other through a probability model for the full observed history.
+\end{proof}
+
+\subsection{Advantages of moment matching}
+
+Moment matching is often the more forgiving route.
+
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{It does not require a complete observation model.} The
+  researcher chooses moments such as mean leverage, investment volatility,
+  default frequency, or autocorrelations. One does not need to specify every
+  measurement-error distribution or the exact probability of every observed
+  firm path.
+
+  \item \textbf{It can target economically important features directly.} If
+  leverage, default frequency, and investment moments are the main objects of
+  interest, the estimator can put them directly in \(\widehat m\). This is
+  useful for teaching and for empirical work where the model is intended to
+  explain selected corporate-finance facts.
+
+  \item \textbf{It can be computationally efficient after the surrogate is
+  trained.} Once the moment network \(g(\omega)\) is accurate, evaluating
+  \cref{eq:mm-estimator} is fast. This is the central computational advantage
+  of the Duarte--Fonseca approach.
+
+  \item \textbf{It is less exposed to small measurement-model mistakes.} A
+  full likelihood can be very sensitive to a badly specified measurement error.
+  Moment matching can be more robust if the selected moments are well chosen.
+
+  \item \textbf{Identification diagnostics can be visual.} Minimum-loss
+  functions, as in \citet[Sections 3.5--3.6]{duartefonseca2026ai}, let the
+  researcher ask whether each parameter is pinned down by the chosen moments.
+\end{enumerate}
+
+The main weaknesses are also clear. Moment matching throws away information not
+contained in the selected moments. It can identify only what the chosen moments
+are able to identify. It also introduces a second approximation if \(g(\omega)\)
+is learned by a neural moment network. Finally, the choice of weighting matrix
+\(W\) and the choice of moments can materially affect the answer.
+
+\subsection{Advantages of likelihood filtering and HMC}
+
+The likelihood route is more ambitious.
+
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{It uses the timing of the data.} A state-space likelihood uses
+  the sequence of leverage, investment, valuation, and default observations,
+  not just their averages or autocorrelations. Timing is especially valuable
+  for default because the model predicts when a firm crosses the default
+  boundary.
+
+  \item \textbf{It handles latent states explicitly.} Filtering gives a
+  distribution over unobserved capital, productivity, and default risk at each
+  date. This can be useful for posterior predictive checks and for studying
+  hidden firm quality.
+
+  \item \textbf{It gives a full uncertainty statement.} In the Bayesian version,
+  HMC or particle MCMC produces posterior draws of parameters and latent states.
+  This gives uncertainty intervals for structural parameters, policies, default
+  probabilities, and counterfactuals.
+
+  \item \textbf{It can use irregular and partially missing observations.} A
+  state-space likelihood can omit missing components date by date while still
+  updating beliefs with the observed components.
+
+  \item \textbf{It tests the model more harshly.} Because the likelihood tries
+  to explain the whole observed path, it exposes misspecification that moment
+  matching may hide.
+\end{enumerate}
+
+The costs are substantial. The researcher must specify a full measurement
+model, initial distribution, exit rule, and default-observation process. The
+filter can be expensive for large panels. Hard default makes the likelihood
+nonsmooth and non-Gaussian. Plain HMC is suitable only for a differentiable
+posterior, so the exact default model usually points toward particle MCMC,
+while HMC points toward a smoothed approximation whose sensitivity must be
+checked. Finally, if the neural solution has errors near the default boundary,
+the likelihood can be biased in a very precise-looking way.
+
+\subsection{Side-by-side comparison}
+
+The practical comparison is as follows.
+
+\begin{itemize}[leftmargin=2em]
+  \item \textbf{Object being matched.} Moment matching matches selected
+  statistics. Filtering matches the probability law of the observed paths.
+
+  \item \textbf{Data requirement.} Moment matching can work with repeated
+  cross sections or a panel summarized by moments. Filtering is most valuable
+  when firm-level histories and default timing are observed.
+
+  \item \textbf{Modeling burden.} Moment matching needs moment definitions and
+  a weighting matrix. Filtering needs a full observation model, latent-state
+  transition, initial distribution, and default/exit rule.
+
+  \item \textbf{Computation.} Moment matching is expensive while building the
+  simulation and moment-network dataset, but cheap afterward. Filtering is
+  expensive at every likelihood evaluation unless the filter is very efficient.
+
+  \item \textbf{Default treatment.} Moment matching can target default
+  frequency and related moments without explaining every default date.
+  Filtering must assign probabilities to default timing, which is more
+  informative but also more fragile.
+
+  \item \textbf{Uncertainty.} Moment matching can use asymptotic standard
+  errors, bootstrap, or sensitivity across moment-network folds. Bayesian
+  filtering gives posterior uncertainty directly, conditional on the full
+  probabilistic specification.
+
+  \item \textbf{Main failure mode.} Moment matching can fit chosen moments while
+  missing important dynamics. Filtering can look precise while being wrong
+  because the observation model or neural solution is misspecified.
+\end{itemize}
+
+\subsection{Which one should we use?}
+
+For a first empirical risky-debt project, moment matching is usually the safer
+starting point. It is easier to explain, easier to debug, and less dependent on
+strong assumptions about measurement errors and exact firm histories. It is
+especially attractive when the goal is to match corporate-finance facts such as
+average leverage, investment volatility, issuance frequency, and default rates.
+
+The likelihood-filtering route is attractive when the data contain reliable
+firm-level histories and the researcher cares about latent states or default
+timing. It is also useful when one wants posterior distributions for
+counterfactuals, not just a point estimate. For the risky-debt model, the most
+credible likelihood implementation is likely a two-step comparison:
+
+\begin{enumerate}[leftmargin=2em]
+  \item Estimate first by moment matching to find a plausible parameter region.
+  \item Train or refine the parameter-conditioned neural solution in that
+  region.
+  \item Run the exact-discrete particle-filter estimator as the benchmark
+  likelihood method.
+  \item Run smoothed HMC as a faster differentiable approximation.
+  \item Check whether the smoothed HMC posterior agrees with the exact
+  particle-filter benchmark and whether solver residuals are small throughout
+  the posterior region.
+\end{enumerate}
+
+This hybrid workflow uses the strengths of both approaches. Moment matching
+finds the region of the parameter space that deserves attention. Filtering
+then asks the sharper question: can the solved model explain the actual paths
+of firms, including the timing of default?
+
+\section{The all-in-one expectation idea}
+
+Maliar et al.'s all-in-one integration idea is easiest to understand through a
+small algebra fact. Suppose \(f(\varepsilon)\) is a random number depending on a
+shock \(\varepsilon\). Let \(\varepsilon_1\) and \(\varepsilon_2\) be independent
+draws from the same distribution.
+
+\begin{proposition}[Two-draw identity]
+\label{prop:aio-identity}
+If \(\varepsilon_1\) and \(\varepsilon_2\) are independent and identically
+distributed, then
+\begin{equation}
+  \left(\E[f(\varepsilon)]\right)^2
+  =
+  \E[f(\varepsilon_1)f(\varepsilon_2)].
+  \label{eq:aio-identity}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Because the two shocks are independent, the expectation of the product equals
+the product of expectations:
+\[
+  \E[f(\varepsilon_1)f(\varepsilon_2)]
+  =
+  \E[f(\varepsilon_1)]\E[f(\varepsilon_2)].
+\]
+Because the two shocks have the same distribution,
+\[
+  \E[f(\varepsilon_1)]=\E[f(\varepsilon_2)]=\E[f(\varepsilon)].
+\]
+Substituting gives \cref{eq:aio-identity}.
+\end{proof}
+
+This identity explains why two independent shock draws can estimate certain
+squared expected residuals. Maliar et al. use this idea to reduce the cost of
+numerical integration in Bellman and Euler residual objectives
+\citep[Definitions 2.9 and 2.10]{maliar2021deep}. In the risky-debt model, this
+identity is directly useful only for squared residual components that are linear
+in a conditional expectation before squaring. The full risky-debt objective also
+contains nonlinear pieces, such as the Fischer-Burmeister expression in
+\cref{eq:bellman-fb-residual}, and possibly a smoothed default classifier. For
+those pieces, a practical implementation should use mini-batch inner averages or
+a separately justified reformulation.
+
+\section{A concrete algorithm}
+
+A practical version of the method is as follows.
+
+\begin{enumerate}[leftmargin=2em]
+  \item Choose neural-network architectures for
+  \(\widehat V_\theta\), \(\widehat h^k_\theta\), \(\widehat h^b_\theta\), and
+  \(\widehat r_\theta\).
+
+  \item Decide which constraints will be hard-coded in the output layer. For
+  example, use sigmoid transformations for bounded choices \(k'\) and \(b'\),
+  and use softplus transformations for positive quantities such as gross risky
+  returns. Keep Bellman/default residuals for the default boundary, because
+  default is a regime choice rather than an ordinary output bound.
+
+  \item Draw an initial batch of states \(s_i=(k_i,b_i,z_i)\). These can be
+  drawn from a broad rectangle or simulated from a preliminary policy.
+
+  \item For each state, compute the policy
+  \((\widehat k'_i,\widehat b'_i)\).
+
+  \item Draw future shocks using
+  \[
+    \log z'_i=\rho\log z_i+\varepsilon'_i.
+  \]
+
+  \item Compute the continuation gate \(C_\theta\), the interior gate
+  \(I_\theta\), and the product \(S_\theta=C_\theta I_\theta\).
+
+  \item On states with \(S_\theta\approx 1\), compute the Euler residuals
+  \(\widehat{\mathcal E}^k_\theta\) and
+  \(\widehat{\mathcal E}^b_\theta\). On states near default or action bounds,
+  compute the Bellman/default residual \(\mathcal B_\theta\) and any KKT
+  residuals \(\mathcal K_\theta\). If the relevant action bounds are
+  hard-coded by output transformations, the corresponding KKT residuals can be
+  omitted.
+
+  \item For every positive debt choice \(\widehat b'_i>0\), compute the pricing
+  residual \(\mathcal P_\theta\), because the risky rate must make lenders break
+  even whether the firm is close to default or safely solvent.
+
+  \item Either minimize the empirical hybrid loss
+  \(\mathcal L_N^{\mathrm{hybrid}}(\theta)\) by stochastic gradient descent or
+  Adam, or use the hard-constrained hybrid loss
+  \(\mathcal L_N^{\mathrm{hard\text{-}hybrid}}(\theta)\) when feasibility is
+  enforced by construction. Alternatively, split the same residuals into
+  separate objectives as in \cref{subsec:multiobjective-training}, compute one
+  gradient per objective, and update the network with a multi-objective
+  aggregate such as MGDA. A direct policy-maximization loss
+  \(\mathcal L_N(\theta)\) can also be used, but it usually requires sampling
+  many alternative actions.
+
+  \item Resimulate states using the updated policy and repeat.
+
+  \item Assess accuracy on fresh states not used in training. Report Bellman
+  residuals, Euler residuals by region, KKT residuals near bounds, pricing
+  residuals, MOO diagnostics when MOO is used, default classification behavior,
+  direct checks against random alternative actions, and simulated financial
+  moments.
+\end{enumerate}
+
+\section{What this derivation does and does not prove}
+
+The derivation proves a mathematical reformulation: the risky-debt Bellman
+problem, the default option, and the zero-profit debt-pricing equation can be
+written as residual equations suitable for the deep-learning framework of
+\citet{maliar2021deep}. It also shows why the risky-debt case needs more
+residuals than the basic Section 3.1 investment model: the risky rate
+\(\widetilde r\) must be learned or solved jointly with the value and policy
+functions.
+
+The derivation does not prove that a neural network trained with a particular
+optimizer will converge to the true economic solution. Neural networks are
+approximating families, and stochastic gradient methods are numerical
+optimization tools. Multi-objective training can reduce sensitivity to fixed
+loss weights, but it is still a numerical optimizer with design choices:
+objective grouping, normalization, learning rate, aggregation rule, and stopping
+criteria all matter. Euler and KKT residuals are local necessary conditions, so
+they should be supplemented by direct checks against alternative actions when
+global policy optimality matters. The right scientific claim after training is
+therefore not ``the model is solved exactly.'' The right claim is: the trained
+functions solve the model approximately on the tested state region, with
+approximation quality measured by out-of-sample Bellman, pricing,
+Euler-by-region, KKT, direct policy-check, multi-objective, and simulation
+diagnostics.
+
+\begin{thebibliography}{9}
+
+\bibitem[D{\'e}sid{\'e}ri(2012)]{desideri2012mgda}
+D{\'e}sid{\'e}ri, Jean-Antoine.
+\newblock 2012.
+\newblock Multiple-gradient descent algorithm ({MGDA}) for multiobjective
+optimization.
+\newblock \emph{Comptes Rendus Math{\'e}matique} 350(5--6):313--318.
+\newblock DOI:
+\href{https://doi.org/10.1016/j.crma.2012.03.014}{10.1016/j.crma.2012.03.014}.
+
+\bibitem[Andrieu et~al.(2010)Andrieu, Doucet, and Holenstein]{andrieu2010pmcmc}
+Andrieu, Christophe, Arnaud Doucet, and Roman Holenstein.
+\newblock 2010.
+\newblock Particle Markov chain Monte Carlo methods.
+\newblock \emph{Journal of the Royal Statistical Society: Series B}
+72(3):269--342.
+\newblock DOI:
+\href{https://doi.org/10.1111/j.1467-9868.2009.00736.x}{10.1111/j.1467-9868.2009.00736.x}.
+
+\bibitem[Durbin and Koopman(2012)]{durbinkoopman2012ssm}
+Durbin, James, and Siem Jan Koopman.
+\newblock 2012.
+\newblock \emph{Time Series Analysis by State Space Methods}.
+\newblock Second edition. Oxford University Press.
+
+\bibitem[Duarte and Fonseca(2026)]{duartefonseca2026ai}
+Duarte, Victor, and Julia Fonseca.
+\newblock 2026.
+\newblock AI for structural estimation.
+\newblock NBER Working Paper No. 35283, May 2026.
+\newblock Available at:
+\href{https://www.nber.org/papers/w35283}{https://www.nber.org/papers/w35283}.
+
+\bibitem[Hall-Hoffarth(2023)]{hallhoffarth2023hard}
+Hall-Hoffarth, Emmet.
+\newblock 2023.
+\newblock Non-linear approximations of DSGE models with neural-networks and
+hard-constraints.
+\newblock arXiv:2310.13436.
+\newblock Available at:
+\href{https://arxiv.org/abs/2310.13436}{https://arxiv.org/abs/2310.13436}.
+
+\bibitem[Maliar et~al.(2021)Maliar, Maliar, and Winant]{maliar2021deep}
+Maliar, Lilia, Serguei Maliar, and Pablo Winant.
+\newblock 2021.
+\newblock Deep learning for solving dynamic economic models.
+\newblock \emph{Journal of Monetary Economics}.
+\newblock DOI: \href{https://doi.org/10.1016/j.jmoneco.2021.07.004}{10.1016/j.jmoneco.2021.07.004}.
+
+\bibitem[Neal(2011)]{neal2011hmc}
+Neal, Radford M.
+\newblock 2011.
+\newblock MCMC using Hamiltonian dynamics.
+\newblock In \emph{Handbook of Markov Chain Monte Carlo}, edited by Steve
+Brooks, Andrew Gelman, Galin Jones, and Xiao-Li Meng. Chapman and Hall/CRC.
+\newblock Available at:
+\href{https://www.mcmchandbook.net/HandbookChapter5.pdf}{https://www.mcmchandbook.net/HandbookChapter5.pdf}.
+
+\bibitem[Sener and Koltun(2018)]{sener2018mtlmoo}
+Sener, Ozan, and Vladlen Koltun.
+\newblock 2018.
+\newblock Multi-task learning as multi-objective optimization.
+\newblock In \emph{Advances in Neural Information Processing Systems}
+(NeurIPS), pages 525--536.
+\newblock Available at:
+\href{https://proceedings.neurips.cc/paper/2018/hash/432aca3a1e345e339f35a30c8f65edce-Abstract.html}{NeurIPS proceedings}.
+
+\bibitem[Strebulaev and Whited(2012)]{strebulaev2012dynamic}
+Strebulaev, Ilya A., and Toni M. Whited.
+\newblock 2012.
+\newblock Dynamic models and structural estimation in corporate finance.
+\newblock Working paper, revised December 2012. This note uses the December
+2012 working-paper version for section and equation numbering.
+\newblock Available at SSRN:
+\href{https://ssrn.com/abstract=2091854}{https://ssrn.com/abstract=2091854}.
+
+\end{thebibliography}
+
+\end{document}

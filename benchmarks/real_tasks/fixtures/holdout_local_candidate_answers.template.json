@@ -1,0 +1,33 @@
+{
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "real_task_holdout_local_candidate_template",
+    "status": "template_only",
+    "notes": [
+      "This file is a scaffold for local holdout candidate-answer fixtures.",
+      "It is local-only and should not be committed as evaluated holdout data by default.",
+      "The fixture shape intentionally mirrors the committed public normalized candidate-answer shape."
+    ]
+  },
+  "fixtures": [
+    {
+      "id": "HOLDOUT-FIXTURE-EXAMPLE-001",
+      "case_id": "HOLDOUT-EXAMPLE-001",
+      "candidate": {
+        "case_id": "HOLDOUT-EXAMPLE-001",
+        "status": "unverified",
+        "substatus": "local_holdout_candidate_only",
+        "labels": [],
+        "evidence_class": "holdout_local_example",
+        "summary_text": "chapter neighborhood provenance",
+        "claims": [
+          "safe local holdout summary"
+        ],
+        "next_actions": [
+          "Keep this case local until a deliberate public-promotion decision is made."
+        ]
+      },
+      "expected_score_status": "consistent"
+    }
+  ]
+}

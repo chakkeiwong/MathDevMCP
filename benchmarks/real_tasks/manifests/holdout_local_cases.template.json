@@ -1,0 +1,63 @@
+{
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "real_task_holdout_local_case_template",
+    "status": "template_only",
+    "scope": "holdout_local_scaffold",
+    "notes": [
+      "This file is a scaffold for local holdout inventories.",
+      "It is not committed evaluated data and is intentionally excluded from the current public report surface.",
+      "Paths should follow the same repo-root-relative policy as the public manifest unless a future holdout policy explicitly changes that rule."
+    ]
+  },
+  "cases": [
+    {
+      "id": "HOLDOUT-EXAMPLE-001",
+      "family": "retrieval_and_provenance",
+      "repo": "ExampleRepo",
+      "task_type": "example_holdout_case",
+      "difficulty": "medium",
+      "public": false,
+      "document_roots": [
+        "../example-repo/docs"
+      ],
+      "document_files": [
+        "../example-repo/docs/example.tex"
+      ],
+      "code_roots": [
+        "../example-repo/src"
+      ],
+      "code_files": [
+        "../example-repo/src/example.py"
+      ],
+      "labels": [
+        "example:label"
+      ],
+      "prompt": "Example holdout-local benchmark prompt.",
+      "gold": {
+        "expected_status": "unverified",
+        "expected_substatus": "example_holdout_only",
+        "expected_labels": [
+          "example:label"
+        ],
+        "required_terms": [
+          "example term"
+        ],
+        "forbidden_claims": [
+          "This example proves generalization by itself."
+        ],
+        "required_next_actions": [
+          "Evaluate this case only in a local holdout context."
+        ],
+        "evidence_class": "holdout_local_example",
+        "false_confidence_veto": true
+      },
+      "notes": "Example scaffold only. Replace with a real locally maintained holdout case.",
+      "holdout_reason": "Differs from public cases by source-family and author-exposure status.",
+      "disjointness_axes": [
+        "different_source_family",
+        "different_author_exposure_status"
+      ]
+    }
+  ]
+}

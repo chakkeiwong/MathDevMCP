@@ -1,0 +1,230 @@
+{
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "real_task_candidate_fixture_set",
+    "status": "draft",
+    "notes": [
+      "This fixture set contains normalized candidate-answer objects for deterministic structural scoring.",
+      "These are calibration fixtures, not semantic benchmark outputs."
+    ]
+  },
+  "fixtures": [
+    {
+      "id": "fixture-mf03-safe-helper-summary",
+      "case_id": "MF-03-hmc-helper-nonclaim-boundary",
+      "candidate": {
+        "case_id": "MF-03-hmc-helper-nonclaim-boundary",
+        "status": "consistent",
+        "substatus": "helper_nonclaim_boundary_preserved",
+        "labels": [],
+        "evidence_class": "engineering_helper_regression",
+        "summary_text": "numerical-stability helpers mass-matrix ESS R-hat not structural-identification tests",
+        "claims": [
+          "safe helper summary"
+        ],
+        "next_actions": [
+          "Use separate model-level diagnostics for identification or posterior claims."
+        ]
+      },
+      "expected_score_status": "consistent"
+    },
+    {
+      "id": "fixture-mf04-blocked-diagnostic-safe",
+      "case_id": "MF-04-short-hmc-acceptance-veto-diagnosis",
+      "candidate": {
+        "case_id": "MF-04-short-hmc-acceptance-veto-diagnosis",
+        "status": "inconclusive",
+        "substatus": "trusted_gpu_provenance_blocked",
+        "labels": [],
+        "evidence_class": "diagnostic_blocked_execution_note",
+        "summary_text": "Classification: inconclusive acceptance-veto diagnosis requires trusted same-process GPU execution trusted_execution_provenance_passed False not authorized",
+        "claims": [
+          "safe blocked diagnostic summary"
+        ],
+        "next_actions": [
+          "fix the diagnostic blocker or revise under Claude/Codex review"
+        ]
+      },
+      "expected_score_status": "consistent"
+    },
+    {
+      "id": "fixture-dh06-forbidden-parity-claim",
+      "case_id": "DH-06-densesoap-source-contract-mismatch",
+      "candidate": {
+        "case_id": "DH-06-densesoap-source-contract-mismatch",
+        "status": "mismatch",
+        "substatus": "diagnostic_only_source_contract_mismatch",
+        "labels": [],
+        "evidence_class": "diagnostic_source_contract_mismatch",
+        "summary_text": "DENSESOAP_REMAINS_DIAGNOSTIC_ONLY material default mismatch missing official feature step/cadence mismatch no official SOAP parity claim",
+        "claims": [
+          "official SOAP parity is established"
+        ],
+        "next_actions": [
+          "Keep both TensorFlow DenseSOAP surfaces diagnostic-only unless a new bounded optimizer plan is approved."
+        ]
+      },
+      "expected_score_status": "mismatch"
+    },
+    {
+      "id": "fixture-dh05-blocker-preserved-safe",
+      "case_id": "DH-05-sgu-exact-manifold-blocker",
+      "candidate": {
+        "case_id": "DH-05-sgu-exact-manifold-blocker",
+        "status": "mismatch",
+        "substatus": "preserved_nonlinear_manifold_blocker",
+        "labels": [],
+        "evidence_class": "bounded_engineering_readiness_with_blocker",
+        "summary_text": "blocked_nonlinear_equilibrium_manifold_residual engineering evidence not global or posterior evidence BayesFilter integration remains untested",
+        "claims": [
+          "safe local readiness-with-blocker summary"
+        ],
+        "next_actions": [
+          "Preserve the nonlinear manifold blocker as open in downstream planning."
+        ]
+      },
+      "expected_score_status": "consistent"
+    },
+    {
+      "id": "fixture-ra01-inventory-structure-safe",
+      "case_id": "RA-01-parser-benchmark-inventory",
+      "candidate": {
+        "case_id": "RA-01-parser-benchmark-inventory",
+        "status": "consistent",
+        "substatus": "benchmark_inventory_contract_recovered",
+        "labels": [],
+        "evidence_class": "benchmark_inventory_structure",
+        "summary_text": "report results expected parser_runs status synthetic fixtures",
+        "claims": [
+          "safe benchmark inventory summary"
+        ],
+        "next_actions": [
+          "Reuse its benchmark-inventory discipline as a structural reference, not as a semantic oracle for MathDevMCP outputs."
+        ]
+      },
+      "expected_score_status": "consistent"
+    },
+    {
+      "id": "fixture-lp02-reconciliation-safe",
+      "case_id": "LP-02-basis-reconciliation-audit",
+      "candidate": {
+        "case_id": "LP-02-basis-reconciliation-audit",
+        "status": "unverified",
+        "substatus": "multi_location_sign_reconciliation_needed",
+        "labels": [],
+        "evidence_class": "document_reconciliation_plan",
+        "summary_text": "market convention model convention x_t = -x_market six locations symbol drift sign reversal",
+        "claims": [
+          "safe reconciliation task summary"
+        ],
+        "next_actions": [
+          "Treat the document as a reconciliation task rather than a settled single-source definition.",
+          "Audit downstream chapter references against the proposed master reconciliation section."
+        ]
+      },
+      "expected_score_status": "consistent"
+    },
+    {
+      "id": "fixture-mf02-policy-boundary-safe",
+      "case_id": "MF-02-large-scale-lgssm-missing-data-policy",
+      "candidate": {
+        "case_id": "MF-02-large-scale-lgssm-missing-data-policy",
+        "status": "unverified",
+        "substatus": "unsupported_missing_data_policy",
+        "labels": [],
+        "evidence_class": "engineering_policy_test",
+        "summary_text": "Masked Kalman updates and derivative slicing are pending contains NaN/Inf observations observation mask shape",
+        "claims": [
+          "safe missing-data policy summary"
+        ],
+        "next_actions": [
+          "Treat sparse or masked observations as unsupported until masked updates are implemented.",
+          "Keep NaN sparse proxies out of the likelihood path."
+        ]
+      },
+      "expected_score_status": "consistent"
+    },
+    {
+      "id": "fixture-dh01-threshold-audit-safe",
+      "case_id": "DH-01-strict-nk-convergence-audit",
+      "candidate": {
+        "case_id": "DH-01-strict-nk-convergence-audit",
+        "status": "consistent",
+        "substatus": "strict_convergence_thresholds_recovered",
+        "labels": [],
+        "evidence_class": "statistical_convergence_audit",
+        "summary_text": "R-hat < 1.01 ESS_bulk > 400 MCSE/SD < 10% medium/overnight diagnostics not routine local smoke validation",
+        "claims": [
+          "safe convergence threshold summary"
+        ],
+        "next_actions": [
+          "Use the declared thresholds as the audit contract for this case."
+        ]
+      },
+      "expected_score_status": "consistent"
+    },
+    {
+      "id": "fixture-dh02-value-parity-safe",
+      "case_id": "DH-02-bayesfilter-qr-value-parity",
+      "candidate": {
+        "case_id": "DH-02-bayesfilter-qr-value-parity",
+        "status": "consistent",
+        "substatus": "tiny_fixture_value_parity_only",
+        "labels": [],
+        "evidence_class": "engineering_adapter_parity",
+        "summary_text": "adapter_value direct_value bayesfilter.linear.tf_qr_linear_gaussian_log_likelihood value_score_authority == unavailable xla_hmc_ready is False",
+        "claims": [
+          "safe value parity summary"
+        ],
+        "next_actions": [
+          "Treat this as tiny-fixture value-parity evidence only.",
+          "Keep score-authority and XLA-readiness claims separate."
+        ]
+      },
+      "expected_score_status": "consistent"
+    },
+    {
+      "id": "fixture-lp01-analytical-validation-safe",
+      "case_id": "LP-01-analytical-validation-lgssm",
+      "candidate": {
+        "case_id": "LP-01-analytical-validation-lgssm",
+        "status": "consistent",
+        "substatus": "analytical_test_spec_recovered",
+        "labels": [
+          "eq:av_lgssm_trans",
+          "eq:av_lgssm_obs",
+          "prop:av_edh_kf",
+          "rem:av_lgssm_test"
+        ],
+        "evidence_class": "analytical_gold_standard",
+        "summary_text": "linear-Gaussian state-space model Kalman filter EDH recovers the Kalman filter N in {50, 100, 500, 1000} error below 10^-2 for N = 1000",
+        "claims": [
+          "safe analytical validation summary"
+        ],
+        "next_actions": [
+          "Use the practical test specification as a gold-standard benchmark case."
+        ]
+      },
+      "expected_score_status": "consistent"
+    },
+    {
+      "id": "fixture-dh07-migration-gate-safe",
+      "case_id": "DH-07-neutra-real-nk-migration-not-complete",
+      "candidate": {
+        "case_id": "DH-07-neutra-real-nk-migration-not-complete",
+        "status": "mismatch",
+        "substatus": "migration_not_complete",
+        "labels": [],
+        "evidence_class": "fail_closed_migration_gate",
+        "summary_text": "current_neutra_runner_migrated false serious_real_nk_neutra_blocked true fail-closed engineering certification gate",
+        "claims": [
+          "safe migration gate summary"
+        ],
+        "next_actions": [
+          "Implement the remaining BayesFilter migration checklist before serious real-NK NeuTra continuation."
+        ]
+      },
+      "expected_score_status": "consistent"
+    }
+  ]
+}

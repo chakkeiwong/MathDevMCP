@@ -9,3 +9,5 @@ Initial benchmark classes:
 3. Derivation auditing
 4. Document-grounded code generation
 5. Dense-math reading support
+
+For a benchmark program grounded in real cross-repo mathematical/code-document tasks rather than only synthetic fixtures, see [real_tasks/README.md](real_tasks/README.md).

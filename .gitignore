@@ -34,3 +34,6 @@ docs/plans/*-suggestion-memo-*.md
 docs/proof-carrying-derivation-agent-guide.md
 src/mathdevmcp/literature_gate.py
 tests/test_literature_gate.py
+
+# Local holdout-local evaluation artifacts.
+.local/mathdevmcp/

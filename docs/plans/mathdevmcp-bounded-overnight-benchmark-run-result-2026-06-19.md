@@ -154,7 +154,8 @@ Interpretation:
 
 Current scored public candidate-fixture state:
 
-- scored candidate total: `4`
+- scored candidate total: `12`
+- missing scored case IDs: none
 - current scored public status mix remains bounded and fixture-driven;
 - this remains non-gating structural scoring over committed normalized candidate
   fixtures.
@@ -162,25 +163,28 @@ Current scored public candidate-fixture state:
 Interpretation:
 
 - public structural scoring is stable enough to rerun unattended;
+- the public scored tier is now fully covered by committed candidate fixtures;
 - but it remains fixture-driven and not a semantic benchmark execution layer.
 
 ## Local holdout summary
 
 Current local holdout scored summary:
 
-- holdout case total: `3`
-- scored candidate total: `3`
+- holdout case total: `7`
+- scored candidate total: `7`
 - missing candidate case IDs: none
 - local scored family coverage currently exercised:
-  - `evidence_boundary_discipline`: `2`
+  - `evidence_boundary_discipline`: `4`
   - `retrieval_and_provenance`: `1`
-- false-confidence-veto failures: `0`
+  - `numerical_oracle_parity`: `1`
+  - `derivation_boundary_and_abstention`: `1`
+- false-confidence-veto failures: `1`
 
 Interpretation:
 
-- the local holdout seed is now fully covered by local candidate fixtures;
+- the local holdout tier is now fully covered by local candidate fixtures;
 - the holdout tier is executable and scoreable in a bounded local-only way;
-- but the local seed remains tiny and therefore not yet representative enough
+- but the local seed remains small and therefore not yet representative enough
   for strong holdout-backed claims.
 
 ## Decision table

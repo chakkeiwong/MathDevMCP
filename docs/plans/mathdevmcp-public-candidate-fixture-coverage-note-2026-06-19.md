@@ -18,8 +18,8 @@ reduce the gap between:
 
 ## What changed
 
-The committed public candidate fixture set now covers additional public case
-families beyond the earlier small seed.
+The committed public candidate fixture set now covers the remaining public case
+that had not yet received a committed normalized candidate fixture.
 
 Added representative fixture coverage for:
 
@@ -32,6 +32,9 @@ Added representative fixture coverage for:
 - `DH-02-bayesfilter-qr-value-parity`
 - `LP-01-analytical-validation-lgssm`
 - `DH-07-neutra-real-nk-migration-not-complete`
+
+This means the current committed public candidate fixture layer now covers the
+full current public benchmark corpus.
 
 This broadens public scored coverage across:
 

@@ -6,8 +6,9 @@
 
 ## Scope
 
-This note reassesses the benchmark program after the local holdout tier has
-reached a fully candidate-covered four-family seed.
+This note records an earlier strategic checkpoint in the benchmark program’s
+history, captured when the local holdout tier had moved beyond its earliest seed
+into a candidate-covered multi-family local state.
 
 It is grounded in:
 
@@ -24,14 +25,13 @@ The purpose is to decide whether the benchmark should next:
 
 ## Current status summary
 
-Relative to the prior strategic checkpoint, the local holdout tier now has:
+Relative to the prior strategic checkpoint, the benchmark now has:
 
-- four local-only example families,
-- full candidate-fixture coverage over the current local seed,
-- repeatable local structural scoring across that seed.
+- a public scored tier that is effectively fully fixture-covered,
+- a local holdout tier with broader family and judgment-shape coverage,
+- repeatable public and local structural scoring across both tiers.
 
-This is a real maturity improvement over the earlier tiny and partially covered
-local seed.
+This is a materially stronger comparative state than earlier checkpoints.
 
 ## Strategic assessment
 
@@ -94,7 +94,7 @@ still not the next justified move.
 
 | Decision | Primary criterion status | Veto diagnostic status | Main uncertainty | Next justified action | What is not concluded |
 |---|---|---|---|---|---|
-| Promote holdout-informed calibration to the highest-priority next benchmark action | Met | No current artifact suggests workflow/policy coupling is justified | Whether the current four-family local seed is representative enough for stronger cross-tier interpretation | Broaden local holdout breadth further, then revisit a stronger public-vs-local calibration pass | No generalization proof, no benchmark completion claim, no gate readiness |
+| Promote holdout-informed calibration to the highest-priority next benchmark action | Met | No current artifact suggests workflow/policy coupling is justified | Whether the current local holdout seed is representative enough for stronger cross-tier interpretation | Broaden local holdout breadth further, then revisit a stronger public-vs-local calibration pass | No generalization proof, no benchmark completion claim, no gate readiness |
 
 ## Why this direction is justified
 

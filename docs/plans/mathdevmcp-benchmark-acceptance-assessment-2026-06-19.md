@@ -1,5 +1,11 @@
 # MathDevMCP Benchmark Acceptance Assessment
 
+Role: current-synthesis
+Current-state status: living
+Grounded in:
+- docs/plans/mathdevmcp-benchmark-acceptance-policy-proposal-2026-06-19.md
+- docs/plans/mathdevmcp-benchmark-current-state-assessment-2026-06-19.md
+- docs/plans/mathdevmcp-real-tasks-benchmark-status-dashboard-2026-06-19.md
 ## Date
 
 2026-06-19
@@ -81,9 +87,8 @@ Current public benchmark state:
   - `unverified`
   - `mismatch`
   - `inconclusive`
-- public scored candidate total: `11`
-- remaining unscored public case IDs:
-  - `DH-04-bayesfilter-engineering-qualification-boundary`
+- public scored candidate total: `12`
+- remaining unscored public case IDs: none
 - public false-confidence-veto failures: `1`
 
 ### Local holdout evidence
@@ -120,7 +125,7 @@ Current program maturity signals:
 **Why:**
 
 - the public benchmark is real, diverse, and machine-checkable;
-- the public scored layer exists and is close to full fixture coverage;
+- the public scored layer exists and is fully covered by committed candidate fixtures;
 - the local holdout tier exists and is scoreable;
 - public and local tiers are explicitly separated;
 - all current reporting remains non-gating and non-release-bearing.

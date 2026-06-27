@@ -208,6 +208,25 @@
       "expected_score_status": "consistent"
     },
     {
+      "id": "fixture-dh04-qualification-boundary-safe",
+      "case_id": "DH-04-bayesfilter-engineering-qualification-boundary",
+      "candidate": {
+        "case_id": "DH-04-bayesfilter-engineering-qualification-boundary",
+        "status": "consistent",
+        "substatus": "engineering_qualification_only",
+        "labels": [],
+        "evidence_class": "engineering_qualification_note",
+        "summary_text": "engineering qualification result only not sampler convergence evidence not posterior validity evidence not DSGE/NK readiness not GPU readiness not scientific/economic result",
+        "claims": [
+          "safe engineering qualification summary"
+        ],
+        "next_actions": [
+          "Require a serious DSGE/NK experiment plan before stronger claims are made."
+        ]
+      },
+      "expected_score_status": "consistent"
+    },
+    {
       "id": "fixture-dh07-migration-gate-safe",
       "case_id": "DH-07-neutra-real-nk-migration-not-complete",
       "candidate": {

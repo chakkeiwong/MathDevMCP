@@ -82,14 +82,13 @@ This note does **not** conclude that:
 Current public scored summary:
 
 - public case total: `12`
-- scored candidate total: `11`
-- missing scored case IDs:
-  - `DH-04-bayesfilter-engineering-qualification-boundary`
+- scored candidate total: `12`
+- missing scored case IDs: none
 - by status:
-  - `consistent`: `10`
+  - `consistent`: `11`
   - `mismatch`: `1`
 - by family currently exercised in scored execution:
-  - `evidence_boundary_discipline`: `4`
+  - `evidence_boundary_discipline`: `5`
   - `code_document_consistency`: `3`
   - `derivation_boundary_and_abstention`: `1`
   - `numerical_oracle_parity`: `2`
@@ -98,35 +97,33 @@ Current public scored summary:
 
 Interpretation:
 
-- the public scored tier is now close to full-corpus fixture coverage;
+- the public scored tier is now fully covered by committed candidate fixtures;
 - it already exposes at least one structural mismatch/veto failure;
-- it is broad enough that the remaining uncertainty is no longer dominated by
-  fixture sparsity.
+- its main remaining weaknesses are no longer about fixture sparsity.
 
 ### Local holdout scored tier
 
 Current local holdout scored summary:
 
-- holdout case total: `6`
-- scored candidate total: `6`
+- holdout case total: `7`
+- scored candidate total: `7`
 - missing scored case IDs: none
 - by status:
-  - `consistent`: `5`
+  - `consistent`: `6`
   - `mismatch`: `1`
 - by family currently exercised in scored execution:
-  - `evidence_boundary_discipline`: `4` total, `3 consistent`, `1 mismatch`
+  - `evidence_boundary_discipline`: `4`
   - `retrieval_and_provenance`: `1`
   - `numerical_oracle_parity`: `1`
+  - `derivation_boundary_and_abstention`: `1`
 - false-confidence-veto failures: `1`
 
 Interpretation:
 
 - the local holdout tier is fully scored relative to its current seed;
-- it now exposes at least one local mismatch/veto-shaped signal rather than only
-  all-consistent local outcomes;
-- it remains smaller than the public tier, but it is now a better comparison
-  partner because it contains some failure-shape variety rather than only safe
-  local summaries.
+- it now spans multiple families and multiple judgment shapes;
+- it is still much smaller than the public tier, but it no longer looks like a
+  purely safe-only comparison partner.
 
 ## Comparative interpretation
 

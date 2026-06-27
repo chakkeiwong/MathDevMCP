@@ -6,8 +6,11 @@
 
 ## Scope
 
-This note records a stronger **holdout-informed structural calibration pass**
-over the current scored tiers:
+This note records an earlier **holdout-informed structural calibration pass**
+over the scored tiers available at that checkpoint.
+
+A later comparative interpretation now exists in newer holdout-informed
+calibration notes and current synthesis artifacts.
 
 - the committed public scored-report surface, and
 - the current local-only holdout scored-report surface.
@@ -79,14 +82,13 @@ This note does **not** conclude that:
 Current public scored summary:
 
 - public case total: `12`
-- scored candidate total: `11`
-- missing scored case IDs:
-  - `DH-04-bayesfilter-engineering-qualification-boundary`
+- scored candidate total: `12`
+- missing scored case IDs: none
 - by status:
-  - `consistent`: `10`
+  - `consistent`: `11`
   - `mismatch`: `1`
 - by family currently exercised in scored execution:
-  - `evidence_boundary_discipline`: `4`
+  - `evidence_boundary_discipline`: `5`
   - `code_document_consistency`: `3`
   - `derivation_boundary_and_abstention`: `1`
   - `numerical_oracle_parity`: `2`
@@ -95,32 +97,33 @@ Current public scored summary:
 
 Interpretation:
 
-- the public scored tier is now close to full-corpus scored coverage;
-- it is no longer severely limited by fixture sparsity;
-- the remaining public scored gap is now small enough that the public-vs-local
-  comparison can be interpreted more directly than before.
+- the public scored tier is now fully covered by committed candidate fixtures;
+- it is no longer limited by fixture sparsity as a primary maturity concern.
 
 ### Local holdout scored tier
 
 Current local holdout scored summary:
 
-- holdout case total: `5`
-- scored candidate total: `5`
+- holdout case total: `7`
+- scored candidate total: `7`
 - missing scored case IDs: none
 - by status:
-  - `consistent`: `5`
+  - `consistent`: `6`
+  - `mismatch`: `1`
 - by family currently exercised in scored execution:
-  - `evidence_boundary_discipline`: `3`
+  - `evidence_boundary_discipline`: `4`
   - `retrieval_and_provenance`: `1`
   - `numerical_oracle_parity`: `1`
-- false-confidence-veto failures: `0`
+  - `derivation_boundary_and_abstention`: `1`
+- false-confidence-veto failures: `1`
 
 Interpretation:
 
-- the local holdout tier is fully scored relative to its current seed;
-- it now spans a broader set of task families than before;
-- it is still much smaller than the public tier, but the local holdout side is
-  now less obviously narrow in kind as well as in count.
+- the local holdout tier is now fully scored relative to its current seed;
+- it is broader than before in both family coverage and judgment-shape
+  coverage;
+- but it is still a small local seed and therefore still the most important
+  remaining representativeness uncertainty.
 
 ## Calibration interpretation
 

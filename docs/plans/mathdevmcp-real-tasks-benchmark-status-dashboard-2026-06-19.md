@@ -1,5 +1,9 @@
 # MathDevMCP Real-Task Benchmark Program Status Dashboard
 
+Role: current-synthesis
+Current-state status: living
+Grounded in:
+- docs/plans/mathdevmcp-real-tasks-benchmark-master-program-2026-06-17.md
 ## Date
 
 2026-06-19
@@ -188,8 +192,8 @@ Interpretation:
 - it can score explicitly provided normalized candidate answers against local
   holdout cases using a local-only, non-gating surface;
 - it can scaffold local candidate-answer fixtures for repeated local execution;
-- it now has a small five-family local seed, and that seed has local
-  candidate-fixture coverage;
+- it now has a small seven-case local seed, with full local candidate-fixture
+  coverage;
 - and it is still far short of broad populated holdout evaluation or
   holdout-backed generalization claims.
 
@@ -204,7 +208,7 @@ The holdout-local tier now has:
 - one first local-only populated holdout checkpoint,
 - one first local-only scoring surface,
 - one local candidate-fixture scaffold/runner path,
-- and a small five-family local seed.
+- and a small seven-case local seed.
 
 It is therefore no longer merely conceptual, but it is still not yet a mature
 holdout-backed evaluation tier.
@@ -212,7 +216,7 @@ holdout-backed evaluation tier.
 Remaining tasks:
 
 - additional local holdout entries maintained outside the public corpus,
-- broader holdout scoring/evaluation over the now broader local seed,
+- broader holdout scoring/evaluation over the current seven-case local seed,
 - eventually holdout-informed calibration.
 
 ### 2. Private/external tier implementation
@@ -261,7 +265,7 @@ That means:
 ## Most justified next actions
 
 ### Highest-priority remaining work
-1. continue holdout-local from a small four-family local seed toward broader local evaluation coverage;
+1. continue holdout-local from a small five-family local seed toward broader local evaluation coverage;
 2. continue scored calibration in a bounded way;
 3. decide later whether more public cases or better normalization are more
    valuable than immediate workflow integration.

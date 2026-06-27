@@ -14,7 +14,7 @@ def test_public_candidate_answer_fixture_set_is_well_formed() -> None:
     payload = json.loads(FIXTURE_SET.read_text())
 
     assert payload["metadata"]["contract"] == "real_task_candidate_fixture_set"
-    assert len(payload["fixtures"]) >= 11
+    assert len(payload["fixtures"]) >= 12
 
 
 def test_public_candidate_answer_fixtures_score_to_expected_statuses() -> None:
@@ -39,4 +39,4 @@ def test_public_candidate_answer_fixture_set_drives_scored_report() -> None:
     assert report["summary"]["scored_candidate_total"] == len(payload["fixtures"])
     assert report["summary"]["by_status"]["consistent"] >= 1
     assert report["summary"]["by_status"]["mismatch"] >= 1
-    assert len(report["summary"]["missing_candidate_case_ids"]) < 3
+    assert report["summary"]["missing_candidate_case_ids"] == []

@@ -1,5 +1,10 @@
 # MathDevMCP Benchmark Calibration Milestone Note
 
+Role: current-synthesis
+Current-state status: living
+Grounded in:
+- docs/plans/mathdevmcp-real-tasks-benchmark-status-dashboard-2026-06-19.md
+- docs/plans/mathdevmcp-benchmark-current-state-assessment-2026-06-19.md
 ## Date
 
 2026-06-19
@@ -92,14 +97,13 @@ Interpretation:
 
 Current public scored state:
 
-- scored candidate total: `11`
-- remaining unscored public case IDs:
-  - `DH-04-bayesfilter-engineering-qualification-boundary`
+- scored candidate total: `12`
+- remaining unscored public case IDs: none
 - false-confidence-veto failures: `1`
 
 Interpretation:
 
-- the public scored layer is now close to full fixture coverage;
+- the public scored layer is now fully covered by committed candidate fixtures;
 - the public side is no longer primarily limited by scored-fixture sparsity.
 
 ### Local holdout scored state

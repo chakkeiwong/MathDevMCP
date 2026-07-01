@@ -13,6 +13,27 @@ Purpose:
 
 Recommended disposition: **REVISE, but preserve the current analytical core.**
 
+## Update after re-review of the newer version
+
+I re-checked the updated proposal file modified on 2026-07-01 22:10. **My overall verdict does not materially change.** The proposal remains strong and much better than the original survey-style draft, but it still needs one more citation-discipline and proposal-polish pass before I would call it fully settled.
+
+### What did improve or remain solid
+- The document still has strong component-boundary discipline, a narrow first production slice, and explicit evidence classes.
+- The later source-support and claim-support sections still provide the right conservative audit posture.
+
+### Why the verdict does not change yet
+Several previously flagged issues are still present in the updated text:
+- The reward section still says the Agarwal rewards objects are “exactly the three objects a bank needs for a new card,” which still overextends booked-account reward evidence into new-card activation/acquisition framing: [credit_card_npv_component_proposal.tex:1209-1213](../credit-card-npv-component-proposal/credit_card_npv_component_proposal.tex#L1209-L1213).
+- The macro/liquidity section still carries public spending/liquidity evidence into “monthly purchase-volume and payment-rate equations,” which is still somewhat stronger than the cited papers directly support: [credit_card_npv_component_proposal.tex:873-875](../credit-card-npv-component-proposal/credit_card_npv_component_proposal.tex#L873-L875).
+- The internal drafting residue “This is where the user's proposed ... belongs” is still present: [credit_card_npv_component_proposal.tex:1833-1840](../credit-card-npv-component-proposal/credit_card_npv_component_proposal.tex#L1833-L1840).
+- Outside-wallet and movable-wallet are still introduced early as component outputs without immediately labeling them as project derivations / latent issuer-specific quantities, even though the later audit appendix does make that distinction: [credit_card_npv_component_proposal.tex:702-712](../credit-card-npv-component-proposal/credit_card_npv_component_proposal.tex#L702-L712).
+- I still do not see a crisp front-end “Requested Approvals” or equivalent decision-request section; the proposal ask remains somewhat distributed rather than explicitly packaged.
+
+### Updated bottom line
+- **No major reversal:** I still think this is a credible and substantially improved proposal.
+- **No upgrade to “done” yet:** the main-body wording still needs to be brought fully into line with the conservative evidence standard already used in the appendix.
+- The remaining work is now mostly **precision and presentation**, not architecture or conceptual direction.
+
 ---
 
 ## Executive assessment

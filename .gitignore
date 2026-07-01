@@ -6,6 +6,7 @@ __pycache__/
 build/
 dist/
 .codex
+.claude/
 .serena/
 .vscode/
 artifacts/release-evidence/

@@ -304,6 +304,212 @@ the valuation component to expose PD, LGD, EAD, balances, PPNR, expected loss,
 funding, and capital in a form that finance, risk, and model-risk teams can
 reconcile. The rest of the document follows this pattern.
 
+\section{How to Read This Technical Proposal}
+\label{sec:how-to-read}
+
+The proposal is intentionally written as a technical monograph rather than a
+short management memo. The intended panel includes readers who will ask
+different questions: an econometrician will ask about the estimand and
+identification, a finance owner will ask about cash-flow semantics and
+reconciliation, a risk owner will ask about PD/LGD/EAD and capital, an
+implementation engineer will ask about request and response contracts, and a
+senior business owner will ask whether the component can be used safely in
+real decisions. The document should therefore be read as one argument with
+several layers, not as a literature review followed by an unrelated
+specification.
+
+The argument proceeds in seven steps. First, the component boundary is fixed:
+the work replaces the NPV valuation module, not the campaign platform,
+underwriting engine, finance ledger, or account-management system. Second, the
+valuation object is defined as incremental NPV relative to a decision-specific
+baseline. Third, the literature is used to identify mechanisms that the
+component cannot ignore: macro conditions, liquidity, product terms,
+activation, payment-instrument use, rewards, customer duration, credit losses,
+and causal treatment effects. Fourth, those mechanisms are converted into
+modules that forecast state paths and cash-flow drivers. Fifth, identification
+discipline determines whether a module output is causal, predictive, or only
+diagnostic. Sixth, valuation semantics convert the paths into discounted
+financial value under explicit funding, capital, tax, reward, cost, terminal
+value, scenario, and downstream-policy assumptions. Seventh, operating
+contracts, validation gates, status semantics, and governance rules determine
+which caller may use which output.
+
+This structure is important because many common objections to card NPV are
+really objections to an underspecified value model. If the output does not
+state its counterfactual, the number is ambiguous. If it does not state its
+decision population, the number may be transported across the funnel
+incorrectly. If it does not state its identification evidence, a prediction can
+be mistaken for a treatment effect. If it does not expose decomposition, a
+high-spend account can hide high rewards, funding, capital, or loss costs. If
+it does not carry valuation semantics, two systems can compare numbers that
+are both called NPV but are economically different. The proposal's length is
+therefore not a substitute for rigor; the length is useful only where it makes
+these distinctions explicit.
+
+The reader can use the document in three passes. A valuation reader should
+start with Sections~\ref{sec:executive-charter}, \ref{sec:valuation-spine},
+\ref{sec:component-decomposition}, \ref{sec:model-implementation-blueprint},
+and \ref{sec:valuation-semantics-default}. That pass explains the object being
+valued, the cash-flow decomposition, how the component would be built, and
+which valuation bundle is being used. A data reader should pair
+Sections~\ref{sec:identification-data} and
+\ref{subsec:external-data-operational-inventory} with the internal data
+feasibility section to see which quantities are observable, partially
+observable, modeled, or scenario-only. A panel reader who wants the experiment
+templates should go directly to
+Sections~\ref{sec:experimental-design-program},
+\ref{subsec:worked-acquisition-contract}, and
+\ref{subsec:worked-cannibalization-contract}. An econometric or model-risk
+reader should focus on
+Sections~\ref{sec:identification-data}, \ref{sec:experimental-design-program},
+\ref{sec:module-identification-plan}, \ref{sec:uncertainty-propagation}, and
+\ref{sec:validation-gates-formal}. An
+engineering and governance reader should focus on
+Sections~\ref{sec:model-implementation-blueprint}, \ref{sec:decision-use},
+\ref{sec:operating-spec}, \ref{sec:allowed-use-taxonomy}, and
+\ref{sec:governance-migration}. The source-support appendix and notation
+glossary should be read as audit ledgers: they record the current support
+status, symbol discipline, and remaining work required before model-governance
+submission.
+
+\section{Valuation Object, State Space, and Wallet Accounting}
+\label{sec:valuation-spine}
+
+This section fixes the notation used throughout the proposal. The document
+combines valuation, lifecycle modeling, causal inference, and operating
+contracts, so some local symbols in the literature review are inevitably
+local. The global convention is as follows. Customer, account, prospect,
+household, application, or account-action unit is indexed by $i$; time is
+monthly unless stated otherwise and indexed by $t$; action is $a$; the
+decision-specific baseline is $a_0(d)$; decision context is $d$; scenario and
+valuation-assumption bundle is $s$; downstream account-management policy is
+$\pi$; and the decision-time information set is $\mathcal{I}_{id}$ or
+$X_{it}^{d}$. When the experimental section uses assignment variables, those
+variables are local to that section and should not be confused with lifecycle
+state variables. In a final model specification the component team should use
+distinct implementation names such as \code{assignment_flag},
+\code{treatment_received}, \code{lifecycle_state}, \code{delinquency_state},
+\code{valuation_horizon}, and \code{observed_horizon}.
+
+The notation is intentionally economic rather than database-specific. For
+implementation, every symbol must resolve to a field, model output, assumption
+bundle, or lineage object. For example, $\pi$ is not a regression coefficient;
+it is the named future operating policy for line increases, repricing,
+retention, collections, hardship, closure, and conversion. Similarly, $s$ is
+not a single macro variable; it is the versioned bundle containing macro path,
+funding, capital, tax, reward, cost, terminal-value, and scenario conventions.
+
+The central object in this proposal is not a propensity, a response score, or
+observed new-card spend. It is a decision-conditional value functional. Let
+$X_{it}^{d}$ denote the information available for customer or account $i$ at
+decision context $d$ and time $t$. Let $a\in\mathcal{A}_d(X_{it}^{d})$ denote
+a feasible action and $a_0(d)$ the baseline action for that decision. Let
+$S_{it}$ denote the economic and behavioral state of the relationship:
+\[
+  S_{it}
+  =
+  (Z_{it},B_{it},L_{it},P_{it},D_{it},Rwd_{it},Rel_{it},M_{gt}),
+\]
+where $Z$ is lifecycle state, $B$ the balance subledger, $L$ the line and term
+state, $P$ payment behavior, $D$ delinquency/default state, $Rwd$ reward and
+promotion state, $Rel$ relationship state, and $M$ macro/local state. A
+downstream policy $\pi$ maps future states into account-management actions:
+line changes, repricing, retention, hardship, collections, closure, and
+conversion. The one-period transition kernel is
+\begin{equation}
+  \Pr(S_{i,t+1}\mid S_{it},X_{it}^{d},a,\pi,M_{g,t+1}),
+  \label{eq:state-kernel-panel}
+\end{equation}
+and the valuation layer maps the state path into cash flows.
+
+This decomposition separates four objects that are often conflated. The
+\emph{identity object} defines how accounting flows add up. The
+\emph{causal object} asks what changes when action $a$ replaces baseline
+$a_0(d)$. The \emph{forecast object} projects state paths under a scenario and
+policy. The \emph{policy-value object} discounts the resulting cash flows. A
+module can be a good forecast of $S_{i,t+h}$ under the historical policy while
+being invalid as a causal estimate for changing $a$. Conversely, a randomized
+experiment may identify 90-day activation lift but not by itself identify
+five-year NPV under future line and retention policy. The component should
+state which object each module supports.
+
+The one-period incremental cash-flow primitive is
+\begin{align}
+  \Delta CF_{i,t+h}(a,\pi;s)
+  &=
+  \Delta PPNR_{i,t+h}(a,\pi;s)
+  - \Delta EL_{i,t+h}(a,\pi;s)
+  - \Delta Kchg_{i,t+h}(a,\pi;s) \nonumber\\
+  &\quad
+  - \Delta Tax_{i,t+h}(a,\pi;s)
+  + \Delta RelValue_{i,t+h}(a,\pi;s),
+  \label{eq:panel-cf-primitive}
+\end{align}
+where every term is a contrast against the baseline action under the same
+scenario $s$ and downstream policy $\pi$. The discounted value is
+\begin{equation}
+  \Delta \NPV_i(a;d,s,\pi)
+  =
+  -C_i^{\mathrm{acq}}(a)
+  +
+  \E\!\left[
+    \sum_{h=0}^{H}\delta_h\Delta CF_{i,t+h}(a,\pi;s)
+    +\delta_H\Delta TV_{i,t+H}(a,\pi;s)
+    \mid X_{it}^{d}
+  \right].
+  \label{eq:panel-npv-functional}
+\end{equation}
+Equation~\eqref{eq:panel-npv-functional} is deliberately explicit about
+scenario, downstream policy, acquisition cost, terminal value, and information
+set. Removing any of those tags makes the number easier to print but harder to
+interpret.
+
+Wallet accounting requires another distinction. Let total eligible cardable
+spend for customer $i$ in period $t$ be decomposed as
+\begin{equation}
+  W_{it}^{\mathrm{cardable}}
+  =
+  S_{it}^{\mathrm{newbank}}
+  +S_{it}^{\mathrm{oldbank}}
+  +S_{it}^{\mathrm{outsidecard}}
+  +S_{it}^{\mathrm{debitdeposit}}
+  +S_{it}^{\mathrm{cashother}}.
+  \label{eq:wallet-accounting}
+\end{equation}
+The bank observes the first two components well, observes the debit/deposit
+component only where it owns the relevant deposit relationship, and often
+observes outside-card and cash/other components only through proxies. The
+offer-specific spend source contrast is
+\begin{align}
+  \Delta S_{it}^{\mathrm{newbank}}(a)
+  &=
+  \Delta S_{it}^{\mathrm{newconsumption}}(a)
+  +\Delta S_{it}^{\mathrm{outsidecard\rightarrow newbank}}(a)
+  \nonumber\\
+  &\quad
+  +\Delta S_{it}^{\mathrm{oldbank\rightarrow newbank}}(a)
+  +\Delta S_{it}^{\mathrm{debitdeposit\rightarrow newbank}}(a)
+  +\Delta S_{it}^{\mathrm{timing}}(a).
+  \label{eq:spend-source-panel}
+\end{align}
+Only some of these terms create issuing-bank value. Outside-card shift and
+durable incremental consumption are the cleanest positive sources before
+costs and losses. Old-bank-card shift is internal cannibalization. Debit or
+deposit shift can be positive, neutral, or negative depending on interchange,
+deposit economics, rewards, funding, credit losses, and durability. Temporary
+promotion timing is not durable wallet capture unless it persists after the
+promotion and remains profitable after rewards and funding.
+
+The proposal therefore uses four wallet terms carefully. \emph{Outside wallet}
+is the customer's competitor-card or non-bank spend opportunity, whether or
+not the bank can move it. \emph{Movable wallet} is the part of that outside
+wallet whose allocation can plausibly be changed by the bank's action.
+\emph{Captured wallet} is the observed or estimated shift onto the bank's card
+caused by the action. \emph{Profitable captured wallet} is captured spend or
+balance after interchange, rewards, funding, losses, capital, servicing, fraud,
+attrition, and cannibalization. The NPV component should optimize the last
+object, not the first three.
+
 \section{Introduction}
 
 A large U.S. retail bank considering a credit card campaign faces two related
@@ -1967,6 +2173,286 @@ external heuristics; an inactive account, a promotional account, or a product
 conversion is valuable only to the extent that its incremental discounted
 contribution is positive after losses, costs, and cannibalization.
 
+\section{Model Implementation Blueprint for the Replacement Component}
+\label{sec:model-implementation-blueprint}
+
+The preceding sections define the economic object and the module
+decomposition. This section translates them into an implementation blueprint.
+It is not a platform build plan. It is the design of the NPV component itself:
+how the component constructs analytic bases, estimates module paths, connects
+modules through accounting identities, propagates evidence grades, calibrates
+to finance and risk, and returns a governed value object to existing bank
+systems.
+
+\subsection{Analytic bases by decision context}
+\label{subsec:analytic-bases}
+
+The component should not have one universal training table. It should have
+decision-context analytic bases, each built from the information legally and
+operationally available at the decision time. This is the practical way to
+avoid post-treatment leakage and funnel-selection bias.
+
+The prospect or prescreen base should contain every eligible record at the
+campaign feature-cut time, including suppressed controls, contacted
+nonresponders, responders, applicants, declines, approvals, booked accounts,
+inactive accounts, and charge-offs. Its target objects include response,
+application, approval conditional on application, booking, activation, first
+use, early spend, early balances, campaign cost, and observed-horizon
+incremental value. The baseline action is suppress or no-offer.
+
+The applicant and underwriting base should contain submitted applications with
+application-time bureau, internal, fraud, policy, and offer data. It supports
+approve, decline, refer, line, APR, and terms valuation inside approved credit
+policy. It should not use post-booking payment, utilization, or delinquency
+variables as if they were known at application time. Declined and referred
+applications should remain in the base for selection analysis, even when
+long-run card behavior is unobserved.
+
+The booked-account base should begin at booking and preserve activation,
+digital-wallet provisioning, first use, early transaction behavior,
+card-on-file events, rewards, statement cycles, balances, and payments. It
+supports onboarding, activation, usage persistence, early loss, and early
+dormancy modules. It should be used only for decisions made after booking
+unless a transportability argument has been approved.
+
+The active-account base should contain monthly or cycle-level transaction,
+balance, payment, line, delinquency, rewards, servicing, fraud, dispute, and
+account-management histories. It supports line changes, retention, product
+conversion, repricing, promotional treatment, closure, and collections-related
+valuation where permitted. Because active accounts are selected survivors, the
+base should carry survival and treatment-policy lineage rather than being
+treated as representative of prospects.
+
+The relationship base should link card accounts to customer, household,
+deposit, debit, ACH/payroll, other-product, digital-engagement, and service
+records subject to legal and permitted-use constraints. It supports all-bank
+incremental value, internal cannibalization, debit substitution, and
+relationship-value diagnostics. Relationship outcomes should enter causal card
+NPV only when the action's effect on those outcomes is identified.
+
+Each base should store as-of date, decision timestamp, feature-cut timestamp,
+outcome-window start and end, macro-data vintage, policy-bundle identifier,
+valuation-semantics identifier, caller use case, assignment probability where
+applicable, and the source lineage of every major feature. Without these
+fields, the component cannot distinguish a forecast from a causal effect or a
+valid score from a replay-impossible artifact.
+
+\subsection{Baseline and challenger model classes}
+\label{subsec:model-classes}
+
+Every material module should begin with an interpretable baseline. Baselines
+are not a concession to simplicity; they are controls that let model-risk,
+finance, risk, and engineering reviewers understand whether a more flexible
+model is adding real value or exploiting leakage and selection.
+
+Funnel transitions should have logistic, multinomial-logit, hazard, or
+discrete-time survival baselines for response, application, approval, booking,
+activation, first use, active use, dormancy, closure, delinquency, default,
+and charge-off. Spend, transaction count, and ticket-size modules should have
+hurdle or two-part baselines that separate probability of use from conditional
+amount. Balance and payment modules should have stock-flow baselines that
+enforce Equation~\eqref{eq:balance-stock-flow}. Loss modules should have
+scorecard, logistic, survival, or competing-risk baselines for PD, separate
+severity models for LGD, and exposure models tied to line and utilization.
+Attrition and duration modules should include survival or customer-base
+baselines consistent with the CLV literature
+\citep{schmittlein1987counting,fader2005bgnbd,bolton1998duration}. Finance
+baselines should be identity-driven: if behavior is held fixed, PPNR, loss,
+funding, capital, rewards, and cost calculations should reproduce approved
+finance definitions.
+
+Challenger models should be added only where they answer a specific weakness
+of the baseline. Gradient boosting, random forests, neural networks, or other
+machine-learning models may improve prediction of nonlinear spend, payment,
+loss, fraud, attrition, or cost paths. Causal forests, uplift models, and
+double/debiased machine-learning estimators may help estimate heterogeneous
+treatment effects when the identification design supports such claims
+\citep{wager2018causalforests,chernozhukov2018dml}. Dynamic panel or
+state-space models may help when lagged utilization, payment behavior, and
+policy feedback are material \citep{arellano1991panel,blundell1998initial}.
+Dynamic treatment-regime or Markov decision-process models may help when
+downstream account-management policy is central
+\citep{murphy2003dynamic,puterman1994mdp}.
+
+The component should keep baseline and challenger ledgers. For each module,
+the ledger should state the target, decision context, population, feature
+stage, model class, training window, validation window, allowed use, evidence
+grade, and veto diagnostics. A challenger can replace a baseline for
+production only when it improves the primary criterion without failing
+calibration, leakage, stability, support, causal-validity, or reconciliation
+vetoes. A better AUC or validation loss is not enough for a valuation module.
+
+\subsection{Monthly path engine and cash-flow compiler}
+\label{subsec:path-engine}
+
+The component should construct monthly paths rather than one-period summary
+scores. A path engine makes three things explicit: the state transition, the
+stock-flow identity, and the downstream policy. At each month $h$, the engine
+updates lifecycle state, line, balance subledgers, payment, utilization,
+rewards, delinquency, losses, servicing, fraud, and attrition under action
+$a$, scenario $s$, and downstream policy $\pi$:
+\begin{align}
+  \widehat{S}_{i,t+h+1}(a)
+  &\sim
+  \widehat{P}(
+    S_{i,t+h+1}\mid S_{i,t+h},X_{it}^{d},a,\pi,M_{g,t+h+1}), \\
+  \widehat{B}_{i,t+h+1}(a)
+  &=
+  \mathcal{B}\!\left(
+    \begin{array}{l}
+    \widehat{B}_{i,t+h},\widehat{Spend}_{i,t+h},
+    \widehat{CashAdv}_{i,t+h},\widehat{BT}_{i,t+h},\\
+    \widehat{Fee}_{i,t+h},\widehat{Int}_{i,t+h},
+    \widehat{Pay}_{i,t+h},\widehat{Chargeoff}_{i,t+h}
+    \end{array}
+  \right),
+  \label{eq:path-engine-balance}
+\end{align}
+where $\mathcal{B}$ enforces the balance stock-flow identity. The same engine
+should run the candidate action and the baseline action so that incremental
+value is a path difference, not a difference between two unrelated model runs.
+
+The cash-flow compiler converts each monthly state into component cash flows:
+interchange by merchant category, finance charges by balance type, fees,
+reward cost, acquisition cost, servicing, fraud, dispute cost, collections
+cost, funding cost, expected loss, capital charge, tax convention, and
+approved relationship value. The compiler should be deterministic conditional
+on the behavioral path and assumption bundle. This separation lets modelers
+improve behavioral forecasting without silently changing valuation semantics,
+and it lets finance owners update funding, capital, rewards, or cost
+conventions without retraining behavioral models.
+
+The path engine should support deterministic expected-value paths and
+simulation paths. Expected-value paths are useful for high-volume batch
+scoring and reconciliation. Simulation or bootstrap paths are useful for
+uncertainty, downside risk, tail loss, and rank-stability analysis. In either
+mode, the component response should expose the horizon split, terminal value,
+discount factors, and decomposition residual.
+
+\subsection{Calibration and reconciliation}
+\label{subsec:calibration-reconciliation}
+
+Calibration should happen at several levels. Module calibration asks whether
+activation, spend, balances, payments, attrition, PD, LGD, EAD, rewards cost,
+fraud, servicing, and losses match observed outcomes by horizon. State
+calibration asks whether transition rates among prospect, booked, activated,
+active, dormant, delinquent, closed, and charged-off states match observed
+paths. Vintage and months-on-book calibration ask whether new accounts season
+correctly. Segment calibration asks whether the model is reliable by product,
+channel, offer, risk band, geography, relationship depth, promotion status,
+revolver/transactor state, and balance type. Macro-regime calibration asks
+whether the model remains coherent across unemployment, rate, inflation,
+income, and credit-cycle changes.
+
+Finance reconciliation is a separate gate. The component should tie aggregate
+and segment-level PPNR, rewards, fees, funding, capital, fraud, servicing,
+loss, recoveries, and acquisition cost to approved finance and risk definitions
+within pre-agreed tolerances. Where the model's valuation semantics differ
+from finance reporting, the difference should be explained by bridge items:
+incremental versus total value, pre-tax versus post-tax, marginal versus
+allocated cost, modeled expected loss versus booked loss, current-policy versus
+target-policy, and terminal-value convention.
+
+Risk reconciliation should compare PD, LGD, EAD, delinquency migration,
+charge-off, and recovery paths against credit-risk models and vintage
+experience. The NPV component does not replace risk models, but it must not
+produce value paths that imply impossible or unapproved risk behavior. For
+example, a line-increase option that raises spend while leaving utilization,
+EAD, PD, and capital unchanged should be treated as suspicious unless the data
+and policy context justify it.
+
+Migration reconciliation should compare the replacement component to the
+current component. The comparison should include rank correlation,
+top-decile overlap, decision movement, value movement, segment aggregate
+tie-out, component decomposition, no-score and degraded-score rates, and
+disagreement classification. A change in ranking should be decomposed into
+behavioral model change, valuation semantics change, data-lineage change,
+evidence-grade change, or unsupported use-case change. That is the only way
+to distinguish genuine improvement from silent redefinition.
+
+\subsection{Evidence-grade propagation}
+\label{subsec:evidence-grade-propagation}
+
+The component's output label should be inherited from its weakest material
+evidence dependency. Let each module $m$ have an evidence grade $G_m$ and a
+materiality weight $w_{im}(a)$ for customer $i$ and action $a$. A module is
+material when changing it within its uncertainty range can change the sign,
+rank, or allowed use of $\Delta \NPV_i(a)$. A simple propagation rule is:
+\begin{equation}
+  G^{\mathrm{output}}_i(a)
+  =
+  \min_{\{m:w_{im}(a)\ \mathrm{material}\}} G_m,
+  \label{eq:evidence-grade-propagation}
+\end{equation}
+where the ordering is randomized, quasi-experimental, observationally
+adjusted, predictive, scenario-only. The ordering is not a mathematical
+theorem; it is a governance convention that prevents a high-quality response
+experiment from laundering weak cannibalization, terminal-value, or
+relationship-spillover assumptions into causal NPV.
+
+The response should therefore include module-level grades and aggregate
+allowed-use labels. A score can be causal incremental NPV for response and
+activation while only policy-conditional for losses and scenario-only for
+relationship value. In that case, the aggregate value should not be reported
+as fully causal unless the scenario-only term is excluded or immaterial. If a
+caller requests causal action ranking and a material module is predictive or
+scenario-only, the component should downgrade the score, return a warning, or
+no-score according to the use-case contract.
+
+\subsection{Monitoring and refresh triggers}
+\label{subsec:monitoring-refresh}
+
+Monitoring should cover more than predictive drift. The component should
+monitor data drift, treatment-policy drift, macro drift, calibration drift,
+overlap and support drift, finance/risk reconciliation drift, and usage drift
+by caller. Data drift includes missingness, staleness, schema changes,
+identifier changes, feature distribution changes, and macro-vintage failures.
+Treatment-policy drift includes changes in campaign eligibility, channel mix,
+offer terms, underwriting policy, line policy, rewards, retention, collections,
+or closure rules. Macro drift includes unemployment, rates, inflation, income,
+credit cycle, and competitive changes outside the training support.
+
+Refresh or reapproval should be triggered when a monitored quantity crosses a
+predefined threshold, when a major source system changes, when a caller uses a
+new decision context, when a new offer family or product is introduced, when
+funding or capital conventions change, when reward economics change, when a
+material experiment supersedes prior evidence, or when finance/risk
+reconciliation fails. The response contract should carry enough lineage to
+identify which historical scores were produced under the old model,
+assumption bundle, evidence grade, and policy bundle.
+
+\subsection{Implementation artifacts}
+\label{subsec:implementation-artifacts}
+
+The component build should produce concrete artifacts that reviewers and
+engineers can inspect. The minimum set is:
+\begin{itemize}[leftmargin=*]
+  \item decision-context analytic-base specifications, with feature-cut and
+        outcome-window rules;
+  \item feature lineage and permitted-use inventory for internal, public, and
+        licensed data;
+  \item module model cards covering target, population, model class, training
+        data, validation, evidence grade, limitations, and allowed use;
+  \item valuation-semantics registry covering horizon, discounting, funding,
+        capital, tax, rewards, costs, relationship value, terminal value,
+        scenario, and downstream policy;
+  \item path-engine and cash-flow compiler specifications, including balance
+        identities and decomposition additivity checks;
+  \item experiment and quasi-experiment ledgers connected to module updates;
+  \item calibration and reconciliation reports by segment, vintage, horizon,
+        and finance/risk view;
+  \item request and response schema contracts, including status semantics,
+        degraded-score handling, no-score handling, replay fields, and lineage
+        hashes;
+  \item shadow-score comparison against the current component and a
+        disagreement register before cutover.
+\end{itemize}
+
+These artifacts are the build specification for the NPV component. They keep
+the scope narrow enough to be implementable while making the valuation object
+strong enough to plug into the larger bank ecosystem without becoming another
+opaque score.
+
 \section{Decision and Measurement Pitfalls in Card NPV}
 \label{sec:decision-pitfalls}
 
@@ -2557,6 +3043,125 @@ particular proprietary field is licensed or approved for model use until data
 governance confirms entitlement, permitted use, lineage, retention, and
 redistribution limits.
 
+\subsection{External data operational inventory}
+\label{subsec:external-data-operational-inventory}
+
+The preceding discussion identifies useful public and licensed sources. For a
+production replacement component, that is not enough. Each external source must
+be operationalized as a governed feature, scenario input, benchmark, or prior.
+The data object should carry a source identifier, release date, vintage date,
+observation date, frequency, geography, transformation, join key, permitted-use
+classification, and model-use class. The model-use class should be one of:
+scenario driver, pre-treatment control, portfolio benchmark, prior or
+regularizer, monitoring indicator, or causal evidence. For the sources below,
+the default classification is never customer-level causal evidence unless a
+separate experimental or quasi-experimental design supplies identification.
+
+Federal Reserve Enhanced Financial Accounts and Distributional Financial
+Accounts should enter as household balance-sheet and distributional
+macro-financial context \citep{federalreserveEFA}. Example variables include
+household debt, liquid assets, wealth distribution, and related balance-sheet
+aggregates. The natural frequency is quarterly or release-specific, and the
+natural geography is national or aggregate distributional cell rather than
+customer-level geography. The operational use is to construct scenario priors,
+stress overlays, and plausibility checks for aggregate portfolio behavior. The
+join path is observation month or quarter and scenario version. These data
+should not be used to infer an individual customer's outside wallet or offer
+response.
+
+Federal Reserve G.19 should be used for monthly consumer-credit cycle context
+\citep{federalreserveG19}. Revolving and nonrevolving consumer credit, growth
+rates, and selected rate information can help label whether a training window
+was credit-expansionary, credit-contractionary, or unusual. The join path is
+calendar month and, where available, rate series vintage. Its proper role is a
+macro control, scenario input, and benchmark for aggregate revolving-balance
+growth. It is not an issuer PD, EAD, utilization, or revolve-rate estimate.
+
+Federal Reserve Z.1 Financial Accounts should enter as a quarterly balance-
+sheet and flow-of-funds benchmark \citep{federalreserveZ1}. Household-sector
+liabilities, assets, debt-service context, and financial-sector aggregates can
+be used to validate broad scenario consistency. The join path is quarter and
+release vintage. Z.1 is most useful for aggregate plausibility and stress
+story coherence; it is too aggregated to identify customer-level treatment
+response.
+
+The New York Fed Household Debt and Credit data should support external
+credit-cycle benchmarking \citep{nyfedHhdc}. Public cuts of balances,
+delinquency, utilization, credit limits, originations, and transition rates,
+where available by score band, age, state, or product, can benchmark the
+bank's portfolio mix and vintage behavior. The join path is time, product, and
+approved segment cut, not individual customer. These benchmarks are especially
+useful for asking whether the bank's modeled delinquency, balance, or credit
+limit paths are plausible in the broader market. They do not replace internal
+PD/LGD/EAD calibration.
+
+BLS LAUS and related labor-market data should feed local employment and
+income-stress controls \citep{blsLAUS}. Example variables include unemployment
+rate, labor-force participation, employment level, and local unemployment
+changes. The operational grain can be county, metropolitan area, state, or
+national, subject to legal and compliance review of geography usage. The join
+path should be customer or branch geography as of the feature cut and calendar
+month. Revised labor data can create look-ahead bias, so backtests should use
+available-at-decision vintages where feasible or an explicit vintage
+approximation when exact vintages are unavailable.
+
+BEA regional data should provide local income and economic-activity context
+\citep{beaRegional}. Personal income, wages and salaries, GDP, and regional
+industry composition can help distinguish local labor shocks from customer
+selection. The frequency is often quarterly or annual depending on the series.
+The join path is geography and time, with transformations such as trailing
+growth rates or deviations from regional trend computed only from information
+available at the feature cut. These features are controls and scenario
+drivers, not direct measures of individual spend capacity.
+
+Census ACS data should be treated as slowly moving geographic context
+\citep{censusACS}. Variables such as income distribution, housing tenure,
+commuting patterns, household composition, and local demographic structure can
+help describe market context and fairness-risk monitoring. Their use must be
+reviewed for permitted-use, fair-lending, privacy, and model-risk constraints.
+Because ACS variables are aggregate and often lagged or multi-year estimates,
+they should normally be used for segmentation, monitoring, missing-context
+diagnostics, or fairness review rather than high-frequency customer scoring.
+
+CFPB credit-card agreement and product-term data should support product and
+competitive context \citep{cfpbCreditCardData}. Agreements, APR structures,
+fees, promotional terms, and public product terms can help validate whether
+offer assumptions and reward economics are economically plausible. The join
+path is product family, issuer or competitor category where permitted, and
+effective date. These data should not be treated as observed competitor
+wallet, competitor authorization behavior, or customer-level treatment
+response.
+
+FRED and ALFRED should be used as data-delivery and real-time-vintage controls
+\citep{fredALFRED}. The main operational requirement is not the specific
+series; it is the ability to reconstruct what a model could have known on the
+decision date. For rates, inflation, unemployment, income, and credit series,
+the component should store the release vintage used in training, scoring, and
+backtesting. A model that backtests with revised macro data can overstate both
+forecast skill and causal evidence quality.
+
+LSEG/Refinitiv data should be inventoried only after entitlement review
+\citep{lsegWorkspace,lsegEconomicData}. Candidate feeds include Treasury and
+swap curves, credit spreads, bank funding indicators, consumer ABS market
+indicators, macro nowcasts or forecasts, issuer and competitor financials,
+merchant or sector signals, and equity-market indicators for consumer sectors.
+The join path may be daily valuation date, month-end scenario date, issuer,
+sector, geography, or product category, depending on the licensed feed. The
+proper NPV roles are funding and discounting curves, stress and early-warning
+signals, competitive context, scenario construction, and benchmark validation.
+Before use, the team must confirm entitlement, redistribution limits, retention
+rules, permitted modeling use, lineage, and whether values can be persisted in
+model artifacts or only referenced through controlled snapshots.
+
+The operational implication is that external data should be stored in a
+separate, replayable feature family from internal customer behavior. A
+production score should be able to answer: which external source was used,
+which release and vintage were used, how it was joined, whether it entered as
+a scenario, control, benchmark, prior, or monitor, and whether the caller is
+allowed to use the output for the requested decision. If that lineage cannot
+be reconstructed, the score should be degraded or no-scored for decision-grade
+use.
+
 \subsection{Internal data and selection-safe construction}
 
 The bank's internal data are the only plausible source for issuer-specific
@@ -2617,6 +3222,138 @@ collection queues, retention rules, and closure rules help explain why a
 customer received an action. Without those logs, observational adjustment is
 often weak because the most important confounder is the bank's own prior view
 of the customer.
+
+\subsection{Internal data feasibility inventory}
+\label{subsec:internal-data-feasibility}
+
+The preceding paragraphs state the timing principle. A panel will also ask
+whether the required data exist at a usable grain. The answer should not be a
+generic assurance that the bank has rich data. The proposal should specify the
+classes of internal records that must be inventoried, the grain at which they
+are needed, and the main bias or lineage risk. The inventory below is written
+as a feasibility checklist for the component team; it does not assume that
+every source is already clean, joined, or approved for modeling.
+
+Campaign and offer records are needed at the customer, household, channel, and
+campaign-cell grain. Required fields include eligibility, exclusion rules,
+prescreen score or selection score, exposure, suppression or holdout flag,
+assignment probability, channel, creative, offer cell, product, reward,
+signup bonus, annual fee, APR, promotional APR, balance-transfer terms,
+contact timestamp, and budget or capacity constraint. These fields identify
+the contact-versus-suppress and offer-cell counterfactuals. The main risks are
+lost holdout flags, re-contact contamination, overwritten offer terms, and
+selection scores that are not retained as of the decision date.
+
+Application and underwriting records are needed at the application and
+customer grain. Required fields include application timestamp, application
+channel, bureau and internal attributes available at application time,
+approval, decline, refer, fraud screen, policy rule, score band, line assigned,
+APR assigned, fees, adverse-action process where applicable, and manual
+override. These fields define the approve-versus-decline and
+approve-with-terms counterfactuals. The main risks are survivorship bias from
+keeping only approvals, using post-booking variables in application models,
+and losing policy-rule or override lineage.
+
+Account and transaction records are needed at account-day or account-month
+grain, with transaction detail where merchant mix and wallet movement matter.
+Required fields include booking, physical activation, digital-wallet
+provisioning, first use, repeated use, merchant category, ticket size,
+card-present/card-not-present, card-on-file indicators where available, cash
+advance, balance transfer, authorization decline, dispute, fraud flag, and
+transaction reversal. These fields support adoption, usage, spend source, and
+fraud modules. The main risks are merchant-category drift, delayed transaction
+posting, missing card-on-file signals, and conflating authorization activity
+with settled spend.
+
+Balance and payment subledgers are needed at monthly grain and, for some
+validations, cycle grain. Required fields include purchase principal,
+promotional balance, balance-transfer balance, cash-advance balance, fee
+balance, accrued interest, payments, credits, charge-offs, recoveries,
+statement balance, minimum due, utilization, line, APR, payment due date,
+autopay status, and payment channel. These fields enforce stock-flow
+identities. The main risks are mixing principal and non-principal balances,
+losing promotional subledger status, treating payment behavior after an action
+as if it were available before the action, and inconsistent charge-off timing.
+
+Risk and loss records are needed at account-month, vintage, and collections
+event grain. Required fields include delinquency bucket, behavioral score,
+PD, LGD, EAD, utilization, line change, hardship treatment, collections
+treatment, bankruptcy, charge-off, recovery, sale proceeds, fraud loss, and
+closure reason. These fields support expected loss, downside risk, and capital
+charges. The main risks are estimating prospect losses from booked survivors,
+not separating EAD response from PD response, and losing the collections or
+hardship policy that changed LGD.
+
+Rewards, cost, and servicing records are needed at account, transaction,
+campaign, and cost-center grain. Required fields include earn, burn, breakage
+assumption, signup bonus, statement credit, reward liability, servicing
+contact, complaint, dispute handling, fraud operations, acquisition cost,
+mailing cost, digital impression cost, underwriting cost, collections cost,
+charge-off sale cost, marginal cost, and allocated overhead. These fields
+convert activity into contribution. The main risks are using allocated cost as
+if it were marginal, ignoring reward liability timing, and omitting servicing
+or fraud costs from high-spend segments.
+
+Relationship and deposit records are needed at customer, household, and
+relationship grain, subject to legal, privacy, and permitted-use constraints.
+Required fields may include checking balances, savings balances, debit spend,
+ACH or payroll indicators where permitted, direct deposit continuity,
+deposit attrition, mortgage or loan relationships, brokerage or wealth
+relationships, digital engagement, household linkage, and relationship tenure.
+These fields should not automatically enter card-caused NPV. They are used to
+measure associated value, to control for pre-existing engagement, and, only
+with a credible design, to estimate causal relationship spillovers. The main
+risk is crediting the card action for organic relationship value.
+
+The component team should classify each field as directly observed,
+internally anchored, externally benchmarked, model-imputed, or scenario-only.
+That classification should be stored with the feature and propagated to the
+NPV response where it materially affects value. This is especially important
+for outside-wallet, movable-wallet, relationship-value, terminal-value,
+funding, and capital fields, where a precise-looking number can hide a weak
+measurement basis.
+
+\begin{longtable}{L{0.18\linewidth}L{0.24\linewidth}L{0.18\linewidth}L{0.30\linewidth}}
+\caption{Internal data feasibility checklist for the NPV component.}
+\label{tab:internal-data-feasibility}\\
+\toprule
+Data domain & Required grain & NPV modules served & Main bias or lineage risk \\
+\midrule
+\endfirsthead
+\toprule
+Data domain & Required grain & NPV modules served & Main bias or lineage risk \\
+\midrule
+\endhead
+Campaign and offer
+  & Customer, household, campaign cell, channel, timestamp
+  & Response, offer effects, acquisition cost, experiment assignment
+  & Lost holdouts, overwritten offer terms, re-contact contamination. \\
+Application and underwriting
+  & Application, customer, decision timestamp
+  & Approval, line, APR, fraud screen, expected loss
+  & Approval-only survivorship, missing policy/override lineage. \\
+Transactions
+  & Transaction and account-cycle
+  & Spend, merchant mix, activation, first use, fraud, usage persistence
+  & Post-treatment leakage, merchant-code drift, missing card-on-file signals. \\
+Balances and payments
+  & Account-cycle and account-month
+  & Revolve, utilization, finance charges, EAD, payment behavior
+  & Broken stock-flow identity, mixed principal/non-principal balances. \\
+Risk and loss
+  & Account-month, vintage, collections event
+  & PD, LGD, EAD, charge-off, recovery, capital
+  & Transporting booked-account risk to prospects without selection correction. \\
+Rewards, cost, servicing
+  & Account, transaction, campaign, cost center
+  & Rewards liability, costs, servicing, fraud, disputes, contribution
+  & Treating allocated overhead as marginal; missing reward timing. \\
+Relationship and deposits
+  & Customer, household, relationship-month
+  & Debit substitution, deposits, relationship value, engagement
+  & Confounding card-caused spillover with pre-existing engagement. \\
+\bottomrule
+\end{longtable}
 
 \subsection{Estimation ledgers and evidence grades}
 
@@ -2713,44 +3450,1147 @@ value. These artifacts determine which submodel outputs can enter
 Equation~\eqref{eq:proposal-objective} for each caller and which outputs must
 remain warnings, diagnostics, or assumptions.
 
-\section{Open Gaps and Reviewer Risks}
+\section{Practical Experimental Design Program}
+\label{sec:experimental-design-program}
 
-The public literature does not fully identify issuer-specific new-card usage
-and incremental NPV. Payment-choice and rewards studies show mechanisms, but
-the activation probability for a particular bank, product, offer, channel, and
-customer segment is a proprietary empirical object. Likewise, CLV models provide
-powerful baselines for transaction frequency and duration, but bank NPV requires
-integration with expected credit loss, rewards, fraud, funding, capital, and
-regulatory constraints.
+The identification section explains why the NPV component needs causal
+evidence. This section specifies how that evidence should be produced and
+consumed. It is deliberately more formal than an experimentation roadmap
+because a weak experimental layer would make the entire replacement component
+look more precise than it is.
 
-The largest reviewer risks are:
-\begin{enumerate}[label=\arabic*.]
-  \item treating activation or first spend as lifetime NPV evidence;
-  \item treating raw propensity as causal lift;
-  \item ignoring cannibalization from the bank's existing cards;
-  \item estimating spend without macro and employment state dependence;
-  \item separating marketing CLV from credit risk and balance-sheet cost;
-  \item using public rewards estimates as universal program parameters;
-  \item reusing one NPV model across targeting, underwriting, line assignment,
-        and account management without changing the counterfactual;
-  \item validating on booked or active accounts while applying the result to
-        prospects or applicants without correcting for funnel selection;
-  \item treating product terms such as line, APR, promo duration, rewards, or
-        fee waiver as exogenous predictors when they were assigned by bank
-        policy;
-  \item using public macro, credit, or market data as if they identify
-        customer-level treatment effects rather than scenario, control,
-        benchmark, or prior information;
-  \item adding deposit, relationship, or other-product value to card NPV
-        without evidence that the card action caused the relationship change;
-  \item treating observed new-card spend as captured outside wallet;
-  \item treating estimated outside wallet as offer-specific movable wallet;
-  \item treating wallet size or movable-wallet size as NPV before rewards,
-        losses, funding, capital, fraud, servicing, and attrition are netted;
-  \item using model-imputed wallet estimates as if they were directly observed
-        or experimentally identified;
-  \item treating temporary promotion lift as durable wallet-share capture.
-\end{enumerate}
+The literature supports mechanisms and method classes. Household-finance,
+payment-choice, rewards, and duration studies justify why unemployment,
+liquidity, rewards, credit terms, payment instruments, and customer duration
+belong in the model
+\citep{gross2001liquidity,koulayev2012payment,agarwal2010rewards,
+prelec2001creditcard,ganong2019unemployment,johnson2004rebates,
+schmittlein1987counting,fader2005bgnbd,bolton1998duration}. The causal
+inference literature gives the language for treatment assignment, instruments,
+regression discontinuity, difference-in-differences, heterogeneous effects,
+sample selection, and dynamic regimes
+\citep{rosenbaum1983propensity,imbensrubin2015causal,
+angristimbensrubin1996iv,lee2010rd,callaway2021did,sun2021eventstudy,
+wager2018causalforests,chernozhukov2018dml,heckman1979selection,
+murphy2003dynamic,puterman1994mdp}. None of that literature supplies this
+bank's activation lift, cannibalization rate, movable-wallet share, reward
+elasticity, line elasticity, loss response, attrition response, or relationship
+spillover for a specific product, channel, segment, and policy bundle. Those
+parameters must be learned from internal randomized experiments, credible
+quasi-experiments, and explicitly downgraded observational evidence.
+
+\subsection{Experimental objects and notation}
+
+For an experiment or quasi-experiment $e$, let $\mathcal{P}_e$ denote the
+eligible population at the feature-cut time, $Z_{ie}$ the randomized or
+quasi-randomized assignment, $D_{ie}$ the treatment actually received, $a_e$
+the treatment action, $a_{0e}$ the baseline action, $d_e$ the decision context,
+$s_e$ the scenario and valuation-semantics bundle, and $\pi_e$ the downstream
+policy bundle. The primary object should be expressed in the same notation as
+the NPV component:
+\begin{equation}
+  \tau^{e}_{\NPV}
+  =
+  \E\!\left[
+    \NPV_i(a_e;d_e,s_e,\pi_e)
+    -
+    \NPV_i(a_{0e};d_e,s_e,\pi_e)
+    \mid i\in\mathcal{P}_e
+  \right].
+  \label{eq:experiment-npv-estimand}
+\end{equation}
+This is the experiment-level analog of
+Equation~\eqref{eq:proposal-objective}. It is not the same as a response lift,
+activation lift, new-card spend lift, or model validation statistic. Those
+quantities can be module estimands, diagnostics, or bridges into NPV, but they
+are not the final valuation object unless the evidence contract states how
+they enter the NPV functional and how the remaining cash-flow terms are
+estimated.
+
+For any module outcome $Y$ such as activation, all-bank spend, revolving
+balance, EAD, loss, attrition, servicing cost, or deposit spillover, the
+corresponding intent-to-treat estimand is
+\begin{equation}
+  \tau^{e}_{Y,\mathrm{ITT}}
+  =
+  \E[Y_i(Z_{ie}=1)-Y_i(Z_{ie}=0)\mid i\in\mathcal{P}_e].
+  \label{eq:experiment-itt}
+\end{equation}
+If treatment receipt differs from assignment, the experiment may also estimate
+a complier or local-average-treatment effect:
+\begin{equation}
+  \tau^{e}_{Y,\mathrm{LATE}}
+  =
+  \frac{\E[Y_i\mid Z_{ie}=1]-\E[Y_i\mid Z_{ie}=0]}
+       {\E[D_{ie}\mid Z_{ie}=1]-\E[D_{ie}\mid Z_{ie}=0]},
+  \label{eq:experiment-late}
+\end{equation}
+under the instrumental-variables conditions of relevance, exclusion,
+independence, and monotonicity
+\citep{angristimbensrubin1996iv}. Equation~\eqref{eq:experiment-late} is
+useful, but it is not an average effect for every eligible customer. The
+component should label it as a complier effect and require a separate
+transport argument before using it for non-complier populations.
+
+In a clean randomized design, the empirical contrast may be a simple
+difference in means,
+\begin{equation}
+  \widehat{\tau}^{e}_{Y,\mathrm{ITT}}
+  =
+  \bar{Y}_{Z=1,e}-\bar{Y}_{Z=0,e},
+  \label{eq:experiment-contrast}
+\end{equation}
+or a pre-specified covariate-adjusted version. In observational or
+quasi-experimental settings, the estimator changes, but the discipline should
+not: the proposal must still state the population, counterfactual, assignment
+mechanism, feature cut, horizon, identifying assumptions, and allowed use.
+
+\subsection{Design families and estimands}
+
+The component does not run experiments. Marketing, product, risk,
+underwriting, account-management, and relationship systems do. The NPV
+component must nevertheless specify what experiment evidence it can consume,
+because otherwise it will inherit proxy metrics and selection bias from caller
+systems.
+
+\paragraph{Acquisition and prescreen contact/suppress holdouts.}
+The first production-aligned design is a randomized contact-versus-suppress
+holdout over the controlled prospect or prescreen population. The estimand is
+\begin{equation}
+  \tau^{\mathrm{acq}}_{\NPV}
+  =
+  \E[\NPV_i(\mathrm{contact})-\NPV_i(\mathrm{suppress})
+  \mid i\in\mathcal{P}_{\mathrm{acq}}],
+  \label{eq:acq-holdout-estimand}
+\end{equation}
+net of campaign cost, rewards, expected loss, funding, capital, servicing,
+fraud, and the approved terminal-value convention. The assignment unit should
+be the unit at which interference is plausibly controlled: customer,
+household, relationship, address cluster, channel cell, or geography, not
+automatically account. Response, application, approval, booking, activation,
+first use, 90-day spend, and 180-day spend are diagnostic unless the evidence
+contract pre-specifies them as module estimands and reconciles them to
+Equation~\eqref{eq:experiment-npv-estimand}. A design powered only for
+response should not be promoted as evidence of positive NPV.
+
+\paragraph{Existing-client new-card cannibalization holdouts.}
+For an existing client, positive new-card spend is not the target. The target
+is all-bank incremental value after internal cannibalization and any
+observable debit, deposit, or balance-transfer substitution. The experiment
+should randomize eligible clients into no-offer and offer cells and estimate
+\begin{align}
+  \tau^{\mathrm{new}}_{S,H}
+    &=
+    \E[S^{\mathrm{new}}_{iH}(\mathrm{offer})
+      -S^{\mathrm{new}}_{iH}(\mathrm{no\ offer})], \\
+  \tau^{\mathrm{bank}}_{S,H}
+    &=
+    \E[S^{\mathrm{all\ bank}}_{iH}(\mathrm{offer})
+      -S^{\mathrm{all\ bank}}_{iH}(\mathrm{no\ offer})], \\
+  \kappa_H
+    &=
+    1-\frac{\tau^{\mathrm{bank}}_{S,H}}{\tau^{\mathrm{new}}_{S,H}}
+    \quad \text{when } \tau^{\mathrm{new}}_{S,H}>0.
+    \label{eq:experimental-cannibalization}
+\end{align}
+These are population-level versions of
+Equations~\eqref{eq:randomized-new}--\eqref{eq:cannibalization-rate}. The
+primary NPV bridge is
+\begin{equation}
+  \tau^{\mathrm{xsell}}_{\NPV,H}
+  =
+  \E\!\left[
+    \sum_{h=0}^{H}\delta_h
+    \{\Delta \PPNR_{ih}-\Delta \EL_{ih}-\Delta C_{ih}
+      -\Delta K_{ih}\}
+    \mid i\in\mathcal{P}_{\mathrm{xsell}}
+  \right],
+  \label{eq:xsell-npv-estimand}
+\end{equation}
+where $\Delta \PPNR$ uses all-bank incremental spend and balances, not raw
+new-card spend. A result with high $\tau^{\mathrm{new}}_{S,H}$ and near-zero
+$\tau^{\mathrm{bank}}_{S,H}$ is evidence of substitution. It may still be
+strategically useful, but it should not be booked as incremental causal card
+NPV without a separate retention, competitor-defense, or relationship-value
+argument.
+
+\paragraph{Reward, promotion, APR, and line experiments.}
+Rewards, signup bonuses, statement credits, promotional APRs, balance-transfer
+durations, fee waivers, credit lines, and pricing terms are multi-valued
+treatments. If $a\in\mathcal{A}$ indexes the approved offer cell, the estimand
+is not a single lift but an incremental value curve:
+\begin{equation}
+  g_e(a,a')
+  =
+  \E[\NPV_i(a;d_e,s_e,\pi_e)-\NPV_i(a';d_e,s_e,\pi_e)
+  \mid i\in\mathcal{P}_e],
+  \label{eq:offer-cell-value-curve}
+\end{equation}
+for feasible comparisons $a,a'\in\mathcal{A}$. The design must measure both
+the numerator and the cost of buying it: promotion-period spend, post-promotion
+decay, rewards liability, interchange, revolve, payment rate, utilization,
+EAD, PD, LGD, attrition, servicing, funding, and capital. A teaser-period lift
+should enter lifetime NPV only through a horizon bridge that models post-teaser
+persistence and uncertainty. For lines and APRs, randomized variation must
+remain inside approved risk and compliance boundaries. If randomization is not
+available, regression discontinuity around a score, pricing, line, or
+prescreen threshold can be informative, but only locally around the threshold
+and only with bandwidth, manipulation, and continuity diagnostics
+\citep{lee2010rd}.
+
+\paragraph{Activation and onboarding experiments.}
+For booked accounts, the relevant baseline changes. The experiment no longer
+asks whether the bank should acquire the customer; it asks whether an
+onboarding action changes durable use. Let $A_{it}$ be an active-use state and
+$R_{it}$ a repeated-use state. A first-use nudge should estimate
+\begin{equation}
+  \tau^{\mathrm{onboard}}_{R,H}
+  =
+  \E[R_{i,H}(\mathrm{nudge})-R_{i,H}(\mathrm{no\ nudge})
+  \mid i\in\mathcal{P}_{\mathrm{booked}}],
+  \label{eq:onboarding-repeated-use}
+\end{equation}
+not merely first purchase within a few days. Treatments may include digital
+wallet provisioning, card-on-file prompts, autopay setup prompts, reminders,
+channel placement, or first-use incentives. The valuation bridge must subtract
+contact and incentive costs and should test persistence at post-nudge horizons
+such as 90 and 180 days. Otherwise the experiment measures operational
+conversion, not durable value.
+
+\paragraph{Retention, dormancy, and reactivation experiments.}
+Retention and dormancy actions are vulnerable to adverse selection because the
+bank often targets accounts that already show declining activity or high
+complaint risk. The experiment should randomize eligible accounts into no
+treatment and approved treatment cells such as fee waiver, reward offer,
+retention contact, product conversion prompt, or reactivation incentive. If
+$T_i(a)$ is remaining active tenure and $\Pi_{ih}(a)$ is net contribution, a
+retention estimand can be written as
+\begin{equation}
+  \tau^{\mathrm{ret}}_{\NPV}
+  =
+  \E\!\left[
+    \sum_{h\ge 0}\delta_h
+    \{\Pi_{ih}(a)-\Pi_{ih}(a_0)\}\1\{h<T_i(a)\}
+    \mid i\in\mathcal{P}_{\mathrm{ret}}
+  \right].
+  \label{eq:retention-npv-estimand}
+\end{equation}
+Duration models remain useful for the no-treatment path
+\citep{schmittlein1987counting,fader2005bgnbd,bolton1998duration}, but they
+do not identify the incremental value of concessions without a counterfactual
+control group.
+
+\paragraph{Relationship-spillover holdouts.}
+Relationship value should enter core causal card NPV only when the card action
+is shown to cause the relationship outcome. Let $V^{\mathrm{rel}}_{iH}$ denote
+deposit, brokerage, mortgage, digital-engagement, or other-product value that
+the bank proposes to include. The needed estimand is
+\begin{equation}
+  \tau^{\mathrm{rel}}_{H}
+  =
+  \E[V^{\mathrm{rel}}_{iH}(a)-V^{\mathrm{rel}}_{iH}(a_0)
+  \mid i\in\mathcal{P}_{\mathrm{rel}}],
+  \label{eq:relationship-spillover}
+\end{equation}
+measured in both treatment and control groups. Without this evidence, the
+relationship term should be labeled associated value or scenario value. This
+is especially important because high-card-value customers may already be
+high-engagement households; \citet{heckman1979selection} is directly relevant
+to this selected population.
+
+\paragraph{Macro, geography, and policy-change quasi-experiments.}
+Randomization is often infeasible for policy rollouts, local labor shocks,
+reward-program changes, rate changes, and regional operating changes.
+Difference-in-differences and event-study designs can then support module
+validation if the comparison population is credible. A schematic estimand is
+\begin{equation}
+  \tau^{\mathrm{did}}_Y
+  =
+  \E[(Y_{i,\mathrm{post}}-Y_{i,\mathrm{pre}})\mid G_i=1]
+  -
+  \E[(Y_{i,\mathrm{post}}-Y_{i,\mathrm{pre}})\mid G_i=0],
+  \label{eq:did-estimand}
+\end{equation}
+with cohort-specific or interaction-weighted estimators when treatment timing
+is staggered and treatment effects are heterogeneous
+\citep{callaway2021did,sun2021eventstudy}. A failed pre-trend, placebo, or
+composition diagnostic should downgrade the evidence to scenario or diagnostic
+status. These designs are valuable for stress and macro-sensitivity
+calibration; they should not be sold as universal customer-level treatment
+effects.
+
+\subsection{Analysis specifications, not just experiment names}
+
+A panel will not accept an experiment inventory as evidence unless the analysis
+specification is also fixed. The NPV component therefore needs the caller
+experiment to produce an analysis object, not only a campaign result. For each
+assigned unit, the experiment should construct an observed-horizon value
+outcome
+\begin{align}
+  \widetilde{V}^{e}_{i,H_{\mathrm{obs}}}
+  &=
+  \sum_{h=0}^{H_{\mathrm{obs}}}\delta_h
+  \{\widetilde{\PPNR}_{ih}
+    -\widetilde{\EL}_{ih}
+    -\widetilde{C}_{ih}
+    -\widetilde{Kchg}_{ih}
+    -\widetilde{Tax}_{ih}
+    +\widetilde{RelValue}_{ih}\},
+  \label{eq:experiment-constructed-value}
+\end{align}
+using the approved experimental valuation semantics. The tildes matter: some
+terms are realized during the experiment window, some are accrued accounting
+quantities, and some, such as still-immature losses, may be expected values
+from a separately validated risk model. The contract must label which terms
+are directly observed, model-estimated, or excluded. The analytic base should
+include all eligible assigned units, including nonresponders, nonapplicants,
+declines, unbooked accounts, inactive accounts, and charge-offs. Conditioning
+only on responders or booked accounts would change the estimand and re-create
+the sample-selection problem \citep{heckman1979selection}.
+
+For a randomized two-cell design, the pre-specified primary analysis can be an
+ANCOVA or stratified regression:
+\begin{equation}
+  \widetilde{V}^{e}_{i,H}
+  =
+  \alpha
+  +\tau^{e}_{\NPV,\mathrm{ITT}} Z_{ie}
+  +X_{ie}^{\prime}\beta
+  +\lambda_{\mathrm{stratum}(i)}
+  +\varepsilon_i,
+  \label{eq:ancova-itt}
+\end{equation}
+where $X_{ie}$ contains only pre-assignment variables and
+$\lambda_{\mathrm{stratum}(i)}$ represents pre-specified strata or fixed
+effects. The standard errors should be computed at the randomization or
+interference unit. With unequal assignment probabilities $p_{ie}$, a
+design-based contrast is
+\begin{equation}
+  \widehat{\tau}^{e}_{Y,\mathrm{IPW}}
+  =
+  \frac{1}{|\mathcal{P}_e|}
+  \sum_{i\in\mathcal{P}_e}
+  \left(
+    \frac{Z_{ie}Y_i}{p_{ie}}
+    -
+    \frac{(1-Z_{ie})Y_i}{1-p_{ie}}
+  \right),
+  \label{eq:ipw-randomized-contrast}
+\end{equation}
+with the assignment probabilities taken from the experiment ledger rather than
+re-estimated after the fact. Equation~\eqref{eq:ancova-itt} is often more
+efficient; Equation~\eqref{eq:ipw-randomized-contrast} makes the design logic
+transparent. Both estimate the ITT contrast, not a selected responder value.
+
+For multi-arm offer, line, APR, or rewards experiments, the primary regression
+should estimate all approved contrasts against the baseline cell:
+\begin{equation}
+  \widetilde{V}^{e}_{i,H}
+  =
+  \alpha
+  +\sum_{a\in\mathcal{A}_e\setminus a_0}
+    \tau^{e}_{a,a_0}\1\{Z_{ie}=a\}
+  +X_{ie}^{\prime}\beta
+  +\lambda_{\mathrm{stratum}(i)}
+  +\varepsilon_i.
+  \label{eq:multiarm-offer-estimator}
+\end{equation}
+The experiment should specify which contrasts are confirmatory, which are
+exploratory, and how multiplicity is handled. A cell that wins on new-card
+spend but loses on all-bank NPV is not a positive NPV treatment. A cell that
+wins during the teaser period but loses after reward cost and funding should
+not seed the lifetime model as a durable uplift.
+
+For encouragement designs, the analysis should report the first stage,
+reduced form, and ratio estimand. Let $D_{ie}$ be actual treatment receipt.
+The first stage $\widehat{\pi}_1$ in
+\[
+  D_{ie}=\pi_0+\pi_1 Z_{ie}+X_{ie}^{\prime}\pi_X+u_i
+\]
+establishes relevance, while the reduced form estimates the effect of
+assignment on $Y$. The ratio in Equation~\eqref{eq:experiment-late} is a LATE
+for compliers under the assumptions in \citet{angristimbensrubin1996iv}. The
+component should not silently convert that LATE into an average effect for
+never-takers, always-takers, or customers outside the take-up support.
+
+For regression discontinuity, the analysis should be local and threshold
+specific. If $R_i$ is the running variable and $c$ the cutoff, the local
+linear specification is
+\begin{align}
+  \widetilde{V}_{i,H}
+  &=
+  \alpha
+  +\tau^{\mathrm{RD}}\1\{R_i\ge c\}
+  +f_-(R_i-c)\1\{R_i<c\}
+  +f_+(R_i-c)\1\{R_i\ge c\}
+  +\varepsilon_i,
+  \label{eq:rd-local-spec}
+\end{align}
+estimated inside a declared bandwidth with manipulation and covariate-continuity
+diagnostics \citep{lee2010rd}. The result should update the component only for
+the local threshold population unless the proposal provides a separate
+transport argument.
+
+For policy rollouts and macro/geographic shocks, an event-study analysis should
+make the pre-trend test visible:
+\begin{equation}
+  Y_{gt}
+  =
+  \alpha_g+\lambda_t
+  +\sum_{k\ne -1}\beta_k\1\{t-T_g=k\}
+  +\varepsilon_{gt},
+  \label{eq:event-study-spec}
+\end{equation}
+or use a modern cohort-specific estimator when treatment timing is staggered
+and effects are heterogeneous
+\citep{callaway2021did,sun2021eventstudy}. The pre-treatment coefficients
+$\beta_k$ should be reported as diagnostics, not hidden behind a single
+average treatment effect. If pre-trends fail, the evidence can still inform
+scenario discussion, but it should not upgrade a module to causal
+decision-grade status.
+
+Finally, if the experiment is used to train or validate a customer-level
+targeting rule, the object is a policy value, not just a treatment effect.
+Let $\varphi(X_i)$ map pre-treatment features to an action in the approved
+action set. Under randomized assignment with known propensity
+$p_i(a)=\Pr(Z_i=a\mid X_i)$, a design-based value estimator is
+\begin{equation}
+  \widehat{Q}(\varphi)
+  =
+  \frac{1}{|\mathcal{P}_e|}
+  \sum_{i\in\mathcal{P}_e}
+  \frac{\1\{Z_i=\varphi(X_i)\}}
+       {p_i(\varphi(X_i))}
+  \widetilde{V}^{e}_{i,H}.
+  \label{eq:policy-value-estimator}
+\end{equation}
+This is the experimental counterpart of using the NPV component for targeting.
+It is the right object for comparing scoring policies because it evaluates the
+action the policy would have chosen, not merely the average treatment effect.
+Heterogeneous-effect methods such as causal forests and double/debiased
+machine learning can propose $\varphi$ or estimate CATEs
+\citep{wager2018causalforests,chernozhukov2018dml}, while statistical
+treatment-rule work clarifies that the value of the rule is the decision
+criterion \citep{manski2004treatment}. To avoid overfitting, the rule-learning
+sample, policy-evaluation sample, and final production population should be
+separated or evaluated with honest sample splitting. A high CATE validation
+correlation is not enough if the induced policy value fails against the
+baseline.
+
+\subsection{Identification assumptions and veto diagnostics}
+
+Each experiment family should have a pre-run identification statement. For a
+randomized holdout, the required condition is that assignment is independent of
+potential outcomes within the eligible population:
+\begin{equation}
+  Z_{ie}
+  \perp\!\!\!\perp
+  \{Y_i(a_e),Y_i(a_{0e}),\NPV_i(a_e),\NPV_i(a_{0e})\}
+  \mid i\in\mathcal{P}_e.
+  \label{eq:randomization-assumption}
+\end{equation}
+This condition is violated operationally if the holdout is overwritten,
+re-contacted, manually suppressed for value-related reasons, merged with
+another campaign, or lost in data lineage. It is also weakened if the
+randomization unit is too narrow and treatment spills over across accounts,
+households, branches, channels, or card-on-file arrangements.
+
+For observational adjustment, the assumption is conditional exchangeability
+and overlap using pre-treatment variables:
+\begin{align}
+  \{Y_i(a_e),Y_i(a_{0e})\} &\perp\!\!\!\perp D_{ie}\mid X_{ie}, \\
+  0 &< \Pr(D_{ie}=1\mid X_{ie}=x) < 1
+      \quad \text{on the target support}.
+      \label{eq:overlap-assumption}
+\end{align}
+Propensity-score, doubly robust, double/debiased machine-learning, and causal
+forest methods are useful only after these assumptions are made plausible
+\citep{rosenbaum1983propensity,imbenswooldridge2009recent,
+chernozhukov2018dml,wager2018causalforests}. They can reduce modeling bias
+conditional on the design; they cannot repair missing controls, post-treatment
+leakage, or a no-overlap population.
+
+For regression discontinuity, the component should record the running
+variable, cutoff, bandwidth, manipulation test, continuity diagnostics, local
+population, and extrapolation flag. For difference-in-differences, it should
+record treated and comparison cohorts, timing, pre-trends, placebo outcomes,
+composition diagnostics, and estimator class. For selection corrections, it
+should record the selection equation, outcome equation, exclusion restriction
+if used, and target population \citep{heckman1979selection}. These are not
+appendix niceties. They determine whether the evidence upgrades a module or
+remains a diagnostic.
+
+\subsection{Power, horizon, and measurement discipline}
+
+The section should not prescribe a universal sample size. It should prescribe
+the calculation that every material experiment must contain. For a scalar
+outcome $Y$ with treatment and control sizes $n_1$ and $n_0$, a simple
+two-sided minimum detectable effect is approximately
+\begin{equation}
+  \mathrm{MDE}_Y
+  \approx
+  (z_{1-\alpha/2}+z_{1-\beta})
+  \sqrt{\frac{\sigma_1^2}{n_1}+\frac{\sigma_0^2}{n_0}},
+  \label{eq:mde}
+\end{equation}
+before cluster, stratification, or covariate-adjustment corrections. If the
+assignment unit is a cluster with average size $\bar{m}$ and intra-cluster
+correlation $\rho$, the effective variance should be inflated by the design
+effect
+\begin{equation}
+  \mathrm{DE}=1+(\bar{m}-1)\rho.
+  \label{eq:design-effect}
+\end{equation}
+This matters because card experiments are often powered for response or spend
+but not for NPV, credit losses, cannibalization, rare fraud events, or
+relationship spillovers. If losses are too rare for the experiment horizon,
+the contract should say whether loss is primary, secondary, monitored, or
+borrowed from a separately validated risk model. It should not silently treat a
+non-significant short-horizon loss difference as proof of no loss effect.
+
+Horizon discipline is equally important. Let $H_{\mathrm{obs}}$ be the
+experimentally observed window and $H_{\mathrm{val}}$ the valuation horizon.
+The experiment identifies only the observed portion directly:
+\begin{equation}
+  \tau^{e}_{\NPV,H_{\mathrm{obs}}}
+  =
+  \E\!\left[
+    \sum_{h=0}^{H_{\mathrm{obs}}}\delta_h
+    \{\Pi_{ih}(a_e)-\Pi_{ih}(a_{0e})\}
+    \mid i\in\mathcal{P}_e
+  \right].
+  \label{eq:observed-horizon-npv}
+\end{equation}
+The remaining value,
+\begin{equation}
+  \tau^{e}_{\NPV,H_{\mathrm{val}}}
+  =
+  \tau^{e}_{\NPV,H_{\mathrm{obs}}}
+  +
+  \E\!\left[
+    \sum_{h=H_{\mathrm{obs}}+1}^{H_{\mathrm{val}}}\delta_h
+    \{\Pi_{ih}(a_e)-\Pi_{ih}(a_{0e})\}
+    \mid i\in\mathcal{P}_e
+  \right],
+  \label{eq:horizon-bridge}
+\end{equation}
+is a forecast or scenario bridge unless there is longer-run experimental
+follow-up. The component should expose this split. A 90-day activation win
+should not be presented as five-year causal NPV unless the tail bridge,
+uncertainty, and validation evidence are explicit.
+
+\subsection{How experimental evidence updates the NPV component}
+
+The component should consume experimental evidence through a governed update
+rule, not through ad hoc analyst interpretation. Each module estimate should
+carry an evidence tuple
+\begin{equation}
+  \mathcal{E}_{m}
+  =
+  (\mathrm{design},\mathcal{P},a,a_0,H,\widehat{\tau}_m,
+   \widehat{\Sigma}_m,\mathrm{diagnostics},\mathrm{allowed\ use}),
+  \label{eq:evidence-tuple}
+\end{equation}
+where $m$ indexes a module such as activation, all-bank spend, balances, loss,
+attrition, cost, or relationship spillover. The tuple should update the NPV
+component only within the tested population, action contrast, horizon, and
+policy bundle. If a production call is outside that support, the component
+should either downgrade the evidence, require an extrapolation flag, or return
+a diagnostic status.
+
+The promotion rule should be mechanical. A module can receive randomized
+causal evidence only when randomization integrity, feature-cut integrity,
+holdout preservation, contamination checks, power/MDE documentation, finance
+and risk reconciliation, and horizon labeling pass. A quasi-experimental
+module can receive quasi-experimental evidence only when its design-specific
+diagnostics pass: pre-trends for difference-in-differences, manipulation and
+continuity checks for regression discontinuity, relevance and exclusion
+arguments for instruments, and overlap/balance for observational adjustment.
+If a material module remains predictive or scenario-only, the aggregate
+component may still return useful NPV, but it should be labeled
+policy-conditional, diagnostic, or scenario NPV rather than causal incremental
+NPV.
+
+Finally, the component response should expose enough metadata for caller
+systems and reviewers to know what they are using: experiment identifiers,
+holdout identifiers, assignment unit, assignment probability, treatment
+contrast, target population, outcome horizon, primary estimand, observed
+horizon versus extrapolated tail, evidence grade, allowed-use label, veto
+diagnostics, explanatory diagnostics, and unresolved confounders. The
+component remains a replacement valuation component, not an experimentation
+platform, but it must be a disciplined consumer of experimental evidence.
+
+\section{Module-Level Identification Plan}
+\label{sec:module-identification-plan}
+
+The preceding section gives the general identification strategy. A panel-grade
+proposal also needs the module-level version: what exactly is being estimated,
+where endogeneity enters, what evidence is preferred, what fallback evidence
+is acceptable, and how the output may be used. This section is written as a
+technical operating plan for the component team. It does not assert that the
+bank already has every experiment or every variable. It specifies what the
+component must know before a module output can be promoted from diagnostic to
+decision-grade NPV.
+
+\subsection*{Response, Approval, Booking, Activation, and First Use}
+
+The response/activation module estimates the funnel transition vector
+\begin{align}
+  \Delta q_i(a)
+  =
+  \big(&
+    \Delta\Pr(\mathrm{respond}),
+    \Delta\Pr(\mathrm{apply}),
+    \Delta\Pr(\mathrm{approve}), \nonumber\\
+  &
+    \Delta\Pr(\mathrm{book}),
+    \Delta\Pr(\mathrm{activate}),
+    \Delta\Pr(\mathrm{first\ use})
+  \big).
+  \label{eq:funnel-transition-vector}
+\end{align}
+The main endogeneity problem is targeted exposure: the bank contacts customers
+because it already expects them to respond, qualify, or be profitable. The
+preferred evidence is randomized contact or suppression, randomized channel
+placement, randomized creative, or randomized offer-cell assignment among
+eligible customers. A weaker but useful design is randomized encouragement,
+where assignment changes the probability of application or activation but does
+not force take-up; such estimates should be labeled as complier effects in the
+instrumental-variables sense \citep{angristimbensrubin1996iv}. Observational
+fallbacks require pre-treatment features, overlap diagnostics, balance checks,
+and leakage tests. A response model without credible assignment evidence may
+be used for capacity planning or funnel monitoring, but not by itself to claim
+incremental NPV.
+
+\subsection*{Usage, Spend Source, and Cannibalization}
+
+The usage module estimates all-bank incremental spend, not only new-card
+spend. Its estimands are the components in
+Equation~\eqref{eq:spend-source-panel}: new consumption, outside-card shift,
+old-bank-card cannibalization, debit/deposit shift, and promotion timing. The
+central endogeneity problem is that observed new-card spend is post-treatment
+and does not reveal its source. For existing-client offers, randomized
+new-card offer holdouts are the preferred design because they allow the bank
+to compare old-card spend, debit/deposit activity, total bank spend, and
+new-card spend under offer and no-offer paths. Where competitor-card spend is
+not directly observed, the component should use bounded or evidence-graded
+estimates based on balance transfers, payoff records, bureau tradeline
+aggregates where available, card-on-file changes, merchant/network aggregates,
+account-aggregation samples, and post-promotion decay. A model-imputed outside
+wallet estimate should not be labeled captured wallet unless it is anchored by
+an experiment or credible quasi-experiment.
+
+\subsection*{Balances, Payments, Line, APR, and Promotional Terms}
+
+The balance module estimates the transition from spend and payments to
+balances, utilization, interest income, EAD, and attrition. Its main estimands
+are
+\[
+  \Delta B_{i,t+h}(a),\quad
+  \Delta Pay_{i,t+h}(a),\quad
+  \Delta \mathrm{Util}_{i,t+h}(a),\quad
+  \Delta EAD_{i,t+h}(a).
+\]
+The main endogeneity problem is policy assignment: lines, APRs, balance
+transfer terms, rewards, and fee waivers are assigned using risk and value
+signals. Comparing high-line accounts with low-line accounts therefore mixes
+customer selection with line effects. Preferred designs include randomized
+line invitations, randomized promotional terms among eligible accounts,
+regression discontinuities around line or pricing thresholds, and policy
+changes with credible comparison cohorts. Observational models are useful for
+forecasting under historical policy, but line or APR elasticity estimates
+should be used for action ranking only when overlap and policy-assignment
+diagnostics pass. A line-assignment NPV should expose the full option grid,
+not merely the selected line.
+
+\subsection*{Losses: PD, LGD, and EAD}
+
+The loss module estimates incremental expected loss,
+\[
+  \Delta EL_{i,t+h}(a)
+  =
+  \Delta PD_{i,t+h}(a)\,LGD_{i,t+h}(a)\,EAD_{i,t+h}(a).
+\]
+This expression is shorthand, not an independence claim; dependence should be
+handled by the joint path model. PD, LGD, and EAD are linked through balances,
+utilization, line, delinquency, macro state, and collections policy. The
+central endogeneity problem is that risk policies assign line, APR, approval,
+and collections treatment. A booked-account PD model cannot simply be
+transported to prospect targeting because prospect NPV also depends on
+response, application, approval, booking, and activation selection. Preferred
+evidence includes randomized or quasi-randomized line changes, threshold
+designs around underwriting or line policies, vintage backtests, and
+stress-period validation. The module should separately validate principal,
+non-principal, promotional, cash-advance, and balance-transfer subledgers
+because they create different revenue and loss paths.
+
+\subsection*{Rewards, Promotions, and Post-Promotion Decay}
+
+Rewards and promotions are treatment variables, not merely cost fields. The
+estimands include incremental activation, incremental spend, reward liability,
+balance build, post-promotion runoff, attrition, and loss:
+\[
+  \Delta (Z,S,B,Pay,RewardCost,Attrition,EL)_{i,t+h}(a^{\mathrm{promo}}).
+\]
+The endogeneity problem is offer targeting: generous rewards and promotions
+are often offered to customers expected to respond or to balances the bank
+wants to acquire. Preferred evidence is randomized reward or promotion-cell
+assignment, with follow-up beyond the teaser or bonus window. If only early
+spend is validated, the output should be restricted to short-horizon causal
+lift and should not be annualized into durable NPV. Post-promotion decay is a
+veto diagnostic: high early spend that disappears after the bonus can be a
+negative-NPV acquisition once rewards, funding, and servicing are included.
+
+\subsection*{Attrition, Dormancy, Product Conversion, and Retention}
+
+The attrition and conversion module estimates transitions among active,
+dormant, closed, retained, converted, charged-off, and recovered states. The
+main endogeneity problem is survivorship and policy response: customers who
+survive to receive a retention offer are already selected, and the bank may
+offer retention concessions to customers predicted to leave or to customers it
+especially wants to keep. Preferred evidence includes randomized retention
+offers, randomized fee-waiver or reward treatments, policy threshold designs,
+and event studies around product conversion changes with pre-trend checks.
+Pure duration models are useful for forecasting the organic path
+\citep{schmittlein1987counting,fader2005bgnbd,bolton1998duration}, but the
+incremental value of a retention action requires a counterfactual no-treatment
+path. The output should separate retained value from concession cost and
+should flag cases where the concession is given to customers likely to stay
+without it.
+
+\subsection*{Relationship Spillover and Deposit Value}
+
+Relationship value is often the least identified part of card NPV. The
+estimand is
+\[
+  \Delta RelValue_{i,t+h}(a)
+  =
+  RelValue_{i,t+h}(a)-RelValue_{i,t+h}(a_0),
+\]
+not the level of deposits, brokerage balances, mortgage balances, or digital
+engagement among customers who take the card. The endogeneity problem is
+severe: customers who accept cards, keep deposits, and buy other products are
+often already more engaged. Preferred evidence is randomized cross-sell
+holdout with relationship outcomes measured for both treatment and control, or
+credible quasi-experimental variation in card access or terms. Without such
+evidence, relationship value should be reported as associated value or
+scenario sensitivity, not included silently in causal incremental NPV.
+
+\subsection*{Module Promotion Rule}
+
+Each module should carry an evidence grade:
+\[
+  G_m\in
+  \{\mathrm{randomized},\mathrm{quasi\text{-}experimental},
+    \mathrm{observational\ adjusted},\mathrm{predictive},
+    \mathrm{scenario\ only}\}.
+\]
+The NPV output may be labeled causal incremental NPV only for the parts of the
+value path whose modules have randomized or credible quasi-experimental
+support in the relevant population and decision context, plus finance/risk
+reconciliation. If one major module is predictive or scenario-only, the
+component can still return a useful value, but it should label the result as
+policy-conditional expected NPV, diagnostic NPV, or scenario NPV. This is how
+the component prevents a single scalar from hiding mixed evidence quality.
+
+\section{Uncertainty Propagation and Model-Risk Control}
+\label{sec:uncertainty-propagation}
+
+NPV is not observed; it is a functional of many estimated paths and valuation
+assumptions. A panel-grade design must therefore propagate uncertainty rather
+than attach a false sense of precision to one expected value. Let $\theta$
+collect submodel parameters, $\eta$ collect scenario and valuation assumptions,
+and $\pi$ denote downstream policy. The component should treat customer value
+as
+\begin{equation}
+  \Delta \NPV_i(a)
+  =
+  g_i(a;\theta,\eta,\pi),
+  \label{eq:npv-functional-uncertainty}
+\end{equation}
+where $g_i$ includes state transitions, cash-flow identities, expected loss,
+capital, funding, tax, terminal value, and relationship value. The response
+should report at least an expected value and approved uncertainty or
+sensitivity summaries:
+\begin{equation}
+  \left\{
+    g_i(a;\theta^{(r)},\eta^{(r)},\pi^{(r)})
+  \right\}_{r=1}^{R}.
+  \label{eq:npv-draws}
+\end{equation}
+The draws need not imply a fully Bayesian production model. They can be
+posterior draws, bootstrap draws, scenario grid draws, stress overlays, or
+approved sensitivity cases. What matters is that the component exposes how
+rankings change when uncertain drivers move.
+
+The important uncertainty sources are not independent. Spend, utilization,
+payment behavior, delinquency, attrition, and rewards response are linked.
+For example, a line increase can raise spend, raise EAD, lower utilization for
+some accounts, raise utilization for others through borrowing, affect PD, and
+change attrition. A promotion can increase early spend, create reward
+liability, alter payment timing, and increase post-promotion runoff. Treating
+modules as independent plug-ins can understate tail risk and overstate rank
+stability. The component should therefore preserve covariance where possible:
+joint path simulation is preferable to separately simulating spend, loss, and
+attrition from independent marginal models.
+
+The component should decompose uncertainty by driver. A useful response for
+management and model-risk review is
+\[
+  Var(\Delta \NPV)
+  \approx
+  V_{\mathrm{behavior}}
+  +V_{\mathrm{loss}}
+  +V_{\mathrm{funding/capital}}
+  +V_{\mathrm{terminal}}
+  +V_{\mathrm{relationship}}
+  +2\sum_{r<s}Cov_r^s,
+\]
+where the covariance terms should be retained when they are material. This
+decomposition tells reviewers whether a high-NPV segment is robust or is
+mostly a terminal-value, funding, or loss assumption.
+
+Optimization creates an additional model-risk problem: decision engines tend
+to exploit model error. If the component returns an unconstrained scalar, a
+campaign optimizer may select customers where the model is most optimistic
+because of sparse data, poor overlap, missing cannibalization anchors, or
+unstable terminal value. The component should therefore expose support scores,
+evidence grades, uncertainty, and downside metrics. Suggested robust decision
+statistics include expected NPV, lower-confidence or lower-posterior NPV,
+probability of negative NPV, expected shortfall, and NPV subject to loss,
+capital, fairness, and operational constraints. High expected NPV with weak
+support or high downside risk should be eligible for review or experimentation,
+not automatic production exploitation.
+
+Uncertainty also governs refresh policy. A model should be refreshed or
+reapproved when the population, offer terms, macro regime, funding curve,
+capital rule, reward economics, policy bundle, data lineage, or downstream
+caller changes enough to invalidate the previous evidence. The component
+should therefore monitor not only prediction drift but also evidence drift:
+loss of overlap, change in treatment assignment, decay of holdout relevance,
+breakage of finance reconciliation, and movement in terminal-value
+sensitivity.
+
+\section{Formal Validation Gates}
+\label{sec:validation-gates-formal}
+
+The validation section above states the principle: proxy metrics do not prove
+incremental lifetime NPV. This section gives the more operational version. A
+production candidate should pass four ledgers: predictive validity, causal
+validity, valuation/reconciliation validity, and operational validity. Failure
+in any veto ledger should prevent production action-ranking use, even if a
+secondary metric looks strong.
+
+Predictive validity asks whether forecasted components match observed paths
+in the population and feature stage where the model is used. For a component
+$Y$ such as spend, payment, balance, attrition, PD, LGD, EAD, rewards cost, or
+servicing cost, calibration can be summarized by segment and horizon:
+\begin{equation}
+  CalErr_{g,h}(Y)
+  =
+  \frac{
+    \sum_{i\in g} w_i
+    \{\widehat{Y}_{i,t+h}-Y_{i,t+h}\}
+  }{
+    \sum_{i\in g} w_i |Y_{i,t+h}|+\epsilon
+  }.
+  \label{eq:calibration-error}
+\end{equation}
+The proposal should not hard-code universal tolerances, because acceptable
+error depends on use case and materiality. It should require that tolerances
+be set ex ante by model owner, finance/risk owners, and model risk, with
+tighter thresholds for high-stakes or high-volume decisions. Calibration
+should be checked by time, vintage, months-on-book, risk band, geography,
+channel, product, relationship depth, promotional state, and balance type.
+
+Causal validity asks whether treatment and control comparisons support the
+decision contrast. For observational or quasi-experimental designs, the
+component should report overlap and balance diagnostics. A standard weighted
+mean-balance diagnostic is
+\begin{equation}
+  SMD_k
+  =
+  \frac{
+    \bar X_{k,T=1}^{w}-\bar X_{k,T=0}^{w}
+  }{
+    \sqrt{(s_{k,T=1}^{2,w}+s_{k,T=0}^{2,w})/2}
+  },
+  \label{eq:smd}
+\end{equation}
+with prespecified thresholds and special scrutiny for variables that drive
+risk, response, line, and relationship value. Overlap can be summarized by the
+fraction of scored customers whose estimated treatment propensity lies inside
+the training support:
+\begin{equation}
+  OverlapRate
+  =
+  \frac{1}{N}\sum_i
+  \1\{e_{\min}\le \hat e(X_i)\le e_{\max}\}.
+  \label{eq:overlap-rate}
+\end{equation}
+Poor overlap, failed randomization checks, failed pre-trends, large placebo
+effects, or evidence of post-treatment leakage should veto causal
+action-ranking use. They can still support diagnostics or experiment design.
+
+Valuation and reconciliation validity asks whether the component's cash flows
+add up and tie to approved finance and risk views. Let the component-level
+NPV be the sum of discounted driver contributions:
+\begin{equation}
+  \widehat{\Delta \NPV}_i
+  =
+  \sum_{c\in\mathcal{C}}
+  \widehat{\Delta \NPV}_{ic}
+  + \widehat{\Delta TV}_i
+  - \widehat C_i^{\mathrm{acq}}.
+  \label{eq:decomposition-additivity}
+\end{equation}
+The decomposition residual
+\[
+  Resid_i
+  =
+  \widehat{\Delta \NPV}_i
+  -
+  \left(
+  \sum_{c\in\mathcal{C}}\widehat{\Delta \NPV}_{ic}
+  +\widehat{\Delta TV}_i-\widehat C_i^{\mathrm{acq}}
+  \right)
+\]
+should be near zero by construction. Segment-level PPNR, loss, funding,
+capital, rewards, and cost aggregates should tie to finance/risk tolerances or
+explain the valuation convention difference. A model that predicts behavior
+well but fails cash-flow reconciliation is not ready for production NPV.
+
+Operational validity asks whether the component can be safely called. It
+includes schema validation, feature freshness, no-score and degraded-score
+rates, deterministic replay, lineage hashes, model-version control, assumption
+bundle versions, and caller-use approval. A batch can pass technically while
+failing operationally if a material segment no-scores, if missing features are
+silently imputed, if the caller uses the score outside the approved decision
+context, or if the output cannot be replayed. Operational validation should
+therefore be a veto ledger, not an engineering afterthought.
+
+The promotion rule is:
+\[
+  \mathrm{Promote}
+  =
+  \1\{
+    V_{\mathrm{pred}}=1,\,
+    V_{\mathrm{causal}}=1,\,
+    V_{\mathrm{valuation}}=1,\,
+    V_{\mathrm{operational}}=1
+  \},
+\]
+where each $V$ is use-case specific and approved before evaluation. Secondary
+metrics such as AUC, rank correlation, top-decile overlap, short-horizon spend
+lift, and validation loss can explain performance and nominate challengers,
+but they do not override veto failures.
+
+\section{Endogeneity, Confounding, and Remaining Reviewer Risks}
+\label{sec:reviewer-risks}
+
+The open risks in this proposal are not cosmetic. They are identification
+problems that change the estimand if they are handled poorly. A score trained
+on booked or active accounts does not automatically apply to prospects. A line
+or APR effect is not exogenous if the bank assigned it using risk and value
+signals. Observed new-card spend is not the same as incremental bank value.
+Macro and employment shocks move spend, delinquency, and utilization over
+time. The literature on sample selection, propensity scores, IV, RD,
+difference-in-differences, event studies, and dynamic panels exists precisely
+because these are structural problems, not tuning problems
+\citep{heckman1979selection,rosenbaum1983propensity,angristimbensrubin1996iv,
+lee2010rd,callaway2021did,sun2021eventstudy,arellano1991panel,
+blundell1998initial,hernanrobins2020causal}.
+
+The module-level identification plan in
+Section~\ref{sec:module-identification-plan} states what evidence is required
+for each submodel. This section explains why that evidence is needed and how
+the literature suggests handling the main reviewer objections.
+
+\subsection{Funnel Selection And Transportability}
+
+\paragraph{Risk.}
+The customer moves through a funnel: prospect, applicant, approved, booked,
+activated, active, retained, dormant, closed, charged off. Each stage changes
+the population, the available data, and the relevant counterfactual. A model
+estimated on booked accounts can be badly miscalibrated when applied to
+prospects because the later stage has already been selected on response,
+policy, and survival. This is the classical sample-selection problem
+\citep{heckman1979selection}. It is also why propensity balancing alone cannot
+make a booked-account model representative for a prospect population
+\citep{rosenbaum1983propensity,imbenswooldridge2009recent}.
+
+\paragraph{Mitigation.}
+The component should carry stage-specific outputs and allowed-use labels.
+Prospect targeting should use prospect-stage models and counterfactuals;
+application and approval should use application-stage and underwriting-stage
+models; booked and active-account value should use activation, usage, balance,
+loss, and retention modules. Where the bank wants to transport information
+across stages, it should do so with explicit overlap checks, inverse-probability
+weighting or related selection adjustments, and separate validation on the
+target population. If the target population has little common support, the
+correct answer is not to force transport; it is to mark the output as
+out-of-domain or no-score.
+
+\paragraph{Residual gap.}
+No statistical correction removes the need for a decision-specific
+counterfactual. The same account can have different expected value under
+contact versus suppress, approve versus decline, line up versus line down, or
+retain versus close. The proposal therefore treats transportability as a
+governed exception, not a default assumption.
+
+\subsection{Policy Variables, Counterfactuals, And Causal Lift}
+
+\paragraph{Risk.}
+Line, APR, rewards, fee waivers, promotional length, and retention concessions
+are not ordinary covariates. They are bank policy variables that are often
+assigned using latent risk and value information. If they are treated as
+exogenous predictors, the model learns policy, not customer economics. This is
+the wrong counterfactual for action ranking. It is also why the literature
+leans on randomized encouragement, instrumental variables, regression
+discontinuity, and difference-in-differences designs when policy itself is
+the treatment \citep{angristimbensrubin1996iv,lee2010rd,
+callaway2021did,sun2021eventstudy}. Flexible adjustment methods such as
+causal forests and double/debiased machine learning can help with
+high-dimensional nuisance adjustment, but they do not create identification by
+themselves \citep{wager2018causalforests,chernozhukov2018dml}.
+
+\paragraph{Mitigation.}
+The component should separate policy assignment from customer response.
+Treatment modules should estimate contrasts such as line-up versus line-down,
+promo versus no-promo, reward-cell A versus reward-cell B, or encourage
+versus suppress. The output should expose which effects are policy-driven,
+which are customer-driven, and which are only predictive under historical
+policy. In the dynamic setting, lagged outcomes and future policy reactions
+must be handled as part of the state process rather than buried in a static
+feature set \citep{arellano1991panel,blundell1998initial,rust1987replacement}.
+
+\paragraph{Residual gap.}
+If the bank cannot randomize or credibly quasi-randomize a policy change, the
+best it can do is a qualified observational estimate with explicit assumptions.
+That estimate may still be useful for forecasting or monitoring, but it should
+not be promoted to causal incremental NPV without the missing design evidence.
+
+\subsection{Cannibalization, Wallet Decomposition, And Promotion Decay}
+
+\paragraph{Risk.}
+Observed new-card spend is not the same as incremental bank value. A new card
+can shift spend from a competitor card, from an existing bank card, from
+debit, or from future purchases that would have happened anyway. The direct
+marketing literature already warns that response probability is not the
+optimization target by itself \citep{bult1995directmail}. Payment-choice and
+rewards studies show that instrument choice and incentives change spending
+behavior, but they do not magically reveal the source of the shifted wallet
+for a specific issuer \citep{koulayev2012payment,agarwal2010rewards,
+prelec2001creditcard,gross2001liquidity}.
+
+\paragraph{Mitigation.}
+The component should value all-bank incremental spend, not raw new-card spend.
+That is why the wallet equations in Section~\ref{sec:valuation-spine} split
+new consumption, competitor-card shift, old-bank-card cannibalization, debit
+shift, and promotion timing. A randomized holdout or strong quasi-experiment
+can identify all-bank lift; internal card, deposit, and transaction data can
+anchor old-bank-card and debit shifts; network, bureau, or merchant-panel data
+can help bound competitor shift when available. Promotion lift must also be
+followed beyond the bonus window. If the early lift disappears after the
+promotion ends, it is not durable wallet-share capture.
+
+\paragraph{Residual gap.}
+Competitor-wallet share and the movable-wallet fraction are still hard to
+observe directly. The proposal therefore treats them as evidenced estimates or
+scenario assumptions, not as observed fact. Model-imputed wallet capture must
+never be reported as experimentally identified value.
+
+\subsection{CLV, Credit Risk, And Balance-Sheet Cost}
+
+\paragraph{Risk.}
+CLV models are helpful baselines for frequency, duration, and active-state
+forecasting, but they are not the same as card NPV. A marketing CLV model can
+fit spend and survival and still miss expected credit loss, funding transfer
+pricing, rewards liability, servicing cost, fraud, capital, and other balance
+sheet effects. That is a reviewer risk because a polished CLV curve can look
+complete while leaving out the parts that matter most to a bank
+\citep{berger1998clv,rust2004return,venkatesan2004clv,schmittlein1987counting,
+fader2005bgnbd,bolton1998duration}.
+
+\paragraph{Mitigation.}
+The NPV component should treat CLV as one module, not the final value. The
+state and cash-flow equations in Sections~\ref{sec:valuation-spine} and
+\ref{sec:module-identification-plan} explicitly add losses, rewards, funding,
+capital, and relationship-value conventions on top of the activity forecast.
+That is the correct way to preserve the usefulness of CLV without confusing
+activity forecasting with bank profitability.
+
+\paragraph{Residual gap.}
+Even when CLV and finance modules are both present, the terminal value can
+dominate long-horizon ranking if it is not well controlled. The proposal
+therefore keeps terminal value explicit and subject to sensitivity analysis
+rather than burying it in a hidden extrapolation.
+
+\subsection{State Dependence, Macro Conditions, And Dynamic Feedback}
+
+\paragraph{Risk.}
+Spend, payments, balances, and losses vary with liquidity, unemployment, and
+macro conditions. Credit limits and interest rates also affect card borrowing
+and payment behavior, which in turn affect later risk and account-management
+policy \citep{ganong2019unemployment,gross2001liquidity,johnson2004rebates,
+baker2020epidemic}. This creates a dynamic feedback problem: line affects
+utilization, utilization affects risk, risk affects later line and pricing
+policy, and policy affects later value.
+
+\paragraph{Mitigation.}
+The component should put macro and employment state inside the transition
+kernel rather than treating them as static controls. Public macro and labor
+data are useful as scenarios, controls, and benchmarking inputs. Dynamic panel
+methods, event studies, and cohort-based difference-in-differences can help
+with feedback and timing, but they still require a clear estimand and an as-of
+data protocol \citep{arellano1991panel,blundell1998initial,
+callaway2021did,sun2021eventstudy}. The practical consequence is that the
+model should be refreshed by state, vintage, and policy regime, not by a
+single pooled historical average.
+
+\paragraph{Residual gap.}
+State dependence is never fully eliminated; it is managed. The remaining risk
+is model drift across macro regimes, which is why the proposal requires
+scenario-based validation and backtesting rather than a one-time fit metric.
+
+\subsection{External Data, Relationship Spillovers, And Residual Evidence Gaps}
+
+\paragraph{Risk.}
+Public and licensed data are valuable, but they do not identify issuer-specific
+causal lift. Federal Reserve, BLS, BEA, Census, CFPB, and LSEG data can
+support scenarios, controls, benchmarks, and priors, but they should not be
+treated as evidence that a given bank action caused customer-level change.
+The same caution applies to relationship spillovers. Deposit growth, other
+product uptake, and digital engagement often reflect pre-existing household
+quality as much as the card action itself. If that spillover is folded into
+card NPV without a causal design, the card can receive credit for organic
+relationship value that was already going to occur
+\citep{federalreserveEFA,federalreserveG19,federalreserveZ1,nyfedHhdc,
+blsLAUS,beaRegional,censusACS,cfpbCreditCardData,fredALFRED,lsegWorkspace,
+lsegEconomicData}.
+
+\paragraph{Mitigation.}
+External data should be used as scenario drivers, time/geo controls,
+benchmarking anchors, and priors for what the bank might reasonably expect
+under a given macro path. Relationship value should be excluded from core
+card NPV unless the card action itself has separate randomized or credible
+quasi-experimental support. When included, it should appear as a distinct line
+item with its own evidence grade and allowed-use label.
+
+\paragraph{Residual gap.}
+Some quantities remain genuinely proprietary: issuer-specific activation,
+competing-wallet capture, cannibalization, promo decay, reward elasticity,
+funding cost, capital charge, and relationship spillover. These are not gaps
+the literature can close for the bank; they are quantities the bank must
+estimate from its own experiments, quasi-experiments, internal data, and
+governed assumptions.
+
+The practical implication of this section is simple: the component should not
+promise more identification than the evidence supports. Each module should
+state whether it is randomized, quasi-experimental, observationally adjusted,
+predictive, or scenario-only, and the output should inherit that label. That
+is how the proposal stays defensible in front of a skeptical panel instead of
+becoming a bundle of plausible but unverified claims.
 
 \section{Alternatives and Tradeoffs}
 \label{sec:alternatives-tradeoffs}
@@ -2819,6 +4659,309 @@ change the ranking. The practical rollout should still be phased: start with a
 controlled batch acquisition or prescreen slice, retain simpler models as
 baselines and diagnostics, and expand use cases only when the component-level
 evidence and integration contracts support them.
+
+\section{Default Valuation Semantics Bundle}
+\label{sec:valuation-semantics-default}
+
+The component should not wait until implementation to define valuation
+semantics. A panel needs a concrete starting convention that finance, treasury,
+risk, product, tax, rewards, and model-risk owners can debate. The following
+bundle is a proposed default for the first controlled acquisition or prescreen
+slice. It is not asserted as final bank policy; it is a disciplined starting
+point that prevents an untagged number from moving through the bank.
+
+The value basis should be incremental, customer-level, pre-tax or post-tax as
+declared, and measured against a suppress/no-offer baseline for acquisition or
+prescreen. The horizon should be long enough to capture activation, early
+spend, balance build, seasoning, attrition, and loss emergence; the proposal
+recommends a finite monthly horizon $H$ plus an explicitly modeled terminal
+value. The terminal value should not be a plug number. It should be a
+documented continuation-value approximation, decayed lifetime contribution, or
+closed-form residual value from the state model, with sensitivity analysis that
+shows whether rankings are terminal-value dominated.
+
+Discounting and funding should be separated. Discounting converts future
+cash-flow value into present value. Funds-transfer pricing or funding cost
+charges balance usage and liquidity. The default bundle should specify the
+curve, observation date, currency, compounding convention, and whether the
+curve is scenario-specific. A balance-heavy revolver should not be made
+attractive merely because funding cost was omitted, and a transactor should
+not be penalized by a funding convention meant for revolving balances.
+
+Capital should be a priced charge, not an undefined subtraction. The bundle
+should state whether the charge is economic capital, regulatory capital,
+stress capital, or a business capital allocation. It should define the exposure
+base, risk-weight or capital methodology, capital price, horizon, and whether
+capital enters monthly cash flow, terminal value, or a constraint. If capital
+is used as both a charge and a constraint, those roles should be reported
+separately.
+
+Rewards, acquisition cost, servicing, fraud, disputes, collections, and other
+expenses should distinguish marginal and allocated cost. The default
+decision-grade NPV should use marginal or causally incremental costs for action
+ranking where available, while allocated overhead can be reported in a
+reconciliation view. Rewards should be accrued when earned or expected to be
+redeemed according to the approved rewards finance convention; signup bonuses
+and teaser incentives should be separated from steady-state earn and burn.
+
+Losses should use expected-loss paths consistent with the component's PD, LGD,
+and EAD definitions, not a single static loss rate. Principal,
+non-principal, promotional, balance-transfer, cash-advance, fee, and accrued
+interest subledgers should be preserved where they materially change revenue,
+loss, or accounting treatment. CECL and stress-testing systems remain outside
+the component boundary, but the component's expected-loss convention should be
+reconcilable to finance and risk views.
+
+Relationship value should default to excluded from core card NPV unless
+approved causal or quasi-experimental evidence supports inclusion for the
+specific use case. When included, it should be reported both as a separate
+line item and as an all-bank value view. This protects the card action from
+receiving credit for organic deposit or other-product value that would have
+existed without the card.
+
+The scenario convention should distinguish base, adverse, and sensitivity
+views. Public and licensed data can supply macro, rate, inflation, credit, and
+market scenario paths, but they do not by themselves identify customer-level
+treatment effects. The default bundle should preserve the scenario version,
+macro-data vintage, and data release vintage so backtests use information
+available at decision time rather than revised data.
+
+Finally, downstream policy $\pi$ must be named. Acquisition NPV under one line
+increase, repricing, retention, collections, hardship, closure, and conversion
+policy can differ materially from acquisition NPV under another. The first
+production slice should use a frozen current-policy bundle or an explicitly
+approved target-policy bundle. A policy change should trigger reassessment of
+the NPV component or at least a scenario sensitivity.
+
+\subsection{Concrete first-slice base case}
+\label{subsec:first-slice-valuation-base}
+
+For the first controlled acquisition or prescreen slice, the proposal should
+define a base case that is specific enough to implement and conservative
+enough to survive review. A suitable starting identifier is
+\code{CARD_NPV_ACQ_BASE_PRETAX_CURRENT_POLICY_V1}. The identifier is not a
+technical name only; it is a compact contract saying that the score is a card
+acquisition or prescreen value, incremental to suppress or no-offer, pre-tax,
+under current downstream account-management policy, and governed by version 1
+of the approved assumption bundle.
+
+The base-case value object should be pre-tax incremental card NPV. A post-tax
+view can be reported in sensitivity or finance reconciliation, but pre-tax is
+the cleaner first production slice because many campaign, risk, and product
+decisions are made before final tax allocation conventions are settled. The
+baseline action is suppress or no-offer; the treatment action is the approved
+contact and offer cell. The scored unit is the prospect, customer, household,
+or prescreen record defined by the campaign owner, but the returned value must
+be customer-level or relationship-level enough to identify internal
+cannibalization where the customer already has a bank card.
+
+The base-case horizon should be monthly. Let $H_{\mathrm{obs}}$ denote the
+observed experimental or backtest window and $H_{\mathrm{val}}$ the valuation
+horizon. The first slice should report both. A practical default is a
+three-part path: months 0--6 for response, approval, booking, activation,
+first use, signup bonus, early reward cost, and campaign cost; months 7--24
+for spend persistence, balance build, payment behavior, delinquency emergence,
+promotion decay, and early attrition; and months 25--60 for seasoned behavior,
+loss emergence, retention, and runoff. The exact number of months should be
+approved by finance, risk, and model-risk owners, but the component should not
+hide the split between observed evidence and extrapolated tail.
+
+The base-case terminal value should be explicit and bounded. A defensible
+initial convention is a decayed continuation value from the terminal state:
+\begin{equation}
+  \Delta TV_{i,H_{\mathrm{val}}}
+  =
+  \frac{\rho_i \, \widehat{\Delta CF}_{i,H_{\mathrm{val}}+1}}
+       {r_{\mathrm{disc}}+\lambda_i+q_i},
+  \label{eq:terminal-value-base}
+\end{equation}
+where $\rho_i$ is an approved persistence factor, $\lambda_i$ is an attrition
+or closure hazard, $q_i$ is a conservatism or model-risk decay charge, and
+$r_{\mathrm{disc}}$ is the discount rate expressed on a monthly-compatible
+basis. This formula is not meant to be a universal truth. It is a transparent
+placeholder that can be replaced by a state-model residual value. The key
+review requirement is that the terminal term be reported separately and that
+rankings be stress-tested with $\Delta TV=0$, high-decay, and alternative
+persistence cases. Customer rankings dominated by terminal value should be
+flagged for review.
+
+Discounting and funding should use different fields. The base-case discount
+curve should be the approved finance valuation curve as of the valuation date,
+with currency, compounding convention, observation time, and interpolation rule
+stored in the assumption bundle. The funding charge should be a balance- and
+liquidity-sensitive funds-transfer-pricing charge applied to revolving,
+promotional, balance-transfer, cash-advance, and other funded balance
+subledgers. A transactor who pays in full should mainly generate interchange,
+rewards cost, fraud, servicing, and acquisition-cost economics; a revolver
+also generates interest income, funding cost, capital, and loss economics. The
+bundle should not let one curve do both jobs.
+
+The base-case capital charge should be a monthly priced charge, not an
+unlabeled deduction. The first slice can use the bank's approved business or
+economic-capital convention if that is the normal decisioning basis, with a
+reconciliation view to regulatory or stress capital. The response should
+return the capital basis, exposure base, capital price, and whether capital is
+used as a charge, a constraint, or both. Basel-style PD/LGD/EAD terminology
+supports the separation of exposure, probability, and severity components
+\citep{bcbs2006basel}; Federal Reserve stress-methodology documents support
+the need to keep balances, revenues, losses, and capital-sensitive scenario
+views distinct \citep{federalreserve2025stressmethodology,
+federalreserve2026stressmethodology}. They do not, by themselves, choose this
+bank's capital price.
+
+The base-case expected loss path should use monthly PD, LGD, and EAD paths
+consistent with the state model. It should preserve purchase principal,
+promotional balance, balance-transfer balance, cash-advance balance, fees,
+accrued interest, charge-off, and recovery timing where material. The CECL
+standard supports lifetime expected-credit-loss thinking for financial
+reporting \citep{fasb2016asu201613}, but the component's decision-grade loss
+path should be a valuation convention tied to the action counterfactual and
+reconcilable to risk and finance. If a loss term is immature during the
+observed experiment window, the response should label it as modeled rather
+than realized.
+
+Rewards and incentives should be decomposed. The base-case should report
+signup bonus, teaser incentive, earn, expected redemption, breakage, statement
+credits, reward liability timing, and any acquisition incentive separately
+from steady-state reward cost. The CARD Act and rewards evidence show that
+fees, disclosures, payment behavior, and incentives can materially affect card
+economics and behavior \citep{agarwal2013cardact,agarwal2010rewards}; they do
+not justify treating reward cost as a simple constant percentage for every
+segment. Promotion decay should therefore be a required sensitivity rather
+than an afterthought.
+
+Costs should be divided into causally incremental, marginal, and allocated
+views. For action ranking, the base-case should use incremental campaign cost,
+acquisition cost, underwriting cost where applicable, marginal servicing,
+fraud, dispute, collections, and reward costs. Allocated overhead can be
+reported for finance reconciliation but should not silently change the action
+ranking unless the approved valuation semantics explicitly require it.
+
+Relationship value should be excluded from core base-case card NPV. It may be
+reported as a separate associated-value view, and it may enter all-bank NPV
+only when the specific card action has randomized or credible
+quasi-experimental evidence for causing deposit, debit, mortgage, brokerage,
+or other-product value. This convention is intentionally conservative because
+relationship value is highly confounded: more engaged households are more
+likely to take cards and more likely to hold other products even without the
+card action.
+
+Finally, the base case should freeze downstream policy. For acquisition, the
+policy bundle should name future line-increase rules, repricing rules,
+retention treatment, collections policy, hardship policy, closure policy, and
+product-conversion policy. If those policies change, the old NPV estimate is
+not automatically wrong, but it is no longer the same economic object. The
+component should then either rescore under the new policy bundle or downgrade
+the old score's allowed use.
+
+\subsection{Sensitivity and challenger bundles}
+\label{subsec:valuation-sensitivities}
+
+The base case is the starting convention, not the end of valuation discipline.
+The proposal should require a small set of named sensitivity bundles, each
+designed to answer a particular reviewer question.
+
+The no-terminal-value bundle sets $\Delta TV=0$. It answers whether the
+decision is supported by observed and near-horizon economics or mostly by a
+long-tail assumption. The high-decay terminal bundle increases attrition,
+runoff, or conservatism decay in Equation~\eqref{eq:terminal-value-base}. It
+answers whether high-value segments remain high-value if persistence is weaker
+than expected.
+
+The adverse macro and labor bundle uses a worse unemployment, income, rate,
+and credit-loss path. It should be driven by approved public, licensed, or
+internal scenario sources, with release vintages stored for replay. This
+bundle answers whether a campaign still creates value when market conditions
+move against spend, payment capacity, funding, and losses.
+
+The high-funding and high-capital bundle increases funds-transfer-pricing
+charges and capital price or capital intensity. It answers whether the value
+comes from genuine customer economics or from an omitted balance-sheet cost.
+This is especially important for high-line, balance-transfer, cash-advance,
+and revolver-heavy segments.
+
+The high-rewards-cost and fast-promotion-decay bundle raises redemption,
+lowers breakage, increases signup-bonus realization, and shortens promotion
+persistence. It answers whether the component is buying early spend that does
+not survive after the bonus or teaser period.
+
+The cannibalization-stress bundle raises old-bank-card substitution, debit
+substitution, and organic-spend substitution. It is mandatory for
+existing-client new-card cross-sell. It answers whether the value is truly
+incremental to the bank or mostly a product-transfer accounting movement.
+
+The relationship-excluded bundle is the default for core card NPV; the
+relationship-included bundle should be allowed only when a separate evidence
+grade supports causal relationship spillover. Reporting both views prevents a
+portfolio or relationship team from using the card component to absorb value
+that belongs to another product or to organic customer quality.
+
+The current-policy and target-policy bundles should be kept distinct. The
+first asks what the customer is worth under the policy the bank actually runs
+today. The second asks what the customer would be worth under a proposed
+future account-management policy. A target-policy view is useful for planning,
+but it should not be mixed with current-policy production scoring unless the
+caller explicitly requests that policy and accepts the validation boundary.
+
+Each bundle should generate the same decomposition fields as the base case.
+The important output is not just a range of NPV values. It is a map of which
+driver changes the rank: terminal value, macro state, funding, capital,
+reward cost, cannibalization, relationship value, or downstream policy. That
+driver map tells the panel whether the component is robust or merely precise
+under one fragile convention.
+
+\section{Allowed-Use Taxonomy}
+\label{sec:allowed-use-taxonomy}
+
+The component should not emit a scalar NPV without an allowed-use label. The
+same numerical estimate can be appropriate for one decision and inappropriate
+for another. Allowed use depends on decision context, population, feature
+stage, evidence grade, valuation semantics, scenario, downstream policy, and
+validation status.
+
+The strongest label is \emph{causal incremental NPV}. This label requires a
+defined baseline action, decision-stage information set, randomized or credible
+quasi-experimental evidence for material treatment-response modules, adequate
+overlap and leakage diagnostics, and finance/risk reconciliation. It can be
+used for governed action ranking within the approved population and action
+set. It does not automatically approve underwriting, adverse action, account
+closure, collections treatment, CECL, stress testing, or official finance
+reporting.
+
+The second label is \emph{policy-conditional expected NPV}. This value
+forecasts expected cash flows under a historical or declared policy and
+valuation bundle. It can support planning, monitoring, challenger comparison,
+portfolio forecasting, and scenario analysis. It should not be described as
+the causal value of changing the action unless an identification design
+supports that contrast.
+
+The third label is \emph{diagnostic or scenario NPV}. This value uses weak
+observational evidence, external benchmarks, scenario-only outside-wallet
+assumptions, or model-imputed quantities. It can be useful for sensitivity
+analysis, management discussion, experimental design, and prioritizing data
+collection. It should not drive customer-level production action ranking
+without additional approval.
+
+The fourth label is \emph{degraded NPV}. The component can score the request,
+but an approved non-critical feature is missing, stale, imputed, or out of its
+best-quality range. The response should state the degraded input, affected
+module, allowed downstream handling, and whether uncertainty or conservative
+adjustment was applied. A caller should not silently treat degraded values as
+equivalent to fully validated values.
+
+The fifth label is \emph{no-score}. No-score is not zero NPV. It means the
+component cannot produce a governed value for the requested context, action,
+population, feature stage, or valuation semantics. The caller must use an
+approved fallback, suppress, route to manual review, or request a different
+approved output class.
+
+The sixth label is \emph{prohibited use}. A score produced for campaign
+targeting should not be reused for underwriting or adverse-action reasoning. A
+booked-account value should not be used for prospect targeting unless a
+transportability argument has been approved. A diagnostic outside-wallet value
+should not be used as captured-wallet proof. A scenario NPV should not become
+official finance reporting. These prohibitions should be encoded in the
+component contract and monitored in caller integration tests.
 
 \section{Using the Component in Existing Bank Decision Processes}
 \label{sec:decision-use}
@@ -2941,6 +5084,96 @@ after the relevant counterfactual, population, data lineage, and validation
 evidence support that use.
 
 \appendix
+
+\section{Notation Glossary and Symbol Discipline}
+\label{sec:notation-glossary}
+
+The proposal combines several literatures, and those literatures reuse symbols
+differently. The main text therefore defines local notation near each equation.
+The global convention is that a symbol should be interpreted in the smallest
+section where it is explicitly defined unless it appears in the stable
+component vocabulary below.
+
+\begin{description}[leftmargin=*,style=nextline]
+  \item[$i$]
+  Scored unit: prospect, customer, household, relationship, application,
+  account, or account-action pair, depending on the decision context.
+
+  \item[$t$ and $h$]
+  Calendar time and forecast horizon step. Time is monthly unless stated
+  otherwise. When the distinction matters, $H_{\mathrm{obs}}$ is the observed
+  experiment or backtest horizon and $H_{\mathrm{val}}$ is the valuation
+  horizon.
+
+  \item[$d$]
+  Decision context: targeting, prescreen, new-card cross-sell, underwriting,
+  line assignment, onboarding, retention, product conversion, closure, or
+  portfolio analysis.
+
+  \item[$a$ and $a_0(d)$]
+  Candidate action and decision-specific baseline action. Examples are contact
+  versus suppress, approve versus decline, line option versus current line, or
+  offer cell versus no offer.
+
+  \item[$s$]
+  Scenario and valuation-assumption bundle. This includes macro path, rate
+  path, funding, capital, tax, rewards, cost, terminal-value, relationship-
+  value, and scenario conventions.
+
+  \item[$\pi$]
+  Downstream policy bundle: future line-management, repricing, retention,
+  hardship, collections, closure, and conversion policy assumed in valuation.
+
+  \item[$X_{it}^{d}$ or $\mathcal{I}_{id}$]
+  Information available at the decision-time feature cut for unit $i$ in
+  decision context $d$. These objects should exclude post-treatment variables.
+
+  \item[$S_{it}$]
+  Economic and behavioral state vector used in the valuation spine. It may
+  include lifecycle state, balances, line and terms, payment behavior,
+  delinquency/default state, rewards and promotion state, relationship state,
+  and macro/local state.
+
+  \item[$B$, $L$, $P$, $D$, $Rwd$, $Rel$, and $M$]
+  Local components of the state vector: balance subledger, line/terms, payment
+  behavior, delinquency/default state, reward state, relationship state, and
+  macro/local state. These symbols are local and should not be reused as
+  implementation field names without qualification.
+
+  \item[$Z$]
+  Used in older literature-derived notation for lifecycle state and in the
+  experimental section for randomized assignment. The experimental meaning is
+  local to Section~\ref{sec:experimental-design-program}. In implementation,
+  use distinct names such as \code{lifecycle_state} and
+  \code{assignment_flag}.
+
+  \item[$D$]
+  Used locally for delinquency/default state and, in experimental notation,
+  treatment received. In implementation, use distinct names such as
+  \code{delinquency_state}, \code{default_flag}, and
+  \code{treatment_received}.
+
+  \item[$\Delta$]
+  Incremental contrast against the decision-specific baseline under the same
+  scenario and downstream policy. A positive new-card value is not necessarily
+  positive all-bank incremental value unless the contrast is explicitly defined
+  that way.
+
+  \item[$\PPNR$, $\EL$, $Kchg$, $Tax$, $RelValue$, and $TV$]
+  Pre-provision net revenue, expected loss, capital charge, tax convention,
+  relationship value, and terminal value. Each should be governed by the
+  valuation-semantics bundle.
+
+  \item[$G_m$]
+  Evidence grade for module $m$: randomized, quasi-experimental,
+  observationally adjusted, predictive, or scenario-only.
+\end{description}
+
+The glossary is deliberately modest. It does not attempt to normalize every
+symbol inherited from the literature review. Its purpose is to prevent a
+reviewer or implementer from confusing the stable component objects with local
+equation notation. A final model specification should use unambiguous
+implementation names and should maintain a machine-readable data dictionary.
 
 \section{Reference Operating Specification for the Replacement NPV Component}
 \label{sec:operating-spec}
@@ -3552,6 +5785,333 @@ requires its own decision-context contract, valuation semantics, validation
 evidence, governance approval, compliance review where applicable, and
 consumer-system integration test.
 
+\subsection{Experimental evidence contract}
+\label{subsec:experimental-evidence-contract}
+
+The proposal should also require an experiment ledger. That ledger is the
+bridge between the experimental program and the NPV component. It records what
+was randomized, what was held out, what population was eligible, what
+counterfactual was used, what horizon was measured, and which output label the
+result may support. The ledger is not meant to replace the analysis memo for
+an experiment. It is the minimum machine-readable contract that prevents a
+caller from converting a response lift, first-use lift, or short-horizon spend
+result into lifetime causal NPV without the identification, power, horizon, and
+reconciliation evidence required in
+Section~\ref{sec:experimental-design-program}.
+
+\begin{longtable}{L{0.22\linewidth}L{0.43\linewidth}L{0.25\linewidth}}
+\caption{Minimum experimental evidence contract for the NPV component.}
+\label{tab:experimental-contract}\\
+\toprule
+Field & Meaning & Why it matters \\
+\midrule
+\endfirsthead
+\toprule
+Field & Meaning & Why it matters \\
+\midrule
+\endhead
+Experiment name
+  & Human-readable name for the holdout, encouragement, threshold, or policy
+    change
+  & Distinguishes runs and supports later audit. \\
+Decision context
+  & Acquisition, new-card cross-sell, line assignment, retention, reactivation,
+    or relationship value
+  & Prevents reuse of one experiment for a different counterfactual. \\
+Treatment and baseline
+  & Action, control, and feasible option set
+  & Defines the estimand. \\
+Population and eligibility
+  & Who was eligible, and on what rule
+  & Prevents transport beyond the tested population. \\
+Randomization or identification design
+  & Holdout, encouragement, RD, DiD, event study, or adjusted observational
+    design
+  & Records what kind of causal claim is possible. \\
+Randomization unit
+  & Customer, household, relationship, application, account, merchant, or
+    geography
+  & Controls contamination and interference. \\
+Assignment probability
+  & Probability of assignment by cell or stratum, including unequal allocation
+    rules
+  & Supports unbiased estimation, weighting, and replay. \\
+Treatment receipt and take-up
+  & Actual exposure, acceptance, activation, or treatment receipt after
+    assignment
+  & Separates ITT evidence from complier-effect evidence. \\
+Feature-cut timestamp
+  & What information was available when the action was chosen
+  & Prevents post-treatment leakage. \\
+Primary estimand
+  & Incremental NPV, activation lift, all-bank spend lift, retained value,
+    or other module-specific effect
+  & Makes NPV the primary object, with proxies named separately. \\
+Estimand class
+  & ITT, treatment-on-treated, LATE/complier, RD-local effect, DiD effect,
+    CATE, forecast bridge, or scenario
+  & Prevents local or complier evidence from being over-generalized. \\
+Power and MDE
+  & Planned sample, cluster design effect, variance source, minimum detectable
+    effect, and primary power target
+  & Prevents a response-powered test from being promoted as an NPV test. \\
+Outcome horizon
+  & Observed window, valuation horizon, and follow-up cadence
+  & Separates observed evidence from lifetime extrapolation. \\
+Tail bridge
+  & Model, assumption, or holdout follow-up used beyond the observed window
+  & Labels the unobserved part of lifetime NPV. \\
+Veto diagnostics
+  & Broken randomization, weak overlap, failed pre-trends, leakage, no holdout,
+    bad finance tie-out, or contamination
+  & Keeps proxy wins from becoming false promotions. \\
+Contamination and interference
+  & Household, relationship, channel, branch, merchant, card-on-file, or
+    re-contact paths that could move controls
+  & Determines whether the unit of analysis is credible. \\
+Explanatory diagnostics
+  & Response, activation, first use, spend, balances, loss, merchant mix,
+    attrition, and similar measures
+  & Useful for diagnosis but not the sole promotion criterion. \\
+NPV decomposition
+  & Incremental spend, balances, PPNR, rewards, losses, costs, funding,
+    capital, taxes, and terminal value where applicable
+  & Ensures the experimental result can be reconciled to valuation. \\
+Finance and risk reconciliation
+  & Tie-out to finance definitions, risk definitions, and approved valuation
+    semantics
+  & Prevents a statistically valid estimate from entering the wrong ledger. \\
+Allowed-use label
+  & Causal incremental NPV, policy-conditional expected NPV, diagnostic NPV,
+    or scenario-only
+  & Prevents overuse of weak evidence. \\
+Confounders addressed / not addressed
+  & Which selection, policy, or macro issues the design handles
+  & Forces the residual risk to be explicit. \\
+Transport boundary
+  & Population, product, channel, segment, geography, macro regime, and policy
+    bundle for which the result is valid
+  & Controls extrapolation beyond the tested support. \\
+What is not concluded
+  & Claims explicitly excluded even if the experiment passes
+  & Blocks accidental promotion of proxies or short-run effects. \\
+Artifact location
+  & Run manifest, code, snapshot, outcomes, and lineage
+  & Supports replay and model-risk review. \\
+\bottomrule
+\end{longtable}
+
+For the first production-aligned slice, the evidence contract should be
+written first for the acquisition or prescreen holdout and then for the
+existing-client cannibalization holdout. The latter is the most valuable
+worked example because it directly tests the difference between new-card
+spend and all-bank incremental value.
+
+\subsection{Worked contract: acquisition or prescreen contact-suppress}
+\label{subsec:worked-acquisition-contract}
+
+The first worked contract is the safest initial production-adjacent design:
+a randomized contact-versus-suppress holdout in an acquisition or prescreen
+population. The business question is not ``who responds?'' It is whether
+contacting the eligible population with the approved offer creates positive
+incremental value relative to suppressing contact, after campaign cost,
+approval selection, activation, spend, balances, rewards, losses, funding,
+capital, servicing, fraud, and terminal value are included. This design is
+also the cleanest way to build the first shadow-scored replacement component,
+because every eligible prospect has a known assignment and the analytic base
+can preserve nonresponders, nonapplicants, declines, approvals, bookings,
+inactive accounts, and charge-offs.
+
+The primary estimand is the intent-to-treat acquisition value:
+\begin{equation}
+  \tau^{\mathrm{acq}}_{\NPV,\mathrm{ITT}}
+  =
+  \E[
+    \NPV_i(\mathrm{contact},o;\,d_{\mathrm{acq}},s,\pi)
+    -
+    \NPV_i(\mathrm{suppress};\,d_{\mathrm{acq}},s,\pi)
+    \mid i\in\mathcal{P}_{\mathrm{eligible}}
+  ],
+  \label{eq:worked-acq-itt}
+\end{equation}
+where $o$ is the approved offer cell. If the campaign has multiple offer
+cells, the design should estimate contrasts against suppress and against the
+business-as-usual offer cell. If assignment only encourages application or
+activation, the component may also estimate a complier effect using
+Equation~\eqref{eq:experiment-late}, but the output must label it as such.
+
+The constructed observed-horizon value should be built for every assigned
+unit, not only booked accounts:
+\begin{align}
+  \widetilde{V}^{\mathrm{acq}}_{i,H_{\mathrm{obs}}}
+  &=
+  -C_i^{\mathrm{contact}}
+  -C_i^{\mathrm{acq}}
+  +\sum_{h=0}^{H_{\mathrm{obs}}}\delta_h
+  \begin{aligned}[t]
+  \{&
+    \widetilde{\PPNR}_{ih}
+    -\widetilde{\EL}_{ih}
+    -\widetilde{Kchg}_{ih}
+    -\widetilde{ServCost}_{ih} \\
+    &-\widetilde{FraudCost}_{ih}
+    -\widetilde{RewardCost}_{ih}\}.
+  \end{aligned}
+  \label{eq:worked-acq-observed-value}
+\end{align}
+Nonresponders and nonbooked prospects receive zero realized card cash flows
+inside the observed window, but they remain in the denominator and retain
+contact costs where incurred. Declines remain in the denominator because the
+campaign decision generated applications and underwriting workload. Losses
+that have not seasoned enough inside $H_{\mathrm{obs}}$ should be labeled as
+modeled loss bridge, not realized loss. The tail from $H_{\mathrm{obs}}$ to
+$H_{\mathrm{val}}$ is a forecast bridge and should be reported separately.
+
+The required input records are campaign eligibility, assignment flag,
+assignment probability, suppression or holdout reason, contact channel,
+creative, offer cell, product terms, contact timestamp, prescreen score or
+selection score retained as of the decision time, application records,
+approval/decline/refer records, assigned line and APR, booking, activation,
+first use, transactions, balances, payments, delinquency, charge-off,
+recoveries, rewards, acquisition cost, servicing, fraud, and macro vintage.
+All variables in the primary analysis must be available at or before the
+feature-cut timestamp, except outcomes measured after assignment.
+
+The analysis specification should be fixed before outcome inspection. A
+typical primary model is Equation~\eqref{eq:ancova-itt}, with treatment
+assignment as the main coefficient, pre-assignment covariates for precision,
+and standard errors clustered at the randomization or interference unit. If
+assignment probabilities vary by stratum, the experiment ledger should store
+the probabilities and the analysis should include the corresponding
+design-based or stratified estimator. The minimum detectable effect should be
+computed for observed-horizon NPV, not only for response or application rate.
+If the campaign is powered only for response, it can still supply funnel
+evidence, but it should not be promoted as an NPV-positive experiment.
+
+Veto diagnostics are broken randomization, lost or overwritten holdout flags,
+manual suppression correlated with value, re-contact contamination, household
+or relationship interference, channel capacity changes that differentially
+affect treatment and control, post-treatment leakage in covariates, missing
+offer-term lineage, material imbalance after randomization, and failure to
+reconcile value construction to approved finance and risk definitions.
+Explanatory diagnostics include response, application, approval, booking,
+activation, first use, 90-day spend, 180-day spend, balance build, payment
+rate, utilization, delinquency, rewards cost, and attrition. These diagnostics
+are useful precisely because they explain \emph{why} NPV moved; they should
+not replace the NPV estimand.
+
+If the design passes, the resulting evidence can update the response,
+application, booking, activation, early-spend, early-balance, campaign-cost,
+reward-cost, and observed-horizon value modules for the tested population,
+offer family, channel, macro regime, and downstream-policy bundle. It can
+support causal incremental NPV for the same decision context only if the tail
+bridge, loss bridge, funding/capital convention, and finance/risk tie-outs also
+pass. It does not conclude that the same offer is positive NPV for a different
+channel, a different product, an existing-client cross-sell population, a
+line-assignment decision, an underwriting decision, or a future downstream
+policy.
+
+\subsection{Worked contract: existing-client new-card cannibalization}
+\label{subsec:worked-cannibalization-contract}
+
+The second worked contract addresses the main source of false optimism in
+existing-client new-card valuation. A customer who already has a bank card,
+debit card, deposit relationship, or other payment relationship can generate
+large new-card spend after an offer while creating little incremental
+all-bank value. The experiment therefore cannot stop at new-card activation or
+new-card sales volume. It must estimate all-bank spend and contribution under
+offer and no-offer paths.
+
+The preferred design randomizes eligible existing clients into no-offer and
+one or more approved new-card offer cells. The primary spend estimands are:
+\begin{align}
+  \tau^{\mathrm{newcard}}_{S,H}
+    &=
+    \E[S^{\mathrm{newcard}}_{i,H}(o)
+      -S^{\mathrm{newcard}}_{i,H}(\mathrm{no\ offer})], \\
+  \tau^{\mathrm{allbank}}_{S,H}
+    &=
+    \E[S^{\mathrm{allbank}}_{i,H}(o)
+      -S^{\mathrm{allbank}}_{i,H}(\mathrm{no\ offer})], \\
+  \tau^{\mathrm{oldcard}}_{S,H}
+    &=
+    \E[S^{\mathrm{oldbankcard}}_{i,H}(o)
+      -S^{\mathrm{oldbankcard}}_{i,H}(\mathrm{no\ offer})], \\
+  \tau^{\mathrm{debit}}_{S,H}
+    &=
+    \E[S^{\mathrm{bankdebit}}_{i,H}(o)
+      -S^{\mathrm{bankdebit}}_{i,H}(\mathrm{no\ offer})],
+  \label{eq:worked-xsell-spend-estimands}
+\end{align}
+with the same population and horizon. A positive
+$\tau^{\mathrm{newcard}}_{S,H}$ accompanied by a negative
+$\tau^{\mathrm{oldcard}}_{S,H}$ or $\tau^{\mathrm{debit}}_{S,H}$ is direct
+evidence of internal substitution. The new-card spend lift should therefore
+enter the NPV bridge only after the all-bank and product-source decomposition
+is applied.
+
+The NPV estimand is:
+\begin{align}
+  \tau^{\mathrm{xsell}}_{\NPV,\mathrm{ITT}}
+  &=
+  \E[
+    \NPV_i(\mathrm{newcard\ offer},o;\,d_{\mathrm{xsell}},s,\pi)
+    -
+    \NPV_i(\mathrm{no\ offer};\,d_{\mathrm{xsell}},s,\pi)
+    \mid i\in\mathcal{P}_{\mathrm{xsell}}
+  ].
+  \label{eq:worked-xsell-npv}
+\end{align}
+The cash-flow bridge should use incremental all-bank PPNR and cost, not
+new-card activity alone. Old-card interchange lost to cannibalization, debit
+interchange lost where applicable, balance-transfer payoff behavior, reward
+cost, promotional APR economics, balance build, EAD, PD, LGD, funding, capital,
+servicing, fraud, disputes, and terminal value should all be represented.
+Relationship value is excluded unless the same design or a companion design
+identifies a causal spillover to deposits, debit activity, or other products.
+
+The required records include customer and household linkage, old-card
+transactions and balances, new-card offer assignment, new-card booking and
+activation, debit transactions, deposit flows where permitted, card-on-file
+and digital-wallet provisioning where available, balance-transfer requests,
+payoff records, bureau refreshes or tradeline aggregates where permitted,
+merchant category, rewards earn and burn, promotional terms, campaign and
+acquisition cost, servicing and dispute records, fraud records, delinquency,
+charge-off and recovery, and macro vintage. If competitor-card spend is not
+directly observed, it should be treated as partially observed and bounded
+using balance transfers, payoff behavior, bureau aggregates where available,
+merchant/network aggregates where permitted, account-aggregation samples, or
+scenario assumptions. It should not be labeled observed.
+
+The primary analysis should be the same randomization-preserving comparison
+used in the acquisition contract, but with all-bank spend and all-bank
+contribution as confirmatory outcomes. The analysis should be stratified by
+existing bank-card ownership, relationship depth, old-card activity, debit
+activity, risk band, reward-seeking indicators, and months-on-book where those
+strata were pre-specified or used in randomization. Post-offer variables such
+as first new-card use are outcomes or mediators, not controls for the primary
+causal contrast.
+
+The key veto diagnostics are loss of no-offer controls, other simultaneous
+cross-sell campaigns, product migration not captured in the experiment ledger,
+old-card portfolio changes during the test, rewards or fee changes not shared
+between treatment and control where relevant, household contamination,
+merchant or card-on-file interventions applied unevenly, short follow-up that
+cannot observe promotion decay, and failure to reconcile old-card plus
+new-card plus debit/deposit contribution to finance definitions. A test that
+shows positive new-card sales volume but fails all-bank reconciliation should
+not update the causal NPV module.
+
+If the design passes, it can update the activation, first-use, repeated-use,
+all-bank spend, internal cannibalization, promotion-decay, rewards-cost,
+balance, loss, and attrition modules for existing-client new-card offers in
+the tested population. It can also calibrate the cannibalization-stress
+sensitivity bundle in Section~\ref{subsec:valuation-sensitivities}. It does
+not conclude that outside competitor wallet was captured unless the external
+wallet evidence supports that claim. It does not conclude that deposit or
+relationship value increased unless relationship outcomes were measured in
+both treatment and control and identified by the design.
+
 \section{Source-Support Audit}
 \label{sec:audit}
 
@@ -3561,6 +6121,34 @@ source pages, abstracts, and working-paper summaries were inspected on
 June~26--27, 2026. Full-text technical sections, appendices, citation-count
 metadata, retraction checks, and full backward/forward snowballing remain open.
 Table~\ref{tab:source-support} records how the main sources are used.
+
+For panel review, the source-support appendix should be read conservatively.
+The proposal uses literature in three ways. First, it uses primary studies and
+standard references to justify mechanisms that the component must represent:
+liquidity and unemployment affect spend, credit terms affect balances, payment
+adoption differs from payment use, rewards can change behavior, CLV models
+represent lifetime activity, and causal-inference methods distinguish
+prediction from treatment effects. Second, it uses supervisory, accounting,
+and credit-risk sources to justify bank-native decomposition and reconciliation
+requirements. Third, it uses project derivations to connect those mechanisms
+to this component's NPV equations. The literature does not provide this
+issuer's activation rate, competitor-wallet capture, cannibalization rate,
+loss elasticity, reward elasticity, funding charge, capital charge, or
+relationship spillover. Those quantities are empirical bank objects.
+
+The panel-grade evidence package should therefore add four ledgers before
+model-governance submission. A \emph{technical-source ledger} should record
+for each cited paper the inspected sections, equations, tables, appendix
+material, empirical design, publication status, and any retraction or erratum
+check. A \emph{claim-support ledger} should map each major proposal claim to a
+source section, project derivation, or bank-data requirement. A
+\emph{snowball ledger} should record backward and forward citation checks for
+foundational and direct-method sources, including important omitted papers and
+the reason for omission. A \emph{model-use evidence ledger} should map each
+component module to its internal experiment, quasi-experiment, observational
+diagnostic, or scenario assumption. Until those ledgers are completed, the
+document is suitable as a design proposal and technical roadmap, not as a
+completed model-validation package.
 
 The claim-support rule for future model work should be simple: if a statement
 is used to justify a model requirement, it should be backed either by checked
@@ -3585,6 +6173,13 @@ component is incremental, why activation is separate from use, why
 cannibalization matters, why PD/LGD/EAD belong in marketing value, why
 valuation semantics are necessary, and why the component should not own caller
 actions.
+
+The table is intentionally an audit ledger, not the main exposition. The main
+body provides the prose argument and equations; the ledger records what kind
+of support each claim currently has and what remains to be proven, approved,
+or estimated. This distinction is important for readability: tables are useful
+for checking completeness, but a panel should not have to infer the argument
+from dense tabular cells.
 
 \begin{longtable}{p{0.25\linewidth}p{0.25\linewidth}p{0.40\linewidth}}
 \caption{Claim-support ledger for the proposal's main design claims.}

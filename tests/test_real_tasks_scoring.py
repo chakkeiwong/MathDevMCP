@@ -16,6 +16,7 @@ def _candidate(
     evidence_class: str | None = "example_evidence",
     summary_text: str = "example term",
     claims: list[str] | None = None,
+    rejected_claims: list[str] | None = None,
     next_actions: list[str] | None = None,
 ) -> dict:
     return {
@@ -26,6 +27,7 @@ def _candidate(
         "evidence_class": evidence_class,
         "summary_text": summary_text,
         "claims": claims or ["safe example claim"],
+        "rejected_claims": rejected_claims or [],
         "next_actions": next_actions or ["take next step"],
     }
 
@@ -78,6 +80,26 @@ def test_real_task_case_structural_score_enforces_false_confidence_veto() -> Non
 
     assert result["quality_checks"]["false_confidence_veto_clear"] is False
     assert result["status"] == "mismatch"
+
+
+def test_real_task_case_structural_score_records_rejected_forbidden_claim_without_veto() -> None:
+    result = score_real_task_case(_case(), _candidate(rejected_claims=["forbidden example"]))
+
+    assert result["status"] == "consistent"
+    assert result["quality_checks"]["forbidden_claims_absent"] is True
+    assert result["quality_checks"]["false_confidence_veto_clear"] is True
+    assert result["details"]["present_forbidden_claims"] == []
+    assert result["details"]["rejected_forbidden_claims"] == ["forbidden example"]
+
+
+def test_real_task_case_structural_score_fails_closed_for_malformed_rejected_claims() -> None:
+    candidate = _candidate()
+    candidate["rejected_claims"] = "forbidden example"
+
+    result = score_real_task_case(_case(), candidate)
+
+    assert result["status"] == "inconclusive"
+    assert result["quality_checks"]["false_confidence_veto_clear"] is False
 
 
 def test_real_task_case_structural_score_reports_label_mismatch() -> None:
@@ -161,6 +183,28 @@ def test_real_task_case_structural_score_handles_committed_manifest_mismatch_cas
 
     assert result["status"] == "mismatch"
     assert result["quality_checks"]["forbidden_claims_absent"] is False
+
+
+def test_real_task_case_structural_score_handles_committed_manifest_rejected_forbidden_claim() -> None:
+    manifest = load_real_task_public_manifest(ROOT)
+    soap_case = next(case for case in manifest["cases"] if case["id"] == "DH-06-densesoap-source-contract-mismatch")
+    candidate = {
+        "case_id": soap_case["id"],
+        "status": "mismatch",
+        "substatus": "diagnostic_only_source_contract_mismatch",
+        "labels": [],
+        "evidence_class": "diagnostic_source_contract_mismatch",
+        "summary_text": "DENSESOAP_REMAINS_DIAGNOSTIC_ONLY material default mismatch missing official feature step/cadence mismatch no official SOAP parity claim",
+        "claims": ["safe diagnostic-only source contract summary"],
+        "rejected_claims": ["official SOAP parity is established"],
+        "next_actions": ["Keep both TensorFlow DenseSOAP surfaces diagnostic-only unless a new bounded optimizer plan is approved."],
+    }
+
+    result = score_real_task_case(soap_case, candidate)
+
+    assert result["status"] == "consistent"
+    assert result["quality_checks"]["false_confidence_veto_clear"] is True
+    assert result["details"]["rejected_forbidden_claims"] == ["official SOAP parity is established"]
 
 
 def test_real_task_case_structural_score_handles_committed_manifest_inconclusive_case() -> None:

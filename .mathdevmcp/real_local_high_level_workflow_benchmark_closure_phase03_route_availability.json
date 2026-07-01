@@ -1,0 +1,1683 @@
+{
+  "status": "consistent",
+  "reason": "Route availability ledger and packet stubs were built for all frozen cases.",
+  "manifest_path": "/home/chakwong/python/MathDevMCP/benchmarks/real_tasks/holdout_local/real_local_high_level_workflow_benchmark_cases.json",
+  "route_ledger": [
+    {
+      "case_id": "RLHLB-01-ift-sign-gap",
+      "workflow": "debug_derivation",
+      "source_adapter": {
+        "state": "present",
+        "adapter_route": "ift_sign_consistency",
+        "predecessor_case_id": "RLHL-01-ift-gradient-bias-sign",
+        "note": "Known local source-adapter route from predecessor real-local source-adapter program."
+      },
+      "symbolic_backend": {
+        "state": "available",
+        "backend": "sympy",
+        "available": true,
+        "note": "Conservative symbolic route can be attempted for scalar/encodable sub-obligations only."
+      },
+      "counterexample_path": {
+        "state": "available_not_run",
+        "attempted": false,
+        "note": "Counterexample search is available for bounded encodable obligations but is not executed in Phase 3."
+      },
+      "formal_backend": {
+        "state": "not_applicable",
+        "backend": "lean",
+        "available": true,
+        "path": "/home/chakwong/.elan/bin/lean"
+      },
+      "code_equation_route": {
+        "state": "not_applicable",
+        "route": "code_implements_equation"
+      },
+      "review_packet_route": {
+        "state": "available",
+        "route": "prepare_review_packet",
+        "required_fields": [
+          "question",
+          "source_anchors",
+          "assumptions",
+          "route_availability",
+          "derivation_proof_steps",
+          "backend_checks",
+          "counterexamples",
+          "gaps",
+          "actions",
+          "evidence_classes",
+          "non_claims"
+        ]
+      },
+      "negative_control": {
+        "is_negative_control": true,
+        "expected_status": "refuted",
+        "scoring_semantics": "A bounded sign-flip refutation may score only with a concrete counterexample or source-adapter contradiction and local-gap non-claims."
+      },
+      "expected_evidence_classes": [
+        "source_adapter",
+        "proof_gap",
+        "backend_counterexample",
+        "non_claim",
+        "action"
+      ],
+      "residual_unresolved": [
+        "negative_control_requires_boundary_preservation"
+      ]
+    },
+    {
+      "case_id": "RLHLB-02-kalman-loglik-assumptions",
+      "workflow": "assumptions_for",
+      "source_adapter": {
+        "state": "present",
+        "adapter_route": "kalman_prediction_error_loglik",
+        "predecessor_case_id": "RLHL-04-kalman-prediction-error-loglik",
+        "note": "Known local source-adapter route from predecessor real-local source-adapter program."
+      },
+      "symbolic_backend": {
+        "state": "not_applicable",
+        "backend": "sympy",
+        "available": true
+      },
+      "counterexample_path": {
+        "state": "skipped_not_applicable",
+        "attempted": false
+      },
+      "formal_backend": {
+        "state": "not_applicable",
+        "backend": "lean",
+        "available": true,
+        "path": "/home/chakwong/.elan/bin/lean"
+      },
+      "code_equation_route": {
+        "state": "not_applicable",
+        "route": "code_implements_equation"
+      },
+      "review_packet_route": {
+        "state": "available",
+        "route": "prepare_review_packet",
+        "required_fields": [
+          "question",
+          "source_anchors",
+          "assumptions",
+          "route_availability",
+          "derivation_proof_steps",
+          "backend_checks",
+          "counterexamples",
+          "gaps",
+          "actions",
+          "evidence_classes",
+          "non_claims"
+        ]
+      },
+      "negative_control": {
+        "is_negative_control": false
+      },
+      "expected_evidence_classes": [
+        "source_adapter",
+        "missing_assumption",
+        "route_availability",
+        "non_claim",
+        "action"
+      ],
+      "residual_unresolved": []
+    },
+    {
+      "case_id": "RLHLB-03-joseph-equivalence",
+      "workflow": "prove_or_counterexample",
+      "source_adapter": {
+        "state": "present",
+        "adapter_route": "joseph_covariance_equivalence",
+        "predecessor_case_id": "RLHL-06-joseph-covariance-equivalence",
+        "note": "Known local source-adapter route from predecessor real-local source-adapter program."
+      },
+      "symbolic_backend": {
+        "state": "available",
+        "backend": "sympy",
+        "available": true,
+        "note": "Conservative symbolic route can be attempted for scalar/encodable sub-obligations only."
+      },
+      "counterexample_path": {
+        "state": "available_not_run",
+        "attempted": false,
+        "note": "Counterexample search is available for bounded encodable obligations but is not executed in Phase 3."
+      },
+      "formal_backend": {
+        "state": "available_requires_explicit_source",
+        "backend": "lean",
+        "available": true,
+        "path": "/home/chakwong/.elan/bin/lean",
+        "note": "Lean can only certify explicitly supplied Lean source; prose/source anchors are not Lean proofs."
+      },
+      "code_equation_route": {
+        "state": "not_applicable",
+        "route": "code_implements_equation"
+      },
+      "review_packet_route": {
+        "state": "available",
+        "route": "prepare_review_packet",
+        "required_fields": [
+          "question",
+          "source_anchors",
+          "assumptions",
+          "route_availability",
+          "derivation_proof_steps",
+          "backend_checks",
+          "counterexamples",
+          "gaps",
+          "actions",
+          "evidence_classes",
+          "non_claims"
+        ]
+      },
+      "negative_control": {
+        "is_negative_control": false
+      },
+      "expected_evidence_classes": [
+        "source_adapter",
+        "backend_certificate",
+        "route_availability",
+        "non_claim",
+        "action"
+      ],
+      "residual_unresolved": []
+    },
+    {
+      "case_id": "RLHLB-04-affine-pricing-recursion",
+      "workflow": "derive_from",
+      "source_adapter": {
+        "state": "present",
+        "adapter_route": "affine_pricing_master_recursion",
+        "predecessor_case_id": "RLHL-07-affine-pricing-master-recursion",
+        "note": "Known local source-adapter route from predecessor real-local source-adapter program."
+      },
+      "symbolic_backend": {
+        "state": "available",
+        "backend": "sympy",
+        "available": true,
+        "note": "Conservative symbolic route can be attempted for scalar/encodable sub-obligations only."
+      },
+      "counterexample_path": {
+        "state": "available_not_run",
+        "attempted": false,
+        "note": "Counterexample search is available for bounded encodable obligations but is not executed in Phase 3."
+      },
+      "formal_backend": {
+        "state": "not_applicable",
+        "backend": "lean",
+        "available": true,
+        "path": "/home/chakwong/.elan/bin/lean"
+      },
+      "code_equation_route": {
+        "state": "not_applicable",
+        "route": "code_implements_equation"
+      },
+      "review_packet_route": {
+        "state": "available",
+        "route": "prepare_review_packet",
+        "required_fields": [
+          "question",
+          "source_anchors",
+          "assumptions",
+          "route_availability",
+          "derivation_proof_steps",
+          "backend_checks",
+          "counterexamples",
+          "gaps",
+          "actions",
+          "evidence_classes",
+          "non_claims"
+        ]
+      },
+      "negative_control": {
+        "is_negative_control": false
+      },
+      "expected_evidence_classes": [
+        "source_adapter",
+        "backend_certificate",
+        "route_availability",
+        "missing_assumption",
+        "non_claim",
+        "action"
+      ],
+      "residual_unresolved": []
+    },
+    {
+      "case_id": "RLHLB-05-kalman-score-same-scalar",
+      "workflow": "assumptions_for",
+      "source_adapter": {
+        "state": "present",
+        "adapter_route": "kalman_score_same_scalar",
+        "predecessor_case_id": "RLHL-10-kalman-score-same-scalar-contract",
+        "note": "Known local source-adapter route from predecessor real-local source-adapter program."
+      },
+      "symbolic_backend": {
+        "state": "not_applicable",
+        "backend": "sympy",
+        "available": true
+      },
+      "counterexample_path": {
+        "state": "skipped_not_applicable",
+        "attempted": false
+      },
+      "formal_backend": {
+        "state": "not_applicable",
+        "backend": "lean",
+        "available": true,
+        "path": "/home/chakwong/.elan/bin/lean"
+      },
+      "code_equation_route": {
+        "state": "not_applicable",
+        "route": "code_implements_equation"
+      },
+      "review_packet_route": {
+        "state": "available",
+        "route": "prepare_review_packet",
+        "required_fields": [
+          "question",
+          "source_anchors",
+          "assumptions",
+          "route_availability",
+          "derivation_proof_steps",
+          "backend_checks",
+          "counterexamples",
+          "gaps",
+          "actions",
+          "evidence_classes",
+          "non_claims"
+        ]
+      },
+      "negative_control": {
+        "is_negative_control": false
+      },
+      "expected_evidence_classes": [
+        "source_adapter",
+        "missing_assumption",
+        "route_availability",
+        "non_claim",
+        "action"
+      ],
+      "residual_unresolved": []
+    },
+    {
+      "case_id": "RLHLB-06-state-space-code-missing-solve",
+      "workflow": "audit_math_to_code",
+      "source_adapter": {
+        "state": "not_applicable",
+        "adapter_route": null,
+        "predecessor_case_id": null,
+        "note": "Case is routed through structural, review-packet, or source-boundary diagnostics rather than a local schema adapter."
+      },
+      "symbolic_backend": {
+        "state": "not_applicable",
+        "backend": "sympy",
+        "available": true
+      },
+      "counterexample_path": {
+        "state": "skipped_not_applicable",
+        "attempted": false
+      },
+      "formal_backend": {
+        "state": "not_applicable",
+        "backend": "lean",
+        "available": true,
+        "path": "/home/chakwong/.elan/bin/lean"
+      },
+      "code_equation_route": {
+        "state": "available",
+        "route": "code_implements_equation",
+        "note": "Structural code/equation audit route is available and diagnostic only."
+      },
+      "review_packet_route": {
+        "state": "available",
+        "route": "prepare_review_packet",
+        "required_fields": [
+          "question",
+          "source_anchors",
+          "assumptions",
+          "route_availability",
+          "derivation_proof_steps",
+          "backend_checks",
+          "counterexamples",
+          "gaps",
+          "actions",
+          "evidence_classes",
+          "non_claims"
+        ]
+      },
+      "negative_control": {
+        "is_negative_control": true,
+        "expected_status": "routing_only",
+        "scoring_semantics": "Structural mismatch is diagnostic only and cannot certify semantic incorrectness."
+      },
+      "expected_evidence_classes": [
+        "source_anchor",
+        "structural_mismatch",
+        "route_availability",
+        "non_claim",
+        "action"
+      ],
+      "residual_unresolved": [
+        "negative_control_requires_boundary_preservation"
+      ]
+    },
+    {
+      "case_id": "RLHLB-07-proof-boundary-review-packet",
+      "workflow": "prepare_review_packet",
+      "source_adapter": {
+        "state": "not_applicable",
+        "adapter_route": null,
+        "predecessor_case_id": null,
+        "note": "Case is routed through structural, review-packet, or source-boundary diagnostics rather than a local schema adapter."
+      },
+      "symbolic_backend": {
+        "state": "not_applicable",
+        "backend": "sympy",
+        "available": true
+      },
+      "counterexample_path": {
+        "state": "skipped_not_applicable",
+        "attempted": false
+      },
+      "formal_backend": {
+        "state": "not_applicable",
+        "backend": "lean",
+        "available": true,
+        "path": "/home/chakwong/.elan/bin/lean"
+      },
+      "code_equation_route": {
+        "state": "not_applicable",
+        "route": "code_implements_equation"
+      },
+      "review_packet_route": {
+        "state": "available",
+        "route": "prepare_review_packet",
+        "required_fields": [
+          "question",
+          "source_anchors",
+          "assumptions",
+          "route_availability",
+          "derivation_proof_steps",
+          "backend_checks",
+          "counterexamples",
+          "gaps",
+          "actions",
+          "evidence_classes",
+          "non_claims"
+        ]
+      },
+      "negative_control": {
+        "is_negative_control": true,
+        "expected_status": "insufficient_evidence",
+        "scoring_semantics": "A good answer is diagnostic-only with explicit non-claims and next evidence actions."
+      },
+      "expected_evidence_classes": [
+        "review_packet",
+        "human_review_required",
+        "route_availability",
+        "non_claim",
+        "action"
+      ],
+      "residual_unresolved": [
+        "negative_control_requires_boundary_preservation",
+        "diagnostic_packet_not_certificate"
+      ]
+    },
+    {
+      "case_id": "RLHLB-08-hmc-value-only-boundary",
+      "workflow": "prove_or_counterexample",
+      "source_adapter": {
+        "state": "not_applicable",
+        "adapter_route": null,
+        "predecessor_case_id": null,
+        "note": "Case is routed through structural, review-packet, or source-boundary diagnostics rather than a local schema adapter."
+      },
+      "symbolic_backend": {
+        "state": "available",
+        "backend": "sympy",
+        "available": true,
+        "note": "Conservative symbolic route can be attempted for scalar/encodable sub-obligations only."
+      },
+      "counterexample_path": {
+        "state": "available_not_run",
+        "attempted": false,
+        "note": "Counterexample search is available for bounded encodable obligations but is not executed in Phase 3."
+      },
+      "formal_backend": {
+        "state": "available_requires_explicit_source",
+        "backend": "lean",
+        "available": true,
+        "path": "/home/chakwong/.elan/bin/lean",
+        "note": "Lean can only certify explicitly supplied Lean source; prose/source anchors are not Lean proofs."
+      },
+      "code_equation_route": {
+        "state": "not_applicable",
+        "route": "code_implements_equation"
+      },
+      "review_packet_route": {
+        "state": "available",
+        "route": "prepare_review_packet",
+        "required_fields": [
+          "question",
+          "source_anchors",
+          "assumptions",
+          "route_availability",
+          "derivation_proof_steps",
+          "backend_checks",
+          "counterexamples",
+          "gaps",
+          "actions",
+          "evidence_classes",
+          "non_claims"
+        ]
+      },
+      "negative_control": {
+        "is_negative_control": true,
+        "expected_status": "insufficient_evidence",
+        "scoring_semantics": "Good outcome is justified abstention; it must not refute HMC or certify readiness."
+      },
+      "expected_evidence_classes": [
+        "source_anchor",
+        "backend_unavailable",
+        "human_review_required",
+        "route_availability",
+        "non_claim",
+        "action"
+      ],
+      "residual_unresolved": [
+        "negative_control_requires_boundary_preservation"
+      ]
+    },
+    {
+      "case_id": "RLHLB-09-affine-recovery-assumption-limit",
+      "workflow": "derive_from",
+      "source_adapter": {
+        "state": "not_applicable",
+        "adapter_route": null,
+        "predecessor_case_id": null,
+        "note": "Case is routed through structural, review-packet, or source-boundary diagnostics rather than a local schema adapter."
+      },
+      "symbolic_backend": {
+        "state": "available",
+        "backend": "sympy",
+        "available": true,
+        "note": "Conservative symbolic route can be attempted for scalar/encodable sub-obligations only."
+      },
+      "counterexample_path": {
+        "state": "available_not_run",
+        "attempted": false,
+        "note": "Counterexample search is available for bounded encodable obligations but is not executed in Phase 3."
+      },
+      "formal_backend": {
+        "state": "not_applicable",
+        "backend": "lean",
+        "available": true,
+        "path": "/home/chakwong/.elan/bin/lean"
+      },
+      "code_equation_route": {
+        "state": "not_applicable",
+        "route": "code_implements_equation"
+      },
+      "review_packet_route": {
+        "state": "available",
+        "route": "prepare_review_packet",
+        "required_fields": [
+          "question",
+          "source_anchors",
+          "assumptions",
+          "route_availability",
+          "derivation_proof_steps",
+          "backend_checks",
+          "counterexamples",
+          "gaps",
+          "actions",
+          "evidence_classes",
+          "non_claims"
+        ]
+      },
+      "negative_control": {
+        "is_negative_control": true,
+        "expected_status": "missing_assumptions",
+        "scoring_semantics": "Good outcome is missing_assumptions or insufficient evidence with no rigorous uniform-bound claim."
+      },
+      "expected_evidence_classes": [
+        "source_anchor",
+        "missing_assumption",
+        "human_review_required",
+        "route_availability",
+        "non_claim",
+        "action"
+      ],
+      "residual_unresolved": [
+        "negative_control_requires_boundary_preservation"
+      ]
+    }
+  ],
+  "packet_stubs": [
+    {
+      "case_id": "RLHLB-01-ift-sign-gap",
+      "workflow": "debug_derivation",
+      "packet": {
+        "question": "Where does this sign derivation first fail?",
+        "source_anchors": [
+          {
+            "path": "../dsge_hmc/docs/gradient_accuracy_analysis.tex",
+            "line_range": "536-589",
+            "role": "theorem statement and proof algebra"
+          },
+          {
+            "path": "../dsge_hmc/docs/gradient_accuracy_analysis.tex",
+            "line_range": "883-893",
+            "role": "summary repeat of sign convention"
+          }
+        ],
+        "assumptions": [],
+        "route_availability": {
+          "case_id": "RLHLB-01-ift-sign-gap",
+          "workflow": "debug_derivation",
+          "source_adapter": {
+            "state": "present",
+            "adapter_route": "ift_sign_consistency",
+            "predecessor_case_id": "RLHL-01-ift-gradient-bias-sign",
+            "note": "Known local source-adapter route from predecessor real-local source-adapter program."
+          },
+          "symbolic_backend": {
+            "state": "available",
+            "backend": "sympy",
+            "available": true,
+            "note": "Conservative symbolic route can be attempted for scalar/encodable sub-obligations only."
+          },
+          "counterexample_path": {
+            "state": "available_not_run",
+            "attempted": false,
+            "note": "Counterexample search is available for bounded encodable obligations but is not executed in Phase 3."
+          },
+          "formal_backend": {
+            "state": "not_applicable",
+            "backend": "lean",
+            "available": true,
+            "path": "/home/chakwong/.elan/bin/lean"
+          },
+          "code_equation_route": {
+            "state": "not_applicable",
+            "route": "code_implements_equation"
+          },
+          "review_packet_route": {
+            "state": "available",
+            "route": "prepare_review_packet",
+            "required_fields": [
+              "question",
+              "source_anchors",
+              "assumptions",
+              "route_availability",
+              "derivation_proof_steps",
+              "backend_checks",
+              "counterexamples",
+              "gaps",
+              "actions",
+              "evidence_classes",
+              "non_claims"
+            ]
+          },
+          "negative_control": {
+            "is_negative_control": true,
+            "expected_status": "refuted",
+            "scoring_semantics": "A bounded sign-flip refutation may score only with a concrete counterexample or source-adapter contradiction and local-gap non-claims."
+          },
+          "expected_evidence_classes": [
+            "source_adapter",
+            "proof_gap",
+            "backend_counterexample",
+            "non_claim",
+            "action"
+          ],
+          "residual_unresolved": [
+            "negative_control_requires_boundary_preservation"
+          ]
+        },
+        "derivation_proof_steps": [
+          {
+            "status": "not_run_in_phase_3",
+            "reason": "Phase 3 records route availability only; Phase 4 runs current workflows."
+          }
+        ],
+        "backend_checks": [
+          {
+            "state": "available",
+            "backend": "sympy",
+            "available": true,
+            "note": "Conservative symbolic route can be attempted for scalar/encodable sub-obligations only."
+          },
+          {
+            "state": "not_applicable",
+            "backend": "lean",
+            "available": true,
+            "path": "/home/chakwong/.elan/bin/lean"
+          }
+        ],
+        "counterexamples": [],
+        "gaps": [
+          {
+            "kind": "negative_control_requires_boundary_preservation",
+            "status": "unresolved"
+          }
+        ],
+        "actions": [
+          {
+            "code": "run_phase4_baseline",
+            "description": "Run the current workflow against this frozen case after route availability is recorded."
+          }
+        ],
+        "evidence_classes": [
+          "source_adapter",
+          "proof_gap",
+          "backend_counterexample",
+          "non_claim",
+          "action"
+        ],
+        "non_claims": [
+          "This packet stub is not a proof, refutation, benchmark pass, release-readiness claim, or scientific-validity claim.",
+          "Phase 3 route availability does not evaluate the mathematical case.",
+          "Forbidden claim not made: Whole DSGE note false.",
+          "Forbidden claim not made: HMC conclusion invalid.",
+          "Forbidden claim not made: Probe proves theorem."
+        ]
+      }
+    },
+    {
+      "case_id": "RLHLB-02-kalman-loglik-assumptions",
+      "workflow": "assumptions_for",
+      "packet": {
+        "question": "What assumptions are required to derive Kalman prediction-error log-likelihood?",
+        "source_anchors": [
+          {
+            "path": "../latex-papers/CIP_monograph/chapters/ch16_kalman_filter.tex",
+            "line_range": "197-223",
+            "role": "CIP monograph prediction-error decomposition"
+          },
+          {
+            "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+            "line_range": "32-39",
+            "role": "innovation regularity assumption"
+          },
+          {
+            "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+            "line_range": "76-105",
+            "role": "BayesFilter likelihood spine"
+          }
+        ],
+        "assumptions": [],
+        "route_availability": {
+          "case_id": "RLHLB-02-kalman-loglik-assumptions",
+          "workflow": "assumptions_for",
+          "source_adapter": {
+            "state": "present",
+            "adapter_route": "kalman_prediction_error_loglik",
+            "predecessor_case_id": "RLHL-04-kalman-prediction-error-loglik",
+            "note": "Known local source-adapter route from predecessor real-local source-adapter program."
+          },
+          "symbolic_backend": {
+            "state": "not_applicable",
+            "backend": "sympy",
+            "available": true
+          },
+          "counterexample_path": {
+            "state": "skipped_not_applicable",
+            "attempted": false
+          },
+          "formal_backend": {
+            "state": "not_applicable",
+            "backend": "lean",
+            "available": true,
+            "path": "/home/chakwong/.elan/bin/lean"
+          },
+          "code_equation_route": {
+            "state": "not_applicable",
+            "route": "code_implements_equation"
+          },
+          "review_packet_route": {
+            "state": "available",
+            "route": "prepare_review_packet",
+            "required_fields": [
+              "question",
+              "source_anchors",
+              "assumptions",
+              "route_availability",
+              "derivation_proof_steps",
+              "backend_checks",
+              "counterexamples",
+              "gaps",
+              "actions",
+              "evidence_classes",
+              "non_claims"
+            ]
+          },
+          "negative_control": {
+            "is_negative_control": false
+          },
+          "expected_evidence_classes": [
+            "source_adapter",
+            "missing_assumption",
+            "route_availability",
+            "non_claim",
+            "action"
+          ],
+          "residual_unresolved": []
+        },
+        "derivation_proof_steps": [],
+        "backend_checks": [
+          {
+            "state": "not_applicable",
+            "backend": "sympy",
+            "available": true
+          },
+          {
+            "state": "not_applicable",
+            "backend": "lean",
+            "available": true,
+            "path": "/home/chakwong/.elan/bin/lean"
+          }
+        ],
+        "counterexamples": [],
+        "gaps": [],
+        "actions": [
+          {
+            "code": "run_phase4_baseline",
+            "description": "Run the current workflow against this frozen case after route availability is recorded."
+          }
+        ],
+        "evidence_classes": [
+          "source_adapter",
+          "missing_assumption",
+          "route_availability",
+          "non_claim",
+          "action"
+        ],
+        "non_claims": [
+          "This packet stub is not a proof, refutation, benchmark pass, release-readiness claim, or scientific-validity claim.",
+          "Phase 3 route availability does not evaluate the mathematical case.",
+          "Forbidden claim not made: Nonlinear filters exact.",
+          "Forbidden claim not made: Score/Hessian validated.",
+          "Forbidden claim not made: Source likelihood is implementation proof."
+        ]
+      }
+    },
+    {
+      "case_id": "RLHLB-03-joseph-equivalence",
+      "workflow": "prove_or_counterexample",
+      "packet": {
+        "question": "Can we prove Joseph and compact covariance updates are equivalent in scope?",
+        "source_anchors": [
+          {
+            "path": "../latex-papers/CIP_monograph/chapters/ch16_kalman_filter.tex",
+            "line_range": "123-133",
+            "role": "Joseph-form equivalence and numerical caveat"
+          },
+          {
+            "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+            "line_range": "59-74",
+            "role": "compact and Joseph covariance update forms"
+          }
+        ],
+        "assumptions": [],
+        "route_availability": {
+          "case_id": "RLHLB-03-joseph-equivalence",
+          "workflow": "prove_or_counterexample",
+          "source_adapter": {
+            "state": "present",
+            "adapter_route": "joseph_covariance_equivalence",
+            "predecessor_case_id": "RLHL-06-joseph-covariance-equivalence",
+            "note": "Known local source-adapter route from predecessor real-local source-adapter program."
+          },
+          "symbolic_backend": {
+            "state": "available",
+            "backend": "sympy",
+            "available": true,
+            "note": "Conservative symbolic route can be attempted for scalar/encodable sub-obligations only."
+          },
+          "counterexample_path": {
+            "state": "available_not_run",
+            "attempted": false,
+            "note": "Counterexample search is available for bounded encodable obligations but is not executed in Phase 3."
+          },
+          "formal_backend": {
+            "state": "available_requires_explicit_source",
+            "backend": "lean",
+            "available": true,
+            "path": "/home/chakwong/.elan/bin/lean",
+            "note": "Lean can only certify explicitly supplied Lean source; prose/source anchors are not Lean proofs."
+          },
+          "code_equation_route": {
+            "state": "not_applicable",
+            "route": "code_implements_equation"
+          },
+          "review_packet_route": {
+            "state": "available",
+            "route": "prepare_review_packet",
+            "required_fields": [
+              "question",
+              "source_anchors",
+              "assumptions",
+              "route_availability",
+              "derivation_proof_steps",
+              "backend_checks",
+              "counterexamples",
+              "gaps",
+              "actions",
+              "evidence_classes",
+              "non_claims"
+            ]
+          },
+          "negative_control": {
+            "is_negative_control": false
+          },
+          "expected_evidence_classes": [
+            "source_adapter",
+            "backend_certificate",
+            "route_availability",
+            "non_claim",
+            "action"
+          ],
+          "residual_unresolved": []
+        },
+        "derivation_proof_steps": [
+          {
+            "status": "not_run_in_phase_3",
+            "reason": "Phase 3 records route availability only; Phase 4 runs current workflows."
+          }
+        ],
+        "backend_checks": [
+          {
+            "state": "available",
+            "backend": "sympy",
+            "available": true,
+            "note": "Conservative symbolic route can be attempted for scalar/encodable sub-obligations only."
+          },
+          {
+            "state": "available_requires_explicit_source",
+            "backend": "lean",
+            "available": true,
+            "path": "/home/chakwong/.elan/bin/lean",
+            "note": "Lean can only certify explicitly supplied Lean source; prose/source anchors are not Lean proofs."
+          }
+        ],
+        "counterexamples": [],
+        "gaps": [],
+        "actions": [
+          {
+            "code": "run_phase4_baseline",
+            "description": "Run the current workflow against this frozen case after route availability is recorded."
+          }
+        ],
+        "evidence_classes": [
+          "source_adapter",
+          "backend_certificate",
+          "route_availability",
+          "non_claim",
+          "action"
+        ],
+        "non_claims": [
+          "This packet stub is not a proof, refutation, benchmark pass, release-readiness claim, or scientific-validity claim.",
+          "Phase 3 route availability does not evaluate the mathematical case.",
+          "Forbidden claim not made: Floating-point compact update always stable.",
+          "Forbidden claim not made: Backend implementation validated."
+        ]
+      }
+    },
+    {
+      "case_id": "RLHLB-04-affine-pricing-recursion",
+      "workflow": "derive_from",
+      "packet": {
+        "question": "Can we derive affine pricing recursion from Gaussian affine assumptions?",
+        "source_anchors": [
+          {
+            "path": "../latex-papers/CIP_monograph/chapters/ch11_state_space_recursions.tex",
+            "line_range": "242-322",
+            "role": "general discrete-time affine pricing recursion"
+          }
+        ],
+        "assumptions": [],
+        "route_availability": {
+          "case_id": "RLHLB-04-affine-pricing-recursion",
+          "workflow": "derive_from",
+          "source_adapter": {
+            "state": "present",
+            "adapter_route": "affine_pricing_master_recursion",
+            "predecessor_case_id": "RLHL-07-affine-pricing-master-recursion",
+            "note": "Known local source-adapter route from predecessor real-local source-adapter program."
+          },
+          "symbolic_backend": {
+            "state": "available",
+            "backend": "sympy",
+            "available": true,
+            "note": "Conservative symbolic route can be attempted for scalar/encodable sub-obligations only."
+          },
+          "counterexample_path": {
+            "state": "available_not_run",
+            "attempted": false,
+            "note": "Counterexample search is available for bounded encodable obligations but is not executed in Phase 3."
+          },
+          "formal_backend": {
+            "state": "not_applicable",
+            "backend": "lean",
+            "available": true,
+            "path": "/home/chakwong/.elan/bin/lean"
+          },
+          "code_equation_route": {
+            "state": "not_applicable",
+            "route": "code_implements_equation"
+          },
+          "review_packet_route": {
+            "state": "available",
+            "route": "prepare_review_packet",
+            "required_fields": [
+              "question",
+              "source_anchors",
+              "assumptions",
+              "route_availability",
+              "derivation_proof_steps",
+              "backend_checks",
+              "counterexamples",
+              "gaps",
+              "actions",
+              "evidence_classes",
+              "non_claims"
+            ]
+          },
+          "negative_control": {
+            "is_negative_control": false
+          },
+          "expected_evidence_classes": [
+            "source_adapter",
+            "backend_certificate",
+            "route_availability",
+            "missing_assumption",
+            "non_claim",
+            "action"
+          ],
+          "residual_unresolved": []
+        },
+        "derivation_proof_steps": [
+          {
+            "status": "not_run_in_phase_3",
+            "reason": "Phase 3 records route availability only; Phase 4 runs current workflows."
+          }
+        ],
+        "backend_checks": [
+          {
+            "state": "available",
+            "backend": "sympy",
+            "available": true,
+            "note": "Conservative symbolic route can be attempted for scalar/encodable sub-obligations only."
+          },
+          {
+            "state": "not_applicable",
+            "backend": "lean",
+            "available": true,
+            "path": "/home/chakwong/.elan/bin/lean"
+          }
+        ],
+        "counterexamples": [],
+        "gaps": [],
+        "actions": [
+          {
+            "code": "run_phase4_baseline",
+            "description": "Run the current workflow against this frozen case after route availability is recorded."
+          }
+        ],
+        "evidence_classes": [
+          "source_adapter",
+          "backend_certificate",
+          "route_availability",
+          "missing_assumption",
+          "non_claim",
+          "action"
+        ],
+        "non_claims": [
+          "This packet stub is not a proof, refutation, benchmark pass, release-readiness claim, or scientific-validity claim.",
+          "Phase 3 route availability does not evaluate the mathematical case.",
+          "Forbidden claim not made: Empirical pricing validity.",
+          "Forbidden claim not made: Nonlinear approximation exact."
+        ]
+      }
+    },
+    {
+      "case_id": "RLHLB-05-kalman-score-same-scalar",
+      "workflow": "assumptions_for",
+      "packet": {
+        "question": "What assumptions are needed for the Kalman score to match the same scalar likelihood?",
+        "source_anchors": [
+          {
+            "path": "../BayesFilter/docs/chapters/ch09_kalman_score.tex",
+            "line_range": "20-103",
+            "role": "first-order Kalman score and solve-form score"
+          },
+          {
+            "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+            "line_range": "120-130",
+            "role": "same scalar likelihood contract"
+          }
+        ],
+        "assumptions": [],
+        "route_availability": {
+          "case_id": "RLHLB-05-kalman-score-same-scalar",
+          "workflow": "assumptions_for",
+          "source_adapter": {
+            "state": "present",
+            "adapter_route": "kalman_score_same_scalar",
+            "predecessor_case_id": "RLHL-10-kalman-score-same-scalar-contract",
+            "note": "Known local source-adapter route from predecessor real-local source-adapter program."
+          },
+          "symbolic_backend": {
+            "state": "not_applicable",
+            "backend": "sympy",
+            "available": true
+          },
+          "counterexample_path": {
+            "state": "skipped_not_applicable",
+            "attempted": false
+          },
+          "formal_backend": {
+            "state": "not_applicable",
+            "backend": "lean",
+            "available": true,
+            "path": "/home/chakwong/.elan/bin/lean"
+          },
+          "code_equation_route": {
+            "state": "not_applicable",
+            "route": "code_implements_equation"
+          },
+          "review_packet_route": {
+            "state": "available",
+            "route": "prepare_review_packet",
+            "required_fields": [
+              "question",
+              "source_anchors",
+              "assumptions",
+              "route_availability",
+              "derivation_proof_steps",
+              "backend_checks",
+              "counterexamples",
+              "gaps",
+              "actions",
+              "evidence_classes",
+              "non_claims"
+            ]
+          },
+          "negative_control": {
+            "is_negative_control": false
+          },
+          "expected_evidence_classes": [
+            "source_adapter",
+            "missing_assumption",
+            "route_availability",
+            "non_claim",
+            "action"
+          ],
+          "residual_unresolved": []
+        },
+        "derivation_proof_steps": [],
+        "backend_checks": [
+          {
+            "state": "not_applicable",
+            "backend": "sympy",
+            "available": true
+          },
+          {
+            "state": "not_applicable",
+            "backend": "lean",
+            "available": true,
+            "path": "/home/chakwong/.elan/bin/lean"
+          }
+        ],
+        "counterexamples": [],
+        "gaps": [],
+        "actions": [
+          {
+            "code": "run_phase4_baseline",
+            "description": "Run the current workflow against this frozen case after route availability is recorded."
+          }
+        ],
+        "evidence_classes": [
+          "source_adapter",
+          "missing_assumption",
+          "route_availability",
+          "non_claim",
+          "action"
+        ],
+        "non_claims": [
+          "This packet stub is not a proof, refutation, benchmark pass, release-readiness claim, or scientific-validity claim.",
+          "Phase 3 route availability does not evaluate the mathematical case.",
+          "Forbidden claim not made: HMC validity.",
+          "Forbidden claim not made: Posterior correctness.",
+          "Forbidden claim not made: Hessian readiness."
+        ]
+      }
+    },
+    {
+      "case_id": "RLHLB-06-state-space-code-missing-solve",
+      "workflow": "audit_math_to_code",
+      "packet": {
+        "question": "Does code implement the documented Kalman likelihood solve/quadratic form?",
+        "source_anchors": [
+          {
+            "path": "benchmarks/fixtures/doc_department_state_space.tex",
+            "line_range": "7-23",
+            "role": "documented Kalman likelihood solve/quadratic form"
+          },
+          {
+            "path": "benchmarks/fixtures/doc_department_state_space_missing_solve.py",
+            "line_range": "1-17",
+            "role": "candidate implementation missing explicit solve/quadratic form"
+          },
+          {
+            "path": "docs/mathdevmcp-release-report.tex",
+            "line_range": "1099-1123",
+            "role": "release-report fixture context"
+          }
+        ],
+        "assumptions": [],
+        "route_availability": {
+          "case_id": "RLHLB-06-state-space-code-missing-solve",
+          "workflow": "audit_math_to_code",
+          "source_adapter": {
+            "state": "not_applicable",
+            "adapter_route": null,
+            "predecessor_case_id": null,
+            "note": "Case is routed through structural, review-packet, or source-boundary diagnostics rather than a local schema adapter."
+          },
+          "symbolic_backend": {
+            "state": "not_applicable",
+            "backend": "sympy",
+            "available": true
+          },
+          "counterexample_path": {
+            "state": "skipped_not_applicable",
+            "attempted": false
+          },
+          "formal_backend": {
+            "state": "not_applicable",
+            "backend": "lean",
+            "available": true,
+            "path": "/home/chakwong/.elan/bin/lean"
+          },
+          "code_equation_route": {
+            "state": "available",
+            "route": "code_implements_equation",
+            "note": "Structural code/equation audit route is available and diagnostic only."
+          },
+          "review_packet_route": {
+            "state": "available",
+            "route": "prepare_review_packet",
+            "required_fields": [
+              "question",
+              "source_anchors",
+              "assumptions",
+              "route_availability",
+              "derivation_proof_steps",
+              "backend_checks",
+              "counterexamples",
+              "gaps",
+              "actions",
+              "evidence_classes",
+              "non_claims"
+            ]
+          },
+          "negative_control": {
+            "is_negative_control": true,
+            "expected_status": "routing_only",
+            "scoring_semantics": "Structural mismatch is diagnostic only and cannot certify semantic incorrectness."
+          },
+          "expected_evidence_classes": [
+            "source_anchor",
+            "structural_mismatch",
+            "route_availability",
+            "non_claim",
+            "action"
+          ],
+          "residual_unresolved": [
+            "negative_control_requires_boundary_preservation"
+          ]
+        },
+        "derivation_proof_steps": [],
+        "backend_checks": [
+          {
+            "state": "not_applicable",
+            "backend": "sympy",
+            "available": true
+          },
+          {
+            "state": "not_applicable",
+            "backend": "lean",
+            "available": true,
+            "path": "/home/chakwong/.elan/bin/lean"
+          }
+        ],
+        "counterexamples": [],
+        "gaps": [
+          {
+            "kind": "negative_control_requires_boundary_preservation",
+            "status": "unresolved"
+          }
+        ],
+        "actions": [
+          {
+            "code": "run_phase4_baseline",
+            "description": "Run the current workflow against this frozen case after route availability is recorded."
+          }
+        ],
+        "evidence_classes": [
+          "source_anchor",
+          "structural_mismatch",
+          "route_availability",
+          "non_claim",
+          "action"
+        ],
+        "non_claims": [
+          "This packet stub is not a proof, refutation, benchmark pass, release-readiness claim, or scientific-validity claim.",
+          "Phase 3 route availability does not evaluate the mathematical case.",
+          "Forbidden claim not made: Code is mathematically wrong.",
+          "Forbidden claim not made: Absence of literal solve proves implementation invalid."
+        ]
+      }
+    },
+    {
+      "case_id": "RLHLB-07-proof-boundary-review-packet",
+      "workflow": "prepare_review_packet",
+      "packet": {
+        "question": "Can we produce a packet for a difficult Gaussian score derivation without overclaiming proof?",
+        "source_anchors": [
+          {
+            "path": "docs/mathdevmcp-release-report.tex",
+            "line_range": "1255-1361",
+            "role": "Gaussian score derivation review context"
+          }
+        ],
+        "assumptions": [],
+        "route_availability": {
+          "case_id": "RLHLB-07-proof-boundary-review-packet",
+          "workflow": "prepare_review_packet",
+          "source_adapter": {
+            "state": "not_applicable",
+            "adapter_route": null,
+            "predecessor_case_id": null,
+            "note": "Case is routed through structural, review-packet, or source-boundary diagnostics rather than a local schema adapter."
+          },
+          "symbolic_backend": {
+            "state": "not_applicable",
+            "backend": "sympy",
+            "available": true
+          },
+          "counterexample_path": {
+            "state": "skipped_not_applicable",
+            "attempted": false
+          },
+          "formal_backend": {
+            "state": "not_applicable",
+            "backend": "lean",
+            "available": true,
+            "path": "/home/chakwong/.elan/bin/lean"
+          },
+          "code_equation_route": {
+            "state": "not_applicable",
+            "route": "code_implements_equation"
+          },
+          "review_packet_route": {
+            "state": "available",
+            "route": "prepare_review_packet",
+            "required_fields": [
+              "question",
+              "source_anchors",
+              "assumptions",
+              "route_availability",
+              "derivation_proof_steps",
+              "backend_checks",
+              "counterexamples",
+              "gaps",
+              "actions",
+              "evidence_classes",
+              "non_claims"
+            ]
+          },
+          "negative_control": {
+            "is_negative_control": true,
+            "expected_status": "insufficient_evidence",
+            "scoring_semantics": "A good answer is diagnostic-only with explicit non-claims and next evidence actions."
+          },
+          "expected_evidence_classes": [
+            "review_packet",
+            "human_review_required",
+            "route_availability",
+            "non_claim",
+            "action"
+          ],
+          "residual_unresolved": [
+            "negative_control_requires_boundary_preservation",
+            "diagnostic_packet_not_certificate"
+          ]
+        },
+        "derivation_proof_steps": [],
+        "backend_checks": [
+          {
+            "state": "not_applicable",
+            "backend": "sympy",
+            "available": true
+          },
+          {
+            "state": "not_applicable",
+            "backend": "lean",
+            "available": true,
+            "path": "/home/chakwong/.elan/bin/lean"
+          }
+        ],
+        "counterexamples": [],
+        "gaps": [
+          {
+            "kind": "negative_control_requires_boundary_preservation",
+            "status": "unresolved"
+          },
+          {
+            "kind": "diagnostic_packet_not_certificate",
+            "status": "unresolved"
+          }
+        ],
+        "actions": [
+          {
+            "code": "run_phase4_baseline",
+            "description": "Run the current workflow against this frozen case after route availability is recorded."
+          }
+        ],
+        "evidence_classes": [
+          "review_packet",
+          "human_review_required",
+          "route_availability",
+          "non_claim",
+          "action"
+        ],
+        "non_claims": [
+          "This packet stub is not a proof, refutation, benchmark pass, release-readiness claim, or scientific-validity claim.",
+          "Phase 3 route availability does not evaluate the mathematical case.",
+          "Forbidden claim not made: Review packet is a certificate.",
+          "Forbidden claim not made: Full score derivation proved."
+        ]
+      }
+    },
+    {
+      "case_id": "RLHLB-08-hmc-value-only-boundary",
+      "workflow": "prove_or_counterexample",
+      "packet": {
+        "question": "Does a value-only filtering likelihood route prove HMC production readiness?",
+        "source_anchors": [
+          {
+            "path": "../BayesFilter/docs/chapters/ch21_hmc_for_state_space.tex",
+            "line_range": "6-52",
+            "role": "HMC state-space likelihood route and value/gradient boundary"
+          }
+        ],
+        "assumptions": [],
+        "route_availability": {
+          "case_id": "RLHLB-08-hmc-value-only-boundary",
+          "workflow": "prove_or_counterexample",
+          "source_adapter": {
+            "state": "not_applicable",
+            "adapter_route": null,
+            "predecessor_case_id": null,
+            "note": "Case is routed through structural, review-packet, or source-boundary diagnostics rather than a local schema adapter."
+          },
+          "symbolic_backend": {
+            "state": "available",
+            "backend": "sympy",
+            "available": true,
+            "note": "Conservative symbolic route can be attempted for scalar/encodable sub-obligations only."
+          },
+          "counterexample_path": {
+            "state": "available_not_run",
+            "attempted": false,
+            "note": "Counterexample search is available for bounded encodable obligations but is not executed in Phase 3."
+          },
+          "formal_backend": {
+            "state": "available_requires_explicit_source",
+            "backend": "lean",
+            "available": true,
+            "path": "/home/chakwong/.elan/bin/lean",
+            "note": "Lean can only certify explicitly supplied Lean source; prose/source anchors are not Lean proofs."
+          },
+          "code_equation_route": {
+            "state": "not_applicable",
+            "route": "code_implements_equation"
+          },
+          "review_packet_route": {
+            "state": "available",
+            "route": "prepare_review_packet",
+            "required_fields": [
+              "question",
+              "source_anchors",
+              "assumptions",
+              "route_availability",
+              "derivation_proof_steps",
+              "backend_checks",
+              "counterexamples",
+              "gaps",
+              "actions",
+              "evidence_classes",
+              "non_claims"
+            ]
+          },
+          "negative_control": {
+            "is_negative_control": true,
+            "expected_status": "insufficient_evidence",
+            "scoring_semantics": "Good outcome is justified abstention; it must not refute HMC or certify readiness."
+          },
+          "expected_evidence_classes": [
+            "source_anchor",
+            "backend_unavailable",
+            "human_review_required",
+            "route_availability",
+            "non_claim",
+            "action"
+          ],
+          "residual_unresolved": [
+            "negative_control_requires_boundary_preservation"
+          ]
+        },
+        "derivation_proof_steps": [
+          {
+            "status": "not_run_in_phase_3",
+            "reason": "Phase 3 records route availability only; Phase 4 runs current workflows."
+          }
+        ],
+        "backend_checks": [
+          {
+            "state": "available",
+            "backend": "sympy",
+            "available": true,
+            "note": "Conservative symbolic route can be attempted for scalar/encodable sub-obligations only."
+          },
+          {
+            "state": "available_requires_explicit_source",
+            "backend": "lean",
+            "available": true,
+            "path": "/home/chakwong/.elan/bin/lean",
+            "note": "Lean can only certify explicitly supplied Lean source; prose/source anchors are not Lean proofs."
+          }
+        ],
+        "counterexamples": [],
+        "gaps": [
+          {
+            "kind": "negative_control_requires_boundary_preservation",
+            "status": "unresolved"
+          }
+        ],
+        "actions": [
+          {
+            "code": "run_phase4_baseline",
+            "description": "Run the current workflow against this frozen case after route availability is recorded."
+          }
+        ],
+        "evidence_classes": [
+          "source_anchor",
+          "backend_unavailable",
+          "human_review_required",
+          "route_availability",
+          "non_claim",
+          "action"
+        ],
+        "non_claims": [
+          "This packet stub is not a proof, refutation, benchmark pass, release-readiness claim, or scientific-validity claim.",
+          "Phase 3 route availability does not evaluate the mathematical case.",
+          "Forbidden claim not made: HMC production readiness.",
+          "Forbidden claim not made: TFP/NUTS mathematical criticism.",
+          "Forbidden claim not made: Sampler correctness."
+        ]
+      }
+    },
+    {
+      "case_id": "RLHLB-09-affine-recovery-assumption-limit",
+      "workflow": "derive_from",
+      "packet": {
+        "question": "Can neural-solver approximation guarantees be derived from affine recovery text alone?",
+        "source_anchors": [
+          {
+            "path": "../latex-papers/CIP_monograph/chapters/ch15_nonlinear_pricing.tex",
+            "line_range": "267-302",
+            "role": "affine recovery and nonlinear-pricing approximation text"
+          }
+        ],
+        "assumptions": [],
+        "route_availability": {
+          "case_id": "RLHLB-09-affine-recovery-assumption-limit",
+          "workflow": "derive_from",
+          "source_adapter": {
+            "state": "not_applicable",
+            "adapter_route": null,
+            "predecessor_case_id": null,
+            "note": "Case is routed through structural, review-packet, or source-boundary diagnostics rather than a local schema adapter."
+          },
+          "symbolic_backend": {
+            "state": "available",
+            "backend": "sympy",
+            "available": true,
+            "note": "Conservative symbolic route can be attempted for scalar/encodable sub-obligations only."
+          },
+          "counterexample_path": {
+            "state": "available_not_run",
+            "attempted": false,
+            "note": "Counterexample search is available for bounded encodable obligations but is not executed in Phase 3."
+          },
+          "formal_backend": {
+            "state": "not_applicable",
+            "backend": "lean",
+            "available": true,
+            "path": "/home/chakwong/.elan/bin/lean"
+          },
+          "code_equation_route": {
+            "state": "not_applicable",
+            "route": "code_implements_equation"
+          },
+          "review_packet_route": {
+            "state": "available",
+            "route": "prepare_review_packet",
+            "required_fields": [
+              "question",
+              "source_anchors",
+              "assumptions",
+              "route_availability",
+              "derivation_proof_steps",
+              "backend_checks",
+              "counterexamples",
+              "gaps",
+              "actions",
+              "evidence_classes",
+              "non_claims"
+            ]
+          },
+          "negative_control": {
+            "is_negative_control": true,
+            "expected_status": "missing_assumptions",
+            "scoring_semantics": "Good outcome is missing_assumptions or insufficient evidence with no rigorous uniform-bound claim."
+          },
+          "expected_evidence_classes": [
+            "source_anchor",
+            "missing_assumption",
+            "human_review_required",
+            "route_availability",
+            "non_claim",
+            "action"
+          ],
+          "residual_unresolved": [
+            "negative_control_requires_boundary_preservation"
+          ]
+        },
+        "derivation_proof_steps": [
+          {
+            "status": "not_run_in_phase_3",
+            "reason": "Phase 3 records route availability only; Phase 4 runs current workflows."
+          }
+        ],
+        "backend_checks": [
+          {
+            "state": "available",
+            "backend": "sympy",
+            "available": true,
+            "note": "Conservative symbolic route can be attempted for scalar/encodable sub-obligations only."
+          },
+          {
+            "state": "not_applicable",
+            "backend": "lean",
+            "available": true,
+            "path": "/home/chakwong/.elan/bin/lean"
+          }
+        ],
+        "counterexamples": [],
+        "gaps": [
+          {
+            "kind": "negative_control_requires_boundary_preservation",
+            "status": "unresolved"
+          }
+        ],
+        "actions": [
+          {
+            "code": "run_phase4_baseline",
+            "description": "Run the current workflow against this frozen case after route availability is recorded."
+          }
+        ],
+        "evidence_classes": [
+          "source_anchor",
+          "missing_assumption",
+          "human_review_required",
+          "route_availability",
+          "non_claim",
+          "action"
+        ],
+        "non_claims": [
+          "This packet stub is not a proof, refutation, benchmark pass, release-readiness claim, or scientific-validity claim.",
+          "Phase 3 route availability does not evaluate the mathematical case.",
+          "Forbidden claim not made: Rigorous uniform approximation bound.",
+          "Forbidden claim not made: Neural solver correctness.",
+          "Forbidden claim not made: Pricing validity."
+        ]
+      }
+    }
+  ],
+  "findings": [],
+  "summary": {
+    "case_total": 9,
+    "packet_stub_total": 9,
+    "source_adapter_present": 5,
+    "source_adapter_absent": 0,
+    "source_adapter_not_applicable": 4,
+    "symbolic_backend_available": true,
+    "aggregate_accuracy": null
+  },
+  "policy_boundary": [
+    "Route availability is pre-baseline routing evidence only.",
+    "Route availability is not a proof, refutation, benchmark pass, release-readiness claim, or scientific-validity claim.",
+    "Unavailable routes must be preserved as unavailable or unresolved rather than converted into refutations.",
+    "Packet stubs may contain empty evidence lists but must preserve the Phase 2 minimal schema fields."
+  ],
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "real_local_high_level_workflow_route_availability_report"
+  }
+}

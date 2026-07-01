@@ -24,6 +24,11 @@ This program builds on the current benchmark artifacts:
 - `src/mathdevmcp/real_tasks_manifest.py`
 - `tests/test_real_tasks_manifest.py`
 
+This master program is the governing phase plan, not the canonical source for
+live benchmark counts or current execution status. For current case totals,
+scored coverage, holdout-local state, and acceptance tier, read the current
+synthesis/dashboard notes that explicitly reference this program.
+
 ## Product and safety invariant
 
 MathDevMCP must remain conservative.
@@ -81,14 +86,14 @@ transitions.
 
 ## Validation summary
 
-| Program area | Why it exists | Current state | Program decision |
+| Program area | Why it exists | Origin-state snapshot | Program decision |
 |---|---|---|---|
 | Benchmark objective and categories | Needed to keep the benchmark tied to real tasks instead of toy fixtures | Defined in the benchmark spec, but not yet elevated into a full phased program | Accept and formalize in this master program |
-| Public corpus | Needed for stable iteration and schema hardening | Initial 8-case public manifest exists | Accept as Phase 2 input, not as final coverage |
-| Holdout/private strategy | Needed to prevent overfitting and preserve realism | Mentioned in spec, not yet programmatically built out | Make this an explicit mid-program phase |
-| Loader/validator | Needed before any reporting or integration | Exists for the public manifest | Treat as prerequisite-hardening phase, not as benchmark execution |
-| Reporting | Needed for usable benchmark signals | Not yet implemented | Make it a separate non-gating phase |
-| Workflow/release integration | Tempting next step, but unsafe too early | Not started | Defer to late phases with explicit entry gates |
+| Public corpus | Needed for stable iteration and schema hardening | Initial public manifest existed when this program was written | Accept as Phase 2 input, not as final coverage |
+| Holdout/private strategy | Needed to prevent overfitting and preserve realism | Mentioned in spec, not yet programmatically built out when this program was written | Make this an explicit mid-program phase |
+| Loader/validator | Needed before any reporting or integration | Public-manifest loader/validator existed at program start | Treat as prerequisite-hardening phase, not as benchmark execution |
+| Reporting | Needed for usable benchmark signals | Not yet implemented when this program was written | Make it a separate non-gating phase |
+| Workflow/release integration | Tempting next step, but unsafe too early | Not started when this program was written | Defer to late phases with explicit entry gates |
 
 ## Program phases
 
@@ -358,8 +363,10 @@ Produce useful benchmark summaries without turning the benchmark into a gate.
 
 - add non-gating reporting over the real-task manifest;
 - summarize cases by category, repo, evidence class, and difficulty;
-- expose per-category precision/recall and false-certification summaries in a
-  report layer;
+- expose inventory summaries, structural score summaries, and hard-veto
+  summaries first; add per-category precision/recall only after candidate
+  outputs and scoring contracts are calibrated enough for those metrics to be
+  meaningful;
 - require report ordering that places hard-veto and evidence-boundary failures
   before any convenience summary or aggregate score.
 
@@ -367,13 +374,17 @@ Produce useful benchmark summaries without turning the benchmark into a gate.
 
 - non-gating benchmark report;
 - category-level summary tables;
-- safety vs usefulness metric separation.
+- safety vs usefulness metric separation;
+- if precision/recall are not yet calibrated, an explicit metric-deferral note
+  rather than proxy metrics presented as benchmark quality.
 
 **Exit criteria**
 
 - benchmark results are reviewable without reading raw case JSON;
 - no coupling to `benchmark_gate` yet;
-- report structure makes hard-veto and boundary failures impossible to miss.
+- report structure makes hard-veto and boundary failures impossible to miss;
+- any unavailable or immature precision/recall fields are explicitly deferred
+  rather than filled with misleading proxy counts.
 
 **How this enables the next phase**
 
@@ -394,7 +405,9 @@ Run the benchmark, inspect failure patterns, and recalibrate the suite.
 
 **Work scope**
 
-- run the public benchmark suite against current MathDevMCP behavior;
+- run the public benchmark suite against current MathDevMCP behavior, stating
+  whether the run is over normalized candidate fixtures, bounded normalization
+  of free-form answers, or a true workflow execution surface;
 - inspect category imbalance, over-abstention, under-detection, and brittle
   cases;
 - revise case difficulty and scoring assumptions if needed.
@@ -418,13 +431,17 @@ label.
 - pilot benchmark report;
 - calibration memo;
 - case revision proposals;
-- category-balance observations.
+- category-balance observations;
+- execution-mode note distinguishing fixture scoring, bounded normalization, and
+  workflow execution.
 
 **Exit criteria**
 
 - at least one pilot run has been reviewed;
 - metric behavior is understandable and not obviously misleading;
-- calibration outputs are clearly labeled as public-set development evidence.
+- calibration outputs are clearly labeled as public-set development evidence;
+- the reviewed run's execution mode is explicit enough that fixture-level
+  structural scoring is not mistaken for free-form workflow performance.
 
 **How this enables the next phase**
 

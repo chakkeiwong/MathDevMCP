@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from mathdevmcp.mcp_server import audit_derivation_label, audit_implementation_label, audit_kalman_recursion, benchmark_gate, check_equality, compare_label_code, extract_latex_context, get_tool_matrix, governance_policy, implementation_brief, latex_label_lookup, lean_check, release_readiness, run_benchmarks, typed_obligation_label, validate_release_corpus
+from mathdevmcp.mcp_server import assumptions_for, audit_derivation_label, audit_implementation_label, audit_kalman_recursion, audit_math_to_code, benchmark_gate, check_equality, compare_label_code, debug_derivation, derive_from, extract_latex_context, get_tool_matrix, governance_policy, high_level_workflow_quality, implementation_brief, latex_label_lookup, lean_check, prepare_review_packet, prove_or_counterexample, release_readiness, run_benchmarks, typed_obligation_label, validate_release_corpus, workbench_benchmark_quality
 from test_context_and_fixtures import EXPECTED_BENCHMARK_TOTAL
 
 
@@ -78,6 +78,27 @@ def test_mcp_server_implementation_brief_returns_consistent_result():
     assert result["selected_label"] == "prop:transport-logdet"
 
 
+def test_mcp_server_high_level_workflows_return_contract_envelopes():
+    derived = derive_from("a + b = b + a", givens=["a,b are scalars"])
+    proof = prove_or_counterexample("A*B = B*A")
+    assumptions = assumptions_for("logdet(A)")
+    debug = debug_derivation(["logdet(A)", "trace(A)", "trace(A)"])
+    code = audit_math_to_code("logdet(S)", "def f(S):\n    return logdet(S)\n")
+    packet = prepare_review_packet("Review failed proof", evidence=[proof])
+
+    assert derived["metadata"] == {"schema_version": "1.0", "contract": "high_level_workflow_result"}
+    assert derived["status"] == "proved"
+    assert "givens_not_formal_assumptions" in {item["code"] for item in derived["non_claims"]}
+    assert proof["status"] == "refuted"
+    assert proof["counterexamples"]
+    assert assumptions["status"] == "missing_assumptions"
+    assert debug["status"] == "gap_found"
+    assert code["status"] == "structural_match"
+    assert code["certification_source"] == "none"
+    assert packet["status"] == "diagnostic_only"
+    assert packet["certification_source"] == "none"
+
+
 
 def test_mcp_server_run_benchmarks_returns_structured_report():
     result = run_benchmarks(str(ROOT))
@@ -85,6 +106,7 @@ def test_mcp_server_run_benchmarks_returns_structured_report():
     assert result["metadata"] == {"schema_version": "1.0", "contract": "benchmark_results"}
     assert result["total"] == EXPECTED_BENCHMARK_TOTAL
     assert result["passed"] == EXPECTED_BENCHMARK_TOTAL
+    assert result["workbench_quality"]["status"] == "quality_thresholds_passed"
 
 
 
@@ -119,6 +141,25 @@ def test_mcp_server_benchmark_gate_returns_ci_result():
     assert result["passed"] is True
     assert result["failed_count"] == 0
     assert result["policy"]["name"] == "all_benchmarks_must_pass"
+
+
+def test_mcp_server_workbench_benchmark_quality_returns_threshold_report():
+    result = workbench_benchmark_quality(str(ROOT))
+
+    assert result["metadata"] == {"schema_version": "1.0", "contract": "workbench_benchmark_quality_report"}
+    assert result["status"] == "quality_thresholds_passed"
+    assert result["total_cases"] == 15
+    assert all(result["seeded_gate_thresholds"].values())
+
+
+def test_mcp_server_high_level_workflow_quality_returns_threshold_report():
+    result = high_level_workflow_quality(str(ROOT))
+
+    assert result["metadata"] == {"schema_version": "1.0", "contract": "high_level_workflow_quality_report"}
+    assert result["status"] == "quality_thresholds_passed"
+    assert result["total_cases"] == 14
+    assert result["workflow_count"] == 6
+    assert all(result["seeded_gate_thresholds"].values())
 
 
 def test_mcp_server_release_policy_tools_return_contracts():

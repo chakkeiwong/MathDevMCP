@@ -1,0 +1,61 @@
+{
+  "entries": [
+    {
+      "id": "proofnet:placeholder-proof-gap-001",
+      "source_family": "ProofNet",
+      "original_id": "PLACEHOLDER_ORIGINAL_ID",
+      "local_path": ".localresources/workbench-benchmarks/proofnet/PLACEHOLDER.json",
+      "license_status": "academic_license_confirmed",
+      "redistribution": "local_only",
+      "privacy_class": "licensed_external_local",
+      "oracle_class": "diagnostic_only",
+      "transformation_notes": "Placeholder: adapt into proof-gap or review-packet task with explicit non-proof boundary.",
+      "source_specific_caveats": [
+        "Original proof style and local backend encodability must be reviewed before scoring."
+      ],
+      "review_status": "unreviewed",
+      "gate_status": "diagnostic_only",
+      "gated": false
+    },
+    {
+      "id": "theoremqa:placeholder-applicability-001",
+      "source_family": "TheoremQA",
+      "original_id": "PLACEHOLDER_ORIGINAL_ID",
+      "local_path": ".localresources/workbench-benchmarks/theoremqa/PLACEHOLDER.json",
+      "license_status": "academic_license_confirmed",
+      "redistribution": "local_only",
+      "privacy_class": "licensed_external_local",
+      "oracle_class": "applicability_gap",
+      "transformation_notes": "Placeholder: adapt into theorem/local applicability case with explicit assumptions.",
+      "source_specific_caveats": [
+        "Question-answer oracle must be converted into deterministic assumption and applicability checks."
+      ],
+      "review_status": "unreviewed",
+      "gate_status": "diagnostic_only",
+      "gated": false
+    },
+    {
+      "id": "minif2f:placeholder-formal-boundary-001",
+      "source_family": "miniF2F",
+      "original_id": "PLACEHOLDER_ORIGINAL_ID",
+      "local_path": ".localresources/workbench-benchmarks/minif2f/PLACEHOLDER.json",
+      "license_status": "academic_license_confirmed",
+      "redistribution": "local_only",
+      "privacy_class": "licensed_external_local",
+      "oracle_class": "backend_unavailable_nonclaim",
+      "transformation_notes": "Placeholder: adapt into formal-backend availability or abstention-control case.",
+      "source_specific_caveats": [
+        "A missing formal backend is a non-claim and must not be scored as refutation."
+      ],
+      "review_status": "unreviewed",
+      "gate_status": "diagnostic_only",
+      "gated": false
+    }
+  ],
+  "reporting_rules": {
+    "combine_with_seeded_totals": false,
+    "allow_leaderboard_claims": false,
+    "allow_release_gate_by_default": false,
+    "source_family_aggregation": "report_by_source_family_and_oracle_class_only"
+  }
+}

@@ -1,0 +1,620 @@
+{
+  "status": "partial",
+  "reason": "At least one source obligation remains adapter-required under the frozen source-packet schema.",
+  "source_obligation_ledger": [
+    {
+      "case_id": "RLHL-01-ift-gradient-bias-sign",
+      "adapter_route": "ift_sign_consistency",
+      "source_anchors": [
+        {
+          "path": "../dsge_hmc/docs/gradient_accuracy_analysis.tex",
+          "line_start": 536,
+          "line_end": 589,
+          "content_sha256": "1392ea2971a8bb7227ecc76a5ba843026a39e6e0f8739c6222bcbce480bc7bae"
+        },
+        {
+          "path": "../dsge_hmc/docs/gradient_accuracy_analysis.tex",
+          "line_start": 883,
+          "line_end": 893,
+          "content_sha256": "56472e5a968a1f18fba610d25eb4b18830a21e8aee2713d7f20b3ca1b107e2ca"
+        }
+      ],
+      "pre_adapter_status": "adapter_required"
+    },
+    {
+      "case_id": "RLHL-04-kalman-prediction-error-loglik",
+      "adapter_route": "kalman_prediction_error_loglik",
+      "source_anchors": [
+        {
+          "path": "../latex-papers/CIP_monograph/chapters/ch16_kalman_filter.tex",
+          "line_start": 197,
+          "line_end": 223,
+          "content_sha256": "b5eafedb389e6c40deec29aa9d49165f2c6057ed7d2c6c3ec7e54f88c5f94666"
+        },
+        {
+          "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+          "line_start": 76,
+          "line_end": 105,
+          "content_sha256": "a164fa90166c85adca2b56c8125d2fa73100c4686b9e98f058afa61d1425e176"
+        }
+      ],
+      "pre_adapter_status": "adapter_required"
+    },
+    {
+      "case_id": "RLHL-06-joseph-covariance-equivalence",
+      "adapter_route": "joseph_covariance_equivalence",
+      "source_anchors": [
+        {
+          "path": "../latex-papers/CIP_monograph/chapters/ch16_kalman_filter.tex",
+          "line_start": 123,
+          "line_end": 133,
+          "content_sha256": "9928776930f9aead970a597284db48d6f90cf38ade4f286a4593b8ccd51ca22b"
+        },
+        {
+          "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+          "line_start": 59,
+          "line_end": 74,
+          "content_sha256": "b579fb9ee8236238a6e9ea5d375555b8a3180c65d76d4cd1956dc0579bdf6412"
+        }
+      ],
+      "pre_adapter_status": "adapter_required"
+    },
+    {
+      "case_id": "RLHL-07-affine-pricing-master-recursion",
+      "adapter_route": "affine_pricing_master_recursion",
+      "source_anchors": [
+        {
+          "path": "../latex-papers/CIP_monograph/chapters/ch11_state_space_recursions.tex",
+          "line_start": 242,
+          "line_end": 322,
+          "content_sha256": "a14aad86e01331b2d57269b9101b7aa1c0794ace57b509c66c1a931b7fec85ad"
+        }
+      ],
+      "pre_adapter_status": "adapter_required"
+    },
+    {
+      "case_id": "RLHL-10-kalman-score-same-scalar-contract",
+      "adapter_route": "kalman_score_same_scalar",
+      "source_anchors": [
+        {
+          "path": "../BayesFilter/docs/chapters/ch09_kalman_score.tex",
+          "line_start": 20,
+          "line_end": 103,
+          "content_sha256": "8e01fc88f8216096646dfcd1e62c38bf506d419f8a5b4346e0490786f3c7078e"
+        },
+        {
+          "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+          "line_start": 120,
+          "line_end": 130,
+          "content_sha256": "62d2c9bc285573e0374dc6867d80c4d03b84a93bf66a963d1092743390f7f31f"
+        }
+      ],
+      "pre_adapter_status": "adapter_required"
+    }
+  ],
+  "adapter_result_ledger": [
+    {
+      "case_id": "RLHL-01-ift-gradient-bias-sign",
+      "adapter_route": "ift_sign_consistency",
+      "status": "inconsistency_candidate",
+      "reason": "The bounded source packets contain a negative boxed theorem sign and a positive proof-final sign under the recorded negative adjoint convention.",
+      "source_anchors": [
+        {
+          "path": "../dsge_hmc/docs/gradient_accuracy_analysis.tex",
+          "line_start": 536,
+          "line_end": 589,
+          "content_sha256": "1392ea2971a8bb7227ecc76a5ba843026a39e6e0f8739c6222bcbce480bc7bae"
+        },
+        {
+          "path": "../dsge_hmc/docs/gradient_accuracy_analysis.tex",
+          "line_start": 883,
+          "line_end": 893,
+          "content_sha256": "56472e5a968a1f18fba610d25eb4b18830a21e8aee2713d7f20b3ca1b107e2ca"
+        }
+      ],
+      "required_terms": [
+        "G^{\\mathrm{IFT}}",
+        "G^{\\mathrm{FD}}",
+        "\\tilde\\lambda",
+        "dr",
+        "d\\btheta"
+      ],
+      "present_terms": [
+        "G^{\\mathrm{IFT}}",
+        "G^{\\mathrm{FD}}",
+        "\\tilde\\lambda",
+        "dr",
+        "d\\btheta"
+      ],
+      "checks": {
+        "ir_consistent": true,
+        "route_match": true,
+        "source_anchors_present": true,
+        "theorem_negative_sign_present": true,
+        "proof_positive_sign_present": true,
+        "adjoint_negative_convention_present": true,
+        "probe_not_used_for_clearance": true
+      },
+      "evidence": [
+        {
+          "kind": "source_sign_comparison",
+          "severity": "diagnostic",
+          "theorem_sign": "negative",
+          "proof_final_sign": "positive",
+          "adjoint_convention": "negative",
+          "source": "bounded_source_packets"
+        }
+      ],
+      "clearance": {
+        "adapter_required_cleared": true,
+        "cleared_by": "source_anchored_local_schema_check",
+        "not_cleared_by": [
+          "executable_probe",
+          "pytest",
+          "benchmark_gate",
+          "adapter_confidence"
+        ]
+      },
+      "forbidden_claims": [
+        "The whole DSGE note is false.",
+        "The HMC practical conclusion is invalid.",
+        "The executable probe proves the source theorem."
+      ],
+      "non_claims": [
+        "Adapter results are local source-obligation diagnostics only.",
+        "Adapter results are not release readiness, public benchmark evidence, or broad theorem proving.",
+        "Adapter results must preserve source/probe/residual channel separation.",
+        "This result does not claim the whole DSGE note is false.",
+        "This result does not claim practical HMC conclusions are invalid."
+      ],
+      "metadata": {
+        "schema_version": "1.0",
+        "contract": "real_local_source_adapter_result"
+      }
+    },
+    {
+      "case_id": "RLHL-04-kalman-prediction-error-loglik",
+      "adapter_route": "kalman_prediction_error_loglik",
+      "status": "human_review_required",
+      "reason": "The bounded source packets did not contain all required likelihood derivation and domain-assumption evidence.",
+      "source_anchors": [
+        {
+          "path": "../latex-papers/CIP_monograph/chapters/ch16_kalman_filter.tex",
+          "line_start": 197,
+          "line_end": 223,
+          "content_sha256": "b5eafedb389e6c40deec29aa9d49165f2c6057ed7d2c6c3ec7e54f88c5f94666"
+        },
+        {
+          "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+          "line_start": 76,
+          "line_end": 105,
+          "content_sha256": "a164fa90166c85adca2b56c8125d2fa73100c4686b9e98f058afa61d1425e176"
+        }
+      ],
+      "required_terms": [
+        "chain rule",
+        "Gaussian",
+        "log\\det",
+        "S_t",
+        "v_t",
+        "observed components"
+      ],
+      "present_terms": [
+        "chain rule",
+        "Gaussian",
+        "log\\det",
+        "S_t",
+        "v_t",
+        "observed components"
+      ],
+      "checks": {
+        "ir_consistent": true,
+        "route_match": true,
+        "source_anchors_present": true,
+        "linear_gaussian_present": true,
+        "chain_rule_present": true,
+        "gaussian_predictive_present": true,
+        "logdet_term_present": true,
+        "quadratic_term_present": true,
+        "positive_definite_or_spd_present": false,
+        "mask_or_observed_components_present": true,
+        "no_observation_skip_present": true,
+        "probe_not_used_for_clearance": true
+      },
+      "assumptions": [
+        "linear Gaussian state-space model",
+        "positive-definite selected innovation covariance",
+        "observed-component selection for masked panels",
+        "skip likelihood contribution when no components are observed"
+      ],
+      "evidence": [
+        {
+          "kind": "kalman_likelihood_source_coverage",
+          "severity": "diagnostic",
+          "source": "bounded_source_packets",
+          "covered": [
+            "chain_rule_present",
+            "gaussian_predictive_present",
+            "ir_consistent",
+            "linear_gaussian_present",
+            "logdet_term_present",
+            "mask_or_observed_components_present",
+            "no_observation_skip_present",
+            "probe_not_used_for_clearance",
+            "quadratic_term_present",
+            "route_match",
+            "source_anchors_present"
+          ],
+          "missing": [
+            "positive_definite_or_spd_present"
+          ]
+        }
+      ],
+      "clearance": {
+        "adapter_required_cleared": false,
+        "cleared_by": null,
+        "not_cleared_by": [
+          "executable_probe",
+          "pytest",
+          "benchmark_gate",
+          "adapter_confidence"
+        ]
+      },
+      "forbidden_claims": [
+        "Nonlinear filters are exact.",
+        "The score or Hessian is validated by this likelihood probe.",
+        "The executable probe proves the source likelihood derivation."
+      ],
+      "non_claims": [
+        "Adapter results are local source-obligation diagnostics only.",
+        "Adapter results are not release readiness, public benchmark evidence, or broad theorem proving.",
+        "Adapter results must preserve source/probe/residual channel separation.",
+        "This result does not claim nonlinear filters are exact.",
+        "This result does not validate score, Hessian, sampler, or production implementation correctness."
+      ],
+      "metadata": {
+        "schema_version": "1.0",
+        "contract": "real_local_source_adapter_result"
+      }
+    },
+    {
+      "case_id": "RLHL-06-joseph-covariance-equivalence",
+      "adapter_route": "joseph_covariance_equivalence",
+      "status": "source_supported",
+      "reason": "The bounded source packets support exact-arithmetic Joseph/compact covariance equivalence with the Kalman gain relation and numerical caveat preserved.",
+      "source_anchors": [
+        {
+          "path": "../latex-papers/CIP_monograph/chapters/ch16_kalman_filter.tex",
+          "line_start": 123,
+          "line_end": 133,
+          "content_sha256": "9928776930f9aead970a597284db48d6f90cf38ade4f286a4593b8ccd51ca22b"
+        },
+        {
+          "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+          "line_start": 59,
+          "line_end": 74,
+          "content_sha256": "b579fb9ee8236238a6e9ea5d375555b8a3180c65d76d4cd1956dc0579bdf6412"
+        }
+      ],
+      "required_terms": [
+        "Joseph",
+        "compact",
+        "Kalman gain",
+        "S_t",
+        "R",
+        "rounding"
+      ],
+      "present_terms": [
+        "Joseph",
+        "compact",
+        "Kalman gain",
+        "S_t",
+        "R",
+        "rounding"
+      ],
+      "checks": {
+        "ir_consistent": true,
+        "route_match": true,
+        "source_anchors_present": true,
+        "joseph_form_present": true,
+        "compact_form_present": true,
+        "kalman_gain_present": true,
+        "spd_condition_present": true,
+        "equivalence_claim_present": true,
+        "numerical_caveat_present": true,
+        "probe_not_used_for_clearance": true
+      },
+      "assumptions": [
+        "standard Kalman gain relation",
+        "positive-definite innovation covariance",
+        "exact-arithmetic algebraic equivalence",
+        "numerical-stability caveat for floating-point updates"
+      ],
+      "evidence": [
+        {
+          "kind": "joseph_equivalence_source_coverage",
+          "severity": "diagnostic",
+          "source": "bounded_source_packets",
+          "covered": [
+            "compact_form_present",
+            "equivalence_claim_present",
+            "ir_consistent",
+            "joseph_form_present",
+            "kalman_gain_present",
+            "numerical_caveat_present",
+            "probe_not_used_for_clearance",
+            "route_match",
+            "source_anchors_present",
+            "spd_condition_present"
+          ],
+          "missing": []
+        }
+      ],
+      "clearance": {
+        "adapter_required_cleared": true,
+        "cleared_by": "source_anchored_local_schema_check",
+        "not_cleared_by": [
+          "executable_probe",
+          "pytest",
+          "benchmark_gate",
+          "adapter_confidence"
+        ]
+      },
+      "forbidden_claims": [
+        "The compact form preserves PSD under rounding.",
+        "A particular backend implements Joseph form correctly.",
+        "The scalar executable probe proves full matrix equivalence."
+      ],
+      "non_claims": [
+        "Adapter results are local source-obligation diagnostics only.",
+        "Adapter results are not release readiness, public benchmark evidence, or broad theorem proving.",
+        "Adapter results must preserve source/probe/residual channel separation.",
+        "This result does not claim the compact form preserves positive semidefiniteness under rounding.",
+        "This result does not validate a particular backend implementation."
+      ],
+      "metadata": {
+        "schema_version": "1.0",
+        "contract": "real_local_source_adapter_result"
+      }
+    },
+    {
+      "case_id": "RLHL-07-affine-pricing-master-recursion",
+      "adapter_route": "affine_pricing_master_recursion",
+      "status": "source_supported",
+      "reason": "The bounded source packet supports the affine recursion through ansatz substitution, Gaussian MGF, and coefficient collection for A_n and B_n.",
+      "source_anchors": [
+        {
+          "path": "../latex-papers/CIP_monograph/chapters/ch11_state_space_recursions.tex",
+          "line_start": 242,
+          "line_end": 322,
+          "content_sha256": "a14aad86e01331b2d57269b9101b7aa1c0794ace57b509c66c1a931b7fec85ad"
+        }
+      ],
+      "required_terms": [
+        "exponential affine",
+        "Gaussian",
+        "moment",
+        "\\mathcal{A}_n",
+        "\\mathcal{B}_n"
+      ],
+      "present_terms": [
+        "exponential affine",
+        "Gaussian",
+        "\\mathcal{A}_n",
+        "\\mathcal{B}_n"
+      ],
+      "checks": {
+        "ir_consistent": true,
+        "route_match": true,
+        "source_anchors_present": true,
+        "state_transition_present": true,
+        "exponential_affine_ansatz_present": true,
+        "pricing_expectation_present": true,
+        "conditional_normality_present": true,
+        "gaussian_mgf_present": true,
+        "b_recursion_present": true,
+        "a_recursion_present": true,
+        "initial_conditions_present": true,
+        "coefficient_collection_present": true,
+        "probe_not_used_for_clearance": true
+      },
+      "assumptions": [
+        "risk-neutral linear Gaussian transition",
+        "exponential-affine continuation-value ansatz",
+        "Gaussian moment-generating function",
+        "coefficient collection into constant and state-dependent terms"
+      ],
+      "evidence": [
+        {
+          "kind": "affine_recursion_source_coverage",
+          "severity": "diagnostic",
+          "source": "bounded_source_packets",
+          "covered": [
+            "a_recursion_present",
+            "b_recursion_present",
+            "coefficient_collection_present",
+            "conditional_normality_present",
+            "exponential_affine_ansatz_present",
+            "gaussian_mgf_present",
+            "initial_conditions_present",
+            "ir_consistent",
+            "pricing_expectation_present",
+            "probe_not_used_for_clearance",
+            "route_match",
+            "source_anchors_present",
+            "state_transition_present"
+          ],
+          "missing": []
+        }
+      ],
+      "clearance": {
+        "adapter_required_cleared": true,
+        "cleared_by": "source_anchored_local_schema_check",
+        "not_cleared_by": [
+          "executable_probe",
+          "pytest",
+          "benchmark_gate",
+          "adapter_confidence"
+        ]
+      },
+      "forbidden_claims": [
+        "Every later non-affine approximation is exact.",
+        "Empirical pricing validity or identification follows.",
+        "The inconclusive executable probe is a failed source derivation."
+      ],
+      "non_claims": [
+        "Adapter results are local source-obligation diagnostics only.",
+        "Adapter results are not release readiness, public benchmark evidence, or broad theorem proving.",
+        "Adapter results must preserve source/probe/residual channel separation.",
+        "This result does not claim empirical pricing validity or identification.",
+        "This result does not claim later non-affine approximations are exact."
+      ],
+      "metadata": {
+        "schema_version": "1.0",
+        "contract": "real_local_source_adapter_result"
+      }
+    },
+    {
+      "case_id": "RLHL-10-kalman-score-same-scalar-contract",
+      "adapter_route": "kalman_score_same_scalar",
+      "status": "source_supported",
+      "reason": "The bounded source packets support the solve-form Kalman score contribution and same-scalar HMC-gradient boundary.",
+      "source_anchors": [
+        {
+          "path": "../BayesFilter/docs/chapters/ch09_kalman_score.tex",
+          "line_start": 20,
+          "line_end": 103,
+          "content_sha256": "8e01fc88f8216096646dfcd1e62c38bf506d419f8a5b4346e0490786f3c7078e"
+        },
+        {
+          "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+          "line_start": 120,
+          "line_end": 130,
+          "content_sha256": "62d2c9bc285573e0374dc6867d80c4d03b84a93bf66a963d1092743390f7f31f"
+        }
+      ],
+      "required_terms": [
+        "logdet",
+        "solve",
+        "S_tw_t=v_t",
+        "score",
+        "same scalar"
+      ],
+      "present_terms": [
+        "solve",
+        "S_tw_t=v_t",
+        "score",
+        "same scalar"
+      ],
+      "checks": {
+        "ir_consistent": true,
+        "route_match": true,
+        "source_anchors_present": true,
+        "innovation_derivatives_present": true,
+        "inverse_derivative_rule_present": true,
+        "score_contribution_present": true,
+        "solve_relation_present": true,
+        "solve_score_present": true,
+        "source_label_present": true,
+        "trace_or_factor_caveat_present": true,
+        "value_oracle_present": true,
+        "same_scalar_boundary_present": true,
+        "prior_transform_boundary_present": true,
+        "probe_not_used_for_clearance": true
+      },
+      "assumptions": [
+        "invertible innovation covariance",
+        "differentiability of innovation and innovation covariance",
+        "solve relation S_t w_t = v_t",
+        "analytic gradient corresponds to the same scalar likelihood plus prior and transform terms"
+      ],
+      "evidence": [
+        {
+          "kind": "kalman_score_source_coverage",
+          "severity": "diagnostic",
+          "source": "bounded_source_packets",
+          "covered": [
+            "innovation_derivatives_present",
+            "inverse_derivative_rule_present",
+            "ir_consistent",
+            "prior_transform_boundary_present",
+            "probe_not_used_for_clearance",
+            "route_match",
+            "same_scalar_boundary_present",
+            "score_contribution_present",
+            "solve_relation_present",
+            "solve_score_present",
+            "source_anchors_present",
+            "source_label_present",
+            "trace_or_factor_caveat_present",
+            "value_oracle_present"
+          ],
+          "missing": []
+        }
+      ],
+      "clearance": {
+        "adapter_required_cleared": true,
+        "cleared_by": "source_anchored_local_schema_check",
+        "not_cleared_by": [
+          "executable_probe",
+          "pytest",
+          "benchmark_gate",
+          "adapter_confidence"
+        ]
+      },
+      "forbidden_claims": [
+        "Hessian readiness is established.",
+        "Posterior validity or sampler convergence follows.",
+        "Backend correctness follows from the assumption probe."
+      ],
+      "non_claims": [
+        "Adapter results are local source-obligation diagnostics only.",
+        "Adapter results are not release readiness, public benchmark evidence, or broad theorem proving.",
+        "Adapter results must preserve source/probe/residual channel separation.",
+        "This result does not claim HMC validity, posterior correctness, or sampler convergence.",
+        "This result does not claim Hessian readiness or backend correctness."
+      ],
+      "metadata": {
+        "schema_version": "1.0",
+        "contract": "real_local_source_adapter_result"
+      }
+    }
+  ],
+  "residual_gap_ledger": [
+    {
+      "case_id": "RLHL-04-kalman-prediction-error-loglik",
+      "adapter_route": "kalman_prediction_error_loglik",
+      "status": "adapter_required",
+      "reason": "The bounded source packets did not contain all required likelihood derivation and domain-assumption evidence.",
+      "missing_checks": [
+        "positive_definite_or_spd_present"
+      ],
+      "next_action": "review_source_packet_scope_or_extend_manifest_under_governance"
+    }
+  ],
+  "probe_reference": {
+    "included": false,
+    "may_clear_adapter_required": false,
+    "reason": "Executable probes remain in the separate real-local high-level pilot report."
+  },
+  "summary": {
+    "case_total": 5,
+    "source_supported": 3,
+    "inconsistency_candidate": 1,
+    "human_review_required": 1,
+    "adapter_required_residual": 1,
+    "aggregate_accuracy": null
+  },
+  "policy_boundary": [
+    "Adapter results are local source-obligation diagnostics only.",
+    "Adapter results are not release readiness, public benchmark evidence, or broad theorem proving.",
+    "Adapter results must preserve source/probe/residual channel separation.",
+    "Source-adapter, executable-probe, and residual-gap ledgers are intentionally separate.",
+    "No single aggregate source/probe accuracy metric is emitted.",
+    "A partial report is not a failed source derivation and not release evidence."
+  ],
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "real_local_source_adapter_report"
+  }
+}

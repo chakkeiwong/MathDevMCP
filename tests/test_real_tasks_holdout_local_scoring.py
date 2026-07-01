@@ -102,6 +102,35 @@ def test_holdout_local_scoring_reports_mismatch_for_violating_candidate(tmp_path
     assert result["summary"]["false_confidence_veto_failures"] == 1
 
 
+def test_holdout_local_scoring_allows_rejected_forbidden_claim_audit_channel(tmp_path: Path) -> None:
+    path = tmp_path / "holdout_local_cases.json"
+    path.write_text(json.dumps({"cases": [_local_case()]}), encoding="utf-8")
+    result = score_local_holdout_candidates(
+        [
+            {
+                "case_id": "HOLDOUT-CASE-001",
+                "status": "unverified",
+                "substatus": "local_holdout_candidate_only",
+                "labels": [],
+                "evidence_class": "holdout_local_example",
+                "summary_text": "chapter neighborhood provenance",
+                "claims": ["safe local holdout summary"],
+                "rejected_claims": ["This local holdout entry proves benchmark generalization."],
+                "next_actions": ["Keep this case local until a deliberate public-promotion decision is made."],
+            }
+        ],
+        root=ROOT,
+        manifest_path=path,
+    )
+
+    assert result["ok"] is True
+    assert result["summary"]["by_status"]["consistent"] == 1
+    assert result["summary"]["false_confidence_veto_failures"] == 0
+    assert result["results"][0]["details"]["rejected_forbidden_claims"] == [
+        "This local holdout entry proves benchmark generalization."
+    ]
+
+
 def test_holdout_local_scoring_preserves_local_only_policy_boundary(tmp_path: Path) -> None:
     path = tmp_path / "holdout_local_cases.json"
     result = score_local_holdout_candidates([], root=ROOT, manifest_path=path)

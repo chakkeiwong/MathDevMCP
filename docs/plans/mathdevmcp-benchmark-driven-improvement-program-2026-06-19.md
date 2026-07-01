@@ -170,8 +170,7 @@ concrete boundary artifact for future semantic work.
 
 ### Exact files likely to change
 
-- new note under `docs/plans/`, e.g.
-  - `mathdevmcp-structural-score-ceiling-note-2026-06-19.md`
+- `docs/plans/mathdevmcp-structural-score-ceiling-note-2026-06-19.md`
 - possibly:
   - `docs/plans/mathdevmcp-benchmark-acceptance-policy-proposal-2026-06-19.md`
   - `docs/plans/mathdevmcp-benchmark-driven-improvement-plan-2026-06-19.md`
@@ -181,17 +180,20 @@ concrete boundary artifact for future semantic work.
 Define explicitly:
 
 - what current structural scoring can safely support,
+- what current bounded normalization can safely support,
 - what requires richer semantic interpretation,
-- what kinds of future semantic work are justified.
+- and what kinds of future semantic work are justified.
 
 ### Acceptance checks
 
-- clear examples of structural-safe vs semantic-needed cases;
+- clear examples of structural-safe vs bounded-normalization-safe vs
+  semantic-needed cases;
 - benchmark notes stop overloading “structural” into “semantic.”
 
 ### Stop condition
 
-If the ceiling cannot be stated concretely, do not broaden semantic work yet.
+If the boundary cannot be stated concretely with current cases, do not broaden
+semantic work yet.
 
 ## Phase 5 — Bounded semantic / normalization expansion
 

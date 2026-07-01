@@ -1,0 +1,1788 @@
+{
+  "status": "consistent",
+  "reason": "Durable review packets were built for all frozen benchmark cases.",
+  "manifest_path": "/home/chakwong/python/MathDevMCP/benchmarks/real_tasks/holdout_local/real_local_high_level_workflow_benchmark_cases.json",
+  "baseline_summary": {
+    "case_total": 9,
+    "boundary_violations": 0,
+    "unexpected_status_family": 0,
+    "baseline_evaluable": 7,
+    "correct_abstention_or_route_gap": 2,
+    "by_failure_class": {
+      "baseline_evaluable": 7,
+      "correct_abstention_or_route_gap": 2
+    },
+    "by_status": {
+      "diagnostic_only": 1,
+      "inconclusive": 2,
+      "missing_assumptions": 3,
+      "proved": 1,
+      "refuted": 1,
+      "structural_mismatch": 1
+    },
+    "aggregate_accuracy": null
+  },
+  "packets": [
+    {
+      "case_id": "RLHLB-01-ift-sign-gap",
+      "workflow": "debug_derivation",
+      "observed_status": "refuted",
+      "failure_class": "baseline_evaluable",
+      "certification_source": "backend",
+      "expected_status_family": "refuted",
+      "completeness": {
+        "required_fields_present": true,
+        "source_anchors_present": true,
+        "backend_checks_present": true,
+        "evidence_classes_present": true,
+        "non_claims_present": true,
+        "forbidden_claims_marked": true,
+        "local_non_gating_boundary_present": true,
+        "gaps_or_counterexamples_or_certificate_present": true
+      },
+      "findings": [],
+      "packet": {
+        "question": "Where does this sign derivation first fail?",
+        "source_anchors": [
+          {
+            "path": "../dsge_hmc/docs/gradient_accuracy_analysis.tex",
+            "line_range": "536-589",
+            "role": "theorem statement and proof algebra"
+          },
+          {
+            "path": "../dsge_hmc/docs/gradient_accuracy_analysis.tex",
+            "line_range": "883-893",
+            "role": "summary repeat of sign convention"
+          }
+        ],
+        "assumptions": [],
+        "route_availability": {
+          "source_adapter_state": "present",
+          "source_adapter_route": "ift_sign_consistency",
+          "symbolic_backend_state": "available",
+          "formal_backend_state": "not_applicable",
+          "code_equation_route_state": "not_applicable",
+          "residual_unresolved": [
+            "negative_control_requires_boundary_preservation"
+          ]
+        },
+        "derivation_proof_steps": [
+          {
+            "index": 0,
+            "lhs": "-lam*dr",
+            "rhs": "lam*dr",
+            "status": "refuted",
+            "reason": "A bounded counterexample refuted the scoped claim.",
+            "result": {
+              "status": "refuted",
+              "reason": "A bounded counterexample refuted the scoped claim.",
+              "claim": "-lam*dr = lam*dr",
+              "lhs": "-lam*dr",
+              "rhs": "lam*dr",
+              "route_decision": {
+                "route": "symbolic",
+                "status": "unknown",
+                "reason": "SymPy could not certify or refute this obligation by simplification.",
+                "backend_attempt": {
+                  "backend": "sympy",
+                  "status": "unknown",
+                  "reason": "SymPy could not certify or refute this obligation by simplification.",
+                  "evidence": [
+                    {
+                      "kind": "backend_unknown",
+                      "backend": "sympy",
+                      "backend_status": "unknown",
+                      "reason": "SymPy could not certify or refute this obligation by simplification.",
+                      "normalized_lhs": "-lam*dr",
+                      "normalized_rhs": "lam*dr",
+                      "readable_lhs": "-lam*dr",
+                      "readable_rhs": "lam*dr",
+                      "assumptions": [],
+                      "severity": "diagnostic",
+                      "backend_expression": "-2*dr*lam"
+                    }
+                  ],
+                  "severity": "diagnostic"
+                },
+                "obligation": {
+                  "id": "route-obligation-1",
+                  "lhs": "-lam*dr",
+                  "rhs": "lam*dr",
+                  "assumptions": [],
+                  "status": "unknown",
+                  "reason": "SymPy could not certify or refute this obligation by simplification.",
+                  "backend_attempts": [
+                    {
+                      "backend": "sympy",
+                      "status": "unknown",
+                      "reason": "SymPy could not certify or refute this obligation by simplification.",
+                      "evidence": [
+                        {
+                          "kind": "backend_unknown",
+                          "backend": "sympy",
+                          "backend_status": "unknown",
+                          "reason": "SymPy could not certify or refute this obligation by simplification.",
+                          "normalized_lhs": "-lam*dr",
+                          "normalized_rhs": "lam*dr",
+                          "readable_lhs": "-lam*dr",
+                          "readable_rhs": "lam*dr",
+                          "assumptions": [],
+                          "severity": "diagnostic",
+                          "backend_expression": "-2*dr*lam"
+                        }
+                      ],
+                      "severity": "diagnostic"
+                    }
+                  ],
+                  "counterexample": null,
+                  "missing_assumptions": [],
+                  "provenance": {}
+                },
+                "result": {
+                  "question": {
+                    "question_type": "route_obligation",
+                    "target": "-lam*dr == lam*dr",
+                    "givens": [],
+                    "assumptions": [],
+                    "context": {
+                      "route": "symbolic"
+                    },
+                    "metadata": {
+                      "schema_version": "1.0",
+                      "contract": "math_debugging_question"
+                    }
+                  },
+                  "status": "unknown",
+                  "reason": "SymPy could not certify or refute this obligation by simplification.",
+                  "obligations": [
+                    {
+                      "id": "route-obligation-1",
+                      "lhs": "-lam*dr",
+                      "rhs": "lam*dr",
+                      "assumptions": [],
+                      "status": "unknown",
+                      "reason": "SymPy could not certify or refute this obligation by simplification.",
+                      "backend_attempts": [
+                        {
+                          "backend": "sympy",
+                          "status": "unknown",
+                          "reason": "SymPy could not certify or refute this obligation by simplification.",
+                          "evidence": [
+                            {
+                              "kind": "backend_unknown",
+                              "backend": "sympy",
+                              "backend_status": "unknown",
+                              "reason": "SymPy could not certify or refute this obligation by simplification.",
+                              "normalized_lhs": "-lam*dr",
+                              "normalized_rhs": "lam*dr",
+                              "readable_lhs": "-lam*dr",
+                              "readable_rhs": "lam*dr",
+                              "assumptions": [],
+                              "severity": "diagnostic",
+                              "backend_expression": "-2*dr*lam"
+                            }
+                          ],
+                          "severity": "diagnostic"
+                        }
+                      ],
+                      "counterexample": null,
+                      "missing_assumptions": [],
+                      "provenance": {}
+                    }
+                  ],
+                  "assumptions": [],
+                  "backend_attempts": [
+                    {
+                      "backend": "sympy",
+                      "status": "unknown",
+                      "reason": "SymPy could not certify or refute this obligation by simplification.",
+                      "evidence": [
+                        {
+                          "kind": "backend_unknown",
+                          "backend": "sympy",
+                          "backend_status": "unknown",
+                          "reason": "SymPy could not certify or refute this obligation by simplification.",
+                          "normalized_lhs": "-lam*dr",
+                          "normalized_rhs": "lam*dr",
+                          "readable_lhs": "-lam*dr",
+                          "readable_rhs": "lam*dr",
+                          "assumptions": [],
+                          "severity": "diagnostic",
+                          "backend_expression": "-2*dr*lam"
+                        }
+                      ],
+                      "severity": "diagnostic"
+                    }
+                  ],
+                  "counterexamples": [],
+                  "actions": [
+                    {
+                      "kind": "review_or_reencode",
+                      "route": "symbolic"
+                    }
+                  ],
+                  "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                  "metadata": {
+                    "schema_version": "1.0",
+                    "contract": "math_debugging_workbench_result"
+                  }
+                },
+                "metadata": {
+                  "schema_version": "1.0",
+                  "contract": "math_debugging_route_decision"
+                }
+              },
+              "counterexample_search": {
+                "status": "refuted",
+                "reason": "A finite-domain scalar counterexample was found.",
+                "lhs": "-lam*dr",
+                "rhs": "lam*dr",
+                "backend": "sympy_finite_domain",
+                "search_space": {
+                  "kind": "finite_integer_domain",
+                  "domain": [
+                    -2,
+                    -1,
+                    0,
+                    1,
+                    2
+                  ],
+                  "status": "searched",
+                  "points": 1,
+                  "symbols": [
+                    "dr",
+                    "lam"
+                  ]
+                },
+                "counterexample": {
+                  "status": "found",
+                  "assignments": {
+                    "dr": -2,
+                    "lam": -2
+                  },
+                  "lhs_value": "-4",
+                  "rhs_value": "4",
+                  "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                  "backend": "sympy_finite_domain",
+                  "seed": null
+                },
+                "workbench_result": {
+                  "question": {
+                    "question_type": "find_counterexample",
+                    "target": "-lam*dr == lam*dr",
+                    "givens": [],
+                    "assumptions": [],
+                    "context": {
+                      "domain": [
+                        -2,
+                        -1,
+                        0,
+                        1,
+                        2
+                      ]
+                    },
+                    "metadata": {
+                      "schema_version": "1.0",
+                      "contract": "math_debugging_question"
+                    }
+                  },
+                  "status": "refuted",
+                  "reason": "A finite-domain scalar counterexample was found.",
+                  "obligations": [
+                    {
+                      "id": "counterexample-obligation-1",
+                      "lhs": "-lam*dr",
+                      "rhs": "lam*dr",
+                      "assumptions": [],
+                      "status": "refuted",
+                      "reason": "A finite-domain scalar counterexample was found.",
+                      "backend_attempts": [
+                        {
+                          "backend": "sympy_finite_domain",
+                          "status": "refuted",
+                          "reason": "A finite-domain scalar counterexample was found.",
+                          "evidence": [],
+                          "severity": "blocking"
+                        }
+                      ],
+                      "counterexample": {
+                        "status": "found",
+                        "assignments": {
+                          "dr": -2,
+                          "lam": -2
+                        },
+                        "lhs_value": "-4",
+                        "rhs_value": "4",
+                        "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                        "backend": "sympy_finite_domain",
+                        "seed": null
+                      },
+                      "missing_assumptions": [],
+                      "provenance": {}
+                    }
+                  ],
+                  "assumptions": [],
+                  "backend_attempts": [
+                    {
+                      "backend": "sympy_finite_domain",
+                      "status": "refuted",
+                      "reason": "A finite-domain scalar counterexample was found.",
+                      "evidence": [],
+                      "severity": "blocking"
+                    }
+                  ],
+                  "counterexamples": [
+                    {
+                      "status": "found",
+                      "assignments": {
+                        "dr": -2,
+                        "lam": -2
+                      },
+                      "lhs_value": "-4",
+                      "rhs_value": "4",
+                      "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                      "backend": "sympy_finite_domain",
+                      "seed": null
+                    }
+                  ],
+                  "actions": [],
+                  "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                  "metadata": {
+                    "schema_version": "1.0",
+                    "contract": "math_debugging_workbench_result"
+                  }
+                },
+                "metadata": {
+                  "schema_version": "1.0",
+                  "contract": "counterexample_search_result"
+                }
+              },
+              "workbench_result": {
+                "question": {
+                  "question_type": "prove_or_refute",
+                  "target": "-lam*dr = lam*dr",
+                  "givens": [],
+                  "assumptions": [],
+                  "context": {
+                    "backend": "auto"
+                  },
+                  "metadata": {
+                    "schema_version": "1.0",
+                    "contract": "math_debugging_question"
+                  }
+                },
+                "status": "refuted",
+                "reason": "A bounded counterexample refuted the scoped claim.",
+                "obligations": [
+                  {
+                    "id": "prove-target-1",
+                    "lhs": "-lam*dr",
+                    "rhs": "lam*dr",
+                    "assumptions": [],
+                    "status": "refuted",
+                    "reason": "A bounded counterexample refuted the scoped claim.",
+                    "backend_attempts": [
+                      {
+                        "backend": "sympy",
+                        "status": "unknown",
+                        "reason": "SymPy could not certify or refute this obligation by simplification.",
+                        "evidence": [
+                          {
+                            "kind": "backend_unknown",
+                            "backend": "sympy",
+                            "backend_status": "unknown",
+                            "reason": "SymPy could not certify or refute this obligation by simplification.",
+                            "normalized_lhs": "-lam*dr",
+                            "normalized_rhs": "lam*dr",
+                            "readable_lhs": "-lam*dr",
+                            "readable_rhs": "lam*dr",
+                            "assumptions": [],
+                            "severity": "diagnostic",
+                            "backend_expression": "-2*dr*lam"
+                          }
+                        ],
+                        "severity": "diagnostic"
+                      }
+                    ],
+                    "counterexample": {
+                      "status": "found",
+                      "assignments": {
+                        "dr": -2,
+                        "lam": -2
+                      },
+                      "lhs_value": "-4",
+                      "rhs_value": "4",
+                      "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                      "backend": "sympy_finite_domain",
+                      "seed": null
+                    },
+                    "missing_assumptions": [],
+                    "provenance": {}
+                  }
+                ],
+                "assumptions": [],
+                "backend_attempts": [
+                  {
+                    "backend": "sympy",
+                    "status": "unknown",
+                    "reason": "SymPy could not certify or refute this obligation by simplification.",
+                    "evidence": [
+                      {
+                        "kind": "backend_unknown",
+                        "backend": "sympy",
+                        "backend_status": "unknown",
+                        "reason": "SymPy could not certify or refute this obligation by simplification.",
+                        "normalized_lhs": "-lam*dr",
+                        "normalized_rhs": "lam*dr",
+                        "readable_lhs": "-lam*dr",
+                        "readable_rhs": "lam*dr",
+                        "assumptions": [],
+                        "severity": "diagnostic",
+                        "backend_expression": "-2*dr*lam"
+                      }
+                    ],
+                    "severity": "diagnostic"
+                  }
+                ],
+                "counterexamples": [
+                  {
+                    "status": "found",
+                    "assignments": {
+                      "dr": -2,
+                      "lam": -2
+                    },
+                    "lhs_value": "-4",
+                    "rhs_value": "4",
+                    "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                    "backend": "sympy_finite_domain",
+                    "seed": null
+                  }
+                ],
+                "actions": [],
+                "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                "metadata": {
+                  "schema_version": "1.0",
+                  "contract": "math_debugging_workbench_result"
+                }
+              },
+              "metadata": {
+                "schema_version": "1.0",
+                "contract": "prove_or_refute_result"
+              }
+            }
+          },
+          {
+            "kind": "obligation",
+            "id": "prove-target-1",
+            "lhs": "-lam*dr",
+            "rhs": "lam*dr",
+            "assumptions": [],
+            "status": "refuted",
+            "reason": "A bounded counterexample refuted the scoped claim.",
+            "backend_attempts": [
+              {
+                "backend": "sympy",
+                "status": "unknown",
+                "reason": "SymPy could not certify or refute this obligation by simplification.",
+                "evidence": [
+                  {
+                    "kind": "backend_unknown",
+                    "backend": "sympy",
+                    "backend_status": "unknown",
+                    "reason": "SymPy could not certify or refute this obligation by simplification.",
+                    "normalized_lhs": "-lam*dr",
+                    "normalized_rhs": "lam*dr",
+                    "readable_lhs": "-lam*dr",
+                    "readable_rhs": "lam*dr",
+                    "assumptions": [],
+                    "severity": "diagnostic",
+                    "backend_expression": "-2*dr*lam"
+                  }
+                ],
+                "severity": "diagnostic"
+              }
+            ],
+            "counterexample": {
+              "status": "found",
+              "assignments": {
+                "dr": -2,
+                "lam": -2
+              },
+              "lhs_value": "-4",
+              "rhs_value": "4",
+              "reason": "Finite-domain substitution produced different lhs/rhs values.",
+              "backend": "sympy_finite_domain",
+              "seed": null
+            },
+            "missing_assumptions": [],
+            "provenance": {}
+          }
+        ],
+        "backend_checks": [
+          {
+            "backend": "sympy",
+            "state": "available",
+            "source": "route_reference"
+          },
+          {
+            "backend": "lean",
+            "state": "not_applicable",
+            "source": "route_reference"
+          },
+          {
+            "source": "workflow_result",
+            "backend": "sympy",
+            "status": "unknown",
+            "reason": "SymPy could not certify or refute this obligation by simplification.",
+            "evidence": [
+              {
+                "kind": "backend_unknown",
+                "backend": "sympy",
+                "backend_status": "unknown",
+                "reason": "SymPy could not certify or refute this obligation by simplification.",
+                "normalized_lhs": "-lam*dr",
+                "normalized_rhs": "lam*dr",
+                "readable_lhs": "-lam*dr",
+                "readable_rhs": "lam*dr",
+                "assumptions": [],
+                "severity": "diagnostic",
+                "backend_expression": "-2*dr*lam"
+              }
+            ],
+            "severity": "diagnostic"
+          }
+        ],
+        "counterexamples": [
+          {
+            "status": "found",
+            "assignments": {
+              "dr": -2,
+              "lam": -2
+            },
+            "lhs_value": "-4",
+            "rhs_value": "4",
+            "reason": "Finite-domain substitution produced different lhs/rhs values.",
+            "backend": "sympy_finite_domain",
+            "seed": null
+          }
+        ],
+        "gaps": [
+          {
+            "source": "route_reference",
+            "kind": "negative_control_requires_boundary_preservation",
+            "status": "unresolved"
+          }
+        ],
+        "actions": [
+          {
+            "code": "human_review",
+            "description": "Inspect the localized transition before changing the derivation."
+          }
+        ],
+        "evidence_classes": [
+          "backend_counterexample"
+        ],
+        "non_claims": [
+          "This scoped workflow result does not claim general theorem-proving ability.",
+          "This scoped workflow result does not claim release readiness.",
+          "Forbidden claim not made: Whole DSGE note false.",
+          "Forbidden claim not made: HMC conclusion invalid.",
+          "Forbidden claim not made: Probe proves theorem.",
+          "Durable packets are review artifacts, not proof certificates by themselves.",
+          "Packet contents preserve source, backend, counterexample, gap, action, and non-claim ledgers separately.",
+          "A packet may summarize backend evidence only within the scoped high-level workflow result that produced it.",
+          "Packet reports are local/non-gating and do not establish release readiness, public benchmark validity, scientific validation, or broad theorem proving.",
+          "Aggregate accuracy remains unavailable for this local benchmark report."
+        ]
+      }
+    },
+    {
+      "case_id": "RLHLB-02-kalman-loglik-assumptions",
+      "workflow": "assumptions_for",
+      "observed_status": "missing_assumptions",
+      "failure_class": "baseline_evaluable",
+      "certification_source": "none",
+      "expected_status_family": "positive_or_abstain",
+      "completeness": {
+        "required_fields_present": true,
+        "source_anchors_present": true,
+        "backend_checks_present": true,
+        "evidence_classes_present": true,
+        "non_claims_present": true,
+        "forbidden_claims_marked": true,
+        "local_non_gating_boundary_present": true,
+        "gaps_or_counterexamples_or_certificate_present": true
+      },
+      "findings": [],
+      "packet": {
+        "question": "What assumptions are required to derive Kalman prediction-error log-likelihood?",
+        "source_anchors": [
+          {
+            "path": "../latex-papers/CIP_monograph/chapters/ch16_kalman_filter.tex",
+            "line_range": "197-223",
+            "role": "CIP monograph prediction-error decomposition"
+          },
+          {
+            "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+            "line_range": "32-39",
+            "role": "innovation regularity assumption"
+          },
+          {
+            "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+            "line_range": "76-105",
+            "role": "BayesFilter likelihood spine"
+          }
+        ],
+        "assumptions": [
+          {
+            "text": "matrix operand is square and invertible",
+            "status": "missing",
+            "source": "inverse or solve",
+            "necessity": "required_by_route",
+            "used_by": [
+              "inverse_invertible"
+            ]
+          },
+          {
+            "text": "matrix operand is square with valid determinant domain, usually positive definite for logdet",
+            "status": "missing",
+            "source": "determinant or logdet",
+            "necessity": "required_by_route",
+            "used_by": [
+              "logdet_domain"
+            ]
+          },
+          {
+            "text": "matrix dimensions are conformable for the operation",
+            "status": "missing",
+            "source": "matrix operation",
+            "necessity": "required_by_route",
+            "used_by": [
+              "matrix_conformability"
+            ]
+          }
+        ],
+        "route_availability": {
+          "source_adapter_state": "present",
+          "source_adapter_route": "kalman_prediction_error_loglik",
+          "symbolic_backend_state": "not_applicable",
+          "formal_backend_state": "not_applicable",
+          "code_equation_route_state": "not_applicable",
+          "residual_unresolved": []
+        },
+        "derivation_proof_steps": [
+          {
+            "kind": "obligation",
+            "id": "assumption-obligation-1",
+            "lhs": "logdet(S) + v.T @ solve(S, v)",
+            "rhs": "well-posed under route assumptions",
+            "assumptions": [],
+            "status": "missing_assumptions",
+            "reason": "At least one route-required assumption is missing.",
+            "backend_attempts": [],
+            "counterexample": null,
+            "missing_assumptions": [
+              {
+                "text": "matrix operand is square and invertible",
+                "status": "missing",
+                "source": "inverse or solve",
+                "necessity": "required_by_route",
+                "used_by": [
+                  "inverse_invertible"
+                ]
+              },
+              {
+                "text": "matrix operand is square with valid determinant domain, usually positive definite for logdet",
+                "status": "missing",
+                "source": "determinant or logdet",
+                "necessity": "required_by_route",
+                "used_by": [
+                  "logdet_domain"
+                ]
+              },
+              {
+                "text": "matrix dimensions are conformable for the operation",
+                "status": "missing",
+                "source": "matrix operation",
+                "necessity": "required_by_route",
+                "used_by": [
+                  "matrix_conformability"
+                ]
+              }
+            ],
+            "provenance": {}
+          }
+        ],
+        "backend_checks": [
+          {
+            "backend": "sympy",
+            "state": "not_applicable",
+            "source": "route_reference"
+          },
+          {
+            "backend": "lean",
+            "state": "not_applicable",
+            "source": "route_reference"
+          }
+        ],
+        "counterexamples": [],
+        "gaps": [],
+        "actions": [
+          {
+            "code": "human_review",
+            "description": "Review whether route-required assumptions are sufficient for the intended mathematical setting."
+          }
+        ],
+        "evidence_classes": [
+          "missing_assumption"
+        ],
+        "non_claims": [
+          "This scoped workflow result does not claim general theorem-proving ability.",
+          "This scoped workflow result does not claim release readiness.",
+          "Route-required assumptions are not claimed to be globally minimal.",
+          "Forbidden claim not made: Nonlinear filters exact.",
+          "Forbidden claim not made: Score/Hessian validated.",
+          "Forbidden claim not made: Source likelihood is implementation proof.",
+          "Durable packets are review artifacts, not proof certificates by themselves.",
+          "Packet contents preserve source, backend, counterexample, gap, action, and non-claim ledgers separately.",
+          "A packet may summarize backend evidence only within the scoped high-level workflow result that produced it.",
+          "Packet reports are local/non-gating and do not establish release readiness, public benchmark validity, scientific validation, or broad theorem proving.",
+          "Aggregate accuracy remains unavailable for this local benchmark report."
+        ]
+      }
+    },
+    {
+      "case_id": "RLHLB-03-joseph-equivalence",
+      "workflow": "prove_or_counterexample",
+      "observed_status": "proved",
+      "failure_class": "baseline_evaluable",
+      "certification_source": "backend",
+      "expected_status_family": "positive_or_abstain",
+      "completeness": {
+        "required_fields_present": true,
+        "source_anchors_present": true,
+        "backend_checks_present": true,
+        "evidence_classes_present": true,
+        "non_claims_present": true,
+        "forbidden_claims_marked": true,
+        "local_non_gating_boundary_present": true,
+        "gaps_or_counterexamples_or_certificate_present": true
+      },
+      "findings": [],
+      "packet": {
+        "question": "Can we prove Joseph and compact covariance updates are equivalent in scope?",
+        "source_anchors": [
+          {
+            "path": "../latex-papers/CIP_monograph/chapters/ch16_kalman_filter.tex",
+            "line_range": "123-133",
+            "role": "Joseph-form equivalence and numerical caveat"
+          },
+          {
+            "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+            "line_range": "59-74",
+            "role": "compact and Joseph covariance update forms"
+          }
+        ],
+        "assumptions": [],
+        "route_availability": {
+          "source_adapter_state": "present",
+          "source_adapter_route": "joseph_covariance_equivalence",
+          "symbolic_backend_state": "available",
+          "formal_backend_state": "available_requires_explicit_source",
+          "code_equation_route_state": "not_applicable",
+          "residual_unresolved": []
+        },
+        "derivation_proof_steps": [
+          {
+            "kind": "obligation",
+            "id": "prove-target-1",
+            "lhs": "(1-k*h)*p",
+            "rhs": "p-k*h*p",
+            "assumptions": [],
+            "status": "proved",
+            "reason": "The scoped claim was certified by the routed backend.",
+            "backend_attempts": [
+              {
+                "backend": "sympy",
+                "status": "proved",
+                "reason": "SymPy simplified lhs - rhs to zero.",
+                "evidence": [
+                  {
+                    "kind": "backend_verified",
+                    "backend": "sympy",
+                    "backend_status": "proved",
+                    "reason": "SymPy simplified lhs - rhs to zero.",
+                    "normalized_lhs": "(1-k*h)*p",
+                    "normalized_rhs": "p-k*h*p",
+                    "readable_lhs": "(1-k*h)*p",
+                    "readable_rhs": "p-k*h*p",
+                    "assumptions": [],
+                    "severity": "certifying",
+                    "backend_expression": "0"
+                  }
+                ],
+                "severity": "certifying"
+              }
+            ],
+            "counterexample": null,
+            "missing_assumptions": [],
+            "provenance": {}
+          }
+        ],
+        "backend_checks": [
+          {
+            "backend": "sympy",
+            "state": "available",
+            "source": "route_reference"
+          },
+          {
+            "backend": "lean",
+            "state": "available_requires_explicit_source",
+            "source": "route_reference"
+          },
+          {
+            "source": "workflow_result",
+            "backend": "sympy",
+            "status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "evidence": [
+              {
+                "kind": "backend_verified",
+                "backend": "sympy",
+                "backend_status": "proved",
+                "reason": "SymPy simplified lhs - rhs to zero.",
+                "normalized_lhs": "(1-k*h)*p",
+                "normalized_rhs": "p-k*h*p",
+                "readable_lhs": "(1-k*h)*p",
+                "readable_rhs": "p-k*h*p",
+                "assumptions": [],
+                "severity": "certifying",
+                "backend_expression": "0"
+              }
+            ],
+            "severity": "certifying"
+          },
+          {
+            "source": "workflow_result",
+            "backend": "sympy",
+            "status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "evidence": [
+              {
+                "kind": "backend_verified",
+                "backend": "sympy",
+                "backend_status": "proved",
+                "reason": "SymPy simplified lhs - rhs to zero.",
+                "normalized_lhs": "(1-k*h)*p",
+                "normalized_rhs": "p-k*h*p",
+                "readable_lhs": "(1-k*h)*p",
+                "readable_rhs": "p-k*h*p",
+                "assumptions": [],
+                "severity": "certifying",
+                "backend_expression": "0"
+              }
+            ],
+            "severity": "certifying"
+          }
+        ],
+        "counterexamples": [],
+        "gaps": [],
+        "actions": [
+          {
+            "code": "human_review",
+            "description": "Review proof scope, assumptions, and backend route before reusing the result."
+          }
+        ],
+        "evidence_classes": [
+          "backend_certificate"
+        ],
+        "non_claims": [
+          "This scoped workflow result does not claim general theorem-proving ability.",
+          "This scoped workflow result does not claim release readiness.",
+          "Forbidden claim not made: Floating-point compact update always stable.",
+          "Forbidden claim not made: Backend implementation validated.",
+          "Durable packets are review artifacts, not proof certificates by themselves.",
+          "Packet contents preserve source, backend, counterexample, gap, action, and non-claim ledgers separately.",
+          "A packet may summarize backend evidence only within the scoped high-level workflow result that produced it.",
+          "Packet reports are local/non-gating and do not establish release readiness, public benchmark validity, scientific validation, or broad theorem proving.",
+          "Aggregate accuracy remains unavailable for this local benchmark report."
+        ]
+      }
+    },
+    {
+      "case_id": "RLHLB-04-affine-pricing-recursion",
+      "workflow": "derive_from",
+      "observed_status": "inconclusive",
+      "failure_class": "correct_abstention_or_route_gap",
+      "certification_source": "none",
+      "expected_status_family": "positive_or_abstain",
+      "completeness": {
+        "required_fields_present": true,
+        "source_anchors_present": true,
+        "backend_checks_present": true,
+        "evidence_classes_present": true,
+        "non_claims_present": true,
+        "forbidden_claims_marked": true,
+        "local_non_gating_boundary_present": true,
+        "gaps_or_counterexamples_or_certificate_present": true
+      },
+      "findings": [],
+      "packet": {
+        "question": "Can we derive affine pricing recursion from Gaussian affine assumptions?",
+        "source_anchors": [
+          {
+            "path": "../latex-papers/CIP_monograph/chapters/ch11_state_space_recursions.tex",
+            "line_range": "242-322",
+            "role": "general discrete-time affine pricing recursion"
+          }
+        ],
+        "assumptions": [],
+        "route_availability": {
+          "source_adapter_state": "present",
+          "source_adapter_route": "affine_pricing_master_recursion",
+          "symbolic_backend_state": "available",
+          "formal_backend_state": "not_applicable",
+          "code_equation_route_state": "not_applicable",
+          "residual_unresolved": []
+        },
+        "derivation_proof_steps": [
+          {
+            "kind": "obligation",
+            "id": "derive-target-1",
+            "lhs": "A + B*x",
+            "rhs": "A + x*B",
+            "assumptions": [],
+            "status": "unknown",
+            "reason": "No bounded derivation or refutation was found.",
+            "backend_attempts": [
+              {
+                "backend": "router",
+                "status": "unknown",
+                "reason": "Expression appears to require matrix/domain review before scalar symbolic routing.",
+                "evidence": [],
+                "severity": "diagnostic"
+              }
+            ],
+            "counterexample": null,
+            "missing_assumptions": [],
+            "provenance": {}
+          }
+        ],
+        "backend_checks": [
+          {
+            "backend": "sympy",
+            "state": "available",
+            "source": "route_reference"
+          },
+          {
+            "backend": "lean",
+            "state": "not_applicable",
+            "source": "route_reference"
+          },
+          {
+            "source": "workflow_result",
+            "backend": "router",
+            "status": "unknown",
+            "reason": "Expression appears to require matrix/domain review before scalar symbolic routing.",
+            "evidence": [],
+            "severity": "diagnostic"
+          },
+          {
+            "source": "workflow_result",
+            "backend": "router",
+            "status": "unknown",
+            "reason": "Expression appears to require matrix/domain review before scalar symbolic routing.",
+            "evidence": [],
+            "severity": "diagnostic"
+          }
+        ],
+        "counterexamples": [],
+        "gaps": [
+          {
+            "source": "veto_reason",
+            "code": "unresolved_low_level_status",
+            "reason": "Unsupported or inconclusive low-level status: unknown"
+          }
+        ],
+        "actions": [
+          {
+            "code": "human_review",
+            "description": "Review low-level evidence manually."
+          },
+          {
+            "code": "human_review",
+            "description": "Check whether the recorded givens should be promoted to explicit route assumptions.",
+            "givens": [],
+            "explicit_assumptions": []
+          }
+        ],
+        "evidence_classes": [
+          "human_review_required"
+        ],
+        "non_claims": [
+          "This scoped workflow result does not claim general theorem-proving ability.",
+          "givens not formal assumptions",
+          "This scoped workflow result does not claim release readiness.",
+          "Forbidden claim not made: Empirical pricing validity.",
+          "Forbidden claim not made: Nonlinear approximation exact.",
+          "Durable packets are review artifacts, not proof certificates by themselves.",
+          "Packet contents preserve source, backend, counterexample, gap, action, and non-claim ledgers separately.",
+          "A packet may summarize backend evidence only within the scoped high-level workflow result that produced it.",
+          "Packet reports are local/non-gating and do not establish release readiness, public benchmark validity, scientific validation, or broad theorem proving.",
+          "Aggregate accuracy remains unavailable for this local benchmark report."
+        ]
+      }
+    },
+    {
+      "case_id": "RLHLB-05-kalman-score-same-scalar",
+      "workflow": "assumptions_for",
+      "observed_status": "missing_assumptions",
+      "failure_class": "baseline_evaluable",
+      "certification_source": "none",
+      "expected_status_family": "positive_or_abstain",
+      "completeness": {
+        "required_fields_present": true,
+        "source_anchors_present": true,
+        "backend_checks_present": true,
+        "evidence_classes_present": true,
+        "non_claims_present": true,
+        "forbidden_claims_marked": true,
+        "local_non_gating_boundary_present": true,
+        "gaps_or_counterexamples_or_certificate_present": true
+      },
+      "findings": [],
+      "packet": {
+        "question": "What assumptions are needed for the Kalman score to match the same scalar likelihood?",
+        "source_anchors": [
+          {
+            "path": "../BayesFilter/docs/chapters/ch09_kalman_score.tex",
+            "line_range": "20-103",
+            "role": "first-order Kalman score and solve-form score"
+          },
+          {
+            "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+            "line_range": "120-130",
+            "role": "same scalar likelihood contract"
+          }
+        ],
+        "assumptions": [
+          {
+            "text": "matrix operand is square and invertible",
+            "status": "missing",
+            "source": "inverse or solve",
+            "necessity": "required_by_route",
+            "used_by": [
+              "inverse_invertible"
+            ]
+          },
+          {
+            "text": "matrix operand is square with valid determinant domain, usually positive definite for logdet",
+            "status": "missing",
+            "source": "determinant or logdet",
+            "necessity": "required_by_route",
+            "used_by": [
+              "logdet_domain"
+            ]
+          },
+          {
+            "text": "target function is differentiable on the stated domain",
+            "status": "missing",
+            "source": "derivative",
+            "necessity": "required_by_route",
+            "used_by": [
+              "differentiability"
+            ]
+          },
+          {
+            "text": "matrix dimensions are conformable for the operation",
+            "status": "missing",
+            "source": "matrix operation",
+            "necessity": "required_by_route",
+            "used_by": [
+              "matrix_conformability"
+            ]
+          }
+        ],
+        "route_availability": {
+          "source_adapter_state": "present",
+          "source_adapter_route": "kalman_score_same_scalar",
+          "symbolic_backend_state": "not_applicable",
+          "formal_backend_state": "not_applicable",
+          "code_equation_route_state": "not_applicable",
+          "residual_unresolved": []
+        },
+        "derivation_proof_steps": [
+          {
+            "kind": "obligation",
+            "id": "assumption-obligation-1",
+            "lhs": "grad(logdet(S) + v.T @ solve(S, v))",
+            "rhs": "well-posed under route assumptions",
+            "assumptions": [],
+            "status": "missing_assumptions",
+            "reason": "At least one route-required assumption is missing.",
+            "backend_attempts": [],
+            "counterexample": null,
+            "missing_assumptions": [
+              {
+                "text": "matrix operand is square and invertible",
+                "status": "missing",
+                "source": "inverse or solve",
+                "necessity": "required_by_route",
+                "used_by": [
+                  "inverse_invertible"
+                ]
+              },
+              {
+                "text": "matrix operand is square with valid determinant domain, usually positive definite for logdet",
+                "status": "missing",
+                "source": "determinant or logdet",
+                "necessity": "required_by_route",
+                "used_by": [
+                  "logdet_domain"
+                ]
+              },
+              {
+                "text": "target function is differentiable on the stated domain",
+                "status": "missing",
+                "source": "derivative",
+                "necessity": "required_by_route",
+                "used_by": [
+                  "differentiability"
+                ]
+              },
+              {
+                "text": "matrix dimensions are conformable for the operation",
+                "status": "missing",
+                "source": "matrix operation",
+                "necessity": "required_by_route",
+                "used_by": [
+                  "matrix_conformability"
+                ]
+              }
+            ],
+            "provenance": {}
+          }
+        ],
+        "backend_checks": [
+          {
+            "backend": "sympy",
+            "state": "not_applicable",
+            "source": "route_reference"
+          },
+          {
+            "backend": "lean",
+            "state": "not_applicable",
+            "source": "route_reference"
+          }
+        ],
+        "counterexamples": [],
+        "gaps": [],
+        "actions": [
+          {
+            "code": "human_review",
+            "description": "Review whether route-required assumptions are sufficient for the intended mathematical setting."
+          }
+        ],
+        "evidence_classes": [
+          "missing_assumption"
+        ],
+        "non_claims": [
+          "This scoped workflow result does not claim general theorem-proving ability.",
+          "This scoped workflow result does not claim release readiness.",
+          "Route-required assumptions are not claimed to be globally minimal.",
+          "Forbidden claim not made: HMC validity.",
+          "Forbidden claim not made: Posterior correctness.",
+          "Forbidden claim not made: Hessian readiness.",
+          "Durable packets are review artifacts, not proof certificates by themselves.",
+          "Packet contents preserve source, backend, counterexample, gap, action, and non-claim ledgers separately.",
+          "A packet may summarize backend evidence only within the scoped high-level workflow result that produced it.",
+          "Packet reports are local/non-gating and do not establish release readiness, public benchmark validity, scientific validation, or broad theorem proving.",
+          "Aggregate accuracy remains unavailable for this local benchmark report."
+        ]
+      }
+    },
+    {
+      "case_id": "RLHLB-06-state-space-code-missing-solve",
+      "workflow": "audit_math_to_code",
+      "observed_status": "structural_mismatch",
+      "failure_class": "baseline_evaluable",
+      "certification_source": "none",
+      "expected_status_family": "routing_only",
+      "completeness": {
+        "required_fields_present": true,
+        "source_anchors_present": true,
+        "backend_checks_present": true,
+        "evidence_classes_present": true,
+        "non_claims_present": true,
+        "forbidden_claims_marked": true,
+        "local_non_gating_boundary_present": true,
+        "gaps_or_counterexamples_or_certificate_present": true
+      },
+      "findings": [],
+      "packet": {
+        "question": "Does code implement the documented Kalman likelihood solve/quadratic form?",
+        "source_anchors": [
+          {
+            "path": "benchmarks/fixtures/doc_department_state_space.tex",
+            "line_range": "7-23",
+            "role": "documented Kalman likelihood solve/quadratic form"
+          },
+          {
+            "path": "benchmarks/fixtures/doc_department_state_space_missing_solve.py",
+            "line_range": "1-17",
+            "role": "candidate implementation missing explicit solve/quadratic form"
+          },
+          {
+            "path": "docs/mathdevmcp-release-report.tex",
+            "line_range": "1099-1123",
+            "role": "release-report fixture context"
+          }
+        ],
+        "assumptions": [],
+        "route_availability": {
+          "source_adapter_state": "not_applicable",
+          "source_adapter_route": null,
+          "symbolic_backend_state": "not_applicable",
+          "formal_backend_state": "not_applicable",
+          "code_equation_route_state": "available",
+          "residual_unresolved": [
+            "negative_control_requires_boundary_preservation"
+          ]
+        },
+        "derivation_proof_steps": [
+          {
+            "status": "structural_mismatch",
+            "reason": "Code is missing required equation terms or has structural conflicts."
+          }
+        ],
+        "backend_checks": [
+          {
+            "backend": "sympy",
+            "state": "not_applicable",
+            "source": "route_reference"
+          },
+          {
+            "backend": "lean",
+            "state": "not_applicable",
+            "source": "route_reference"
+          }
+        ],
+        "counterexamples": [],
+        "gaps": [
+          {
+            "source": "route_reference",
+            "kind": "negative_control_requires_boundary_preservation",
+            "status": "unresolved"
+          }
+        ],
+        "actions": [
+          {
+            "code": "human_review",
+            "description": "Inspect structural mismatch."
+          },
+          {
+            "code": "human_review",
+            "description": "Review structural matches, missing terms, aliases, and audit-only extras before treating code as correct."
+          }
+        ],
+        "evidence_classes": [
+          "structural_mismatch"
+        ],
+        "non_claims": [
+          "This scoped workflow result does not claim general theorem-proving ability.",
+          "This scoped workflow result does not claim release readiness.",
+          "Structural evidence is not a semantic proof.",
+          "Forbidden claim not made: Code is mathematically wrong.",
+          "Forbidden claim not made: Absence of literal solve proves implementation invalid.",
+          "Durable packets are review artifacts, not proof certificates by themselves.",
+          "Packet contents preserve source, backend, counterexample, gap, action, and non-claim ledgers separately.",
+          "A packet may summarize backend evidence only within the scoped high-level workflow result that produced it.",
+          "Packet reports are local/non-gating and do not establish release readiness, public benchmark validity, scientific validation, or broad theorem proving.",
+          "Aggregate accuracy remains unavailable for this local benchmark report."
+        ]
+      }
+    },
+    {
+      "case_id": "RLHLB-07-proof-boundary-review-packet",
+      "workflow": "prepare_review_packet",
+      "observed_status": "diagnostic_only",
+      "failure_class": "baseline_evaluable",
+      "certification_source": "none",
+      "expected_status_family": "insufficient_evidence",
+      "completeness": {
+        "required_fields_present": true,
+        "source_anchors_present": true,
+        "backend_checks_present": true,
+        "evidence_classes_present": true,
+        "non_claims_present": true,
+        "forbidden_claims_marked": true,
+        "local_non_gating_boundary_present": true,
+        "gaps_or_counterexamples_or_certificate_present": true
+      },
+      "findings": [],
+      "packet": {
+        "question": "Can we produce a packet for a difficult Gaussian score derivation without overclaiming proof?",
+        "source_anchors": [
+          {
+            "path": "docs/mathdevmcp-release-report.tex",
+            "line_range": "1255-1361",
+            "role": "Gaussian score derivation review context"
+          }
+        ],
+        "assumptions": [],
+        "route_availability": {
+          "source_adapter_state": "not_applicable",
+          "source_adapter_route": null,
+          "symbolic_backend_state": "not_applicable",
+          "formal_backend_state": "not_applicable",
+          "code_equation_route_state": "not_applicable",
+          "residual_unresolved": [
+            "negative_control_requires_boundary_preservation",
+            "diagnostic_packet_not_certificate"
+          ]
+        },
+        "derivation_proof_steps": [
+          {
+            "status": "diagnostic_only",
+            "reason": "At least one nested evidence record is blocked, unavailable, not encodable, or mismatched."
+          }
+        ],
+        "backend_checks": [
+          {
+            "backend": "sympy",
+            "state": "not_applicable",
+            "source": "route_reference"
+          },
+          {
+            "backend": "lean",
+            "state": "not_applicable",
+            "source": "route_reference"
+          }
+        ],
+        "counterexamples": [],
+        "gaps": [
+          {
+            "source": "route_reference",
+            "kind": "negative_control_requires_boundary_preservation",
+            "status": "unresolved"
+          },
+          {
+            "source": "route_reference",
+            "kind": "diagnostic_packet_not_certificate",
+            "status": "unresolved"
+          }
+        ],
+        "actions": [
+          {
+            "code": "human_review",
+            "description": "Review the packet and nested evidence boundaries."
+          },
+          {
+            "code": "human_review",
+            "description": "Inspect nested evidence, non-claims, and action items."
+          }
+        ],
+        "evidence_classes": [
+          "review_packet"
+        ],
+        "non_claims": [
+          "Diagnostic evidence is not a proof certificate.",
+          "This scoped workflow result does not claim general theorem-proving ability.",
+          "This scoped workflow result does not claim release readiness.",
+          "Forbidden claim not made: Review packet is a certificate.",
+          "Forbidden claim not made: Full score derivation proved.",
+          "Durable packets are review artifacts, not proof certificates by themselves.",
+          "Packet contents preserve source, backend, counterexample, gap, action, and non-claim ledgers separately.",
+          "A packet may summarize backend evidence only within the scoped high-level workflow result that produced it.",
+          "Packet reports are local/non-gating and do not establish release readiness, public benchmark validity, scientific validation, or broad theorem proving.",
+          "Aggregate accuracy remains unavailable for this local benchmark report."
+        ]
+      }
+    },
+    {
+      "case_id": "RLHLB-08-hmc-value-only-boundary",
+      "workflow": "prove_or_counterexample",
+      "observed_status": "inconclusive",
+      "failure_class": "correct_abstention_or_route_gap",
+      "certification_source": "none",
+      "expected_status_family": "insufficient_evidence",
+      "completeness": {
+        "required_fields_present": true,
+        "source_anchors_present": true,
+        "backend_checks_present": true,
+        "evidence_classes_present": true,
+        "non_claims_present": true,
+        "forbidden_claims_marked": true,
+        "local_non_gating_boundary_present": true,
+        "gaps_or_counterexamples_or_certificate_present": true
+      },
+      "findings": [],
+      "packet": {
+        "question": "Does a value-only filtering likelihood route prove HMC production readiness?",
+        "source_anchors": [
+          {
+            "path": "../BayesFilter/docs/chapters/ch21_hmc_for_state_space.tex",
+            "line_range": "6-52",
+            "role": "HMC state-space likelihood route and value/gradient boundary"
+          }
+        ],
+        "assumptions": [],
+        "route_availability": {
+          "source_adapter_state": "not_applicable",
+          "source_adapter_route": null,
+          "symbolic_backend_state": "available",
+          "formal_backend_state": "available_requires_explicit_source",
+          "code_equation_route_state": "not_applicable",
+          "residual_unresolved": [
+            "negative_control_requires_boundary_preservation"
+          ]
+        },
+        "derivation_proof_steps": [
+          {
+            "kind": "obligation",
+            "id": "prove-target-1",
+            "lhs": "value_only_likelihood",
+            "rhs": "hmc_production_readiness",
+            "assumptions": [],
+            "status": "unknown",
+            "reason": "The claim uses opaque semantic placeholders and needs explicit source or formal evidence before proof or refutation.",
+            "backend_attempts": [
+              {
+                "backend": "sympy",
+                "status": "unknown",
+                "reason": "SymPy could not certify or refute this obligation by simplification.",
+                "evidence": [
+                  {
+                    "kind": "backend_unknown",
+                    "backend": "sympy",
+                    "backend_status": "unknown",
+                    "reason": "SymPy could not certify or refute this obligation by simplification.",
+                    "normalized_lhs": "value_only_likelihood",
+                    "normalized_rhs": "hmc_production_readiness",
+                    "readable_lhs": "value_only_likelihood",
+                    "readable_rhs": "hmc_production_readiness",
+                    "assumptions": [],
+                    "severity": "diagnostic",
+                    "backend_expression": "-hmc_production_readiness + value_only_likelihood"
+                  }
+                ],
+                "severity": "diagnostic"
+              }
+            ],
+            "counterexample": null,
+            "missing_assumptions": [],
+            "provenance": {}
+          }
+        ],
+        "backend_checks": [
+          {
+            "backend": "sympy",
+            "state": "available",
+            "source": "route_reference"
+          },
+          {
+            "backend": "lean",
+            "state": "available_requires_explicit_source",
+            "source": "route_reference"
+          },
+          {
+            "source": "workflow_result",
+            "backend": "sympy",
+            "status": "unknown",
+            "reason": "SymPy could not certify or refute this obligation by simplification.",
+            "evidence": [
+              {
+                "kind": "backend_unknown",
+                "backend": "sympy",
+                "backend_status": "unknown",
+                "reason": "SymPy could not certify or refute this obligation by simplification.",
+                "normalized_lhs": "value_only_likelihood",
+                "normalized_rhs": "hmc_production_readiness",
+                "readable_lhs": "value_only_likelihood",
+                "readable_rhs": "hmc_production_readiness",
+                "assumptions": [],
+                "severity": "diagnostic",
+                "backend_expression": "-hmc_production_readiness + value_only_likelihood"
+              }
+            ],
+            "severity": "diagnostic"
+          },
+          {
+            "source": "workflow_result",
+            "backend": "sympy",
+            "status": "unknown",
+            "reason": "SymPy could not certify or refute this obligation by simplification.",
+            "evidence": [
+              {
+                "kind": "backend_unknown",
+                "backend": "sympy",
+                "backend_status": "unknown",
+                "reason": "SymPy could not certify or refute this obligation by simplification.",
+                "normalized_lhs": "value_only_likelihood",
+                "normalized_rhs": "hmc_production_readiness",
+                "readable_lhs": "value_only_likelihood",
+                "readable_rhs": "hmc_production_readiness",
+                "assumptions": [],
+                "severity": "diagnostic",
+                "backend_expression": "-hmc_production_readiness + value_only_likelihood"
+              }
+            ],
+            "severity": "diagnostic"
+          }
+        ],
+        "counterexamples": [],
+        "gaps": [
+          {
+            "source": "veto_reason",
+            "code": "unresolved_low_level_status",
+            "reason": "Unsupported or inconclusive low-level status: unknown"
+          },
+          {
+            "source": "route_reference",
+            "kind": "negative_control_requires_boundary_preservation",
+            "status": "unresolved"
+          }
+        ],
+        "actions": [
+          {
+            "code": "human_review",
+            "description": "Review low-level evidence manually."
+          },
+          {
+            "code": "human_review",
+            "description": "Review proof scope, assumptions, and backend route before reusing the result."
+          }
+        ],
+        "evidence_classes": [
+          "human_review_required"
+        ],
+        "non_claims": [
+          "This scoped workflow result does not claim general theorem-proving ability.",
+          "This scoped workflow result does not claim release readiness.",
+          "Forbidden claim not made: HMC production readiness.",
+          "Forbidden claim not made: TFP/NUTS mathematical criticism.",
+          "Forbidden claim not made: Sampler correctness.",
+          "Durable packets are review artifacts, not proof certificates by themselves.",
+          "Packet contents preserve source, backend, counterexample, gap, action, and non-claim ledgers separately.",
+          "A packet may summarize backend evidence only within the scoped high-level workflow result that produced it.",
+          "Packet reports are local/non-gating and do not establish release readiness, public benchmark validity, scientific validation, or broad theorem proving.",
+          "Aggregate accuracy remains unavailable for this local benchmark report."
+        ]
+      }
+    },
+    {
+      "case_id": "RLHLB-09-affine-recovery-assumption-limit",
+      "workflow": "derive_from",
+      "observed_status": "missing_assumptions",
+      "failure_class": "baseline_evaluable",
+      "certification_source": "none",
+      "expected_status_family": "missing_assumptions",
+      "completeness": {
+        "required_fields_present": true,
+        "source_anchors_present": true,
+        "backend_checks_present": true,
+        "evidence_classes_present": true,
+        "non_claims_present": true,
+        "forbidden_claims_marked": true,
+        "local_non_gating_boundary_present": true,
+        "gaps_or_counterexamples_or_certificate_present": true
+      },
+      "findings": [],
+      "packet": {
+        "question": "Can neural-solver approximation guarantees be derived from affine recovery text alone?",
+        "source_anchors": [
+          {
+            "path": "../latex-papers/CIP_monograph/chapters/ch15_nonlinear_pricing.tex",
+            "line_range": "267-302",
+            "role": "affine recovery and nonlinear-pricing approximation text"
+          }
+        ],
+        "assumptions": [
+          {
+            "text": "source-backed semantic assumptions linking the opaque placeholders are required",
+            "status": "missing",
+            "source": "semantic_placeholder_route",
+            "necessity": "required_by_route",
+            "used_by": [
+              "semantic_placeholder_equality"
+            ]
+          }
+        ],
+        "route_availability": {
+          "source_adapter_state": "not_applicable",
+          "source_adapter_route": null,
+          "symbolic_backend_state": "available",
+          "formal_backend_state": "not_applicable",
+          "code_equation_route_state": "not_applicable",
+          "residual_unresolved": [
+            "negative_control_requires_boundary_preservation"
+          ]
+        },
+        "derivation_proof_steps": [
+          {
+            "kind": "obligation",
+            "id": "derive-target-1",
+            "lhs": "affine_recovery_text",
+            "rhs": "uniform_neural_solver_bound",
+            "assumptions": [],
+            "status": "missing_assumptions",
+            "reason": "The target has missing route-required assumptions.",
+            "backend_attempts": [
+              {
+                "backend": "sympy",
+                "status": "unknown",
+                "reason": "SymPy could not certify or refute this obligation by simplification.",
+                "evidence": [
+                  {
+                    "kind": "backend_unknown",
+                    "backend": "sympy",
+                    "backend_status": "unknown",
+                    "reason": "SymPy could not certify or refute this obligation by simplification.",
+                    "normalized_lhs": "affine_recovery_text",
+                    "normalized_rhs": "uniform_neural_solver_bound",
+                    "readable_lhs": "affine_recovery_text",
+                    "readable_rhs": "uniform_neural_solver_bound",
+                    "assumptions": [],
+                    "severity": "diagnostic",
+                    "backend_expression": "affine_recovery_text - uniform_neural_solver_bound"
+                  }
+                ],
+                "severity": "diagnostic"
+              }
+            ],
+            "counterexample": null,
+            "missing_assumptions": [
+              {
+                "text": "source-backed semantic assumptions linking the opaque placeholders are required",
+                "status": "missing",
+                "source": "semantic_placeholder_route",
+                "necessity": "required_by_route",
+                "used_by": [
+                  "semantic_placeholder_equality"
+                ]
+              }
+            ],
+            "provenance": {}
+          }
+        ],
+        "backend_checks": [
+          {
+            "backend": "sympy",
+            "state": "available",
+            "source": "route_reference"
+          },
+          {
+            "backend": "lean",
+            "state": "not_applicable",
+            "source": "route_reference"
+          },
+          {
+            "source": "workflow_result",
+            "backend": "sympy",
+            "status": "unknown",
+            "reason": "SymPy could not certify or refute this obligation by simplification.",
+            "evidence": [
+              {
+                "kind": "backend_unknown",
+                "backend": "sympy",
+                "backend_status": "unknown",
+                "reason": "SymPy could not certify or refute this obligation by simplification.",
+                "normalized_lhs": "affine_recovery_text",
+                "normalized_rhs": "uniform_neural_solver_bound",
+                "readable_lhs": "affine_recovery_text",
+                "readable_rhs": "uniform_neural_solver_bound",
+                "assumptions": [],
+                "severity": "diagnostic",
+                "backend_expression": "affine_recovery_text - uniform_neural_solver_bound"
+              }
+            ],
+            "severity": "diagnostic"
+          },
+          {
+            "source": "workflow_result",
+            "backend": "sympy",
+            "status": "unknown",
+            "reason": "SymPy could not certify or refute this obligation by simplification.",
+            "evidence": [
+              {
+                "kind": "backend_unknown",
+                "backend": "sympy",
+                "backend_status": "unknown",
+                "reason": "SymPy could not certify or refute this obligation by simplification.",
+                "normalized_lhs": "affine_recovery_text",
+                "normalized_rhs": "uniform_neural_solver_bound",
+                "readable_lhs": "affine_recovery_text",
+                "readable_rhs": "uniform_neural_solver_bound",
+                "assumptions": [],
+                "severity": "diagnostic",
+                "backend_expression": "affine_recovery_text - uniform_neural_solver_bound"
+              }
+            ],
+            "severity": "diagnostic"
+          }
+        ],
+        "counterexamples": [],
+        "gaps": [
+          {
+            "source": "route_reference",
+            "kind": "negative_control_requires_boundary_preservation",
+            "status": "unresolved"
+          }
+        ],
+        "actions": [
+          {
+            "code": "human_review",
+            "description": "Check whether the recorded givens should be promoted to explicit route assumptions.",
+            "givens": [
+              "affine recovery text"
+            ],
+            "explicit_assumptions": []
+          }
+        ],
+        "evidence_classes": [
+          "missing_assumption"
+        ],
+        "non_claims": [
+          "This scoped workflow result does not claim general theorem-proving ability.",
+          "givens not formal assumptions",
+          "This scoped workflow result does not claim release readiness.",
+          "Route-required assumptions are not claimed to be globally minimal.",
+          "Forbidden claim not made: Rigorous uniform approximation bound.",
+          "Forbidden claim not made: Neural solver correctness.",
+          "Forbidden claim not made: Pricing validity.",
+          "Durable packets are review artifacts, not proof certificates by themselves.",
+          "Packet contents preserve source, backend, counterexample, gap, action, and non-claim ledgers separately.",
+          "A packet may summarize backend evidence only within the scoped high-level workflow result that produced it.",
+          "Packet reports are local/non-gating and do not establish release readiness, public benchmark validity, scientific validation, or broad theorem proving.",
+          "Aggregate accuracy remains unavailable for this local benchmark report."
+        ]
+      }
+    }
+  ],
+  "findings": [],
+  "summary": {
+    "case_total": 9,
+    "packet_total": 9,
+    "packet_findings": 0,
+    "by_workflow": {
+      "assumptions_for": 2,
+      "audit_math_to_code": 1,
+      "debug_derivation": 1,
+      "derive_from": 2,
+      "prepare_review_packet": 1,
+      "prove_or_counterexample": 2
+    },
+    "aggregate_accuracy": null
+  },
+  "policy_boundary": [
+    "Durable packets are review artifacts, not proof certificates by themselves.",
+    "Packet contents preserve source, backend, counterexample, gap, action, and non-claim ledgers separately.",
+    "A packet may summarize backend evidence only within the scoped high-level workflow result that produced it.",
+    "Packet reports are local/non-gating and do not establish release readiness, public benchmark validity, scientific validation, or broad theorem proving.",
+    "Aggregate accuracy remains unavailable for this local benchmark report."
+  ],
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "real_local_high_level_workflow_packet_report"
+  }
+}

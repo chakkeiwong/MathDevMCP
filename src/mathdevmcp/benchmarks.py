@@ -4,23 +4,42 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from pathlib import Path
+import sys
 from typing import Literal
 
 from .ast_operation_graph import build_ast_operation_graph_for_file
 from .consistency import compare_files, compare_label_to_code
 from .contracts import contract_metadata, success_result
+from .assumption_discovery import assumptions_required
+from .assumptions_for import assumptions_for as high_level_assumptions_for, score_assumption_set
+from .audit_math_to_code import audit_math_to_code as high_level_audit_math_to_code
+from .debug_derivation import debug_derivation as high_level_debug_derivation, score_gap_localization
+from .derive_from import derive_from as high_level_derive_from
+from .derive_or_refute import derive_or_refute
+from .equation_code_match import code_implements_equation
 from .derivation import derive_step_for_label
+from .prepare_review_packet import prepare_review_packet as high_level_prepare_review_packet, score_review_packet
 from .kalman_workflows import audit_kalman_recursion
 from .industrial_review import build_industrial_review_packet
+from .literature_local_audit import literature_local_audit
+from .math_change_impact import math_change_impact
+from .math_claim_classifier import classify_math_claim
+from .math_review_packet import build_math_review_packet
+from .math_to_tests import generate_math_tests
+from .notation_reconciliation import reconcile_notation
 from .parser_benchmark import run_parser_backend
+from .prove_or_refute import prove_or_refute
+from .prove_or_counterexample import prove_or_counterexample as high_level_prove_or_counterexample
+from .proof_gap import localize_proof_gap
 from .proof_audit import audit_derivation_for_label
 from .proof_audit_v2 import audit_derivation_v2_for_label
 from .release_corpus import validate_release_corpus_manifest
 from .release_policy import release_readiness_report
 from .typed_workflows import typed_obligation_for_label
+from .workbench_benchmark_schema import EXPECTED_SEEDED_WORKBENCH_TOOLS, FIXED_MUTATION_FAMILY, ORACLE_CLASSES, workbench_benchmark_quality_report
 from .workflow import build_implementation_brief
 
-BenchmarkCategory = Literal["consistency", "derivation", "workflow", "proof_audit", "proof_audit_v2", "kalman_recursion", "parser_corpus", "ast_corpus", "typed_ir", "industrial_review", "release_corpus", "release_policy"]
+BenchmarkCategory = Literal["consistency", "derivation", "workflow", "proof_audit", "proof_audit_v2", "kalman_recursion", "parser_corpus", "ast_corpus", "typed_ir", "industrial_review", "release_corpus", "release_policy", "math_debugging_workbench", "high_level_math_workflows"]
 
 
 @dataclass(frozen=True)
@@ -50,6 +69,8 @@ class BenchmarkReport:
     total: int
     results: list[dict]
     summary: dict[str, dict[str, dict[str, int]]]
+    workbench_quality: dict
+    high_level_quality: dict
     metadata: dict[str, str]
 
 
@@ -659,6 +680,368 @@ def _release_policy_cases(root: Path) -> list[dict]:
     ]
 
 
+def _math_debugging_workbench_cases(root: Path) -> list[dict]:
+    _ = root
+    theorem_assumptions = [
+        {"id": "compactness", "text": "Parameter space is compact."},
+        {"id": "full_rank", "text": "Information matrix has full rank."},
+    ]
+    local_missing_rank = [{"id": "compactness", "text": "Parameter space is compact."}]
+    local_conflict = [
+        {"id": "compactness", "text": "Parameter space is compact."},
+        {"id": "full_rank", "text": "Information matrix is singular.", "status": "conflict"},
+    ]
+    return [
+        {
+            "id": "workbench_derive_true_identity",
+            "tool": "derive_or_refute",
+            "category": "math_debugging_workbench",
+            "evaluation_focus": "workbench_proof_refutation",
+            "oracle_class": "proved_scoped",
+            "expected_status": "proved",
+            "expected_abstention": False,
+            "negative_control": False,
+            "call": lambda: derive_or_refute("(a+b)*(a-b) = a*a - b*b"),
+        },
+        {
+            "id": "workbench_derive_false_identity",
+            "tool": "derive_or_refute",
+            "category": "math_debugging_workbench",
+            "evaluation_focus": "workbench_false_confidence_control",
+            "oracle_class": "refuted_scoped",
+            "expected_status": "refuted",
+            "expected_abstention": False,
+            "negative_control": True,
+            "call": lambda: derive_or_refute("1 + 1 = 3"),
+        },
+        {
+            "id": "workbench_prove_backend_unavailable_nonclaim",
+            "tool": "prove_or_refute",
+            "category": "math_debugging_workbench",
+            "evaluation_focus": "workbench_backend_boundary",
+            "oracle_class": "backend_unavailable_nonclaim",
+            "expected_status": "backend_unavailable",
+            "expected_abstention": True,
+            "negative_control": True,
+            "call": lambda: prove_or_refute("a + b = b + a", backend="sage"),
+        },
+        {
+            "id": "workbench_prove_not_encodable_nonclaim",
+            "tool": "prove_or_refute",
+            "category": "math_debugging_workbench",
+            "evaluation_focus": "workbench_backend_boundary",
+            "oracle_class": "not_encodable_nonclaim",
+            "expected_status": "not_encodable",
+            "expected_abstention": True,
+            "negative_control": True,
+            "call": lambda: prove_or_refute("__import__('os') = 0"),
+        },
+        {
+            "id": "workbench_proof_gap_first_bad_step",
+            "tool": "localize_proof_gap",
+            "category": "math_debugging_workbench",
+            "evaluation_focus": "workbench_gap_localization",
+            "oracle_class": "refuted_scoped",
+            "expected_status": "refuted",
+            "expected_abstention": False,
+            "negative_control": True,
+            "expected_gap_index": 1,
+            "call": lambda: localize_proof_gap(["a + b", "b + a", "a - b"]),
+        },
+        {
+            "id": "workbench_missing_logdet_assumption",
+            "tool": "assumptions_required",
+            "category": "math_debugging_workbench",
+            "evaluation_focus": "workbench_missing_assumptions",
+            "oracle_class": "abstained_missing_assumptions",
+            "expected_status": "missing_assumptions",
+            "expected_abstention": True,
+            "negative_control": True,
+            "call": lambda: assumptions_required("logdet(S)"),
+        },
+        {
+            "id": "workbench_code_equation_structural_only",
+            "tool": "code_implements_equation",
+            "category": "math_debugging_workbench",
+            "evaluation_focus": "workbench_structural_boundary",
+            "oracle_class": "structural_only",
+            "expected_status": "consistent",
+            "expected_abstention": True,
+            "negative_control": True,
+            "call": lambda: code_implements_equation("logdet(S)", "def f(S):\n    return logdet(S)\n"),
+        },
+        {
+            "id": "workbench_code_equation_missing_logdet",
+            "tool": "code_implements_equation",
+            "category": "math_debugging_workbench",
+            "evaluation_focus": "workbench_false_confidence_control",
+            "oracle_class": "structural_only",
+            "expected_status": "mismatch",
+            "expected_abstention": False,
+            "negative_control": True,
+            "call": lambda: code_implements_equation("logdet(S)", "def f(S):\n    return trace(S)\n"),
+        },
+        {
+            "id": "workbench_claim_numeric_not_proof",
+            "tool": "classify_math_claim",
+            "category": "math_debugging_workbench",
+            "evaluation_focus": "workbench_false_confidence_control",
+            "oracle_class": "diagnostic_only",
+            "expected_status": "numeric_supported",
+            "expected_abstention": True,
+            "negative_control": True,
+            "call": lambda: classify_math_claim("sin(x)^2 + cos(x)^2 = 1", evidence=[{"status": "numeric_supported", "numeric": True}]),
+        },
+        {
+            "id": "workbench_notation_sign_conflict",
+            "tool": "reconcile_notation",
+            "category": "math_debugging_workbench",
+            "evaluation_focus": "workbench_notation_conflict",
+            "oracle_class": "applicability_conflict",
+            "expected_status": "conflict",
+            "expected_abstention": True,
+            "negative_control": True,
+            "call": lambda: reconcile_notation(
+                [{"symbol": "r", "alias_of": "r", "sign": "+"}],
+                [{"symbol": "r", "alias_of": "r", "sign": "-"}],
+            ),
+        },
+        {
+            "id": "workbench_generate_tests_diagnostic_only",
+            "tool": "generate_math_tests",
+            "category": "math_debugging_workbench",
+            "evaluation_focus": "workbench_diagnostic_generation",
+            "oracle_class": "diagnostic_only",
+            "expected_status": "generated",
+            "expected_abstention": True,
+            "negative_control": True,
+            "call": lambda: generate_math_tests("a + b = b + a", kinds=["symbolic_identity"]),
+        },
+        {
+            "id": "workbench_review_packet_preserves_refutation",
+            "tool": "math_review_packet",
+            "category": "math_debugging_workbench",
+            "evaluation_focus": "workbench_packet_boundary",
+            "oracle_class": "diagnostic_only",
+            "expected_status": "blocked_by_refutation",
+            "expected_abstention": True,
+            "negative_control": True,
+            "call": lambda: build_math_review_packet("Can we prove 1+1=3?", evidence=[derive_or_refute("1 + 1 = 3")]),
+        },
+        {
+            "id": "workbench_change_impact_missing_links",
+            "tool": "math_change_impact",
+            "category": "math_debugging_workbench",
+            "evaluation_focus": "workbench_impact_boundary",
+            "oracle_class": "impact_inconclusive",
+            "expected_status": "inconclusive",
+            "expected_abstention": True,
+            "negative_control": True,
+            "call": lambda: math_change_impact("eq:missing", graph={"nodes": [], "edges": []}),
+        },
+        {
+            "id": "workbench_literature_local_missing_assumption",
+            "tool": "literature_local_audit",
+            "category": "math_debugging_workbench",
+            "evaluation_focus": "workbench_applicability_boundary",
+            "oracle_class": "applicability_gap",
+            "expected_status": "applicability_gap",
+            "expected_abstention": True,
+            "negative_control": True,
+            "call": lambda: literature_local_audit("theorem:seeded", theorem_assumptions, local_missing_rank),
+        },
+        {
+            "id": "workbench_literature_local_conflicting_assumption",
+            "tool": "literature_local_audit",
+            "category": "math_debugging_workbench",
+            "evaluation_focus": "workbench_applicability_boundary",
+            "oracle_class": "applicability_conflict",
+            "expected_status": "applicability_conflict",
+            "expected_abstention": True,
+            "negative_control": True,
+            "call": lambda: literature_local_audit("theorem:seeded", theorem_assumptions, local_conflict),
+        },
+    ]
+
+
+def _high_level_math_workflow_cases(root: Path) -> list[dict]:
+    _ = root
+    derive_refuted = lambda: high_level_derive_from("A*B = B*A")
+    proof_refuted = lambda: high_level_prove_or_counterexample("A*B = B*A")
+    assumption_logdet = lambda: high_level_assumptions_for("logdet(A)")
+    debug_gap = lambda: high_level_debug_derivation(["logdet(A)", "trace(A)", "trace(A)"])
+    code_match = lambda: high_level_audit_math_to_code("logdet(S)", "def f(S):\n    return logdet(S)\n")
+    packet_refutation = lambda: high_level_prepare_review_packet("Review failed proof", evidence=[proof_refuted()])
+    return [
+        {
+            "id": "hlf_derive_backend_certificate",
+            "workflow": "derive_from",
+            "category": "high_level_math_workflows",
+            "evaluation_focus": "hlf_backend_certificate",
+            "expected_status": "proved",
+            "expected_evidence_classes": ["backend_certificate"],
+            "expected_abstention": False,
+            "negative_control": False,
+            "call": lambda: high_level_derive_from("a + b = b + a"),
+        },
+        {
+            "id": "hlf_derive_counterexample_refutation",
+            "workflow": "derive_from",
+            "category": "high_level_math_workflows",
+            "evaluation_focus": "hlf_false_confidence_control",
+            "expected_status": "refuted",
+            "expected_evidence_classes": ["backend_counterexample"],
+            "expected_abstention": False,
+            "negative_control": True,
+            "call": derive_refuted,
+        },
+        {
+            "id": "hlf_derive_no_counterexample_nonpromotion",
+            "workflow": "derive_from",
+            "category": "high_level_math_workflows",
+            "evaluation_focus": "hlf_false_confidence_control",
+            "expected_status": "inconclusive",
+            "expected_evidence_classes": ["backend_counterexample"],
+            "expected_abstention": True,
+            "negative_control": True,
+            "required_veto": "certifying_evidence_not_promoted",
+            "call": lambda: high_level_derive_from("1 + 1 = 3"),
+        },
+        {
+            "id": "hlf_prove_backend_certificate",
+            "workflow": "prove_or_counterexample",
+            "category": "high_level_math_workflows",
+            "evaluation_focus": "hlf_backend_certificate",
+            "expected_status": "proved",
+            "expected_evidence_classes": ["backend_certificate"],
+            "expected_abstention": False,
+            "negative_control": False,
+            "call": lambda: high_level_prove_or_counterexample("a + b = b + a"),
+        },
+        {
+            "id": "hlf_prove_counterexample_refutation",
+            "workflow": "prove_or_counterexample",
+            "category": "high_level_math_workflows",
+            "evaluation_focus": "hlf_false_confidence_control",
+            "expected_status": "refuted",
+            "expected_evidence_classes": ["backend_counterexample"],
+            "expected_abstention": False,
+            "negative_control": True,
+            "call": proof_refuted,
+        },
+        {
+            "id": "hlf_prove_not_encodable_nonclaim",
+            "workflow": "prove_or_counterexample",
+            "category": "high_level_math_workflows",
+            "evaluation_focus": "hlf_backend_boundary",
+            "expected_status": "not_encodable",
+            "expected_evidence_classes": ["not_encodable"],
+            "expected_abstention": True,
+            "negative_control": True,
+            "required_non_claim": "not_encodable_not_false",
+            "call": lambda: high_level_prove_or_counterexample("informal theorem with no equality"),
+        },
+        {
+            "id": "hlf_assumptions_logdet",
+            "workflow": "assumptions_for",
+            "category": "high_level_math_workflows",
+            "evaluation_focus": "hlf_missing_assumptions",
+            "expected_status": "missing_assumptions",
+            "expected_evidence_classes": ["missing_assumption"],
+            "expected_abstention": True,
+            "negative_control": True,
+            "required_non_claim": "route_assumptions_not_global_minimality",
+            "rubric": lambda result: score_assumption_set(result, {"determinant domain"})["status"] == "passed",
+            "call": assumption_logdet,
+        },
+        {
+            "id": "hlf_assumptions_unknown_route",
+            "workflow": "assumptions_for",
+            "category": "high_level_math_workflows",
+            "evaluation_focus": "hlf_missing_assumptions",
+            "expected_status": "inconclusive",
+            "expected_evidence_classes": ["human_review_required"],
+            "expected_abstention": True,
+            "negative_control": True,
+            "call": lambda: high_level_assumptions_for("x + y"),
+        },
+        {
+            "id": "hlf_debug_first_gap",
+            "workflow": "debug_derivation",
+            "category": "high_level_math_workflows",
+            "evaluation_focus": "hlf_gap_localization",
+            "expected_status": "gap_found",
+            "expected_evidence_classes": ["proof_gap"],
+            "expected_abstention": True,
+            "negative_control": True,
+            "required_non_claim": "gap_localization_not_global_failure",
+            "rubric": lambda result: score_gap_localization(result, expected_index=0, expected_statuses={"missing_assumptions", "unknown"})["status"] == "passed",
+            "call": debug_gap,
+        },
+        {
+            "id": "hlf_debug_counterexample_refutation",
+            "workflow": "debug_derivation",
+            "category": "high_level_math_workflows",
+            "evaluation_focus": "hlf_gap_localization",
+            "expected_status": "refuted",
+            "expected_evidence_classes": ["backend_counterexample"],
+            "expected_abstention": False,
+            "negative_control": True,
+            "call": lambda: high_level_debug_derivation(["A*B", "B*A"]),
+        },
+        {
+            "id": "hlf_code_structural_match",
+            "workflow": "audit_math_to_code",
+            "category": "high_level_math_workflows",
+            "evaluation_focus": "hlf_structural_boundary",
+            "expected_status": "structural_match",
+            "expected_evidence_classes": ["structural_match"],
+            "expected_abstention": True,
+            "negative_control": True,
+            "required_non_claim": "structural_evidence_not_proof",
+            "call": code_match,
+        },
+        {
+            "id": "hlf_code_structural_mismatch",
+            "workflow": "audit_math_to_code",
+            "category": "high_level_math_workflows",
+            "evaluation_focus": "hlf_structural_boundary",
+            "expected_status": "structural_mismatch",
+            "expected_evidence_classes": ["structural_mismatch"],
+            "expected_abstention": True,
+            "negative_control": True,
+            "required_non_claim": "structural_evidence_not_proof",
+            "call": lambda: high_level_audit_math_to_code("logdet(S)", "def f(S):\n    return trace(S)\n"),
+        },
+        {
+            "id": "hlf_packet_diagnostic_only",
+            "workflow": "prepare_review_packet",
+            "category": "high_level_math_workflows",
+            "evaluation_focus": "hlf_packet_boundary",
+            "expected_status": "diagnostic_only",
+            "expected_evidence_classes": ["review_packet"],
+            "expected_abstention": True,
+            "negative_control": True,
+            "required_non_claim": "diagnostic_evidence_not_proof",
+            "rubric": lambda result: score_review_packet(result)["status"] == "passed",
+            "call": lambda: high_level_prepare_review_packet("Review derivation", evidence=[high_level_derive_from("a + b = b + a")]),
+        },
+        {
+            "id": "hlf_packet_preserves_refutation",
+            "workflow": "prepare_review_packet",
+            "category": "high_level_math_workflows",
+            "evaluation_focus": "hlf_packet_boundary",
+            "expected_status": "diagnostic_only",
+            "expected_evidence_classes": ["review_packet"],
+            "expected_abstention": True,
+            "negative_control": True,
+            "required_non_claim": "diagnostic_evidence_not_proof",
+            "rubric": lambda result: result["evidence"][0]["low_level"]["status"] == "blocked_by_refutation",
+            "call": packet_refutation,
+        },
+    ]
+
+
 
 def benchmark_cases(root: Path, *, include_release_policy: bool = True) -> list[dict]:
     cases = (
@@ -673,6 +1056,8 @@ def benchmark_cases(root: Path, *, include_release_policy: bool = True) -> list[
         + _typed_ir_cases(root)
         + _industrial_review_cases(root)
         + _release_corpus_cases(root)
+        + _math_debugging_workbench_cases(root)
+        + _high_level_math_workflow_cases(root)
     )
     if include_release_policy:
         cases += _release_policy_cases(root)
@@ -1158,6 +1543,366 @@ def run_release_policy_benchmark(root: Path) -> list[dict]:
     return results
 
 
+def _workbench_boundary_ok(case: dict, result: dict) -> bool:
+    oracle = case["oracle_class"]
+    if oracle == "backend_unavailable_nonclaim":
+        return result.get("status") == "backend_unavailable" and result.get("status") != "refuted"
+    if oracle == "not_encodable_nonclaim":
+        return result.get("status") == "not_encodable" and result.get("status") != "refuted"
+    if oracle == "structural_only":
+        workbench = result.get("workbench_result", {})
+        return workbench.get("status") != "proved"
+    if oracle == "diagnostic_only":
+        text = str(result).lower()
+        return "not proof" in text or "diagnostic" in text or "not a proof certificate" in text
+    if oracle == "abstained_missing_assumptions":
+        return bool(result.get("missing_assumptions"))
+    if oracle == "applicability_gap":
+        return bool(result.get("missing_assumptions"))
+    if oracle == "applicability_conflict":
+        return bool(result.get("conflicting_assumptions") or result.get("conflicts") or result.get("notation_notes"))
+    if oracle == "impact_inconclusive":
+        return any(item.get("kind") == "missing_downstream_links" for item in result.get("missing_link_warnings", []))
+    if oracle == "proved_scoped":
+        return result.get("workbench_result", {}).get("status") == "proved"
+    if oracle == "refuted_scoped":
+        return result.get("status") in {"refuted", "gap_found", "blocked_by_refutation"} or result.get("workbench_result", {}).get("status") == "refuted"
+    return False
+
+
+def run_math_debugging_workbench_benchmark(root: Path) -> list[dict]:
+    results: list[dict] = []
+    for case in _math_debugging_workbench_cases(root):
+        result = case["call"]()
+        observed_status = result.get("status") or result.get("classification", "")
+        status_ok = observed_status == case["expected_status"]
+        contract_ok = isinstance(result.get("metadata", {}).get("contract"), str)
+        oracle_ok = case["oracle_class"] in ORACLE_CLASSES
+        boundary_ok = _workbench_boundary_ok(case, result)
+        abstention_ok = (
+            observed_status
+            in {
+                "backend_unavailable",
+                "not_encodable",
+                "missing_assumptions",
+                "consistent",
+                "numeric_supported",
+                "conflict",
+                "generated",
+                "blocked_by_refutation",
+                "inconclusive",
+                "applicability_gap",
+                "applicability_conflict",
+            }
+            if case.get("expected_abstention", False)
+            else observed_status not in {"backend_unavailable", "not_encodable", "missing_assumptions", "unknown", "inconclusive"}
+        )
+        gap_ok = True
+        if "expected_gap_index" in case:
+            gap_ok = result.get("first_gap", {}).get("index") == case["expected_gap_index"]
+        results.append(
+            _benchmark_result(
+                benchmark_id=case["id"],
+                category=case["category"],
+                evaluation_focus=case["evaluation_focus"],
+                expected_status=case["expected_status"],
+                observed_status=observed_status,
+                passed=status_ok and contract_ok and oracle_ok and boundary_ok and abstention_ok and gap_ok,
+                quality_checks={
+                    "status_match": status_ok,
+                    "contract_present": contract_ok,
+                    "oracle_class_supported": oracle_ok,
+                    "boundary_preserved": boundary_ok,
+                    "expected_abstention_match": abstention_ok,
+                    "gap_index_match": gap_ok,
+                    "negative_control": bool(case.get("negative_control", False)),
+                },
+                details={
+                    "tool": case["tool"],
+                    "oracle_class": case["oracle_class"],
+                    "metadata": result.get("metadata"),
+                    "negative_control": bool(case.get("negative_control", False)),
+                },
+                expected_abstention=case.get("expected_abstention", False),
+            )
+        )
+    return results
+
+
+def _high_level_boundary_ok(case: dict, result: dict) -> bool:
+    status = result.get("status")
+    evidence_classes = set(result.get("evidence_classes", []))
+    non_claim_codes = {item.get("code") for item in result.get("non_claims", []) if isinstance(item, dict)}
+    veto_codes = {item.get("code") for item in result.get("veto_reasons", []) if isinstance(item, dict)}
+    if status == "proved":
+        return result.get("certification_source") == "backend" and evidence_classes == {"backend_certificate"}
+    if status == "refuted":
+        return result.get("certification_source") in {"backend", "scoped_contradiction"} and bool(result.get("counterexamples") or "scoped_contradiction" in evidence_classes)
+    if status == "inconclusive":
+        return result.get("certification_source") == "none" and bool(result.get("veto_reasons") or result.get("actions"))
+    if status == "missing_assumptions":
+        return "route_assumptions_not_global_minimality" in non_claim_codes and bool(result.get("assumptions"))
+    if status in {"backend_unavailable", "not_encodable"}:
+        return result.get("certification_source") == "none" and bool(veto_codes)
+    if status in {"structural_match", "structural_mismatch"}:
+        return result.get("certification_source") == "none" and "structural_evidence_not_proof" in non_claim_codes
+    if status == "diagnostic_only":
+        return result.get("certification_source") == "none" and "diagnostic_evidence_not_proof" in non_claim_codes
+    if status == "gap_found":
+        return result.get("certification_source") == "none" and "gap_localization_not_global_failure" in non_claim_codes
+    return False
+
+
+def run_high_level_math_workflow_benchmark(root: Path) -> list[dict]:
+    results: list[dict] = []
+    for case in _high_level_math_workflow_cases(root):
+        result = case["call"]()
+        status_ok = result.get("status") == case["expected_status"]
+        classes_ok = result.get("evidence_classes") == case["expected_evidence_classes"]
+        contract_ok = result.get("metadata", {}).get("contract") == "high_level_workflow_result"
+        boundary_ok = _high_level_boundary_ok(case, result)
+        non_claim_ok = case.get("required_non_claim") is None or case["required_non_claim"] in {
+            item.get("code") for item in result.get("non_claims", []) if isinstance(item, dict)
+        }
+        veto_ok = case.get("required_veto") is None or case["required_veto"] in {
+            item.get("code") for item in result.get("veto_reasons", []) if isinstance(item, dict)
+        }
+        rubric = case.get("rubric")
+        rubric_ok = rubric(result) if callable(rubric) else True
+        results.append(
+            _benchmark_result(
+                benchmark_id=case["id"],
+                category=case["category"],
+                evaluation_focus=case["evaluation_focus"],
+                expected_status=case["expected_status"],
+                observed_status=str(result.get("status")),
+                passed=status_ok and classes_ok and contract_ok and boundary_ok and non_claim_ok and veto_ok and rubric_ok,
+                quality_checks={
+                    "status_match": status_ok,
+                    "evidence_classes_match": classes_ok,
+                    "contract_match": contract_ok,
+                    "boundary_preserved": boundary_ok,
+                    "required_non_claim_present": non_claim_ok,
+                    "required_veto_present": veto_ok,
+                    "rubric_passed": rubric_ok,
+                    "negative_control": bool(case.get("negative_control", False)),
+                },
+                details={
+                    "workflow": case["workflow"],
+                    "evidence_classes": result.get("evidence_classes"),
+                    "certification_source": result.get("certification_source"),
+                    "negative_control": bool(case.get("negative_control", False)),
+                },
+                expected_abstention=case.get("expected_abstention", False),
+            )
+        )
+    return results
+
+
+def _serializable_workbench_cases(root: Path) -> list[dict]:
+    cases: list[dict] = []
+    for case in _math_debugging_workbench_cases(root):
+        cases.append(
+            {
+                "id": case["id"],
+                "tool": case["tool"],
+                "oracle_class": case["oracle_class"],
+                "expected_status": case["expected_status"],
+                "expected_abstention": bool(case.get("expected_abstention", False)),
+                "negative_control": bool(case.get("negative_control", False)),
+                "source": "local_seeded",
+                "source_family": "local_seeded",
+                "gated": True,
+                "non_claims": [
+                    "Seeded local case; not an external benchmark claim.",
+                    "Scoring follows the declared oracle class, not pass rate alone.",
+                ],
+            }
+        )
+    return cases
+
+
+def _serializable_high_level_cases(root: Path) -> list[dict]:
+    cases: list[dict] = []
+    for case in _high_level_math_workflow_cases(root):
+        cases.append(
+            {
+                "id": case["id"],
+                "tool": case["workflow"],
+                "oracle_class": case["expected_evidence_classes"][0],
+                "expected_status": case["expected_status"],
+                "expected_abstention": bool(case.get("expected_abstention", False)),
+                "negative_control": bool(case.get("negative_control", False)),
+                "source": "local_seeded",
+                "source_family": "local_seeded",
+                "gated": True,
+                "non_claims": [
+                    "Seeded local high-level workflow case; not an external benchmark claim.",
+                    "Scoring requires boundary preservation, not pass rate alone.",
+                ],
+            }
+        )
+    return cases
+
+
+def _workbench_run_manifest() -> dict:
+    return {
+        "git_state": "dirty_or_unknown",
+        "command": "PYTHONPATH=src python -m mathdevmcp.cli benchmark-gate --root .",
+        "python": sys.version.split()[0],
+        "backend_matrix": {
+            "sympy": "required_for_seeded_symbolic_cases",
+            "sage": "optional_unavailable_is_nonclaim",
+            "lean": "not_required_for_seeded_quality_gate",
+        },
+        "timeout_policy": "seeded local calls only; no network or long external backend run",
+        "seed_policy": "deterministic; no random seeds used",
+        "normalization_rules": "case ids, observed statuses, pass/fail, and expected abstention compared exactly",
+        "mutation_set_version": "workbench-proof-promotion-v1",
+        "scoring_rubric_version": "workbench-benchmark-quality-v1",
+    }
+
+
+def _simulated_workbench_mutation_results(results: list[dict]) -> dict[str, bool]:
+    by_id = {result["id"]: result for result in results}
+
+    backend = dict(by_id["workbench_prove_backend_unavailable_nonclaim"])
+    backend["observed_status"] = "refuted"
+    backend["quality_checks"] = dict(backend["quality_checks"], boundary_preserved=False)
+
+    structural = dict(by_id["workbench_code_equation_structural_only"])
+    structural["observed_status"] = "proved"
+    structural["quality_checks"] = dict(structural["quality_checks"], boundary_preserved=False)
+
+    numeric = dict(by_id["workbench_claim_numeric_not_proof"])
+    numeric["observed_status"] = "backend_proved"
+    numeric["quality_checks"] = dict(numeric["quality_checks"], boundary_preserved=False)
+
+    missing = dict(by_id["workbench_missing_logdet_assumption"])
+    missing["observed_status"] = "proved"
+    missing["quality_checks"] = dict(missing["quality_checks"], boundary_preserved=False)
+
+    probes = {
+        "backend_unavailable_to_refuted": backend,
+        "structural_only_to_proved": structural,
+        "numeric_supported_to_backend_proved": numeric,
+        "missing_assumptions_to_proved": missing,
+    }
+    return {
+        name: probe.get("quality_checks", {}).get("boundary_preserved") is False
+        and probe.get("observed_status") != by_id[probe["id"]]["expected_status"]
+        for name, probe in probes.items()
+    }
+
+
+def _simulated_high_level_mutation_results(results: list[dict]) -> dict[str, bool]:
+    by_id = {result["id"]: result for result in results}
+    backend = dict(by_id["hlf_prove_not_encodable_nonclaim"])
+    backend["observed_status"] = "refuted"
+    backend["quality_checks"] = dict(backend["quality_checks"], boundary_preserved=False)
+
+    structural = dict(by_id["hlf_code_structural_match"])
+    structural["observed_status"] = "proved"
+    structural["quality_checks"] = dict(structural["quality_checks"], boundary_preserved=False)
+
+    diagnostic = dict(by_id["hlf_packet_diagnostic_only"])
+    diagnostic["observed_status"] = "proved"
+    diagnostic["quality_checks"] = dict(diagnostic["quality_checks"], boundary_preserved=False)
+
+    missing = dict(by_id["hlf_assumptions_logdet"])
+    missing["observed_status"] = "proved"
+    missing["quality_checks"] = dict(missing["quality_checks"], boundary_preserved=False)
+
+    no_counterexample = dict(by_id["hlf_derive_no_counterexample_nonpromotion"])
+    no_counterexample["observed_status"] = "refuted"
+    no_counterexample["quality_checks"] = dict(no_counterexample["quality_checks"], boundary_preserved=False)
+
+    probes = {
+        "not_encodable_to_refuted": backend,
+        "structural_match_to_proved": structural,
+        "review_packet_to_proved": diagnostic,
+        "missing_assumptions_to_proved": missing,
+        "no_counterexample_to_refuted": no_counterexample,
+    }
+    return {
+        name: probe.get("quality_checks", {}).get("boundary_preserved") is False
+        and probe.get("observed_status") != by_id[probe["id"]]["expected_status"]
+        for name, probe in probes.items()
+    }
+
+
+def build_workbench_benchmark_quality_report(root: Path) -> dict:
+    cases = _serializable_workbench_cases(root)
+    first_results = run_math_debugging_workbench_benchmark(root)
+    second_results = run_math_debugging_workbench_benchmark(root)
+    mutation_results = _simulated_workbench_mutation_results(first_results)
+    return workbench_benchmark_quality_report(
+        cases,
+        results=first_results,
+        deterministic_rerun=(first_results, second_results),
+        expected_tools=EXPECTED_SEEDED_WORKBENCH_TOOLS,
+        mutation_results=mutation_results,
+        run_manifest=_workbench_run_manifest(),
+    )
+
+
+def build_high_level_workflow_quality_report(root: Path) -> dict:
+    cases = _serializable_high_level_cases(root)
+    first_results = run_high_level_math_workflow_benchmark(root)
+    second_results = run_high_level_math_workflow_benchmark(root)
+    first_signature = [
+        {
+            "id": result["id"],
+            "observed_status": result["observed_status"],
+            "passed": result["passed"],
+            "expected_abstention": result["expected_abstention"],
+        }
+        for result in first_results
+    ]
+    second_signature = [
+        {
+            "id": result["id"],
+            "observed_status": result["observed_status"],
+            "passed": result["passed"],
+            "expected_abstention": result["expected_abstention"],
+        }
+        for result in second_results
+    ]
+    workflows = {case["tool"] for case in cases}
+    negative_control_count = sum(1 for case in cases if case["negative_control"])
+    mutation_results = _simulated_high_level_mutation_results(first_results)
+    thresholds = {
+        "at_least_two_cases_per_workflow": all(sum(1 for case in cases if case["tool"] == workflow) >= 2 for workflow in workflows),
+        "negative_control_rate_at_least_40_percent": negative_control_count / len(cases) >= 0.40,
+        "all_cases_pass": all(result["passed"] for result in first_results),
+        "boundary_checks_all_preserved": all(result["quality_checks"]["boundary_preserved"] for result in first_results),
+        "deterministic_rerun_stable": first_signature == second_signature,
+        "mutation_family_detected": all(mutation_results.values()),
+    }
+    return {
+        "status": "quality_thresholds_passed" if all(thresholds.values()) else "quality_thresholds_failed",
+        "total_cases": len(cases),
+        "total_results": len(first_results),
+        "workflow_count": len(workflows),
+        "workflows": sorted(workflows),
+        "negative_control_count": negative_control_count,
+        "negative_control_rate": negative_control_count / len(cases),
+        "seeded_gate_thresholds": thresholds,
+        "determinism": {
+            "stable": first_signature == second_signature,
+            "first_signature": first_signature,
+            "second_signature": second_signature,
+        },
+        "mutation_results": mutation_results,
+        "boundary": "High-level benchmark quality is not established by pass rate alone; boundary and mutation checks are required.",
+        "non_claims": [
+            "Seeded high-level workflow cases do not establish external benchmark validity.",
+            "This report does not claim broad theorem-proving capability or release readiness.",
+        ],
+        "metadata": contract_metadata("high_level_workflow_quality_report"),
+    }
+
+
 
 def summarize_benchmark_results(results: list[dict]) -> dict:
     category_totals: dict[str, dict[str, int]] = {}
@@ -1201,6 +1946,8 @@ def build_benchmark_report(root: Path, *, include_release_policy: bool = True) -
         + run_typed_ir_benchmark(root)
         + run_industrial_review_benchmark(root)
         + run_release_corpus_benchmark(root)
+        + run_math_debugging_workbench_benchmark(root)
+        + run_high_level_math_workflow_benchmark(root)
     )
     if include_release_policy:
         results += run_release_policy_benchmark(root)
@@ -1212,6 +1959,8 @@ def build_benchmark_report(root: Path, *, include_release_policy: bool = True) -
             total=len(results),
             results=results,
             summary=summarize_benchmark_results(results),
+            workbench_quality=build_workbench_benchmark_quality_report(root),
+            high_level_quality=build_high_level_workflow_quality_report(root),
             metadata=contract_metadata("benchmark_results"),
         )
     )

@@ -1,0 +1,309 @@
+{
+  "ok": true,
+  "passed": true,
+  "total": 70,
+  "passed_count": 70,
+  "failed_count": 0,
+  "summary": {
+    "by_category": {
+      "consistency": {
+        "total": 5,
+        "passed": 5,
+        "expected_abstentions": 0
+      },
+      "derivation": {
+        "total": 6,
+        "passed": 6,
+        "expected_abstentions": 5
+      },
+      "workflow": {
+        "total": 3,
+        "passed": 3,
+        "expected_abstentions": 1
+      },
+      "proof_audit": {
+        "total": 3,
+        "passed": 3,
+        "expected_abstentions": 1
+      },
+      "proof_audit_v2": {
+        "total": 3,
+        "passed": 3,
+        "expected_abstentions": 1
+      },
+      "kalman_recursion": {
+        "total": 2,
+        "passed": 2,
+        "expected_abstentions": 1
+      },
+      "parser_corpus": {
+        "total": 3,
+        "passed": 3,
+        "expected_abstentions": 0
+      },
+      "ast_corpus": {
+        "total": 11,
+        "passed": 11,
+        "expected_abstentions": 0
+      },
+      "typed_ir": {
+        "total": 2,
+        "passed": 2,
+        "expected_abstentions": 2
+      },
+      "industrial_review": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 1
+      },
+      "release_corpus": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 0
+      },
+      "math_debugging_workbench": {
+        "total": 15,
+        "passed": 15,
+        "expected_abstentions": 11
+      },
+      "high_level_math_workflows": {
+        "total": 14,
+        "passed": 14,
+        "expected_abstentions": 9
+      },
+      "release_policy": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 0
+      }
+    },
+    "by_focus": {
+      "status_regression": {
+        "total": 2,
+        "passed": 2,
+        "expected_abstentions": 0
+      },
+      "provenance_correctness": {
+        "total": 2,
+        "passed": 2,
+        "expected_abstentions": 0
+      },
+      "realistic_fixture": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 0
+      },
+      "abstention_quality": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 1
+      },
+      "false_confidence_control": {
+        "total": 6,
+        "passed": 6,
+        "expected_abstentions": 0
+      },
+      "realistic_abstention": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 1
+      },
+      "multilabel_provenance": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 1
+      },
+      "long_document_provenance": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 1
+      },
+      "repeat_label_stability": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 1
+      },
+      "workflow_contract": {
+        "total": 3,
+        "passed": 3,
+        "expected_abstentions": 1
+      },
+      "proof_audit_routing": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 0
+      },
+      "proof_audit_abstention": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 1
+      },
+      "release_spine_verified": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 0
+      },
+      "release_spine_abstention": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 1
+      },
+      "ast_recursion_abstention": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 1
+      },
+      "realistic_parser_provenance": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 0
+      },
+      "multifile_macro_parser_provenance": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 0
+      },
+      "sanitized_domain_parser_provenance": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 0
+      },
+      "realistic_ast_operation_coverage": {
+        "total": 3,
+        "passed": 3,
+        "expected_abstentions": 0
+      },
+      "sanitized_domain_ast_operation_coverage": {
+        "total": 6,
+        "passed": 6,
+        "expected_abstentions": 0
+      },
+      "typed_dimension_diagnostics": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 1
+      },
+      "typed_stochastic_diagnostics": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 1
+      },
+      "agent_review_packet": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 1
+      },
+      "release_corpus_manifest": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 0
+      },
+      "workbench_proof_refutation": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 0
+      },
+      "workbench_false_confidence_control": {
+        "total": 3,
+        "passed": 3,
+        "expected_abstentions": 1
+      },
+      "workbench_backend_boundary": {
+        "total": 2,
+        "passed": 2,
+        "expected_abstentions": 2
+      },
+      "workbench_gap_localization": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 0
+      },
+      "workbench_missing_assumptions": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 1
+      },
+      "workbench_structural_boundary": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 1
+      },
+      "workbench_notation_conflict": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 1
+      },
+      "workbench_diagnostic_generation": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 1
+      },
+      "workbench_packet_boundary": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 1
+      },
+      "workbench_impact_boundary": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 1
+      },
+      "workbench_applicability_boundary": {
+        "total": 2,
+        "passed": 2,
+        "expected_abstentions": 2
+      },
+      "hlf_backend_certificate": {
+        "total": 2,
+        "passed": 2,
+        "expected_abstentions": 0
+      },
+      "hlf_false_confidence_control": {
+        "total": 3,
+        "passed": 3,
+        "expected_abstentions": 1
+      },
+      "hlf_backend_boundary": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 1
+      },
+      "hlf_missing_assumptions": {
+        "total": 2,
+        "passed": 2,
+        "expected_abstentions": 2
+      },
+      "hlf_gap_localization": {
+        "total": 2,
+        "passed": 2,
+        "expected_abstentions": 1
+      },
+      "hlf_structural_boundary": {
+        "total": 2,
+        "passed": 2,
+        "expected_abstentions": 2
+      },
+      "hlf_packet_boundary": {
+        "total": 2,
+        "passed": 2,
+        "expected_abstentions": 2
+      },
+      "release_readiness_contract": {
+        "total": 1,
+        "passed": 1,
+        "expected_abstentions": 0
+      }
+    },
+    "expected_abstentions": 32
+  },
+  "policy": {
+    "name": "all_benchmarks_must_pass",
+    "required_pass_rate": 1.0,
+    "allow_category_failures": {},
+    "description": "Every benchmark case must pass; no category-specific failure budget is currently allowed."
+  },
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "benchmark_gate"
+  }
+}

@@ -13,12 +13,18 @@ from pathlib import Path
 import re
 from typing import Any
 
-from .benchmarks import benchmark_gate_report, build_benchmark_report, run_derivation_benchmark, run_label_consistency_benchmark, run_seeded_mismatch_benchmark, run_workflow_benchmark, summarize_benchmark_results
+from .assumptions_for import assumptions_for as high_level_assumptions_for
+from .audit_math_to_code import audit_math_to_code as high_level_audit_math_to_code
+from .benchmarks import benchmark_gate_report, build_benchmark_report, build_high_level_workflow_quality_report, build_workbench_benchmark_quality_report, run_derivation_benchmark, run_label_consistency_benchmark, run_seeded_mismatch_benchmark, run_workflow_benchmark, summarize_benchmark_results
 from .code_search import search_files
 from .consistency import compare_files, compare_label_to_code
 from .contracts import attach_contract, error_result, success_result
 from .derivation import derive_step_for_label
+from .debug_derivation import debug_derivation as high_level_debug_derivation
+from .derive_from import derive_from as high_level_derive_from
+from .derive_or_refute import derive_or_refute
 from .doctor import doctor_report
+from .equation_code_match import code_implements_equation
 from .governance import governance_policy
 from .index_cache import load_or_build_index
 from .implementation_audit import audit_implementation_label
@@ -26,7 +32,17 @@ from .kalman_workflows import audit_kalman_recursion
 from .latex_index import build_index, extract_context_for_label, extract_paragraph_context_for_label, search_index
 from .lean_check import check_lean_source
 from .lean_readiness import lean_readiness
+from .literature_local_audit import literature_local_audit
+from .math_claim_classifier import classify_math_claim
+from .math_change_impact import math_change_impact
+from .math_review_packet import build_math_review_packet
+from .math_to_tests import generate_math_tests
+from .notation_reconciliation import reconcile_notation
 from .proof_obligations import check_proof_obligation
+from .prepare_review_packet import prepare_review_packet as high_level_prepare_review_packet
+from .prove_or_counterexample import prove_or_counterexample as high_level_prove_or_counterexample
+from .prove_or_refute import prove_or_refute
+from .proof_gap import localize_proof_gap
 from .proof_audit import audit_derivation_for_label
 from .proof_audit_v2 import audit_derivation_v2_for_label
 from .release_corpus import release_corpus_manifest, validate_release_corpus_manifest
@@ -210,6 +226,203 @@ def _tool_compare_label_code(args: dict[str, Any]) -> dict[str, Any]:
     )
 
 
+def _tool_code_implements_equation(args: dict[str, Any]) -> dict[str, Any]:
+    aliases = args.get("aliases")
+    if aliases is not None and not isinstance(aliases, dict):
+        raise ValueError("aliases must be an object mapping equation symbols to code names")
+    return code_implements_equation(
+        _required_string(args, "equation"),
+        _required_string(args, "code"),
+        aliases=aliases,
+    )
+
+
+def _tool_classify_math_claim(args: dict[str, Any]) -> dict[str, Any]:
+    evidence = args.get("evidence", [])
+    if evidence is None:
+        evidence = []
+    if not isinstance(evidence, list):
+        raise ValueError("evidence must be a list of objects")
+    return classify_math_claim(_required_string(args, "claim"), evidence=evidence)
+
+
+def _tool_reconcile_notation(args: dict[str, Any]) -> dict[str, Any]:
+    left_records = args.get("left_records")
+    right_records = args.get("right_records")
+    if not isinstance(left_records, list) or not isinstance(right_records, list):
+        raise ValueError("left_records and right_records must be lists of notation objects")
+    return reconcile_notation(
+        left_records,
+        right_records,
+        left_context=str(args.get("left_context", "left")),
+        right_context=str(args.get("right_context", "right")),
+    )
+
+
+def _optional_list_arg(args: dict[str, Any], name: str) -> list[Any] | None:
+    value = args.get(name)
+    if value is None:
+        return None
+    if isinstance(value, list):
+        return value
+    raise ValueError(f"{name} must be a list")
+
+
+def _optional_string_list_arg(args: dict[str, Any], name: str, *aliases: str) -> list[str] | None:
+    value = args.get(name)
+    if value is None:
+        for alias in aliases:
+            value = args.get(alias)
+            if value is not None:
+                break
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, list) and all(isinstance(item, str) for item in value):
+        return value
+    names = ", ".join((name, *aliases))
+    raise ValueError(f"{names} must be a string or list of strings")
+
+
+def _tool_generate_math_tests(args: dict[str, Any]) -> dict[str, Any]:
+    numeric_fixtures = args.get("numeric_fixtures")
+    if numeric_fixtures is not None and not isinstance(numeric_fixtures, dict):
+        raise ValueError("numeric_fixtures must be an object")
+    return generate_math_tests(
+        _required_string(args, "target"),
+        assumptions=_optional_list_arg(args, "assumptions"),
+        notation=_optional_list_arg(args, "notation"),
+        kinds=_optional_list_arg(args, "kinds"),
+        numeric_fixtures=numeric_fixtures,
+        expected_failure_mode=str(args.get("expected_failure_mode", "mismatch_or_unverified")),
+    )
+
+
+def _tool_math_review_packet(args: dict[str, Any]) -> dict[str, Any]:
+    source = args.get("source")
+    evidence = args.get("evidence", [])
+    if source is not None and not isinstance(source, dict):
+        raise ValueError("source must be an object")
+    if evidence is None:
+        evidence = []
+    if not isinstance(evidence, list):
+        raise ValueError("evidence must be a list of objects")
+    packet_id = args.get("packet_id")
+    return build_math_review_packet(
+        _required_string(args, "question"),
+        source=source,
+        evidence=evidence,
+        packet_id=packet_id if isinstance(packet_id, str) and packet_id else None,
+    )
+
+
+def _optional_dict_arg(args: dict[str, Any], name: str) -> dict[str, Any] | None:
+    value = args.get(name)
+    if value is None:
+        return None
+    if isinstance(value, dict):
+        return value
+    raise ValueError(f"{name} must be an object")
+
+
+def _tool_math_change_impact(args: dict[str, Any]) -> dict[str, Any]:
+    return math_change_impact(
+        _required_string(args, "changed_id"),
+        changed_kind=str(args.get("changed_kind", "label")),
+        graph=_optional_dict_arg(args, "graph"),
+        packets=_optional_list_arg(args, "packets"),
+        code_links=_optional_list_arg(args, "code_links"),
+        generated_tests=_optional_list_arg(args, "generated_tests"),
+        claims=_optional_list_arg(args, "claims"),
+        assumptions=_optional_list_arg(args, "assumptions"),
+    )
+
+
+def _tool_literature_local_audit(args: dict[str, Any]) -> dict[str, Any]:
+    theorem_assumptions = args.get("theorem_assumptions")
+    local_assumptions = args.get("local_assumptions")
+    if not isinstance(theorem_assumptions, list) or not isinstance(local_assumptions, list):
+        raise ValueError("theorem_assumptions and local_assumptions must be lists of objects")
+    notation_audit = args.get("notation_audit")
+    if notation_audit is not None and not isinstance(notation_audit, dict):
+        raise ValueError("notation_audit must be an object")
+    return literature_local_audit(
+        _required_string(args, "theorem_id"),
+        theorem_assumptions,
+        local_assumptions,
+        local_context=str(args.get("local_context", "local")),
+        notation_audit=notation_audit,
+        human_waivers=_optional_list_arg(args, "human_waivers"),
+    )
+
+
+def _tool_high_level_derive_from(args: dict[str, Any]) -> dict[str, Any]:
+    return high_level_derive_from(
+        _required_string(args, "target"),
+        givens=_optional_string_list_arg(args, "givens", "given"),
+        assumptions=_optional_string_list_arg(args, "assumptions", "assumption"),
+        lhs=args.get("lhs") if isinstance(args.get("lhs"), str) and args.get("lhs") else None,
+        rhs=args.get("rhs") if isinstance(args.get("rhs"), str) and args.get("rhs") else None,
+        backend=str(args.get("backend", "auto")),
+    )
+
+
+def _tool_high_level_prove_or_counterexample(args: dict[str, Any]) -> dict[str, Any]:
+    return high_level_prove_or_counterexample(
+        _required_string(args, "claim"),
+        assumptions=_optional_string_list_arg(args, "assumptions", "assumption"),
+        lhs=args.get("lhs") if isinstance(args.get("lhs"), str) and args.get("lhs") else None,
+        rhs=args.get("rhs") if isinstance(args.get("rhs"), str) and args.get("rhs") else None,
+        backend=str(args.get("backend", "auto")),
+        lean_source=args.get("lean_source") if isinstance(args.get("lean_source"), str) and args.get("lean_source") else None,
+    )
+
+
+def _tool_high_level_assumptions_for(args: dict[str, Any]) -> dict[str, Any]:
+    return high_level_assumptions_for(
+        _required_string(args, "target"),
+        provided_assumptions=_optional_string_list_arg(args, "provided_assumptions", "provided_assumption"),
+    )
+
+
+def _tool_high_level_debug_derivation(args: dict[str, Any]) -> dict[str, Any]:
+    steps = _optional_string_list_arg(args, "steps", "step")
+    if not steps:
+        raise ValueError("steps must contain at least one string")
+    return high_level_debug_derivation(
+        steps,
+        assumptions=_optional_string_list_arg(args, "assumptions", "assumption"),
+        backend=str(args.get("backend", "auto")),
+    )
+
+
+def _tool_high_level_audit_math_to_code(args: dict[str, Any]) -> dict[str, Any]:
+    aliases = args.get("aliases")
+    if aliases is not None and not isinstance(aliases, dict):
+        raise ValueError("aliases must be an object mapping math symbols to code names")
+    return high_level_audit_math_to_code(
+        _required_string(args, "math"),
+        _required_string(args, "code"),
+        aliases=aliases,
+    )
+
+
+def _tool_high_level_prepare_review_packet(args: dict[str, Any]) -> dict[str, Any]:
+    source = args.get("source")
+    evidence = args.get("evidence")
+    if source is not None and not isinstance(source, dict):
+        raise ValueError("source must be an object")
+    if evidence is not None and not isinstance(evidence, list):
+        raise ValueError("evidence must be a list of objects")
+    return high_level_prepare_review_packet(
+        _required_string(args, "question"),
+        evidence=evidence,
+        source=source,
+        packet_id=args.get("packet_id") if isinstance(args.get("packet_id"), str) and args.get("packet_id") else None,
+    )
+
+
 def _tool_audit_implementation_label(args: dict[str, Any]) -> dict[str, Any]:
     return audit_implementation_label(
         _required_string(args, "root"),
@@ -237,6 +450,57 @@ def _tool_derive_label_step(args: dict[str, Any]) -> dict[str, Any]:
         paragraph_context=bool(args.get("paragraph_context", False)),
         index=_index_for_args(args),
     )
+
+
+def _tool_derive_or_refute(args: dict[str, Any]) -> dict[str, Any]:
+    givens = args.get("givens") or args.get("given") or []
+    assumptions = args.get("assumptions") or args.get("assumption") or []
+    if isinstance(givens, str):
+        givens = [givens]
+    if isinstance(assumptions, str):
+        assumptions = [assumptions]
+    if not isinstance(givens, list) or not all(isinstance(item, str) for item in givens):
+        raise ValueError("givens must be a string or list of strings")
+    if not isinstance(assumptions, list) or not all(isinstance(item, str) for item in assumptions):
+        raise ValueError("assumptions must be a string or list of strings")
+    return derive_or_refute(
+        _required_string(args, "target"),
+        givens=givens,
+        assumptions=assumptions,
+        lhs=args.get("lhs") if isinstance(args.get("lhs"), str) and args.get("lhs") else None,
+        rhs=args.get("rhs") if isinstance(args.get("rhs"), str) and args.get("rhs") else None,
+        backend=str(args.get("backend", "auto")),
+    )
+
+
+def _tool_prove_or_refute(args: dict[str, Any]) -> dict[str, Any]:
+    assumptions = args.get("assumptions") or args.get("assumption") or []
+    if isinstance(assumptions, str):
+        assumptions = [assumptions]
+    if not isinstance(assumptions, list) or not all(isinstance(item, str) for item in assumptions):
+        raise ValueError("assumptions must be a string or list of strings")
+    return prove_or_refute(
+        _required_string(args, "claim"),
+        assumptions=assumptions,
+        lhs=args.get("lhs") if isinstance(args.get("lhs"), str) and args.get("lhs") else None,
+        rhs=args.get("rhs") if isinstance(args.get("rhs"), str) and args.get("rhs") else None,
+        backend=str(args.get("backend", "auto")),
+        lean_source=args.get("lean_source") if isinstance(args.get("lean_source"), str) and args.get("lean_source") else None,
+    )
+
+
+def _tool_localize_proof_gap(args: dict[str, Any]) -> dict[str, Any]:
+    steps = args.get("steps") or args.get("step")
+    assumptions = args.get("assumptions") or args.get("assumption") or []
+    if isinstance(steps, str):
+        steps = [steps]
+    if isinstance(assumptions, str):
+        assumptions = [assumptions]
+    if not isinstance(steps, list) or not all(isinstance(item, str) for item in steps):
+        raise ValueError("steps must be a list of strings")
+    if not isinstance(assumptions, list) or not all(isinstance(item, str) for item in assumptions):
+        raise ValueError("assumptions must be a string or list of strings")
+    return localize_proof_gap(steps, assumptions=assumptions, backend=str(args.get("backend", "auto")))
 
 
 def _tool_implementation_brief(args: dict[str, Any]) -> dict[str, Any]:
@@ -365,6 +629,16 @@ def _tool_benchmark_gate(args: dict[str, Any]) -> dict[str, Any]:
     return benchmark_gate_report(root)
 
 
+def _tool_workbench_benchmark_quality(args: dict[str, Any]) -> dict[str, Any]:
+    root = Path(_required_string(args, "root"))
+    return build_workbench_benchmark_quality_report(root)
+
+
+def _tool_high_level_workflow_quality(args: dict[str, Any]) -> dict[str, Any]:
+    root = Path(_required_string(args, "root"))
+    return build_high_level_workflow_quality_report(root)
+
+
 def _tool_tool_matrix(args: dict[str, Any]) -> list[dict[str, Any]]:
     return tool_matrix()
 
@@ -435,6 +709,116 @@ MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
     ),
     MCPToolSpec("search_code_docs", _tool_search_code_docs, "Search code and document files together.", "code_doc_search_results", "primitive"),
     MCPToolSpec("compare_doc_code", _tool_compare_doc_code, "Compare a document file against a code file; doc and code must be filesystem paths, not raw text.", "doc_code_consistency_result", "workflow", stability="experimental"),
+    MCPToolSpec(
+        "code_implements_equation",
+        _tool_code_implements_equation,
+        "Compare equation terms against Python code structure without executing code.",
+        "equation_code_match_result",
+        "workflow",
+        stability="experimental",
+    ),
+    MCPToolSpec(
+        "classify_math_claim",
+        _tool_classify_math_claim,
+        "Classify a math claim by supplied evidence without promoting diagnostics to proof.",
+        "math_claim_classification",
+        "workflow",
+        stability="experimental",
+    ),
+    MCPToolSpec(
+        "reconcile_notation",
+        _tool_reconcile_notation,
+        "Compare explicit notation convention records and report conflicts or unresolved aliases.",
+        "notation_reconciliation_result",
+        "workflow",
+        stability="experimental",
+    ),
+    MCPToolSpec(
+        "generate_math_tests",
+        _tool_generate_math_tests,
+        "Generate diagnostic pytest snippets or plan-only tests from a math obligation.",
+        "math_test_generation_result",
+        "workflow",
+        stability="experimental",
+    ),
+    MCPToolSpec(
+        "math_review_packet",
+        _tool_math_review_packet,
+        "Build a compact human-review packet from math debugging evidence.",
+        "math_review_packet",
+        "workflow",
+        stability="experimental",
+    ),
+    MCPToolSpec(
+        "math_change_impact",
+        _tool_math_change_impact,
+        "Trace likely downstream impact of a changed math artifact without claiming exhaustive coverage.",
+        "math_change_impact_result",
+        "workflow",
+        stability="experimental",
+    ),
+    MCPToolSpec(
+        "literature_local_audit",
+        _tool_literature_local_audit,
+        "Compare supplied theorem assumptions to local assumptions without fetching papers.",
+        "literature_local_audit_result",
+        "workflow",
+        stability="experimental",
+    ),
+    MCPToolSpec(
+        "derive_from",
+        _tool_high_level_derive_from,
+        "Answer a scoped high-level derivability question with explicit evidence boundaries.",
+        "high_level_workflow_result",
+        "workflow",
+        certifying_capable=True,
+        stability="experimental",
+        optional_capability="symbolic_backend",
+    ),
+    MCPToolSpec(
+        "prove_or_counterexample",
+        _tool_high_level_prove_or_counterexample,
+        "Answer a scoped high-level proof/counterexample question with explicit evidence boundaries.",
+        "high_level_workflow_result",
+        "workflow",
+        certifying_capable=True,
+        stability="experimental",
+        optional_capability="symbolic_backend",
+    ),
+    MCPToolSpec(
+        "assumptions_for",
+        _tool_high_level_assumptions_for,
+        "Find route-required assumptions for a scoped target without claiming global minimality.",
+        "high_level_workflow_result",
+        "workflow",
+        stability="experimental",
+    ),
+    MCPToolSpec(
+        "debug_derivation",
+        _tool_high_level_debug_derivation,
+        "Localize a scoped derivation gap while preserving non-claim boundaries.",
+        "high_level_workflow_result",
+        "workflow",
+        certifying_capable=True,
+        stability="experimental",
+        optional_capability="symbolic_backend",
+    ),
+    MCPToolSpec(
+        "audit_math_to_code",
+        _tool_high_level_audit_math_to_code,
+        "Run a structural math-to-code audit without treating structural evidence as proof.",
+        "high_level_workflow_result",
+        "workflow",
+        stability="experimental",
+    ),
+    MCPToolSpec(
+        "prepare_review_packet",
+        _tool_high_level_prepare_review_packet,
+        "Prepare a high-level human-review packet; diagnostic only, not a certificate.",
+        "high_level_workflow_result",
+        "workflow",
+        stability="experimental",
+    ),
     MCPToolSpec("audit_implementation_label", _tool_audit_implementation_label, "Audit a labeled document block against a code file path.", "implementation_audit_result", "workflow"),
     MCPToolSpec(
         "compare_label_code",
@@ -447,6 +831,36 @@ MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
         replacement="audit_implementation_label",
     ),
     MCPToolSpec("derive_label_step", _tool_derive_label_step, "Check a derivation step against labeled document context.", "label_derivation_result", "workflow", certifying_capable=True),
+    MCPToolSpec(
+        "derive_or_refute",
+        _tool_derive_or_refute,
+        "Try a bounded derivation or refutation for a target equality.",
+        "derive_or_refute_result",
+        "workflow",
+        certifying_capable=True,
+        stability="experimental",
+        optional_capability="symbolic_backend",
+    ),
+    MCPToolSpec(
+        "prove_or_refute",
+        _tool_prove_or_refute,
+        "Try a bounded proof or refutation for a target equality.",
+        "prove_or_refute_result",
+        "workflow",
+        certifying_capable=True,
+        stability="experimental",
+        optional_capability="symbolic_backend",
+    ),
+    MCPToolSpec(
+        "localize_proof_gap",
+        _tool_localize_proof_gap,
+        "Find the first unsupported step in a bounded derivation chain.",
+        "proof_gap_result",
+        "workflow",
+        certifying_capable=True,
+        stability="experimental",
+        optional_capability="symbolic_backend",
+    ),
     MCPToolSpec("implementation_brief", _tool_implementation_brief, "Build a document-grounded implementation brief for a code file path.", "implementation_brief", "workflow"),
     MCPToolSpec(
         "check_equality",
@@ -501,6 +915,8 @@ MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
     MCPToolSpec("audit_temporal_contract", _tool_audit_temporal_contract, "Audit explicit current/next temporal bindings between a labeled DSGE-style document context and a code file path.", "temporal_contract_audit", "workflow", stability="experimental"),
     MCPToolSpec("run_benchmarks", _tool_run_benchmarks, "Run seeded consistency benchmarks.", "benchmark_results", "operational"),
     MCPToolSpec("benchmark_gate", _tool_benchmark_gate, "Return CI-friendly benchmark gate results.", "benchmark_gate", "operational"),
+    MCPToolSpec("workbench_benchmark_quality", _tool_workbench_benchmark_quality, "Return seeded workbench benchmark quality thresholds.", "workbench_benchmark_quality_report", "operational", stability="experimental"),
+    MCPToolSpec("high_level_workflow_quality", _tool_high_level_workflow_quality, "Return seeded high-level workflow benchmark quality thresholds.", "high_level_workflow_quality_report", "operational", stability="experimental"),
     MCPToolSpec("tool_matrix", _tool_tool_matrix, "Return the current MathDevMCP tool matrix.", "tool_matrix", "informational", server_name="get_tool_matrix"),
     MCPToolSpec("status_taxonomy", _tool_status_taxonomy, "Return the current MathDevMCP status and substatus taxonomy.", "status_taxonomy", "informational"),
     MCPToolSpec("doctor", _tool_doctor, "Report external backend capabilities and environment diagnostics.", "doctor_report", "operational"),

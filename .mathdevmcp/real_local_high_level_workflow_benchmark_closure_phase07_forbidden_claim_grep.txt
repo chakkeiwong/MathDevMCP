@@ -1,0 +1,33 @@
+docs/plans/mathdevmcp-real-local-high-level-workflow-benchmark-closure-promotion-policy-note-2026-06-30.md:32:- Do not cite these reports as public benchmark validity evidence.
+docs/plans/mathdevmcp-real-local-high-level-workflow-benchmark-closure-promotion-policy-note-2026-06-30.md:33:- Do not cite these reports as release-readiness evidence.
+docs/plans/mathdevmcp-real-local-high-level-workflow-benchmark-closure-promotion-policy-note-2026-06-30.md:34:- Do not cite these reports as scientific validation.
+docs/plans/mathdevmcp-real-local-high-level-workflow-benchmark-closure-promotion-policy-note-2026-06-30.md:35:- Do not treat packet generation as a proof certificate.
+docs/plans/mathdevmcp-real-local-high-level-workflow-benchmark-closure-promotion-policy-note-2026-06-30.md:36:- Do not convert `aggregate_accuracy: null` into a pass rate.
+docs/plans/mathdevmcp-real-local-high-level-workflow-benchmark-closure-promotion-policy-note-2026-06-30.md:39:- Do not claim broad theorem-proving ability or full LaTeX derivation
+benchmarks/README.md:42:It is not a release-readiness claim, external benchmark score, or broad theorem
+benchmarks/README.md:88:accuracy. The reports must keep `aggregate_accuracy` as `null`, preserve
+benchmarks/README.md:90:as review artifacts rather than proof certificates.
+benchmarks/README.md:93:evidence, public benchmark validity evidence, scientific validation, external
+benchmarks/real_tasks/holdout_local/README.md:50:evidence**, not holdout evidence.
+benchmarks/real_tasks/holdout_local/README.md:58:- release-readiness evidence.
+benchmarks/real_tasks/holdout_local/README.md:95:This pilot is not benchmark-gate evidence, not public redistributability
+benchmarks/real_tasks/holdout_local/README.md:96:evidence, not release-readiness evidence, not scientific validation, and not a
+benchmarks/real_tasks/holdout_local/README.md:97:claim of full LaTeX derivation competence or broad theorem-proving ability.
+benchmarks/real_tasks/holdout_local/README.md:123:local/non-gating only and must not be used as benchmark-gate evidence, public
+benchmarks/real_tasks/holdout_local/README.md:124:redistributability evidence, release-readiness evidence, scientific validation,
+benchmarks/real_tasks/holdout_local/README.md:125:or a claim of broad theorem-proving ability.
+benchmarks/real_tasks/holdout_local/README.md:156:- `aggregate_accuracy` is intentionally `null`.
+benchmarks/real_tasks/holdout_local/README.md:165:formal release benchmark gate, not public redistributability evidence, not
+benchmarks/real_tasks/holdout_local/README.md:166:release-readiness evidence, not scientific validation, not external
+benchmarks/real_tasks/holdout_local/README.md:167:reproducibility evidence, and not a claim of full LaTeX derivation competence
+benchmarks/real_tasks/holdout_local/README.md:168:or broad theorem-proving ability.
+docs/mathdevmcp-operator-guide.md:67:- `assumptions-for` reports route-required assumptions and does not claim global
+docs/mathdevmcp-operator-guide.md:104:  `aggregate_accuracy: null`.
+docs/mathdevmcp-operator-guide.md:106:  packet is a review artifact, not a proof certificate unless its nested scoped
+docs/mathdevmcp-operator-guide.md:112:  gate evidence, public benchmark validity evidence, release-readiness
+docs/mathdevmcp-operator-guide.md:113:  evidence, scientific validation, external reproducibility evidence, full
+docs/mathdevmcp-operator-guide.md:114:  LaTeX proof checking, or broad theorem-proving evidence.
+docs/mathdevmcp-operator-guide.md:170:  benchmark validity, release readiness, or broad theorem-proving ability.
+docs/mathdevmcp-operator-guide.md:236:- `unverified`: the claim may be plausible and may have nearby supporting notation, but the tool does not have enough evidence to certify it.
+docs/mathdevmcp-operator-guide.md:316:- if the result is `unverified`, do not claim the step is justified unless you also have a real derivation or explicit cited step chain.
+docs/mathdevmcp-operator-guide.md:458:`verified` requires deterministic backend evidence. Parser metrics, AST operation matches, numeric diagnostics, and LeanDojo traces are not proof certificates by themselves.

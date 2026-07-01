@@ -69,10 +69,16 @@ deterministic primitives, tested workflow tools, and operational release tools:
 - primitives: `search_latex`, `latex_label_lookup`, `search_code_docs`,
   `check_equality`, `lean_check`;
 - workflows: `audit_implementation_label`, `derive_label_step`,
-  `implementation_brief`, `audit_derivation_label`,
-  `audit_derivation_v2_label`, `audit_kalman_recursion`,
-  `typed_obligation_label`;
+  `derive_or_refute`, `prove_or_refute`, `localize_proof_gap`,
+  `code_implements_equation`, `classify_math_claim`, `reconcile_notation`,
+  `generate_math_tests`, `math_review_packet`, `math_change_impact`,
+  `literature_local_audit`, `implementation_brief`,
+  `audit_derivation_label`, `audit_derivation_v2_label`,
+  `audit_kalman_recursion`, `typed_obligation_label`,
+  `derive_from`, `prove_or_counterexample`, `assumptions_for`,
+  `debug_derivation`, `audit_math_to_code`, `prepare_review_packet`;
 - operations: `doctor`, `benchmark_gate`, `run_benchmarks`,
+  `high_level_workflow_quality`, `workbench_benchmark_quality`,
   `release_corpus_manifest`, `validate_release_corpus`, `release_readiness`,
   `release_profile_analysis`, `lean_readiness`;
 - informational: `tool_matrix`/`get_tool_matrix`, `status_taxonomy`,
@@ -86,6 +92,40 @@ Compatibility aliases remain available for a migration cycle:
 See [mcp/README.md](mcp/README.md) for the full surface and migration table.
 
 ## Common Workflows
+
+Question-centered mathematical debugging workflows:
+
+```bash
+PYTHONPATH=src python -m mathdevmcp.cli derive-from "a + b = b + a" \
+  --given "a,b are scalars"
+PYTHONPATH=src python -m mathdevmcp.cli prove-or-counterexample "A*B = B*A"
+PYTHONPATH=src python -m mathdevmcp.cli assumptions-for "logdet(A)"
+PYTHONPATH=src python -m mathdevmcp.cli debug-derivation \
+  --step "logdet(A)" --step "trace(A)" --step "trace(A)"
+PYTHONPATH=src python -m mathdevmcp.cli audit-math-to-code \
+  "logdet(S)" "def f(S): return logdet(S)"
+PYTHONPATH=src python -m mathdevmcp.cli prepare-review-packet \
+  "Review derivation" --evidence '[{"status":"diagnostic_only"}]'
+PYTHONPATH=src python -m mathdevmcp.cli derive-or-refute "a + b = b + a"
+PYTHONPATH=src python -m mathdevmcp.cli prove-or-refute "(a+b)*(a-b) = a*a - b*b"
+PYTHONPATH=src python -m mathdevmcp.cli localize-proof-gap \
+  --step "a + b = b + a" --step "b + a = a - b"
+PYTHONPATH=src python -m mathdevmcp.cli code-implements-equation \
+  "logdet(S)" "def f(S): return logdet(S)"
+PYTHONPATH=src python -m mathdevmcp.cli classify-math-claim \
+  "Assume x > 0." --evidence '[{"metadata":{"contract":"claim_support_packet"},"claim_status":"model_assumption"}]'
+```
+
+These tools are conservative. Backend-certified scoped obligations can support
+proof/refutation statuses; structural code matches, numeric diagnostics,
+generated tests, and review packets remain diagnostic unless linked to a
+certifying backend result.
+
+The high-level commands return `high_level_workflow_result` envelopes with
+explicit `evidence_classes`, `certification_source`, `veto_reasons`,
+`assumptions`, `counterexamples`, `actions`, and `non_claims`. Free-form
+`--given` context is not silently promoted to a formal assumption; pass formal
+route assumptions with `--assumption`.
 
 Check the runtime environment:
 
@@ -128,6 +168,22 @@ Run the release benchmark gate:
 ```bash
 PYTHONPATH=src python -m mathdevmcp.cli benchmark-gate --root "$PWD"
 ```
+
+Run the seeded mathematical workbench quality report:
+
+```bash
+PYTHONPATH=src python -m mathdevmcp.cli workbench-benchmark-quality --root "$PWD"
+```
+
+Run the seeded high-level workflow quality report:
+
+```bash
+PYTHONPATH=src python -m mathdevmcp.cli high-level-workflow-quality --root "$PWD"
+```
+
+This report measures seeded coverage and false-confidence resistance. It is
+separate from external benchmark packs, release readiness, and leaderboard
+claims.
 
 ## Private Corpus Validation
 

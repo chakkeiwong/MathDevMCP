@@ -17,6 +17,7 @@ class RealTaskCandidateAnswer:
     evidence_class: str | None
     summary_text: str
     claims: list[str]
+    rejected_claims: list[str]
     next_actions: list[str]
 
 
@@ -50,10 +51,13 @@ def _build_candidate(value: dict[str, Any]) -> RealTaskCandidateAnswer | None:
             return None
     labels = value.get("labels")
     claims = value.get("claims")
+    rejected_claims = value.get("rejected_claims", [])
     next_actions = value.get("next_actions")
     if not isinstance(labels, list) or not all(isinstance(item, str) for item in labels):
         return None
     if not isinstance(claims, list) or not all(isinstance(item, str) for item in claims):
+        return None
+    if not isinstance(rejected_claims, list) or not all(isinstance(item, str) for item in rejected_claims):
         return None
     if not isinstance(next_actions, list) or not all(isinstance(item, str) for item in next_actions):
         return None
@@ -65,6 +69,7 @@ def _build_candidate(value: dict[str, Any]) -> RealTaskCandidateAnswer | None:
         evidence_class=value.get("evidence_class"),
         summary_text=value["summary_text"],
         claims=claims,
+        rejected_claims=rejected_claims,
         next_actions=next_actions,
     )
 
@@ -128,6 +133,7 @@ def score_real_task_case(case: dict[str, Any], candidate: dict[str, Any]) -> dic
     labels_present, missing_labels = _contains_all(expected_labels, built.labels)
     required_terms_present, missing_terms = _contains_all(required_terms, built.summary_text)
     present_forbidden_claims = _find_present(forbidden_claims, built.claims)
+    rejected_forbidden_claims = _find_present(forbidden_claims, built.rejected_claims)
     forbidden_claims_absent = len(present_forbidden_claims) == 0
     next_actions_present, missing_next_actions = _contains_all(required_next_actions, built.next_actions)
     evidence_class_match = built.evidence_class == expected_evidence_class
@@ -159,6 +165,7 @@ def score_real_task_case(case: dict[str, Any], candidate: dict[str, Any]) -> dic
                     "missing_expected_labels": missing_labels,
                     "missing_required_terms": missing_terms,
                     "present_forbidden_claims": present_forbidden_claims,
+                    "rejected_forbidden_claims": rejected_forbidden_claims,
                     "missing_required_next_actions": missing_next_actions,
                     "observed_status": built.status,
                     "observed_substatus": built.substatus,

@@ -8,6 +8,8 @@ from pathlib import Path
 
 from .benchmarks import (
     benchmark_gate_report,
+    build_high_level_workflow_quality_report,
+    build_workbench_benchmark_quality_report,
     build_benchmark_report,
     run_label_consistency_benchmark,
     run_seeded_mismatch_benchmark,
@@ -18,19 +20,35 @@ from .code_search import search_files
 from .claim_support import build_claim_support_packet
 from .consistency import compare_files, compare_label_to_code
 from .derivation import derive_step_for_label, derive_step_from_files
+from .derive_from import derive_from as high_level_derive_from
+from .derive_or_refute import derive_or_refute
 from .doctor import doctor_report
 from .domain_templates import generate_obligations_from_template, list_domain_templates, suggest_domain_templates
+from .equation_code_match import code_implements_equation
+from .assumptions_for import assumptions_for as high_level_assumptions_for
+from .audit_math_to_code import audit_math_to_code as high_level_audit_math_to_code
+from .debug_derivation import debug_derivation as high_level_debug_derivation
 from ._install_rules import install_rules
 from .kalman_workflows import audit_kalman_recursion
 from .latex_index import build_index, extract_context_for_label, extract_paragraph_context_for_label, search_index, write_index
 from .lean_readiness import lean_readiness
+from .literature_local_audit import literature_local_audit
+from .math_claim_classifier import classify_math_claim
+from .math_change_impact import math_change_impact
+from .math_review_packet import build_math_review_packet
+from .math_to_tests import generate_math_tests
 from .mcp_alias_audit import audit_deprecated_alias_usage
+from .notation_reconciliation import reconcile_notation
 from .performance import index_performance_smoke
 from .parser_benchmark import compare_parser_backends
 from .proof_obligations import check_proof_obligation
+from .prepare_review_packet import prepare_review_packet as high_level_prepare_review_packet
+from .prove_or_counterexample import prove_or_counterexample as high_level_prove_or_counterexample
+from .prove_or_refute import prove_or_refute
 from .proof_audit import audit_derivation_for_label
 from .proof_audit_v2 import audit_derivation_v2_for_label
 from .proof_packet import build_proof_packet_label
+from .proof_gap import localize_proof_gap
 from .negative_evidence import build_negative_evidence_packet
 from .public_release import public_release_check
 from .governance import governance_policy, validate_governance
@@ -38,6 +56,15 @@ from .release_corpus import release_corpus_manifest, validate_release_corpus_man
 from .release_hypotheses import release_hypothesis_check
 from .release_profile_analysis import release_profile_analysis
 from .release_policy import RELEASE_PROFILES, release_readiness_report
+from .real_local_high_level_pilot import run_high_level_pilot
+from .real_local_high_level_benchmark import (
+    build_real_local_high_level_baseline_report,
+    build_real_local_high_level_final_matrix,
+    build_real_local_high_level_packet_report,
+    build_real_local_high_level_route_availability_report,
+    load_real_local_high_level_benchmark_manifest,
+)
+from .real_local_source_adapters import run_source_adapter_report
 from .status_taxonomy import status_taxonomy
 from .temporal_contracts import audit_temporal_contract
 from .typed_workflows import typed_obligation_for_label
@@ -53,6 +80,16 @@ def _load_json_argument_or_file(value: str):
     except (OSError, ValueError):
         pass
     return json.loads(value)
+
+
+def _load_text_argument_or_file(value: str) -> str:
+    try:
+        path = Path(value)
+        if path.is_file():
+            return path.read_text(encoding="utf-8")
+    except (OSError, ValueError):
+        pass
+    return value
 
 
 def _cmd_index(args: argparse.Namespace) -> int:
@@ -122,6 +159,207 @@ def _cmd_compare_label(args: argparse.Namespace) -> int:
     )
     print(json.dumps(result, indent=2))
     return 0
+
+
+def _cmd_code_implements_equation(args: argparse.Namespace) -> int:
+    aliases = _load_json_argument_or_file(args.aliases) if args.aliases else None
+    result = code_implements_equation(
+        args.equation,
+        _load_text_argument_or_file(args.code),
+        aliases=aliases,
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_classify_math_claim(args: argparse.Namespace) -> int:
+    evidence = _load_json_argument_or_file(args.evidence) if args.evidence else []
+    result = classify_math_claim(args.claim, evidence=evidence)
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_reconcile_notation(args: argparse.Namespace) -> int:
+    left_records = _load_json_argument_or_file(args.left_records)
+    right_records = _load_json_argument_or_file(args.right_records)
+    result = reconcile_notation(
+        left_records,
+        right_records,
+        left_context=args.left_context,
+        right_context=args.right_context,
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_generate_math_tests(args: argparse.Namespace) -> int:
+    assumptions = _load_json_argument_or_file(args.assumptions) if args.assumptions else None
+    notation = _load_json_argument_or_file(args.notation) if args.notation else None
+    kinds = _load_json_argument_or_file(args.kinds) if args.kinds else None
+    numeric_fixtures = _load_json_argument_or_file(args.numeric_fixtures) if args.numeric_fixtures else None
+    result = generate_math_tests(
+        args.target,
+        assumptions=assumptions,
+        notation=notation,
+        kinds=kinds,
+        numeric_fixtures=numeric_fixtures,
+        expected_failure_mode=args.expected_failure_mode,
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_math_review_packet(args: argparse.Namespace) -> int:
+    source = _load_json_argument_or_file(args.source) if args.source else None
+    evidence = _load_json_argument_or_file(args.evidence) if args.evidence else []
+    result = build_math_review_packet(args.question, source=source, evidence=evidence, packet_id=args.packet_id or None)
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_math_change_impact(args: argparse.Namespace) -> int:
+    result = math_change_impact(
+        args.changed_id,
+        changed_kind=args.changed_kind,
+        graph=_load_json_argument_or_file(args.graph) if args.graph else None,
+        packets=_load_json_argument_or_file(args.packets) if args.packets else None,
+        code_links=_load_json_argument_or_file(args.code_links) if args.code_links else None,
+        generated_tests=_load_json_argument_or_file(args.generated_tests) if args.generated_tests else None,
+        claims=_load_json_argument_or_file(args.claims) if args.claims else None,
+        assumptions=_load_json_argument_or_file(args.assumptions) if args.assumptions else None,
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_literature_local_audit(args: argparse.Namespace) -> int:
+    result = literature_local_audit(
+        args.theorem_id,
+        _load_json_argument_or_file(args.theorem_assumptions),
+        _load_json_argument_or_file(args.local_assumptions),
+        local_context=args.local_context,
+        notation_audit=_load_json_argument_or_file(args.notation_audit) if args.notation_audit else None,
+        human_waivers=_load_json_argument_or_file(args.human_waivers) if args.human_waivers else None,
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_high_level_derive_from(args: argparse.Namespace) -> int:
+    result = high_level_derive_from(
+        args.target,
+        givens=args.given,
+        assumptions=args.assumption,
+        lhs=args.lhs or None,
+        rhs=args.rhs or None,
+        backend=args.backend,
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_high_level_prove_or_counterexample(args: argparse.Namespace) -> int:
+    result = high_level_prove_or_counterexample(
+        args.claim,
+        assumptions=args.assumption,
+        lhs=args.lhs or None,
+        rhs=args.rhs or None,
+        backend=args.backend,
+        lean_source=args.lean_source or None,
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_high_level_assumptions_for(args: argparse.Namespace) -> int:
+    result = high_level_assumptions_for(
+        args.target,
+        provided_assumptions=args.provided_assumption,
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_high_level_debug_derivation(args: argparse.Namespace) -> int:
+    result = high_level_debug_derivation(
+        args.step,
+        assumptions=args.assumption,
+        backend=args.backend,
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_high_level_audit_math_to_code(args: argparse.Namespace) -> int:
+    aliases = _load_json_argument_or_file(args.aliases) if args.aliases else None
+    result = high_level_audit_math_to_code(
+        args.math,
+        _load_text_argument_or_file(args.code),
+        aliases=aliases,
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_high_level_prepare_review_packet(args: argparse.Namespace) -> int:
+    source = _load_json_argument_or_file(args.source) if args.source else None
+    evidence = _load_json_argument_or_file(args.evidence) if args.evidence else None
+    result = high_level_prepare_review_packet(
+        args.question,
+        evidence=evidence,
+        source=source,
+        packet_id=args.packet_id or None,
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_high_level_workflow_quality(args: argparse.Namespace) -> int:
+    result = build_high_level_workflow_quality_report(Path(args.root))
+    print(json.dumps(result, indent=2))
+    return 0 if result["status"] == "quality_thresholds_passed" else 1
+
+
+def _cmd_real_local_high_level_pilot(args: argparse.Namespace) -> int:
+    result = run_high_level_pilot(Path(args.root), manifest_path=args.manifest or None)
+    print(json.dumps(result, indent=2))
+    return 0 if result["status"] == "passed" else 1
+
+
+def _cmd_real_local_high_level_benchmark_schema(args: argparse.Namespace) -> int:
+    result = load_real_local_high_level_benchmark_manifest(Path(args.root), manifest_path=args.manifest or None)
+    print(json.dumps(result, indent=2))
+    return 0 if result["status"] == "consistent" else 1
+
+
+def _cmd_real_local_high_level_routes(args: argparse.Namespace) -> int:
+    result = build_real_local_high_level_route_availability_report(Path(args.root), manifest_path=args.manifest or None)
+    print(json.dumps(result, indent=2))
+    return 0 if result["status"] == "consistent" else 1
+
+
+def _cmd_real_local_high_level_baseline(args: argparse.Namespace) -> int:
+    result = build_real_local_high_level_baseline_report(Path(args.root), manifest_path=args.manifest or None)
+    print(json.dumps(result, indent=2))
+    return 0 if result["status"] == "completed" else 1
+
+
+def _cmd_real_local_high_level_packets(args: argparse.Namespace) -> int:
+    result = build_real_local_high_level_packet_report(Path(args.root), manifest_path=args.manifest or None)
+    print(json.dumps(result, indent=2))
+    return 0 if result["status"] == "consistent" else 1
+
+
+def _cmd_real_local_high_level_final_matrix(args: argparse.Namespace) -> int:
+    result = build_real_local_high_level_final_matrix(Path(args.root), manifest_path=args.manifest or None)
+    print(json.dumps(result, indent=2))
+    return 0 if result["status"] == "consistent" else 1
+
+
+def _cmd_real_local_source_adapters(args: argparse.Namespace) -> int:
+    result = run_source_adapter_report(Path(args.root), manifest_path=args.manifest or None)
+    print(json.dumps(result, indent=2))
+    return 0 if result["status"] in {"passed", "partial"} else 1
 
 
 
@@ -208,6 +446,38 @@ def _cmd_derive_label(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_derive_or_refute(args: argparse.Namespace) -> int:
+    result = derive_or_refute(
+        args.target,
+        givens=args.given,
+        assumptions=args.assumption,
+        lhs=args.lhs or None,
+        rhs=args.rhs or None,
+        backend=args.backend,
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_prove_or_refute(args: argparse.Namespace) -> int:
+    result = prove_or_refute(
+        args.claim,
+        assumptions=args.assumption,
+        lhs=args.lhs or None,
+        rhs=args.rhs or None,
+        backend=args.backend,
+        lean_source=args.lean_source or None,
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_localize_proof_gap(args: argparse.Namespace) -> int:
+    result = localize_proof_gap(args.step, assumptions=args.assumption, backend=args.backend)
+    print(json.dumps(result, indent=2))
+    return 0
+
+
 
 def _cmd_benchmark_plan(args: argparse.Namespace) -> int:
     plan = write_seeded_mismatch_benchmark(Path(args.root))
@@ -251,6 +521,12 @@ def _cmd_benchmark_gate(args: argparse.Namespace) -> int:
     result = benchmark_gate_report(Path(args.root))
     print(json.dumps(result, indent=2))
     return 0 if result["passed"] else 1
+
+
+def _cmd_workbench_benchmark_quality(args: argparse.Namespace) -> int:
+    result = build_workbench_benchmark_quality_report(Path(args.root))
+    print(json.dumps(result, indent=2))
+    return 0 if result["status"] == "quality_thresholds_passed" else 1
 
 
 
@@ -480,6 +756,102 @@ def make_parser() -> argparse.ArgumentParser:
     p_compare_label.add_argument("--paragraph-context", action="store_true", help="Use paragraph neighborhood instead of line excerpt")
     p_compare_label.set_defaults(func=_cmd_compare_label)
 
+    p_code_equation = sub.add_parser("code-implements-equation", help="Compare equation terms against Python code structure")
+    p_code_equation.add_argument("equation", help="Equation text")
+    p_code_equation.add_argument("code", help="Python code text or file path")
+    p_code_equation.add_argument("--aliases", default="", help="Optional JSON object or JSON file mapping equation symbols to code names")
+    p_code_equation.set_defaults(func=_cmd_code_implements_equation)
+
+    p_classify_claim = sub.add_parser("classify-math-claim", help="Classify a math claim by supplied evidence without promoting diagnostics")
+    p_classify_claim.add_argument("claim", help="Claim text")
+    p_classify_claim.add_argument("--evidence", default="", help="Optional JSON evidence list or JSON file path")
+    p_classify_claim.set_defaults(func=_cmd_classify_math_claim)
+
+    p_reconcile_notation = sub.add_parser("reconcile-notation", help="Compare explicit notation convention records")
+    p_reconcile_notation.add_argument("left_records", help="JSON list or JSON file path for left notation records")
+    p_reconcile_notation.add_argument("right_records", help="JSON list or JSON file path for right notation records")
+    p_reconcile_notation.add_argument("--left-context", default="left", help="Name of left context")
+    p_reconcile_notation.add_argument("--right-context", default="right", help="Name of right context")
+    p_reconcile_notation.set_defaults(func=_cmd_reconcile_notation)
+
+    p_math_tests = sub.add_parser("generate-math-tests", help="Generate diagnostic test snippets or plans from a math obligation")
+    p_math_tests.add_argument("target", help="Target equality such as 'lhs = rhs'")
+    p_math_tests.add_argument("--assumptions", default="", help="Optional JSON list or JSON file path")
+    p_math_tests.add_argument("--notation", default="", help="Optional JSON notation records list or JSON file path")
+    p_math_tests.add_argument("--kinds", default="", help="Optional JSON list of test kinds or JSON file path")
+    p_math_tests.add_argument("--numeric-fixtures", default="", help="Optional JSON object or JSON file path")
+    p_math_tests.add_argument("--expected-failure-mode", default="mismatch_or_unverified", help="Expected failure mode for diagnostics")
+    p_math_tests.set_defaults(func=_cmd_generate_math_tests)
+
+    p_review_packet = sub.add_parser("math-review-packet", help="Build a compact human-review packet from math debugging evidence")
+    p_review_packet.add_argument("question", help="Review question")
+    p_review_packet.add_argument("--source", default="", help="Optional JSON source object or JSON file path")
+    p_review_packet.add_argument("--evidence", default="", help="Optional JSON evidence list or JSON file path")
+    p_review_packet.add_argument("--packet-id", default="", help="Optional stable packet id")
+    p_review_packet.set_defaults(func=_cmd_math_review_packet)
+
+    p_change_impact = sub.add_parser("math-change-impact", help="Trace likely downstream impact of a changed math artifact")
+    p_change_impact.add_argument("changed_id", help="Changed label, assumption, or artifact id")
+    p_change_impact.add_argument("--changed-kind", default="label", help="Changed artifact kind when id is not namespaced")
+    p_change_impact.add_argument("--graph", default="", help="Optional dependency graph JSON or file path")
+    p_change_impact.add_argument("--packets", default="", help="Optional review/proof packet list JSON or file path")
+    p_change_impact.add_argument("--code-links", default="", help="Optional code-link list JSON or file path")
+    p_change_impact.add_argument("--generated-tests", default="", help="Optional generated-test list JSON or file path")
+    p_change_impact.add_argument("--claims", default="", help="Optional claim packet list JSON or file path")
+    p_change_impact.add_argument("--assumptions", default="", help="Optional assumption list JSON or file path")
+    p_change_impact.set_defaults(func=_cmd_math_change_impact)
+
+    p_lit_audit = sub.add_parser("literature-local-audit", help="Compare supplied theorem assumptions to local assumptions")
+    p_lit_audit.add_argument("theorem_id", help="Theorem or source identifier")
+    p_lit_audit.add_argument("theorem_assumptions", help="JSON list or JSON file path")
+    p_lit_audit.add_argument("local_assumptions", help="JSON list or JSON file path")
+    p_lit_audit.add_argument("--local-context", default="local", help="Local context label")
+    p_lit_audit.add_argument("--notation-audit", default="", help="Optional notation audit JSON or file path")
+    p_lit_audit.add_argument("--human-waivers", default="", help="Optional JSON list of assumption ids with human waivers")
+    p_lit_audit.set_defaults(func=_cmd_literature_local_audit)
+
+    p_high_derive = sub.add_parser("derive-from", help="Answer a scoped high-level derivability question")
+    p_high_derive.add_argument("target", help="Target equality such as 'lhs = rhs'")
+    p_high_derive.add_argument("--given", action="append", default=[], help="Context/given statement; can be repeated")
+    p_high_derive.add_argument("--assumption", action="append", default=[], help="Formal route assumption; can be repeated")
+    p_high_derive.add_argument("--lhs", default="", help="Optional explicit left-hand side")
+    p_high_derive.add_argument("--rhs", default="", help="Optional explicit right-hand side")
+    p_high_derive.add_argument("--backend", choices=["auto", "sympy", "sage", "z3"], default="auto", help="Backend preference")
+    p_high_derive.set_defaults(func=_cmd_high_level_derive_from)
+
+    p_high_prove = sub.add_parser("prove-or-counterexample", help="Answer a scoped high-level proof/counterexample question")
+    p_high_prove.add_argument("claim", help="Claim equality such as 'lhs = rhs'")
+    p_high_prove.add_argument("--assumption", action="append", default=[], help="Formal route assumption; can be repeated")
+    p_high_prove.add_argument("--lhs", default="", help="Optional explicit left-hand side")
+    p_high_prove.add_argument("--rhs", default="", help="Optional explicit right-hand side")
+    p_high_prove.add_argument("--backend", choices=["auto", "sympy", "sage", "z3", "lean"], default="auto", help="Backend preference")
+    p_high_prove.add_argument("--lean-source", default="", help="Explicit Lean source for Lean route")
+    p_high_prove.set_defaults(func=_cmd_high_level_prove_or_counterexample)
+
+    p_high_assumptions = sub.add_parser("assumptions-for", help="Find route-required assumptions for a scoped target")
+    p_high_assumptions.add_argument("target", help="Target expression or equality")
+    p_high_assumptions.add_argument("--provided-assumption", action="append", default=[], help="Assumption already supplied; can be repeated")
+    p_high_assumptions.set_defaults(func=_cmd_high_level_assumptions_for)
+
+    p_high_debug = sub.add_parser("debug-derivation", help="Localize a scoped derivation gap")
+    p_high_debug.add_argument("--step", action="append", required=True, help="Derivation expression; repeat in order")
+    p_high_debug.add_argument("--assumption", action="append", default=[], help="Formal route assumption; can be repeated")
+    p_high_debug.add_argument("--backend", choices=["auto", "sympy", "sage", "z3"], default="auto", help="Backend preference")
+    p_high_debug.set_defaults(func=_cmd_high_level_debug_derivation)
+
+    p_high_code = sub.add_parser("audit-math-to-code", help="Run a high-level structural math-to-code audit")
+    p_high_code.add_argument("math", help="Math expression")
+    p_high_code.add_argument("code", help="Python code text or file path")
+    p_high_code.add_argument("--aliases", default="", help="Optional JSON object or JSON file mapping math symbols to code names")
+    p_high_code.set_defaults(func=_cmd_high_level_audit_math_to_code)
+
+    p_high_packet = sub.add_parser("prepare-review-packet", help="Prepare a high-level human-review packet")
+    p_high_packet.add_argument("question", help="Review question")
+    p_high_packet.add_argument("--source", default="", help="Optional JSON source object or JSON file path")
+    p_high_packet.add_argument("--evidence", default="", help="Optional JSON evidence list or JSON file path")
+    p_high_packet.add_argument("--packet-id", default="", help="Optional stable packet id")
+    p_high_packet.set_defaults(func=_cmd_high_level_prepare_review_packet)
+
     p_matrix = sub.add_parser("tool-matrix", help="Print the current tool matrix")
     p_matrix.set_defaults(func=_cmd_tool_matrix)
 
@@ -535,6 +907,30 @@ def make_parser() -> argparse.ArgumentParser:
     p_derive_label.add_argument("--paragraph-context", action="store_true", help="Use paragraph neighborhood instead of line excerpt")
     p_derive_label.set_defaults(func=_cmd_derive_label)
 
+    p_derive_or_refute = sub.add_parser("derive-or-refute", help="Try a bounded derivation or refutation for a target equality")
+    p_derive_or_refute.add_argument("target", help="Target equality such as 'lhs = rhs'")
+    p_derive_or_refute.add_argument("--given", action="append", default=[], help="Given statement; can be repeated")
+    p_derive_or_refute.add_argument("--assumption", action="append", default=[], help="Assumption; can be repeated")
+    p_derive_or_refute.add_argument("--lhs", default="", help="Optional explicit left-hand side")
+    p_derive_or_refute.add_argument("--rhs", default="", help="Optional explicit right-hand side")
+    p_derive_or_refute.add_argument("--backend", choices=["auto", "sympy", "sage", "z3"], default="auto", help="Backend preference")
+    p_derive_or_refute.set_defaults(func=_cmd_derive_or_refute)
+
+    p_prove_or_refute = sub.add_parser("prove-or-refute", help="Try a bounded proof or refutation for a target equality")
+    p_prove_or_refute.add_argument("claim", help="Claim equality such as 'lhs = rhs'")
+    p_prove_or_refute.add_argument("--assumption", action="append", default=[], help="Assumption; can be repeated")
+    p_prove_or_refute.add_argument("--lhs", default="", help="Optional explicit left-hand side")
+    p_prove_or_refute.add_argument("--rhs", default="", help="Optional explicit right-hand side")
+    p_prove_or_refute.add_argument("--backend", choices=["auto", "sympy", "sage", "z3", "lean"], default="auto", help="Backend preference")
+    p_prove_or_refute.add_argument("--lean-source", default="", help="Explicit Lean source for Lean route")
+    p_prove_or_refute.set_defaults(func=_cmd_prove_or_refute)
+
+    p_gap = sub.add_parser("localize-proof-gap", help="Find the first unsupported step in a bounded derivation chain")
+    p_gap.add_argument("--step", action="append", required=True, help="Derivation step expression; repeat in order")
+    p_gap.add_argument("--assumption", action="append", default=[], help="Assumption; can be repeated")
+    p_gap.add_argument("--backend", choices=["auto", "sympy", "sage", "z3"], default="auto", help="Backend preference")
+    p_gap.set_defaults(func=_cmd_localize_proof_gap)
+
     p_bench = sub.add_parser("benchmark-plan", help="Print the seeded mismatch benchmark plan")
     p_bench.add_argument("--root", default=".", help="Project root")
     p_bench.set_defaults(func=_cmd_benchmark_plan)
@@ -559,6 +955,49 @@ def make_parser() -> argparse.ArgumentParser:
     p_benchmark_gate = sub.add_parser("benchmark-gate", help="Run benchmark gate evaluation for CI")
     p_benchmark_gate.add_argument("--root", default=".", help="Project root")
     p_benchmark_gate.set_defaults(func=_cmd_benchmark_gate)
+
+    p_workbench_quality = sub.add_parser("workbench-benchmark-quality", help="Report seeded workbench benchmark quality thresholds")
+    p_workbench_quality.add_argument("--root", default=".", help="Project root")
+    p_workbench_quality.set_defaults(func=_cmd_workbench_benchmark_quality)
+
+    p_high_level_quality = sub.add_parser("high-level-workflow-quality", help="Report seeded high-level workflow benchmark quality thresholds")
+    p_high_level_quality.add_argument("--root", default=".", help="Project root")
+    p_high_level_quality.set_defaults(func=_cmd_high_level_workflow_quality)
+
+    p_real_local_pilot = sub.add_parser("real-local-high-level-pilot", help="Run the local non-gating real-source high-level workflow pilot")
+    p_real_local_pilot.add_argument("--root", default=".", help="Project root")
+    p_real_local_pilot.add_argument("--manifest", default="", help="Optional pilot manifest path")
+    p_real_local_pilot.set_defaults(func=_cmd_real_local_high_level_pilot)
+
+    p_real_local_benchmark_schema = sub.add_parser("real-local-high-level-benchmark-schema", help="Validate the local non-gating real-source high-level workflow benchmark schema")
+    p_real_local_benchmark_schema.add_argument("--root", default=".", help="Project root")
+    p_real_local_benchmark_schema.add_argument("--manifest", default="", help="Optional benchmark manifest path")
+    p_real_local_benchmark_schema.set_defaults(func=_cmd_real_local_high_level_benchmark_schema)
+
+    p_real_local_routes = sub.add_parser("real-local-high-level-routes", help="Build the local non-gating route-availability ledger for the real-source high-level benchmark")
+    p_real_local_routes.add_argument("--root", default=".", help="Project root")
+    p_real_local_routes.add_argument("--manifest", default="", help="Optional benchmark manifest path")
+    p_real_local_routes.set_defaults(func=_cmd_real_local_high_level_routes)
+
+    p_real_local_baseline = sub.add_parser("real-local-high-level-baseline", help="Run the pre-repair current-workflow baseline over the local high-level benchmark")
+    p_real_local_baseline.add_argument("--root", default=".", help="Project root")
+    p_real_local_baseline.add_argument("--manifest", default="", help="Optional benchmark manifest path")
+    p_real_local_baseline.set_defaults(func=_cmd_real_local_high_level_baseline)
+
+    p_real_local_packets = sub.add_parser("real-local-high-level-packets", help="Build durable review packets for the local high-level benchmark")
+    p_real_local_packets.add_argument("--root", default=".", help="Project root")
+    p_real_local_packets.add_argument("--manifest", default="", help="Optional benchmark manifest path")
+    p_real_local_packets.set_defaults(func=_cmd_real_local_high_level_packets)
+
+    p_real_local_final_matrix = sub.add_parser("real-local-high-level-final-matrix", help="Build the final per-case local closure matrix for the high-level benchmark")
+    p_real_local_final_matrix.add_argument("--root", default=".", help="Project root")
+    p_real_local_final_matrix.add_argument("--manifest", default="", help="Optional benchmark manifest path")
+    p_real_local_final_matrix.set_defaults(func=_cmd_real_local_high_level_final_matrix)
+
+    p_real_local_source = sub.add_parser("real-local-source-adapters", help="Run local non-gating source-adapter report for real-local high-level cases")
+    p_real_local_source.add_argument("--root", default=".", help="Project root")
+    p_real_local_source.add_argument("--manifest", default="", help="Optional pilot manifest path")
+    p_real_local_source.set_defaults(func=_cmd_real_local_source_adapters)
 
     p_index_perf = sub.add_parser("index-performance-smoke", help="Measure cold indexing and repeated LaTeX search timings")
     p_index_perf.add_argument("--root", default=".", help="Project root or LaTeX root")

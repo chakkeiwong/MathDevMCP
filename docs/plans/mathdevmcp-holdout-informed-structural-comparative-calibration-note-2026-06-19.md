@@ -134,12 +134,12 @@ smaller.” It is now:
 
 - the **public scored tier** is broader and already contains at least one active
   mismatch/veto signal;
-- the **local holdout scored tier** is smaller, but it now also contains at
-  least one mismatch/veto-shaped signal.
+- the **local holdout scored tier** is smaller, but it now contains mismatch,
+  veto, and unverified judgment-shape coverage in some local form.
 
-This means the local holdout tier is becoming more useful as a **failure-shape
-comparison partner**, even though it is still too small to support strong
-comparative conclusions.
+This means the local holdout tier is no longer merely a failure-shape probe. The
+remaining question is increasingly whether its current examples are broad enough
+and representative enough to support stronger comparative interpretation.
 
 ### Why that matters
 
@@ -161,20 +161,17 @@ worth more.
 
 ## Main remaining calibration uncertainties
 
-1. **Failure-shape asymmetry is reduced, but not resolved**
-   - the public scored tier includes mismatch/veto behavior;
-   - the local holdout tier now also includes mismatch/veto behavior;
-   - but the local tier still exposes much less failure variety overall.
+1. **Representativeness of local failures remains the main uncertainty**
+   - the local holdout tier now has mismatch/veto and unverified judgment-shape
+     coverage;
+   - but it is not yet clear whether those signals are representative or still
+     narrow probes.
 
-2. **Representativeness of the local seed**
-   - the local seed is broader than before, but still small enough that full
-     coverage does not imply strong representativeness.
+2. **Cross-tier family asymmetry**
+   - the two tiers overlap in important families, but not yet in enough breadth to make
+     their scored behavior strongly comparable.
 
-3. **Cross-tier family mismatch**
-   - the two tiers overlap in some families, but are not yet close to matched in
-     breadth or shape.
-
-4. **Structural scoring limits remain active**
+3. **Structural scoring limits remain active**
    - all interpretation is still through deterministic normalized candidate
      scoring rather than richer semantic evaluation.
 
@@ -182,7 +179,7 @@ worth more.
 
 | Decision | Primary criterion status | Veto diagnostic status | Main uncertainty | Next justified action | What is not concluded |
 |---|---|---|---|---|---|
-| Treat the benchmark as ready for a more meaningful holdout-informed comparison, but still not for strong comparative claims | Met | Both tiers now expose at least one mismatch/veto-shaped signal | Whether the local holdout tier still lacks enough breadth to make that signal representative | Decide whether one more round of local broadening or a deeper comparative interpretation pass is now higher-value | No generalization proof, no benchmark completion claim, no gate/readiness implication |
+| Treat the benchmark as ready for a more meaningful holdout-informed comparison, but still not for strong comparative claims | Met | Both tiers now expose at least one mismatch/veto-shaped signal | Whether the local holdout tier is representative enough rather than merely structurally diverse | Decide whether one more holdout broadening step or a deeper comparative calibration pass is now higher-value | No generalization proof, no benchmark completion claim, no gate/readiness implication |
 
 ## Post-run red-team note
 
@@ -211,17 +208,19 @@ tiers. It is the local tier’s still-limited ability to expose failure variety.
 The next justified action is to improve the **representativeness and
 comparability** of the cross-tier signal.
 
-At this stage, both tiers now show at least some failure-shape variety, so the
-next choice is no longer forced by an obvious missing signal. The remaining
-question is whether another round of local broadening or a deeper comparative
-interpretation pass would yield more information.
+At this stage, both tiers now show some failure-shape variety, and the local
+tier now also expresses an abstention-oriented judgment shape. The next choice
+is therefore no longer about whether the local tier can reveal anything at all;
+it is about whether another broadening step or a deeper comparative
+interpretation pass will reduce the larger remaining uncertainty.
 
 So the next best move is likely one of:
 
-1. add one more carefully chosen local holdout family if we want stronger local
-   breadth before comparison, or
+1. add one more carefully chosen local holdout family if it clearly improves
+   representativeness, or
 2. run the next deeper comparative calibration pass now, using the fact that the
-   local tier is no longer all-consistent.
+   local tier now spans more than one judgment shape and more than one failure
+   style.
 
 ## Non-claim boundary
 

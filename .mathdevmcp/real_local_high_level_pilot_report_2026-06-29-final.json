@@ -1,0 +1,508 @@
+{
+  "status": "passed",
+  "reason": "All executable probes passed declared boundary checks.",
+  "manifest_path": "/home/chakwong/python/MathDevMCP/benchmarks/real_tasks/holdout_local/high_level_pilot_cases.json",
+  "source_obligation_ledger": [
+    {
+      "case_id": "RLHL-01-ift-gradient-bias-sign",
+      "title": "IFT gradient-bias sign consistency",
+      "workflow": "debug_derivation",
+      "question": "Can we prove the stated IFT gradient-bias formula from the theorem definitions, or is there a sign inconsistency?",
+      "expected_boundary": "negative_control_sign_inconsistency_candidate",
+      "adapter_required": true,
+      "source_files": [
+        {
+          "path": "../dsge_hmc/docs/gradient_accuracy_analysis.tex",
+          "line_range": "536-589",
+          "role": "theorem statement and proof algebra"
+        },
+        {
+          "path": "../dsge_hmc/docs/gradient_accuracy_analysis.tex",
+          "line_range": "883-893",
+          "role": "summary repeat of sign convention"
+        }
+      ]
+    },
+    {
+      "case_id": "RLHL-04-kalman-prediction-error-loglik",
+      "title": "Kalman prediction-error log-likelihood",
+      "workflow": "assumptions_for",
+      "question": "Can we derive the prediction-error log-likelihood from the Kalman innovations?",
+      "expected_boundary": "positive_derivation_with_domain_assumptions",
+      "adapter_required": true,
+      "source_files": [
+        {
+          "path": "../latex-papers/CIP_monograph/chapters/ch16_kalman_filter.tex",
+          "line_range": "197-223",
+          "role": "CIP monograph prediction-error decomposition"
+        },
+        {
+          "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+          "line_range": "76-105",
+          "role": "BayesFilter likelihood spine"
+        }
+      ]
+    },
+    {
+      "case_id": "RLHL-06-joseph-covariance-equivalence",
+      "title": "Joseph covariance update equivalence",
+      "workflow": "prove_or_counterexample",
+      "question": "Can we prove that the Joseph covariance update is algebraically equivalent to the compact Kalman covariance update under the standard gain definition?",
+      "expected_boundary": "positive_proof_with_exact_arithmetic_and_numerical_caveat",
+      "adapter_required": true,
+      "source_files": [
+        {
+          "path": "../latex-papers/CIP_monograph/chapters/ch16_kalman_filter.tex",
+          "line_range": "123-133",
+          "role": "Joseph-form equivalence and numerical caveat"
+        },
+        {
+          "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+          "line_range": "59-74",
+          "role": "compact and Joseph covariance update forms"
+        }
+      ]
+    },
+    {
+      "case_id": "RLHL-07-affine-pricing-master-recursion",
+      "title": "Affine pricing master recursion",
+      "workflow": "derive_from",
+      "question": "Can I derive the affine recursion coefficients A_n and B_n from the exponential-affine ansatz and Gaussian transition law?",
+      "expected_boundary": "positive_derivation_with_gaussian_mgf_and_collection",
+      "adapter_required": true,
+      "source_files": [
+        {
+          "path": "../latex-papers/CIP_monograph/chapters/ch11_state_space_recursions.tex",
+          "line_range": "242-322",
+          "role": "general discrete-time affine pricing recursion"
+        }
+      ]
+    },
+    {
+      "case_id": "RLHL-10-kalman-score-same-scalar-contract",
+      "title": "Kalman score same-scalar derivative contract",
+      "workflow": "assumptions_for",
+      "question": "Can I derive the solve-form Kalman score contribution from the prediction-error log-likelihood, and what must be true for it to be a valid HMC gradient?",
+      "expected_boundary": "derivation_plus_same_scalar_assumption_boundary",
+      "adapter_required": true,
+      "source_files": [
+        {
+          "path": "../BayesFilter/docs/chapters/ch09_kalman_score.tex",
+          "line_range": "20-103",
+          "role": "first-order Kalman score and solve-form score"
+        },
+        {
+          "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+          "line_range": "120-130",
+          "role": "same scalar likelihood contract"
+        }
+      ]
+    }
+  ],
+  "probe_ledger": [
+    {
+      "case_id": "RLHL-01-ift-gradient-bias-sign",
+      "status": "passed",
+      "checks": {
+        "status_match": true,
+        "evidence_classes_match": true,
+        "certification_source_match": true,
+        "required_non_claims_present": true,
+        "required_vetoes_present": true,
+        "required_assumption_terms_present": true,
+        "counterexample_presence_match": true,
+        "source_probe_channels_separate": true,
+        "adapter_gap_visible": true
+      },
+      "observed": {
+        "status": "refuted",
+        "evidence_classes": [
+          "backend_counterexample"
+        ],
+        "certification_source": "backend",
+        "non_claim_codes": [
+          "general_theorem_proving_not_claimed",
+          "release_readiness_not_claimed"
+        ],
+        "veto_codes": [],
+        "assumptions": [],
+        "counterexamples_present": true
+      },
+      "expected": {
+        "status": "refuted",
+        "evidence_classes": [
+          "backend_counterexample"
+        ],
+        "certification_source": "backend",
+        "required_non_claim_codes": [
+          "general_theorem_proving_not_claimed",
+          "release_readiness_not_claimed"
+        ],
+        "expected_counterexample": true
+      },
+      "source_channel": {
+        "expected_boundary": "negative_control_sign_inconsistency_candidate",
+        "adapter_required": true
+      },
+      "adapter_gap": {
+        "status": "adapter_required",
+        "needed": [
+          "LaTeX equation extraction for the theorem/proof block",
+          "notation-aware adjoint convention tracking",
+          "source-line proof-gap packet"
+        ]
+      },
+      "forbidden_claims": [
+        "The whole DSGE note is false.",
+        "The HMC practical conclusion is invalid.",
+        "The executable probe proves the source theorem."
+      ],
+      "metadata": {
+        "schema_version": "1.0",
+        "contract": "real_local_high_level_pilot_probe_score"
+      }
+    },
+    {
+      "case_id": "RLHL-04-kalman-prediction-error-loglik",
+      "status": "passed",
+      "checks": {
+        "status_match": true,
+        "evidence_classes_match": true,
+        "certification_source_match": true,
+        "required_non_claims_present": true,
+        "required_vetoes_present": true,
+        "required_assumption_terms_present": true,
+        "counterexample_presence_match": true,
+        "source_probe_channels_separate": true,
+        "adapter_gap_visible": true
+      },
+      "observed": {
+        "status": "missing_assumptions",
+        "evidence_classes": [
+          "missing_assumption"
+        ],
+        "certification_source": "none",
+        "non_claim_codes": [
+          "general_theorem_proving_not_claimed",
+          "release_readiness_not_claimed",
+          "route_assumptions_not_global_minimality"
+        ],
+        "veto_codes": [],
+        "assumptions": [
+          "matrix operand is square and invertible",
+          "matrix operand is square with valid determinant domain, usually positive definite for logdet",
+          "matrix dimensions are conformable for the operation"
+        ],
+        "counterexamples_present": false
+      },
+      "expected": {
+        "status": "missing_assumptions",
+        "evidence_classes": [
+          "missing_assumption"
+        ],
+        "certification_source": "none",
+        "required_non_claim_codes": [
+          "general_theorem_proving_not_claimed",
+          "release_readiness_not_claimed",
+          "route_assumptions_not_global_minimality"
+        ],
+        "required_assumption_terms": [
+          "invertible",
+          "determinant domain",
+          "dimensions are conformable"
+        ]
+      },
+      "source_channel": {
+        "expected_boundary": "positive_derivation_with_domain_assumptions",
+        "adapter_required": true
+      },
+      "adapter_gap": {
+        "status": "adapter_required",
+        "needed": [
+          "source-aware derivation packet from innovation distribution",
+          "mask/dense panel assumption extraction",
+          "line-linked likelihood proof summary"
+        ]
+      },
+      "forbidden_claims": [
+        "Nonlinear filters are exact.",
+        "The score or Hessian is validated by this likelihood probe.",
+        "The executable probe proves the source likelihood derivation."
+      ],
+      "metadata": {
+        "schema_version": "1.0",
+        "contract": "real_local_high_level_pilot_probe_score"
+      }
+    },
+    {
+      "case_id": "RLHL-06-joseph-covariance-equivalence",
+      "status": "passed",
+      "checks": {
+        "status_match": true,
+        "evidence_classes_match": true,
+        "certification_source_match": true,
+        "required_non_claims_present": true,
+        "required_vetoes_present": true,
+        "required_assumption_terms_present": true,
+        "counterexample_presence_match": true,
+        "source_probe_channels_separate": true,
+        "adapter_gap_visible": true
+      },
+      "observed": {
+        "status": "proved",
+        "evidence_classes": [
+          "backend_certificate"
+        ],
+        "certification_source": "backend",
+        "non_claim_codes": [
+          "general_theorem_proving_not_claimed",
+          "release_readiness_not_claimed"
+        ],
+        "veto_codes": [],
+        "assumptions": [],
+        "counterexamples_present": false
+      },
+      "expected": {
+        "status": "proved",
+        "evidence_classes": [
+          "backend_certificate"
+        ],
+        "certification_source": "backend",
+        "required_non_claim_codes": [
+          "general_theorem_proving_not_claimed",
+          "release_readiness_not_claimed"
+        ]
+      },
+      "source_channel": {
+        "expected_boundary": "positive_proof_with_exact_arithmetic_and_numerical_caveat",
+        "adapter_required": true
+      },
+      "adapter_gap": {
+        "status": "adapter_required",
+        "needed": [
+          "matrix-aware symbolic assumptions",
+          "Kalman-gain substitution support",
+          "exact-arithmetic versus floating-point caveat packet"
+        ]
+      },
+      "forbidden_claims": [
+        "The compact form preserves PSD under rounding.",
+        "A particular backend implements Joseph form correctly.",
+        "The scalar executable probe proves full matrix equivalence."
+      ],
+      "metadata": {
+        "schema_version": "1.0",
+        "contract": "real_local_high_level_pilot_probe_score"
+      }
+    },
+    {
+      "case_id": "RLHL-07-affine-pricing-master-recursion",
+      "status": "passed",
+      "checks": {
+        "status_match": true,
+        "evidence_classes_match": true,
+        "certification_source_match": true,
+        "required_non_claims_present": true,
+        "required_vetoes_present": true,
+        "required_assumption_terms_present": true,
+        "counterexample_presence_match": true,
+        "source_probe_channels_separate": true,
+        "adapter_gap_visible": true
+      },
+      "observed": {
+        "status": "inconclusive",
+        "evidence_classes": [
+          "human_review_required"
+        ],
+        "certification_source": "none",
+        "non_claim_codes": [
+          "general_theorem_proving_not_claimed",
+          "givens_not_formal_assumptions",
+          "release_readiness_not_claimed"
+        ],
+        "veto_codes": [
+          "unresolved_low_level_status"
+        ],
+        "assumptions": [],
+        "counterexamples_present": false
+      },
+      "expected": {
+        "status": "inconclusive",
+        "evidence_classes": [
+          "human_review_required"
+        ],
+        "certification_source": "none",
+        "required_non_claim_codes": [
+          "general_theorem_proving_not_claimed",
+          "release_readiness_not_claimed",
+          "givens_not_formal_assumptions"
+        ],
+        "required_veto_codes": [
+          "unresolved_low_level_status"
+        ]
+      },
+      "source_channel": {
+        "expected_boundary": "positive_derivation_with_gaussian_mgf_and_collection",
+        "adapter_required": true
+      },
+      "adapter_gap": {
+        "status": "adapter_required",
+        "needed": [
+          "LaTeX-to-symbolic extraction for affine recursions",
+          "Gaussian MGF rule support",
+          "coefficient collection with vector/matrix dimensions"
+        ]
+      },
+      "forbidden_claims": [
+        "Every later non-affine approximation is exact.",
+        "Empirical pricing validity or identification follows.",
+        "The inconclusive executable probe is a failed source derivation."
+      ],
+      "metadata": {
+        "schema_version": "1.0",
+        "contract": "real_local_high_level_pilot_probe_score"
+      }
+    },
+    {
+      "case_id": "RLHL-10-kalman-score-same-scalar-contract",
+      "status": "passed",
+      "checks": {
+        "status_match": true,
+        "evidence_classes_match": true,
+        "certification_source_match": true,
+        "required_non_claims_present": true,
+        "required_vetoes_present": true,
+        "required_assumption_terms_present": true,
+        "counterexample_presence_match": true,
+        "source_probe_channels_separate": true,
+        "adapter_gap_visible": true
+      },
+      "observed": {
+        "status": "missing_assumptions",
+        "evidence_classes": [
+          "missing_assumption"
+        ],
+        "certification_source": "none",
+        "non_claim_codes": [
+          "general_theorem_proving_not_claimed",
+          "release_readiness_not_claimed",
+          "route_assumptions_not_global_minimality"
+        ],
+        "veto_codes": [],
+        "assumptions": [
+          "matrix operand is square and invertible",
+          "matrix operand is square with valid determinant domain, usually positive definite for logdet",
+          "target function is differentiable on the stated domain",
+          "matrix dimensions are conformable for the operation"
+        ],
+        "counterexamples_present": false
+      },
+      "expected": {
+        "status": "missing_assumptions",
+        "evidence_classes": [
+          "missing_assumption"
+        ],
+        "certification_source": "none",
+        "required_non_claim_codes": [
+          "general_theorem_proving_not_claimed",
+          "release_readiness_not_claimed",
+          "route_assumptions_not_global_minimality"
+        ],
+        "required_assumption_terms": [
+          "invertible",
+          "determinant domain",
+          "differentiable",
+          "dimensions are conformable"
+        ]
+      },
+      "source_channel": {
+        "expected_boundary": "derivation_plus_same_scalar_assumption_boundary",
+        "adapter_required": true
+      },
+      "adapter_gap": {
+        "status": "adapter_required",
+        "needed": [
+          "derivative-rule support for solve-form Kalman score",
+          "same-scalar value/gradient contract checker",
+          "line-linked review packet for HMC gradient validity"
+        ]
+      },
+      "forbidden_claims": [
+        "Hessian readiness is established.",
+        "Posterior validity or sampler convergence follows.",
+        "Backend correctness follows from the assumption probe."
+      ],
+      "metadata": {
+        "schema_version": "1.0",
+        "contract": "real_local_high_level_pilot_probe_score"
+      }
+    }
+  ],
+  "adapter_gap_ledger": [
+    {
+      "case_id": "RLHL-01-ift-gradient-bias-sign",
+      "status": "adapter_required",
+      "needed": [
+        "LaTeX equation extraction for the theorem/proof block",
+        "notation-aware adjoint convention tracking",
+        "source-line proof-gap packet"
+      ]
+    },
+    {
+      "case_id": "RLHL-04-kalman-prediction-error-loglik",
+      "status": "adapter_required",
+      "needed": [
+        "source-aware derivation packet from innovation distribution",
+        "mask/dense panel assumption extraction",
+        "line-linked likelihood proof summary"
+      ]
+    },
+    {
+      "case_id": "RLHL-06-joseph-covariance-equivalence",
+      "status": "adapter_required",
+      "needed": [
+        "matrix-aware symbolic assumptions",
+        "Kalman-gain substitution support",
+        "exact-arithmetic versus floating-point caveat packet"
+      ]
+    },
+    {
+      "case_id": "RLHL-07-affine-pricing-master-recursion",
+      "status": "adapter_required",
+      "needed": [
+        "LaTeX-to-symbolic extraction for affine recursions",
+        "Gaussian MGF rule support",
+        "coefficient collection with vector/matrix dimensions"
+      ]
+    },
+    {
+      "case_id": "RLHL-10-kalman-score-same-scalar-contract",
+      "status": "adapter_required",
+      "needed": [
+        "derivative-rule support for solve-form Kalman score",
+        "same-scalar value/gradient contract checker",
+        "line-linked review packet for HMC gradient validity"
+      ]
+    }
+  ],
+  "summary": {
+    "case_total": 5,
+    "probe_passed": 5,
+    "probe_failed": 0,
+    "adapter_required": 5,
+    "aggregate_accuracy": null
+  },
+  "policy_boundary": [
+    "This is a local real-source high-level pilot only.",
+    "It is not public benchmark evidence.",
+    "It is not benchmark-gate evidence.",
+    "It is not release-readiness evidence.",
+    "Executable probes are not full proofs of source obligations.",
+    "Source-obligation, executable-probe, and adapter-gap channels are intentionally separate.",
+    "No single aggregate pilot accuracy metric is emitted."
+  ],
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "real_local_high_level_pilot_report"
+  }
+}

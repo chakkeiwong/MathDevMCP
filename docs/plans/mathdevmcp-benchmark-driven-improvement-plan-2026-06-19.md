@@ -109,6 +109,10 @@ The benchmark now has enough structural machinery that the next key product
 question is where structural scoring stops being enough and richer semantic
 judgment should begin.
 
+**Reference boundary artifact:**
+
+- `docs/plans/mathdevmcp-structural-score-ceiling-note-2026-06-19.md`
+
 **Bounded improvement directions:**
 
 - keep the current answer-normalization prototype narrow and explicit;

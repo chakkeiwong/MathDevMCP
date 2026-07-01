@@ -1,0 +1,602 @@
+You are a downstream AI agent receiving a local/non-gating MathDevMCP handoff task.
+
+Condition: C_human_framed
+Case: RLHLB-01-ift-sign-gap
+Workflow: debug_derivation
+Question: Where does this sign derivation first fail?
+
+Your job is to produce the next safe action artifact, not to prove the claim. Keep boundaries explicit.
+
+Required output sections, in this order:
+- next_safe_action
+- reasoning
+- artifact_plan
+- forbidden_claims_avoided
+- what_would_change_conclusion
+- residual_risks
+
+Response length band: 300-700 words unless the subject model uses structured bullets that are equivalent in content.
+Forbidden claims/actions:
+- This scoped workflow result does not claim general theorem-proving ability.
+- This scoped workflow result does not claim release readiness.
+- Forbidden claim not made: Whole DSGE note false.
+- Forbidden claim not made: HMC conclusion invalid.
+- Forbidden claim not made: Probe proves theorem.
+- Durable packets are review artifacts, not proof certificates by themselves.
+- Packet contents preserve source, backend, counterexample, gap, action, and non-claim ledgers separately.
+- A packet may summarize backend evidence only within the scoped high-level workflow result that produced it.
+
+Human-framed packet plus the same machine evidence ledger available in condition B:
+{
+  "human_framing": {
+    "alternative_explanations": [
+      "The source may use a sign convention or preceding definition not represented in the encoded obligation.",
+      "The adapter may have localized the wrong transition.",
+      "Additional assumptions could make lam*dr vanish, but none are supplied here."
+    ],
+    "case_purpose": "Test whether the workflow can localize a sign inconsistency in an IFT-style derivation without turning a local algebraic failure into a global criticism of the source document.",
+    "decision_criteria": [
+      "Refute if a concrete assignment satisfying the stated assumptions makes the two sides differ.",
+      "Prove only if a backend certifies the encoded equality under the stated assumptions.",
+      "Abstain if notation binding, source translation, or assumptions are insufficient."
+    ],
+    "decision_target": "Decide whether the encoded transition -lam*dr = lam*dr is valid under the stated assumptions.",
+    "local_background": "In a derivation that tracks a gradient or bias term, changing a sign can reverse the interpretation of a local comparative-static effect. The packet only checks one localized transition, so the reviewer should treat it as a focused debugging artifact rather than a statement about the whole DSGE note.",
+    "minimal_formula_scaffold": "The localized obligation is -lam*dr = lam*dr. Without additional assumptions forcing lam*dr = 0, these expressions differ by -2*lam*dr.",
+    "source_context_summary": "The cited source regions contain the theorem/proof algebra and a later summary of the sign convention. They motivate why a sign-consistency check is meaningful, but the packet does not copy or certify the whole derivation.",
+    "what_would_change_conclusion": [
+      "A source-backed sign convention showing the encoded obligation is not the intended transition.",
+      "An explicit assumption lam*dr = 0 or equivalent degeneracy.",
+      "A corrected adapter mapping that produces a different obligation."
+    ]
+  },
+  "machine_evidence_ledger": {
+    "actions": [
+      {
+        "code": "human_review",
+        "description": "Inspect the localized transition before changing the derivation."
+      }
+    ],
+    "assumptions": [],
+    "backend_checks": [
+      {
+        "backend": "sympy",
+        "source": "route_reference",
+        "state": "available"
+      },
+      {
+        "backend": "lean",
+        "source": "route_reference",
+        "state": "not_applicable"
+      },
+      {
+        "backend": "sympy",
+        "evidence": [
+          {
+            "assumptions": [],
+            "backend": "sympy",
+            "backend_expression": "-2*dr*lam",
+            "backend_status": "unknown",
+            "kind": "backend_unknown",
+            "normalized_lhs": "-lam*dr",
+            "normalized_rhs": "lam*dr",
+            "readable_lhs": "-lam*dr",
+            "readable_rhs": "lam*dr",
+            "reason": "SymPy could not certify or refute this obligation by simplification.",
+            "severity": "diagnostic"
+          }
+        ],
+        "reason": "SymPy could not certify or refute this obligation by simplification.",
+        "severity": "diagnostic",
+        "source": "workflow_result",
+        "status": "unknown"
+      }
+    ],
+    "counterexamples": [
+      {
+        "assignments": {
+          "dr": -2,
+          "lam": -2
+        },
+        "backend": "sympy_finite_domain",
+        "lhs_value": "-4",
+        "reason": "Finite-domain substitution produced different lhs/rhs values.",
+        "rhs_value": "4",
+        "seed": null,
+        "status": "found"
+      }
+    ],
+    "derivation_proof_steps": [
+      {
+        "index": 0,
+        "lhs": "-lam*dr",
+        "reason": "A bounded counterexample refuted the scoped claim.",
+        "result": {
+          "claim": "-lam*dr = lam*dr",
+          "counterexample_search": {
+            "backend": "sympy_finite_domain",
+            "counterexample": {
+              "assignments": {
+                "dr": -2,
+                "lam": -2
+              },
+              "backend": "sympy_finite_domain",
+              "lhs_value": "-4",
+              "reason": "Finite-domain substitution produced different lhs/rhs values.",
+              "rhs_value": "4",
+              "seed": null,
+              "status": "found"
+            },
+            "lhs": "-lam*dr",
+            "metadata": {
+              "contract": "counterexample_search_result",
+              "schema_version": "1.0"
+            },
+            "reason": "A finite-domain scalar counterexample was found.",
+            "rhs": "lam*dr",
+            "search_space": {
+              "domain": [
+                -2,
+                -1,
+                0,
+                1,
+                2
+              ],
+              "kind": "finite_integer_domain",
+              "points": 1,
+              "status": "searched",
+              "symbols": [
+                "dr",
+                "lam"
+              ]
+            },
+            "status": "refuted",
+            "workbench_result": {
+              "actions": [],
+              "assumptions": [],
+              "backend_attempts": [
+                {
+                  "backend": "sympy_finite_domain",
+                  "evidence": [],
+                  "reason": "A finite-domain scalar counterexample was found.",
+                  "severity": "blocking",
+                  "status": "refuted"
+                }
+              ],
+              "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+              "counterexamples": [
+                {
+                  "assignments": {
+                    "dr": -2,
+                    "lam": -2
+                  },
+                  "backend": "sympy_finite_domain",
+                  "lhs_value": "-4",
+                  "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                  "rhs_value": "4",
+                  "seed": null,
+                  "status": "found"
+                }
+              ],
+              "metadata": {
+                "contract": "math_debugging_workbench_result",
+                "schema_version": "1.0"
+              },
+              "obligations": [
+                {
+                  "assumptions": [],
+                  "backend_attempts": [
+                    {
+                      "backend": "sympy_finite_domain",
+                      "evidence": [],
+                      "reason": "A finite-domain scalar counterexample was found.",
+                      "severity": "blocking",
+                      "status": "refuted"
+                    }
+                  ],
+                  "counterexample": {
+                    "assignments": {
+                      "dr": -2,
+                      "lam": -2
+                    },
+                    "backend": "sympy_finite_domain",
+                    "lhs_value": "-4",
+                    "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                    "rhs_value": "4",
+                    "seed": null,
+                    "status": "found"
+                  },
+                  "id": "counterexample-obligation-1",
+                  "lhs": "-lam*dr",
+                  "missing_assumptions": [],
+                  "provenance": {},
+                  "reason": "A finite-domain scalar counterexample was found.",
+                  "rhs": "lam*dr",
+                  "status": "refuted"
+                }
+              ],
+              "question": {
+                "assumptions": [],
+                "context": {
+                  "domain": [
+                    -2,
+                    -1,
+                    0,
+                    1,
+                    2
+                  ]
+                },
+                "givens": [],
+                "metadata": {
+                  "contract": "math_debugging_question",
+                  "schema_version": "1.0"
+                },
+                "question_type": "find_counterexample",
+                "target": "-lam*dr == lam*dr"
+              },
+              "reason": "A finite-domain scalar counterexample was found.",
+              "status": "refuted"
+            }
+          },
+          "lhs": "-lam*dr",
+          "metadata": {
+            "contract": "prove_or_refute_result",
+            "schema_version": "1.0"
+          },
+          "reason": "A bounded counterexample refuted the scoped claim.",
+          "rhs": "lam*dr",
+          "route_decision": {
+            "backend_attempt": {
+              "backend": "sympy",
+              "evidence": [
+                {
+                  "assumptions": [],
+                  "backend": "sympy",
+                  "backend_expression": "-2*dr*lam",
+                  "backend_status": "unknown",
+                  "kind": "backend_unknown",
+                  "normalized_lhs": "-lam*dr",
+                  "normalized_rhs": "lam*dr",
+                  "readable_lhs": "-lam*dr",
+                  "readable_rhs": "lam*dr",
+                  "reason": "SymPy could not certify or refute this obligation by simplification.",
+                  "severity": "diagnostic"
+                }
+              ],
+              "reason": "SymPy could not certify or refute this obligation by simplification.",
+              "severity": "diagnostic",
+              "status": "unknown"
+            },
+            "metadata": {
+              "contract": "math_debugging_route_decision",
+              "schema_version": "1.0"
+            },
+            "obligation": {
+              "assumptions": [],
+              "backend_attempts": [
+                {
+                  "backend": "sympy",
+                  "evidence": [
+                    {
+                      "assumptions": [],
+                      "backend": "sympy",
+                      "backend_expression": "-2*dr*lam",
+                      "backend_status": "unknown",
+                      "kind": "backend_unknown",
+                      "normalized_lhs": "-lam*dr",
+                      "normalized_rhs": "lam*dr",
+                      "readable_lhs": "-lam*dr",
+                      "readable_rhs": "lam*dr",
+                      "reason": "SymPy could not certify or refute this obligation by simplification.",
+                      "severity": "diagnostic"
+                    }
+                  ],
+                  "reason": "SymPy could not certify or refute this obligation by simplification.",
+                  "severity": "diagnostic",
+                  "status": "unknown"
+                }
+              ],
+              "counterexample": null,
+              "id": "route-obligation-1",
+              "lhs": "-lam*dr",
+              "missing_assumptions": [],
+              "provenance": {},
+              "reason": "SymPy could not certify or refute this obligation by simplification.",
+              "rhs": "lam*dr",
+              "status": "unknown"
+            },
+            "reason": "SymPy could not certify or refute this obligation by simplification.",
+            "result": {
+              "actions": [
+                {
+                  "kind": "review_or_reencode",
+                  "route": "symbolic"
+                }
+              ],
+              "assumptions": [],
+              "backend_attempts": [
+                {
+                  "backend": "sympy",
+                  "evidence": [
+                    {
+                      "assumptions": [],
+                      "backend": "sympy",
+                      "backend_expression": "-2*dr*lam",
+                      "backend_status": "unknown",
+                      "kind": "backend_unknown",
+                      "normalized_lhs": "-lam*dr",
+                      "normalized_rhs": "lam*dr",
+                      "readable_lhs": "-lam*dr",
+                      "readable_rhs": "lam*dr",
+                      "reason": "SymPy could not certify or refute this obligation by simplification.",
+                      "severity": "diagnostic"
+                    }
+                  ],
+                  "reason": "SymPy could not certify or refute this obligation by simplification.",
+                  "severity": "diagnostic",
+                  "status": "unknown"
+                }
+              ],
+              "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+              "counterexamples": [],
+              "metadata": {
+                "contract": "math_debugging_workbench_result",
+                "schema_version": "1.0"
+              },
+              "obligations": [
+                {
+                  "assumptions": [],
+                  "backend_attempts": [
+                    {
+                      "backend": "sympy",
+                      "evidence": [
+                        {
+                          "assumptions": [],
+                          "backend": "sympy",
+                          "backend_expression": "-2*dr*lam",
+                          "backend_status": "unknown",
+                          "kind": "backend_unknown",
+                          "normalized_lhs": "-lam*dr",
+                          "normalized_rhs": "lam*dr",
+                          "readable_lhs": "-lam*dr",
+                          "readable_rhs": "lam*dr",
+                          "reason": "SymPy could not certify or refute this obligation by simplification.",
+                          "severity": "diagnostic"
+                        }
+                      ],
+                      "reason": "SymPy could not certify or refute this obligation by simplification.",
+                      "severity": "diagnostic",
+                      "status": "unknown"
+                    }
+                  ],
+                  "counterexample": null,
+                  "id": "route-obligation-1",
+                  "lhs": "-lam*dr",
+                  "missing_assumptions": [],
+                  "provenance": {},
+                  "reason": "SymPy could not certify or refute this obligation by simplification.",
+                  "rhs": "lam*dr",
+                  "status": "unknown"
+                }
+              ],
+              "question": {
+                "assumptions": [],
+                "context": {
+                  "route": "symbolic"
+                },
+                "givens": [],
+                "metadata": {
+                  "contract": "math_debugging_question",
+                  "schema_version": "1.0"
+                },
+                "question_type": "route_obligation",
+                "target": "-lam*dr == lam*dr"
+              },
+              "reason": "SymPy could not certify or refute this obligation by simplification.",
+              "status": "unknown"
+            },
+            "route": "symbolic",
+            "status": "unknown"
+          },
+          "status": "refuted",
+          "workbench_result": {
+            "actions": [],
+            "assumptions": [],
+            "backend_attempts": [
+              {
+                "backend": "sympy",
+                "evidence": [
+                  {
+                    "assumptions": [],
+                    "backend": "sympy",
+                    "backend_expression": "-2*dr*lam",
+                    "backend_status": "unknown",
+                    "kind": "backend_unknown",
+                    "normalized_lhs": "-lam*dr",
+                    "normalized_rhs": "lam*dr",
+                    "readable_lhs": "-lam*dr",
+                    "readable_rhs": "lam*dr",
+                    "reason": "SymPy could not certify or refute this obligation by simplification.",
+                    "severity": "diagnostic"
+                  }
+                ],
+                "reason": "SymPy could not certify or refute this obligation by simplification.",
+                "severity": "diagnostic",
+                "status": "unknown"
+              }
+            ],
+            "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+            "counterexamples": [
+              {
+                "assignments": {
+                  "dr": -2,
+                  "lam": -2
+                },
+                "backend": "sympy_finite_domain",
+                "lhs_value": "-4",
+                "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                "rhs_value": "4",
+                "seed": null,
+                "status": "found"
+              }
+            ],
+            "metadata": {
+              "contract": "math_debugging_workbench_result",
+              "schema_version": "1.0"
+            },
+            "obligations": [
+              {
+                "assumptions": [],
+                "backend_attempts": [
+                  {
+                    "backend": "sympy",
+                    "evidence": [
+                      {
+                        "assumptions": [],
+                        "backend": "sympy",
+                        "backend_expression": "-2*dr*lam",
+                        "backend_status": "unknown",
+                        "kind": "backend_unknown",
+                        "normalized_lhs": "-lam*dr",
+                        "normalized_rhs": "lam*dr",
+                        "readable_lhs": "-lam*dr",
+                        "readable_rhs": "lam*dr",
+                        "reason": "SymPy could not certify or refute this obligation by simplification.",
+                        "severity": "diagnostic"
+                      }
+                    ],
+                    "reason": "SymPy could not certify or refute this obligation by simplification.",
+                    "severity": "diagnostic",
+                    "status": "unknown"
+                  }
+                ],
+                "counterexample": {
+                  "assignments": {
+                    "dr": -2,
+                    "lam": -2
+                  },
+                  "backend": "sympy_finite_domain",
+                  "lhs_value": "-4",
+                  "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                  "rhs_value": "4",
+                  "seed": null,
+                  "status": "found"
+                },
+                "id": "prove-target-1",
+                "lhs": "-lam*dr",
+                "missing_assumptions": [],
+                "provenance": {},
+                "reason": "A bounded counterexample refuted the scoped claim.",
+                "rhs": "lam*dr",
+                "status": "refuted"
+              }
+            ],
+            "question": {
+              "assumptions": [],
+              "context": {
+                "backend": "auto"
+              },
+              "givens": [],
+              "metadata": {
+                "contract": "math_debugging_question",
+                "schema_version": "1.0"
+              },
+              "question_type": "prove_or_refute",
+              "target": "-lam*dr = lam*dr"
+            },
+            "reason": "A bounded counterexample refuted the scoped claim.",
+            "status": "refuted"
+          }
+        },
+        "rhs": "lam*dr",
+        "status": "refuted"
+      },
+      {
+        "assumptions": [],
+        "backend_attempts": [
+          {
+            "backend": "sympy",
+            "evidence": [
+              {
+                "assumptions": [],
+                "backend": "sympy",
+                "backend_expression": "-2*dr*lam",
+                "backend_status": "unknown",
+                "kind": "backend_unknown",
+                "normalized_lhs": "-lam*dr",
+                "normalized_rhs": "lam*dr",
+                "readable_lhs": "-lam*dr",
+                "readable_rhs": "lam*dr",
+                "reason": "SymPy could not certify or refute this obligation by simplification.",
+                "severity": "diagnostic"
+              }
+            ],
+            "reason": "SymPy could not certify or refute this obligation by simplification.",
+            "severity": "diagnostic",
+            "status": "unknown"
+          }
+        ],
+        "counterexample": {
+          "assignments": {
+            "dr": -2,
+            "lam": -2
+          },
+          "backend": "sympy_finite_domain",
+          "lhs_value": "-4",
+          "reason": "Finite-domain substitution produced different lhs/rhs values.",
+          "rhs_value": "4",
+          "seed": null,
+          "status": "found"
+        },
+        "id": "prove-target-1",
+        "kind": "obligation",
+        "lhs": "-lam*dr",
+        "missing_assumptions": [],
+        "provenance": {},
+        "reason": "A bounded counterexample refuted the scoped claim.",
+        "rhs": "lam*dr",
+        "status": "refuted"
+      }
+    ],
+    "evidence_classes": [
+      "backend_counterexample"
+    ],
+    "expected_status_family": "refuted",
+    "failure_class": "baseline_evaluable",
+    "gaps": [
+      {
+        "kind": "negative_control_requires_boundary_preservation",
+        "source": "route_reference",
+        "status": "unresolved"
+      }
+    ],
+    "non_claims": [
+      "This scoped workflow result does not claim general theorem-proving ability.",
+      "This scoped workflow result does not claim release readiness.",
+      "Forbidden claim not made: Whole DSGE note false.",
+      "Forbidden claim not made: HMC conclusion invalid.",
+      "Forbidden claim not made: Probe proves theorem.",
+      "Durable packets are review artifacts, not proof certificates by themselves.",
+      "Packet contents preserve source, backend, counterexample, gap, action, and non-claim ledgers separately.",
+      "A packet may summarize backend evidence only within the scoped high-level workflow result that produced it.",
+      "Packet reports are local/non-gating and do not establish release readiness, public benchmark validity, scientific validation, or broad theorem proving.",
+      "Aggregate accuracy remains unavailable for this local benchmark report."
+    ],
+    "observed_status": "refuted",
+    "source_anchors": [
+      {
+        "line_range": "536-589",
+        "path": "../dsge_hmc/docs/gradient_accuracy_analysis.tex",
+        "role": "theorem statement and proof algebra"
+      },
+      {
+        "line_range": "883-893",
+        "path": "../dsge_hmc/docs/gradient_accuracy_analysis.tex",
+        "role": "summary repeat of sign convention"
+      }
+    ]
+  },
+  "reasoning_answer_text": "Conclusion: The scoped debug_derivation question is refuted within the encoded obligation by backend_counterexample.\n\nQuestion: Where does this sign derivation first fail?\n\nHuman framing:\nCase purpose: Test whether the workflow can localize a sign inconsistency in an IFT-style derivation without turning a local algebraic failure into a global criticism of the source document.\n\nLocal background refresher: In a derivation that tracks a gradient or bias term, changing a sign can reverse the interpretation of a local comparative-static effect. The packet only checks one localized transition, so the reviewer should treat it as a focused debugging artifact rather than a statement about the whole DSGE note.\n\nMinimal formula scaffold: The localized obligation is -lam*dr = lam*dr. Without additional assumptions forcing lam*dr = 0, these expressions differ by -2*lam*dr.\n\nSource context summary: The cited source regions contain the theorem/proof algebra and a later summary of the sign convention. They motivate why a sign-consistency check is meaningful, but the packet does not copy or certify the whole derivation.\n\nDecision target: Decide whether the encoded transition -lam*dr = lam*dr is valid under the stated assumptions.\n\nDecision criteria:\n- Refute if a concrete assignment satisfying the stated assumptions makes the two sides differ.\n- Prove only if a backend certifies the encoded equality under the stated assumptions.\n- Abstain if notation binding, source translation, or assumptions are insufficient.\n\nAlternative explanations:\n- The source may use a sign convention or preceding definition not represented in the encoded obligation.\n- The adapter may have localized the wrong transition.\n- Additional assumptions could make lam*dr vanish, but none are supplied here.\n\nWhat would change the conclusion:\n- A source-backed sign convention showing the encoded obligation is not the intended transition.\n- An explicit assumption lam*dr = 0 or equivalent degeneracy.\n- A corrected adapter mapping that produces a different obligation.\n\nSource context:\n1. `../dsge_hmc/docs/gradient_accuracy_analysis.tex:536-589` supplies theorem statement and proof algebra.\n2. `../dsge_hmc/docs/gradient_accuracy_analysis.tex:883-893` supplies summary repeat of sign convention.\n\nEncoded obligation or artifact:\n1. Encoded obligation: `-lam*dr` should equal `lam*dr`; observed status `refuted` because A bounded counterexample refuted the scoped claim.\n\nDecisive evidence:\ndr=-2, lam=-2 gives lhs=-4, rhs=4 using sympy_finite_domain (Finite-domain substitution produced different lhs/rhs values.)\n\nWhy the conclusion follows:\nA universally stated equality or derivation step cannot survive a concrete assignment, under the supplied assumptions, where the two sides differ.\nThe decisive counterexample is: dr=-2, lam=-2 gives lhs=-4, rhs=4 using sympy_finite_domain (Finite-domain substitution produced different lhs/rhs values.).\nTherefore the packet localizes a scoped derivation failure rather than condemning the whole source document.\n\nRoute context:\nSource adapter route: present / ift_sign_consistency.\nSymbolic backend route: available.\nFormal backend route: not_applicable.\nCode-equation route: not_applicable.\nResidual route flags: negative_control_requires_boundary_preservation.\n\nRemaining gaps:\nroute_reference: negative_control_requires_boundary_preservation\n\nSuggested next action:\nhuman_review: Inspect the localized transition before changing the derivation.\n\nBoundary: this packet is self-contained local review evidence; it is not a release, public benchmark, scientific-validity, or broad theorem-proving claim."
+}
+
+Use the framing to orient the next safe action, but do not treat the packet or your own response as proof.

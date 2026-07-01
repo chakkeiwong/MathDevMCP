@@ -1,0 +1,295 @@
+{
+  "status": "consistent",
+  "reason": "Final local/non-gating per-case closure matrix was built.",
+  "packet_report_summary": {
+    "case_total": 9,
+    "packet_total": 9,
+    "packet_findings": 0,
+    "by_workflow": {
+      "assumptions_for": 2,
+      "audit_math_to_code": 1,
+      "debug_derivation": 1,
+      "derive_from": 2,
+      "prepare_review_packet": 1,
+      "prove_or_counterexample": 2
+    },
+    "aggregate_accuracy": null
+  },
+  "baseline_summary": {
+    "case_total": 9,
+    "boundary_violations": 0,
+    "unexpected_status_family": 0,
+    "baseline_evaluable": 7,
+    "correct_abstention_or_route_gap": 2,
+    "by_failure_class": {
+      "baseline_evaluable": 7,
+      "correct_abstention_or_route_gap": 2
+    },
+    "by_status": {
+      "diagnostic_only": 1,
+      "inconclusive": 2,
+      "missing_assumptions": 3,
+      "proved": 1,
+      "refuted": 1,
+      "structural_mismatch": 1
+    },
+    "aggregate_accuracy": null
+  },
+  "matrix": [
+    {
+      "case_id": "RLHLB-01-ift-sign-gap",
+      "workflow": "debug_derivation",
+      "expected_status_family": "refuted",
+      "actual_status": "refuted",
+      "failure_class": "baseline_evaluable",
+      "expected_route": {
+        "source_adapter_state": "present",
+        "source_adapter_route": "ift_sign_consistency",
+        "symbolic_backend_state": "available",
+        "formal_backend_state": "not_applicable",
+        "code_equation_route_state": "not_applicable"
+      },
+      "actual_route": {
+        "certification_source": "backend",
+        "evidence_classes": [
+          "backend_counterexample"
+        ],
+        "packet_complete": true
+      },
+      "repair_round": "preexisting_or_phase04_baseline_behavior",
+      "remaining_limitation": [
+        "negative_control_requires_boundary_preservation"
+      ],
+      "status_scope": "local_regression_only_not_promoted"
+    },
+    {
+      "case_id": "RLHLB-02-kalman-loglik-assumptions",
+      "workflow": "assumptions_for",
+      "expected_status_family": "positive_or_abstain",
+      "actual_status": "missing_assumptions",
+      "failure_class": "baseline_evaluable",
+      "expected_route": {
+        "source_adapter_state": "present",
+        "source_adapter_route": "kalman_prediction_error_loglik",
+        "symbolic_backend_state": "not_applicable",
+        "formal_backend_state": "not_applicable",
+        "code_equation_route_state": "not_applicable"
+      },
+      "actual_route": {
+        "certification_source": "none",
+        "evidence_classes": [
+          "missing_assumption"
+        ],
+        "packet_complete": true
+      },
+      "repair_round": "preexisting_or_phase04_baseline_behavior",
+      "remaining_limitation": [
+        "explicit_missing_assumptions_preserved"
+      ],
+      "status_scope": "local_regression_only_not_promoted"
+    },
+    {
+      "case_id": "RLHLB-03-joseph-equivalence",
+      "workflow": "prove_or_counterexample",
+      "expected_status_family": "positive_or_abstain",
+      "actual_status": "proved",
+      "failure_class": "baseline_evaluable",
+      "expected_route": {
+        "source_adapter_state": "present",
+        "source_adapter_route": "joseph_covariance_equivalence",
+        "symbolic_backend_state": "available",
+        "formal_backend_state": "available_requires_explicit_source",
+        "code_equation_route_state": "not_applicable"
+      },
+      "actual_route": {
+        "certification_source": "backend",
+        "evidence_classes": [
+          "backend_certificate"
+        ],
+        "packet_complete": true
+      },
+      "repair_round": "preexisting_or_phase04_baseline_behavior",
+      "remaining_limitation": [
+        "no_material_residual_in_local_regression_scope"
+      ],
+      "status_scope": "local_regression_only_not_promoted"
+    },
+    {
+      "case_id": "RLHLB-04-affine-pricing-recursion",
+      "workflow": "derive_from",
+      "expected_status_family": "positive_or_abstain",
+      "actual_status": "inconclusive",
+      "failure_class": "correct_abstention_or_route_gap",
+      "expected_route": {
+        "source_adapter_state": "present",
+        "source_adapter_route": "affine_pricing_master_recursion",
+        "symbolic_backend_state": "available",
+        "formal_backend_state": "not_applicable",
+        "code_equation_route_state": "not_applicable"
+      },
+      "actual_route": {
+        "certification_source": "none",
+        "evidence_classes": [
+          "human_review_required"
+        ],
+        "packet_complete": true
+      },
+      "repair_round": "preexisting_or_phase04_baseline_behavior",
+      "remaining_limitation": [
+        "abstention_or_route_gap_preserved"
+      ],
+      "status_scope": "local_regression_only_not_promoted"
+    },
+    {
+      "case_id": "RLHLB-05-kalman-score-same-scalar",
+      "workflow": "assumptions_for",
+      "expected_status_family": "positive_or_abstain",
+      "actual_status": "missing_assumptions",
+      "failure_class": "baseline_evaluable",
+      "expected_route": {
+        "source_adapter_state": "present",
+        "source_adapter_route": "kalman_score_same_scalar",
+        "symbolic_backend_state": "not_applicable",
+        "formal_backend_state": "not_applicable",
+        "code_equation_route_state": "not_applicable"
+      },
+      "actual_route": {
+        "certification_source": "none",
+        "evidence_classes": [
+          "missing_assumption"
+        ],
+        "packet_complete": true
+      },
+      "repair_round": "preexisting_or_phase04_baseline_behavior",
+      "remaining_limitation": [
+        "explicit_missing_assumptions_preserved"
+      ],
+      "status_scope": "local_regression_only_not_promoted"
+    },
+    {
+      "case_id": "RLHLB-06-state-space-code-missing-solve",
+      "workflow": "audit_math_to_code",
+      "expected_status_family": "routing_only",
+      "actual_status": "structural_mismatch",
+      "failure_class": "baseline_evaluable",
+      "expected_route": {
+        "source_adapter_state": "not_applicable",
+        "source_adapter_route": null,
+        "symbolic_backend_state": "not_applicable",
+        "formal_backend_state": "not_applicable",
+        "code_equation_route_state": "available"
+      },
+      "actual_route": {
+        "certification_source": "none",
+        "evidence_classes": [
+          "structural_mismatch"
+        ],
+        "packet_complete": true
+      },
+      "repair_round": "preexisting_or_phase04_baseline_behavior",
+      "remaining_limitation": [
+        "negative_control_requires_boundary_preservation"
+      ],
+      "status_scope": "local_regression_only_not_promoted"
+    },
+    {
+      "case_id": "RLHLB-07-proof-boundary-review-packet",
+      "workflow": "prepare_review_packet",
+      "expected_status_family": "insufficient_evidence",
+      "actual_status": "diagnostic_only",
+      "failure_class": "baseline_evaluable",
+      "expected_route": {
+        "source_adapter_state": "not_applicable",
+        "source_adapter_route": null,
+        "symbolic_backend_state": "not_applicable",
+        "formal_backend_state": "not_applicable",
+        "code_equation_route_state": "not_applicable"
+      },
+      "actual_route": {
+        "certification_source": "none",
+        "evidence_classes": [
+          "review_packet"
+        ],
+        "packet_complete": true
+      },
+      "repair_round": "preexisting_or_phase04_baseline_behavior",
+      "remaining_limitation": [
+        "negative_control_requires_boundary_preservation",
+        "diagnostic_packet_not_certificate"
+      ],
+      "status_scope": "local_regression_only_not_promoted"
+    },
+    {
+      "case_id": "RLHLB-08-hmc-value-only-boundary",
+      "workflow": "prove_or_counterexample",
+      "expected_status_family": "insufficient_evidence",
+      "actual_status": "inconclusive",
+      "failure_class": "correct_abstention_or_route_gap",
+      "expected_route": {
+        "source_adapter_state": "not_applicable",
+        "source_adapter_route": null,
+        "symbolic_backend_state": "available",
+        "formal_backend_state": "available_requires_explicit_source",
+        "code_equation_route_state": "not_applicable"
+      },
+      "actual_route": {
+        "certification_source": "none",
+        "evidence_classes": [
+          "human_review_required"
+        ],
+        "packet_complete": true
+      },
+      "repair_round": "phase05_semantic_placeholder_guard",
+      "remaining_limitation": [
+        "negative_control_requires_boundary_preservation"
+      ],
+      "status_scope": "local_regression_only_not_promoted"
+    },
+    {
+      "case_id": "RLHLB-09-affine-recovery-assumption-limit",
+      "workflow": "derive_from",
+      "expected_status_family": "missing_assumptions",
+      "actual_status": "missing_assumptions",
+      "failure_class": "baseline_evaluable",
+      "expected_route": {
+        "source_adapter_state": "not_applicable",
+        "source_adapter_route": null,
+        "symbolic_backend_state": "available",
+        "formal_backend_state": "not_applicable",
+        "code_equation_route_state": "not_applicable"
+      },
+      "actual_route": {
+        "certification_source": "none",
+        "evidence_classes": [
+          "missing_assumption"
+        ],
+        "packet_complete": true
+      },
+      "repair_round": "phase05_semantic_placeholder_guard",
+      "remaining_limitation": [
+        "negative_control_requires_boundary_preservation",
+        "explicit_missing_assumptions_preserved"
+      ],
+      "status_scope": "local_regression_only_not_promoted"
+    }
+  ],
+  "findings": [],
+  "summary": {
+    "case_total": 9,
+    "matrix_total": 9,
+    "boundary_violations": 0,
+    "unexpected_status_family": 0,
+    "aggregate_accuracy": null
+  },
+  "policy_boundary": [
+    "Durable packets are review artifacts, not proof certificates by themselves.",
+    "Packet contents preserve source, backend, counterexample, gap, action, and non-claim ledgers separately.",
+    "A packet may summarize backend evidence only within the scoped high-level workflow result that produced it.",
+    "Packet reports are local/non-gating and do not establish release readiness, public benchmark validity, scientific validation, or broad theorem proving.",
+    "Aggregate accuracy remains unavailable for this local benchmark report."
+  ],
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "real_local_high_level_workflow_final_matrix"
+  }
+}

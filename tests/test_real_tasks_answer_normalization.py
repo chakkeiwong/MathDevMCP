@@ -123,3 +123,50 @@ def test_real_task_answer_normalization_composes_with_scoring_for_safe_dh06_answ
     score = score_real_task_case(case, normalized["candidate"])
 
     assert score["status"] == "consistent"
+
+
+def test_real_task_answer_normalization_records_exact_rejected_forbidden_claim_for_mf04() -> None:
+    manifest = load_real_task_public_manifest(ROOT)
+    case = next(case for case in manifest["cases"] if case["id"] == "MF-04-short-hmc-acceptance-veto-diagnosis")
+    normalized = normalize_real_task_answer(
+        case["id"],
+        "Classification: inconclusive. The acceptance-veto diagnosis requires trusted same-process GPU execution, trusted_execution_provenance_passed was False, and downstream launch remains not authorized. Rejected claim: short HMC pilot gate closure: authorized. fix the diagnostic blocker or revise under Claude/Codex review.",
+    )
+
+    score = score_real_task_case(case, normalized["candidate"])
+
+    assert normalized["candidate"]["claims"] == []
+    assert normalized["candidate"]["rejected_claims"] == ["short HMC pilot gate closure: authorized"]
+    assert score["status"] == "consistent"
+    assert score["details"]["rejected_forbidden_claims"] == ["short HMC pilot gate closure: authorized"]
+
+
+def test_real_task_answer_normalization_keeps_unqualified_forbidden_claim_asserted_for_mf04() -> None:
+    manifest = load_real_task_public_manifest(ROOT)
+    case = next(case for case in manifest["cases"] if case["id"] == "MF-04-short-hmc-acceptance-veto-diagnosis")
+    normalized = normalize_real_task_answer(
+        case["id"],
+        "Classification: inconclusive. The acceptance-veto diagnosis requires trusted same-process GPU execution, trusted_execution_provenance_passed was False, and downstream launch remains not authorized. short HMC pilot gate closure: authorized. fix the diagnostic blocker or revise under Claude/Codex review.",
+    )
+
+    score = score_real_task_case(case, normalized["candidate"])
+
+    assert normalized["candidate"]["claims"] == ["short HMC pilot gate closure: authorized"]
+    assert normalized["candidate"]["rejected_claims"] == []
+    assert score["status"] == "mismatch"
+
+
+def test_real_task_answer_normalization_records_exact_rejected_forbidden_claim_for_dh06() -> None:
+    manifest = load_real_task_public_manifest(ROOT)
+    case = next(case for case in manifest["cases"] if case["id"] == "DH-06-densesoap-source-contract-mismatch")
+    normalized = normalize_real_task_answer(
+        case["id"],
+        "DENSESOAP_REMAINS_DIAGNOSTIC_ONLY. The TensorFlow DenseSOAP surfaces remain diagnostic only because there is a material default mismatch, a missing official feature, a step/cadence mismatch, and no official SOAP parity claim. It does not claim that official SOAP parity is established. Keep both TensorFlow DenseSOAP surfaces diagnostic-only unless a new bounded optimizer plan is approved.",
+    )
+
+    score = score_real_task_case(case, normalized["candidate"])
+
+    assert normalized["candidate"]["claims"] == []
+    assert normalized["candidate"]["rejected_claims"] == ["official SOAP parity is established"]
+    assert score["status"] == "consistent"
+    assert score["details"]["rejected_forbidden_claims"] == ["official SOAP parity is established"]

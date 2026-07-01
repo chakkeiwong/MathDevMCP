@@ -27,6 +27,7 @@ acceptance-policy intent.
 ### Scoring and acceptance policy
 - `docs/plans/mathdevmcp-benchmark-category-scoring-subplan-2026-06-17.md`
 - `docs/plans/mathdevmcp-benchmark-acceptance-policy-proposal-2026-06-19.md`
+- `docs/plans/mathdevmcp-structural-score-ceiling-note-2026-06-19.md`
 
 ### Note taxonomy / maintenance policy
 - `docs/plans/mathdevmcp-benchmark-note-taxonomy-2026-06-19.md`

@@ -20,6 +20,32 @@ def _find_claims(answer_text: str, candidates: list[str]) -> list[str]:
     return [item for item in candidates if _normalize_text(item) in normalized]
 
 
+def _split_claims_by_rejection_context(answer_text: str, candidates: list[str]) -> tuple[list[str], list[str]]:
+    normalized = _normalize_text(answer_text)
+    asserted: list[str] = []
+    rejected: list[str] = []
+    for item in candidates:
+        normalized_item = _normalize_text(item)
+        if normalized_item not in normalized:
+            continue
+        rejection_patterns = [
+            f"does not claim that {normalized_item}",
+            f"do not claim that {normalized_item}",
+            f"does not establish that {normalized_item}",
+            f"do not establish that {normalized_item}",
+            f"rejected claim: {normalized_item}",
+            f"forbidden claim rejected: {normalized_item}",
+            f"not concluded: {normalized_item}",
+            f"non claim: {normalized_item}",
+            f"non-claim: {normalized_item}",
+        ]
+        if any(pattern in normalized for pattern in rejection_patterns):
+            rejected.append(item)
+        else:
+            asserted.append(item)
+    return asserted, rejected
+
+
 def _normalize_mf03(case_id: str, answer_text: str) -> dict:
     normalized = _normalize_text(answer_text)
     required_anchors = [
@@ -98,6 +124,14 @@ def _normalize_mf04(case_id: str, answer_text: str) -> dict:
             },
             "real_task_answer_normalization",
         )
+    claims, rejected_claims = _split_claims_by_rejection_context(
+        answer_text,
+        [
+            "short HMC pilot gate closure: authorized",
+            "synthetic or empirical HMC pilot: authorized",
+            "overnight or full estimation launch: authorized",
+        ],
+    )
     return attach_contract(
         {
             "status": "consistent",
@@ -110,14 +144,8 @@ def _normalize_mf04(case_id: str, answer_text: str) -> dict:
                 "labels": [],
                 "evidence_class": "diagnostic_blocked_execution_note",
                 "summary_text": answer_text,
-                "claims": _find_claims(
-                    answer_text,
-                    [
-                        "short HMC pilot gate closure: authorized",
-                        "synthetic or empirical HMC pilot: authorized",
-                        "overnight or full estimation launch: authorized",
-                    ],
-                ),
+                "claims": claims,
+                "rejected_claims": rejected_claims,
                 "next_actions": ["fix the diagnostic blocker or revise under Claude/Codex review"],
             },
             "diagnostics": {
@@ -152,6 +180,14 @@ def _normalize_dh06(case_id: str, answer_text: str) -> dict:
             },
             "real_task_answer_normalization",
         )
+    claims, rejected_claims = _split_claims_by_rejection_context(
+        answer_text,
+        [
+            "official SOAP parity is established",
+            "default optimizer policy should be promoted",
+            "downstream DSGE/HMC readiness is established",
+        ],
+    )
     return attach_contract(
         {
             "status": "consistent",
@@ -164,14 +200,8 @@ def _normalize_dh06(case_id: str, answer_text: str) -> dict:
                 "labels": [],
                 "evidence_class": "diagnostic_source_contract_mismatch",
                 "summary_text": answer_text,
-                "claims": _find_claims(
-                    answer_text,
-                    [
-                        "official SOAP parity is established",
-                        "default optimizer policy should be promoted",
-                        "downstream DSGE/HMC readiness is established",
-                    ],
-                ),
+                "claims": claims,
+                "rejected_claims": rejected_claims,
                 "next_actions": ["Keep both TensorFlow DenseSOAP surfaces diagnostic-only unless a new bounded optimizer plan is approved."],
             },
             "diagnostics": {

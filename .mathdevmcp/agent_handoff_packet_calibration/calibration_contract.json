@@ -1,0 +1,162 @@
+{
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "agent_handoff_packet_calibration_contract",
+    "status": "phase_01_frozen_before_response_collection",
+    "created": "2026-07-01",
+    "scope": "local_non_gating_agent_handoff_calibration"
+  },
+  "question": "Do human-framed packets improve downstream agent next-step work compared with task-only and evidence-only prompts?",
+  "frozen_baseline": {
+    "git_commit": "44a7e96970dca49b99ee4f424407db89557fde70",
+    "manifest_path": "benchmarks/real_tasks/holdout_local/real_local_high_level_workflow_benchmark_cases.json",
+    "manifest_sha256": "d3c64697690de571e0d83b8982d719a0b049955f8a57fb2dedce193f24dd54ba",
+    "packet_artifact_path": ".mathdevmcp/real_local_high_level_workflow_benchmark_closure_phase08_packets.json",
+    "packet_artifact_sha256": "2c4aaba383339d6da9dfed44308ea874c97fd158eb474a95f71265e471f72532",
+    "final_matrix_path": ".mathdevmcp/real_local_high_level_workflow_benchmark_closure_phase08_final_matrix.json",
+    "final_matrix_sha256": "e360b4309a54e7b24d11f438e8ec45b5adabe0cf1a6c3bc7b6da7b579a753b86"
+  },
+  "selected_cases": [
+    {
+      "case_id": "RLHLB-01-ift-sign-gap",
+      "mode": "scoped_refutation_sign_gap"
+    },
+    {
+      "case_id": "RLHLB-03-joseph-equivalence",
+      "mode": "scoped_symbolic_proof_boundary"
+    },
+    {
+      "case_id": "RLHLB-04-affine-pricing-recursion",
+      "mode": "inconclusive_route_abstention"
+    },
+    {
+      "case_id": "RLHLB-06-state-space-code-missing-solve",
+      "mode": "structural_code_equation_mismatch"
+    },
+    {
+      "case_id": "RLHLB-09-affine-recovery-assumption-limit",
+      "mode": "missing_assumptions_overclaim_prevention"
+    }
+  ],
+  "conditions": {
+    "A_task_only": {
+      "description": "Task question plus bounded source anchors only.",
+      "allowed_payload": [
+        "case_id",
+        "workflow",
+        "question",
+        "source_anchors",
+        "requested_output_sections",
+        "forbidden_claims"
+      ],
+      "forbidden_payload": [
+        "human_framing",
+        "observed_status",
+        "evidence_classes",
+        "derivation_proof_steps",
+        "backend_checks",
+        "counterexamples",
+        "gaps",
+        "actions",
+        "reasoning_answer_text"
+      ]
+    },
+    "B_evidence_only": {
+      "description": "Task question plus machine-readable evidence/status/gap/action ledgers without human framing.",
+      "allowed_payload": [
+        "case_id",
+        "workflow",
+        "question",
+        "source_anchors",
+        "observed_status",
+        "evidence_classes",
+        "derivation_proof_steps",
+        "backend_checks",
+        "counterexamples",
+        "gaps",
+        "actions",
+        "non_claims",
+        "requested_output_sections",
+        "forbidden_claims"
+      ],
+      "forbidden_payload": [
+        "human_framing",
+        "reasoning_answer_text"
+      ]
+    },
+    "C_human_framed": {
+      "description": "Same machine-readable payload as B plus the human-framed packet reasoning.",
+      "allowed_payload": [
+        "case_id",
+        "workflow",
+        "question",
+        "source_anchors",
+        "observed_status",
+        "evidence_classes",
+        "derivation_proof_steps",
+        "backend_checks",
+        "counterexamples",
+        "gaps",
+        "actions",
+        "non_claims",
+        "human_framing",
+        "reasoning_answer_text",
+        "requested_output_sections",
+        "forbidden_claims"
+      ],
+      "forbidden_payload": []
+    }
+  },
+  "fairness_controls": {
+    "identical_task_skeleton": true,
+    "identical_requested_output_sections": true,
+    "identical_response_length_band": "300-700 words unless the subject model uses structured bullets that are equivalent in content.",
+    "identical_retry_policy": "One response per prompt. No hidden retries. Malformed responses are recorded, not replaced, unless a predeclared transport failure occurs.",
+    "source_excerpt_policy": "No large raw source excerpts. Use bounded source anchors and summaries already present in packets.",
+    "b_c_machine_evidence_parity": "Condition C may add human framing and answer_text; all non-framing machine evidence available to C must also be available to B.",
+    "condition_ordering_policy": "Response collection should randomize or counterbalance case/condition ordering if the execution path permits; otherwise preserve manifest order and record that limitation."
+  },
+  "requested_output_sections": [
+    "next_safe_action",
+    "reasoning",
+    "artifact_plan",
+    "forbidden_claims_avoided",
+    "what_would_change_conclusion",
+    "residual_risks"
+  ],
+  "model_use_gate": {
+    "phase": 3,
+    "approval_required_before_response_collection": true,
+    "if_approval_missing": "write blocked_no_model_use_approval result and stop before scoring",
+    "forbidden_after_blocker": [
+      "partial_scoring",
+      "surrogate_interpretation",
+      "fixture_tweaking_based_on_imagined_responses"
+    ]
+  },
+  "primary_required_dimensions": [
+    "correct_next_action",
+    "evidence_use",
+    "boundary_discipline",
+    "assumption_discipline",
+    "overclaim_avoidance"
+  ],
+  "explanatory_dimensions": [
+    "artifact_usefulness",
+    "context_reuse",
+    "efficiency"
+  ],
+  "hard_veto_policy": {
+    "vetoes_dominate_scores": true,
+    "summary_rule": "Report hard vetoes before per-dimension scores. A response or condition with hard-veto regression cannot be declared improved by explanatory dimensions.",
+    "aggregate_accuracy": null
+  },
+  "non_claims": [
+    "This is not a public benchmark.",
+    "This is not release-readiness evidence.",
+    "This is not scientific validation.",
+    "This is not proof of general downstream-agent reliability.",
+    "This does not prove any mathematical claim.",
+    "This does not prove the packet standard is universally optimal."
+  ]
+}

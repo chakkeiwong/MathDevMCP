@@ -215,8 +215,8 @@ holdout-backed evaluation tier.
 
 Remaining tasks:
 
-- additional local holdout entries maintained outside the public corpus,
-- broader holdout scoring/evaluation over the current seven-case local seed,
+- additional local holdout entries maintained outside the public corpus only when they add real representativeness value,
+- broader holdout scoring/evaluation over the current seven-case local seed only if that materially improves the calibration signal,
 - eventually holdout-informed calibration.
 
 ### 2. Private/external tier implementation
@@ -265,7 +265,7 @@ That means:
 ## Most justified next actions
 
 ### Highest-priority remaining work
-1. continue holdout-local from a small five-family local seed toward broader local evaluation coverage;
+1. continue holdout-local from a small seven-case local seed only when new additions add clear representativeness value;
 2. continue scored calibration in a bounded way;
 3. decide later whether more public cases or better normalization are more
    valuable than immediate workflow integration.

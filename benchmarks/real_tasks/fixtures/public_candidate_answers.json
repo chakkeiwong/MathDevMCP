@@ -67,6 +67,28 @@
       "expected_score_status": "mismatch"
     },
     {
+      "id": "fixture-dh06-rejected-parity-claim-safe",
+      "case_id": "DH-06-densesoap-source-contract-mismatch",
+      "candidate": {
+        "case_id": "DH-06-densesoap-source-contract-mismatch",
+        "status": "mismatch",
+        "substatus": "diagnostic_only_source_contract_mismatch",
+        "labels": [],
+        "evidence_class": "diagnostic_source_contract_mismatch",
+        "summary_text": "DENSESOAP_REMAINS_DIAGNOSTIC_ONLY material default mismatch missing official feature step/cadence mismatch no official SOAP parity claim",
+        "claims": [
+          "safe diagnostic-only source contract summary"
+        ],
+        "rejected_claims": [
+          "official SOAP parity is established"
+        ],
+        "next_actions": [
+          "Keep both TensorFlow DenseSOAP surfaces diagnostic-only unless a new bounded optimizer plan is approved."
+        ]
+      },
+      "expected_score_status": "consistent"
+    },
+    {
       "id": "fixture-dh05-blocker-preserved-safe",
       "case_id": "DH-05-sgu-exact-manifold-blocker",
       "candidate": {

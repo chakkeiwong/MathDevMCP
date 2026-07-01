@@ -1,0 +1,192 @@
+You are a downstream AI agent receiving a local/non-gating MathDevMCP handoff task.
+
+Condition: B_evidence_only
+Case: RLHLB-09-affine-recovery-assumption-limit
+Workflow: derive_from
+Question: Can neural-solver approximation guarantees be derived from affine recovery text alone?
+
+Your job is to produce the next safe action artifact, not to prove the claim. Keep boundaries explicit.
+
+Required output sections, in this order:
+- next_safe_action
+- reasoning
+- artifact_plan
+- forbidden_claims_avoided
+- what_would_change_conclusion
+- residual_risks
+
+Response length band: 300-700 words unless the subject model uses structured bullets that are equivalent in content.
+Forbidden claims/actions:
+- This scoped workflow result does not claim general theorem-proving ability.
+- givens not formal assumptions
+- This scoped workflow result does not claim release readiness.
+- Route-required assumptions are not claimed to be globally minimal.
+- Forbidden claim not made: Rigorous uniform approximation bound.
+- Forbidden claim not made: Neural solver correctness.
+- Forbidden claim not made: Pricing validity.
+- Durable packets are review artifacts, not proof certificates by themselves.
+
+Machine evidence ledger, without human framing:
+{
+  "actions": [
+    {
+      "code": "human_review",
+      "description": "Check whether the recorded givens should be promoted to explicit route assumptions.",
+      "explicit_assumptions": [],
+      "givens": [
+        "affine recovery text"
+      ]
+    }
+  ],
+  "assumptions": [
+    {
+      "necessity": "required_by_route",
+      "source": "semantic_placeholder_route",
+      "status": "missing",
+      "text": "source-backed semantic assumptions linking the opaque placeholders are required",
+      "used_by": [
+        "semantic_placeholder_equality"
+      ]
+    }
+  ],
+  "backend_checks": [
+    {
+      "backend": "sympy",
+      "source": "route_reference",
+      "state": "available"
+    },
+    {
+      "backend": "lean",
+      "source": "route_reference",
+      "state": "not_applicable"
+    },
+    {
+      "backend": "sympy",
+      "evidence": [
+        {
+          "assumptions": [],
+          "backend": "sympy",
+          "backend_expression": "affine_recovery_text - uniform_neural_solver_bound",
+          "backend_status": "unknown",
+          "kind": "backend_unknown",
+          "normalized_lhs": "affine_recovery_text",
+          "normalized_rhs": "uniform_neural_solver_bound",
+          "readable_lhs": "affine_recovery_text",
+          "readable_rhs": "uniform_neural_solver_bound",
+          "reason": "SymPy could not certify or refute this obligation by simplification.",
+          "severity": "diagnostic"
+        }
+      ],
+      "reason": "SymPy could not certify or refute this obligation by simplification.",
+      "severity": "diagnostic",
+      "source": "workflow_result",
+      "status": "unknown"
+    },
+    {
+      "backend": "sympy",
+      "evidence": [
+        {
+          "assumptions": [],
+          "backend": "sympy",
+          "backend_expression": "affine_recovery_text - uniform_neural_solver_bound",
+          "backend_status": "unknown",
+          "kind": "backend_unknown",
+          "normalized_lhs": "affine_recovery_text",
+          "normalized_rhs": "uniform_neural_solver_bound",
+          "readable_lhs": "affine_recovery_text",
+          "readable_rhs": "uniform_neural_solver_bound",
+          "reason": "SymPy could not certify or refute this obligation by simplification.",
+          "severity": "diagnostic"
+        }
+      ],
+      "reason": "SymPy could not certify or refute this obligation by simplification.",
+      "severity": "diagnostic",
+      "source": "workflow_result",
+      "status": "unknown"
+    }
+  ],
+  "counterexamples": [],
+  "derivation_proof_steps": [
+    {
+      "assumptions": [],
+      "backend_attempts": [
+        {
+          "backend": "sympy",
+          "evidence": [
+            {
+              "assumptions": [],
+              "backend": "sympy",
+              "backend_expression": "affine_recovery_text - uniform_neural_solver_bound",
+              "backend_status": "unknown",
+              "kind": "backend_unknown",
+              "normalized_lhs": "affine_recovery_text",
+              "normalized_rhs": "uniform_neural_solver_bound",
+              "readable_lhs": "affine_recovery_text",
+              "readable_rhs": "uniform_neural_solver_bound",
+              "reason": "SymPy could not certify or refute this obligation by simplification.",
+              "severity": "diagnostic"
+            }
+          ],
+          "reason": "SymPy could not certify or refute this obligation by simplification.",
+          "severity": "diagnostic",
+          "status": "unknown"
+        }
+      ],
+      "counterexample": null,
+      "id": "derive-target-1",
+      "kind": "obligation",
+      "lhs": "affine_recovery_text",
+      "missing_assumptions": [
+        {
+          "necessity": "required_by_route",
+          "source": "semantic_placeholder_route",
+          "status": "missing",
+          "text": "source-backed semantic assumptions linking the opaque placeholders are required",
+          "used_by": [
+            "semantic_placeholder_equality"
+          ]
+        }
+      ],
+      "provenance": {},
+      "reason": "The target has missing route-required assumptions.",
+      "rhs": "uniform_neural_solver_bound",
+      "status": "missing_assumptions"
+    }
+  ],
+  "evidence_classes": [
+    "missing_assumption"
+  ],
+  "expected_status_family": "missing_assumptions",
+  "failure_class": "baseline_evaluable",
+  "gaps": [
+    {
+      "kind": "negative_control_requires_boundary_preservation",
+      "source": "route_reference",
+      "status": "unresolved"
+    }
+  ],
+  "non_claims": [
+    "This scoped workflow result does not claim general theorem-proving ability.",
+    "givens not formal assumptions",
+    "This scoped workflow result does not claim release readiness.",
+    "Route-required assumptions are not claimed to be globally minimal.",
+    "Forbidden claim not made: Rigorous uniform approximation bound.",
+    "Forbidden claim not made: Neural solver correctness.",
+    "Forbidden claim not made: Pricing validity.",
+    "Durable packets are review artifacts, not proof certificates by themselves.",
+    "Packet contents preserve source, backend, counterexample, gap, action, and non-claim ledgers separately.",
+    "A packet may summarize backend evidence only within the scoped high-level workflow result that produced it.",
+    "Packet reports are local/non-gating and do not establish release readiness, public benchmark validity, scientific validation, or broad theorem proving.",
+    "Aggregate accuracy remains unavailable for this local benchmark report."
+  ],
+  "observed_status": "missing_assumptions",
+  "source_anchors": [
+    {
+      "line_range": "267-302",
+      "path": "../latex-papers/CIP_monograph/chapters/ch15_nonlinear_pricing.tex",
+      "role": "affine recovery and nonlinear-pricing approximation text"
+    }
+  ]
+}
+
+Use only the ledger above. Do not infer source context that is not present. If the ledger is insufficient, state the smallest next evidence action.

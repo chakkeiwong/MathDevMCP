@@ -1,0 +1,130 @@
+You are a downstream AI agent receiving a local/non-gating MathDevMCP handoff task.
+
+Condition: C_human_framed
+Case: RLHLB-06-state-space-code-missing-solve
+Workflow: audit_math_to_code
+Question: Does code implement the documented Kalman likelihood solve/quadratic form?
+
+Your job is to produce the next safe action artifact, not to prove the claim. Keep boundaries explicit.
+
+Required output sections, in this order:
+- next_safe_action
+- reasoning
+- artifact_plan
+- forbidden_claims_avoided
+- what_would_change_conclusion
+- residual_risks
+
+Response length band: 300-700 words unless the subject model uses structured bullets that are equivalent in content.
+Forbidden claims/actions:
+- This scoped workflow result does not claim general theorem-proving ability.
+- This scoped workflow result does not claim release readiness.
+- Structural evidence is not a semantic proof.
+- Forbidden claim not made: Code is mathematically wrong.
+- Forbidden claim not made: Absence of literal solve proves implementation invalid.
+- Durable packets are review artifacts, not proof certificates by themselves.
+- Packet contents preserve source, backend, counterexample, gap, action, and non-claim ledgers separately.
+- A packet may summarize backend evidence only within the scoped high-level workflow result that produced it.
+
+Human-framed packet plus the same machine evidence ledger available in condition B:
+{
+  "human_framing": {
+    "alternative_explanations": [
+      "The quadratic term may be implemented through an unregistered Cholesky, triangular solve, whitening transform, or helper function.",
+      "The documented expression may be a schematic target rather than literal code structure.",
+      "The matcher may miss semantically equivalent code when aliases or decompositions are incomplete."
+    ],
+    "case_purpose": "Test whether the workflow can audit code against a documented Kalman likelihood formula and report a structural mismatch without claiming full semantic incorrectness.",
+    "decision_criteria": [
+      "Report structural match if required documented terms and accepted aliases/decompositions appear.",
+      "Report structural mismatch if a required term is absent and no accepted equivalent is registered.",
+      "Do not infer complete mathematical correctness or incorrectness from structural matching alone."
+    ],
+    "decision_target": "Decide whether the candidate code structurally contains both the documented logdet part and the solve/quadratic-form part.",
+    "local_background": "In a Gaussian prediction-error likelihood, each observation contributes a log determinant term for the innovation covariance and a quadratic penalty for the innovation scaled by that covariance. A log determinant alone does not account for the size of the forecast error.",
+    "minimal_formula_scaffold": "For innovation v and innovation covariance S, the usual local contribution is log det(S) + v' S^{-1} v. In code, v' S^{-1} v commonly appears as v.T @ solve(S, v), a Cholesky solve, triangular solve, or equivalent whitening transform.",
+    "source_context_summary": "The documentation fixture states the intended solve/quadratic likelihood structure, while the candidate code fixture contains nearby state-space and slogdet machinery. The packet checks structural visibility under the configured aliases.",
+    "what_would_change_conclusion": [
+      "A registered alias or decomposition showing solve(S, innovation) is implemented equivalently.",
+      "Code-path evidence exposing the quadratic form through a helper or transformed variable.",
+      "A source correction showing the documented target should not require the solve/quadratic term."
+    ]
+  },
+  "machine_evidence_ledger": {
+    "actions": [
+      {
+        "code": "human_review",
+        "description": "Inspect structural mismatch."
+      },
+      {
+        "code": "human_review",
+        "description": "Review structural matches, missing terms, aliases, and audit-only extras before treating code as correct."
+      }
+    ],
+    "assumptions": [],
+    "backend_checks": [
+      {
+        "backend": "sympy",
+        "source": "route_reference",
+        "state": "not_applicable"
+      },
+      {
+        "backend": "lean",
+        "source": "route_reference",
+        "state": "not_applicable"
+      }
+    ],
+    "counterexamples": [],
+    "derivation_proof_steps": [
+      {
+        "reason": "Code is missing required equation terms or has structural conflicts.",
+        "status": "structural_mismatch"
+      }
+    ],
+    "evidence_classes": [
+      "structural_mismatch"
+    ],
+    "expected_status_family": "routing_only",
+    "failure_class": "baseline_evaluable",
+    "gaps": [
+      {
+        "kind": "negative_control_requires_boundary_preservation",
+        "source": "route_reference",
+        "status": "unresolved"
+      }
+    ],
+    "non_claims": [
+      "This scoped workflow result does not claim general theorem-proving ability.",
+      "This scoped workflow result does not claim release readiness.",
+      "Structural evidence is not a semantic proof.",
+      "Forbidden claim not made: Code is mathematically wrong.",
+      "Forbidden claim not made: Absence of literal solve proves implementation invalid.",
+      "Durable packets are review artifacts, not proof certificates by themselves.",
+      "Packet contents preserve source, backend, counterexample, gap, action, and non-claim ledgers separately.",
+      "A packet may summarize backend evidence only within the scoped high-level workflow result that produced it.",
+      "Packet reports are local/non-gating and do not establish release readiness, public benchmark validity, scientific validation, or broad theorem proving.",
+      "Aggregate accuracy remains unavailable for this local benchmark report."
+    ],
+    "observed_status": "structural_mismatch",
+    "source_anchors": [
+      {
+        "line_range": "7-23",
+        "path": "benchmarks/fixtures/doc_department_state_space.tex",
+        "role": "documented Kalman likelihood solve/quadratic form"
+      },
+      {
+        "line_range": "1-17",
+        "path": "benchmarks/fixtures/doc_department_state_space_missing_solve.py",
+        "role": "candidate implementation missing explicit solve/quadratic form"
+      },
+      {
+        "line_range": "1099-1123",
+        "path": "docs/mathdevmcp-release-report.tex",
+        "role": "release-report fixture context"
+      }
+    ]
+  },
+  "reasoning_answer_text": "Conclusion: The code/document comparison found a structural mismatch; this is diagnostic evidence, not a mathematical refutation.\n\nQuestion: Does code implement the documented Kalman likelihood solve/quadratic form?\n\nHuman framing:\nCase purpose: Test whether the workflow can audit code against a documented Kalman likelihood formula and report a structural mismatch without claiming full semantic incorrectness.\n\nLocal background refresher: In a Gaussian prediction-error likelihood, each observation contributes a log determinant term for the innovation covariance and a quadratic penalty for the innovation scaled by that covariance. A log determinant alone does not account for the size of the forecast error.\n\nMinimal formula scaffold: For innovation v and innovation covariance S, the usual local contribution is log det(S) + v' S^{-1} v. In code, v' S^{-1} v commonly appears as v.T @ solve(S, v), a Cholesky solve, triangular solve, or equivalent whitening transform.\n\nSource context summary: The documentation fixture states the intended solve/quadratic likelihood structure, while the candidate code fixture contains nearby state-space and slogdet machinery. The packet checks structural visibility under the configured aliases.\n\nDecision target: Decide whether the candidate code structurally contains both the documented logdet part and the solve/quadratic-form part.\n\nDecision criteria:\n- Report structural match if required documented terms and accepted aliases/decompositions appear.\n- Report structural mismatch if a required term is absent and no accepted equivalent is registered.\n- Do not infer complete mathematical correctness or incorrectness from structural matching alone.\n\nAlternative explanations:\n- The quadratic term may be implemented through an unregistered Cholesky, triangular solve, whitening transform, or helper function.\n- The documented expression may be a schematic target rather than literal code structure.\n- The matcher may miss semantically equivalent code when aliases or decompositions are incomplete.\n\nWhat would change the conclusion:\n- A registered alias or decomposition showing solve(S, innovation) is implemented equivalently.\n- Code-path evidence exposing the quadratic form through a helper or transformed variable.\n- A source correction showing the documented target should not require the solve/quadratic term.\n\nSource context:\n1. `benchmarks/fixtures/doc_department_state_space.tex:7-23` supplies documented Kalman likelihood solve/quadratic form.\n2. `benchmarks/fixtures/doc_department_state_space_missing_solve.py:1-17` supplies candidate implementation missing explicit solve/quadratic form.\n3. `docs/mathdevmcp-release-report.tex:1099-1123` supplies release-report fixture context.\n\nEncoded obligation or artifact:\n1. Recorded workflow step status `structural_mismatch` because Code is missing required equation terms or has structural conflicts.\n\nDecisive evidence:\nThe structural matcher compared the candidate code against `logdet(S) + solve(S, innovation)`.\nMatched term(s): S, innovation, logdet.\nMissing term(s): solve.\nExtra code terms were recorded for review: F, H, K, P, P_filt, P_pred, Q, R, ... (25 total).\n\nWhy the conclusion follows:\nThe audit asks whether the code structurally contains the documented equation, not whether the entire implementation is mathematically wrong.\nA required documented term is absent from the matched code structure, so the safe conclusion is structural mismatch plus human review.\n\nRoute context:\nSource adapter route: not_applicable / None.\nSymbolic backend route: not_applicable.\nFormal backend route: not_applicable.\nCode-equation route: available.\nResidual route flags: negative_control_requires_boundary_preservation.\n\nRemaining gaps:\nroute_reference: negative_control_requires_boundary_preservation\n\nSuggested next action:\nhuman_review: Inspect structural mismatch.\nhuman_review: Review structural matches, missing terms, aliases, and audit-only extras before treating code as correct.\n\nBoundary: this packet is self-contained local review evidence; it is not a release, public benchmark, scientific-validity, or broad theorem-proving claim."
+}
+
+Use the framing to orient the next safe action, but do not treat the packet or your own response as proof.

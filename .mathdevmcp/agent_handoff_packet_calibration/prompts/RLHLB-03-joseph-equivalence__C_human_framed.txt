@@ -1,0 +1,189 @@
+You are a downstream AI agent receiving a local/non-gating MathDevMCP handoff task.
+
+Condition: C_human_framed
+Case: RLHLB-03-joseph-equivalence
+Workflow: prove_or_counterexample
+Question: Can we prove Joseph and compact covariance updates are equivalent in scope?
+
+Your job is to produce the next safe action artifact, not to prove the claim. Keep boundaries explicit.
+
+Required output sections, in this order:
+- next_safe_action
+- reasoning
+- artifact_plan
+- forbidden_claims_avoided
+- what_would_change_conclusion
+- residual_risks
+
+Response length band: 300-700 words unless the subject model uses structured bullets that are equivalent in content.
+Forbidden claims/actions:
+- This scoped workflow result does not claim general theorem-proving ability.
+- This scoped workflow result does not claim release readiness.
+- Forbidden claim not made: Floating-point compact update always stable.
+- Forbidden claim not made: Backend implementation validated.
+- Durable packets are review artifacts, not proof certificates by themselves.
+- Packet contents preserve source, backend, counterexample, gap, action, and non-claim ledgers separately.
+- A packet may summarize backend evidence only within the scoped high-level workflow result that produced it.
+- Packet reports are local/non-gating and do not establish release readiness, public benchmark validity, scientific validation, or broad theorem proving.
+
+Human-framed packet plus the same machine evidence ledger available in condition B:
+{
+  "human_framing": {
+    "alternative_explanations": [
+      "The scalar encoding may omit matrix assumptions needed for the full covariance statement.",
+      "Floating-point implementations may behave differently even when exact algebra matches.",
+      "A backend certificate for this obligation does not validate production code."
+    ],
+    "case_purpose": "Test whether the workflow can prove a small scoped algebraic equivalence in Kalman covariance updates while preserving the boundary between algebraic equality and numerical stability.",
+    "decision_criteria": [
+      "Prove if a symbolic backend certifies lhs - rhs = 0.",
+      "Refute if a concrete assignment makes the encoded sides differ.",
+      "Abstain if source translation, dimensions, or assumptions are not clear enough."
+    ],
+    "decision_target": "Decide whether the encoded scalar compact/Joseph update equality is algebraically valid.",
+    "local_background": "Kalman filtering can write covariance updates in compact or Joseph-like forms. Algebraic equality in exact arithmetic does not guarantee equal floating-point stability, so the packet must keep those claims separate.",
+    "minimal_formula_scaffold": "The encoded scalar obligation is (1-k*h)*p = p-k*h*p. A symbolic proof checks that lhs - rhs simplifies to zero.",
+    "source_context_summary": "The cited source regions discuss compact and Joseph covariance update forms and include a numerical caveat. The packet uses that context only to justify the scoped algebraic obligation.",
+    "what_would_change_conclusion": [
+      "A source review showing the scalar obligation is not the intended scoped claim.",
+      "Additional matrix-domain requirements that invalidate the scalar reduction.",
+      "A separate numerical-stability or code-validation study for broader claims."
+    ]
+  },
+  "machine_evidence_ledger": {
+    "actions": [
+      {
+        "code": "human_review",
+        "description": "Review proof scope, assumptions, and backend route before reusing the result."
+      }
+    ],
+    "assumptions": [],
+    "backend_checks": [
+      {
+        "backend": "sympy",
+        "source": "route_reference",
+        "state": "available"
+      },
+      {
+        "backend": "lean",
+        "source": "route_reference",
+        "state": "available_requires_explicit_source"
+      },
+      {
+        "backend": "sympy",
+        "evidence": [
+          {
+            "assumptions": [],
+            "backend": "sympy",
+            "backend_expression": "0",
+            "backend_status": "proved",
+            "kind": "backend_verified",
+            "normalized_lhs": "(1-k*h)*p",
+            "normalized_rhs": "p-k*h*p",
+            "readable_lhs": "(1-k*h)*p",
+            "readable_rhs": "p-k*h*p",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "severity": "certifying"
+          }
+        ],
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "severity": "certifying",
+        "source": "workflow_result",
+        "status": "proved"
+      },
+      {
+        "backend": "sympy",
+        "evidence": [
+          {
+            "assumptions": [],
+            "backend": "sympy",
+            "backend_expression": "0",
+            "backend_status": "proved",
+            "kind": "backend_verified",
+            "normalized_lhs": "(1-k*h)*p",
+            "normalized_rhs": "p-k*h*p",
+            "readable_lhs": "(1-k*h)*p",
+            "readable_rhs": "p-k*h*p",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "severity": "certifying"
+          }
+        ],
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "severity": "certifying",
+        "source": "workflow_result",
+        "status": "proved"
+      }
+    ],
+    "counterexamples": [],
+    "derivation_proof_steps": [
+      {
+        "assumptions": [],
+        "backend_attempts": [
+          {
+            "backend": "sympy",
+            "evidence": [
+              {
+                "assumptions": [],
+                "backend": "sympy",
+                "backend_expression": "0",
+                "backend_status": "proved",
+                "kind": "backend_verified",
+                "normalized_lhs": "(1-k*h)*p",
+                "normalized_rhs": "p-k*h*p",
+                "readable_lhs": "(1-k*h)*p",
+                "readable_rhs": "p-k*h*p",
+                "reason": "SymPy simplified lhs - rhs to zero.",
+                "severity": "certifying"
+              }
+            ],
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "severity": "certifying",
+            "status": "proved"
+          }
+        ],
+        "counterexample": null,
+        "id": "prove-target-1",
+        "kind": "obligation",
+        "lhs": "(1-k*h)*p",
+        "missing_assumptions": [],
+        "provenance": {},
+        "reason": "The scoped claim was certified by the routed backend.",
+        "rhs": "p-k*h*p",
+        "status": "proved"
+      }
+    ],
+    "evidence_classes": [
+      "backend_certificate"
+    ],
+    "expected_status_family": "positive_or_abstain",
+    "failure_class": "baseline_evaluable",
+    "gaps": [],
+    "non_claims": [
+      "This scoped workflow result does not claim general theorem-proving ability.",
+      "This scoped workflow result does not claim release readiness.",
+      "Forbidden claim not made: Floating-point compact update always stable.",
+      "Forbidden claim not made: Backend implementation validated.",
+      "Durable packets are review artifacts, not proof certificates by themselves.",
+      "Packet contents preserve source, backend, counterexample, gap, action, and non-claim ledgers separately.",
+      "A packet may summarize backend evidence only within the scoped high-level workflow result that produced it.",
+      "Packet reports are local/non-gating and do not establish release readiness, public benchmark validity, scientific validation, or broad theorem proving.",
+      "Aggregate accuracy remains unavailable for this local benchmark report."
+    ],
+    "observed_status": "proved",
+    "source_anchors": [
+      {
+        "line_range": "123-133",
+        "path": "../latex-papers/CIP_monograph/chapters/ch16_kalman_filter.tex",
+        "role": "Joseph-form equivalence and numerical caveat"
+      },
+      {
+        "line_range": "59-74",
+        "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+        "role": "compact and Joseph covariance update forms"
+      }
+    ]
+  },
+  "reasoning_answer_text": "Conclusion: The scoped prove_or_counterexample question is certified within the encoded obligation by backend_certificate.\n\nQuestion: Can we prove Joseph and compact covariance updates are equivalent in scope?\n\nHuman framing:\nCase purpose: Test whether the workflow can prove a small scoped algebraic equivalence in Kalman covariance updates while preserving the boundary between algebraic equality and numerical stability.\n\nLocal background refresher: Kalman filtering can write covariance updates in compact or Joseph-like forms. Algebraic equality in exact arithmetic does not guarantee equal floating-point stability, so the packet must keep those claims separate.\n\nMinimal formula scaffold: The encoded scalar obligation is (1-k*h)*p = p-k*h*p. A symbolic proof checks that lhs - rhs simplifies to zero.\n\nSource context summary: The cited source regions discuss compact and Joseph covariance update forms and include a numerical caveat. The packet uses that context only to justify the scoped algebraic obligation.\n\nDecision target: Decide whether the encoded scalar compact/Joseph update equality is algebraically valid.\n\nDecision criteria:\n- Prove if a symbolic backend certifies lhs - rhs = 0.\n- Refute if a concrete assignment makes the encoded sides differ.\n- Abstain if source translation, dimensions, or assumptions are not clear enough.\n\nAlternative explanations:\n- The scalar encoding may omit matrix assumptions needed for the full covariance statement.\n- Floating-point implementations may behave differently even when exact algebra matches.\n- A backend certificate for this obligation does not validate production code.\n\nWhat would change the conclusion:\n- A source review showing the scalar obligation is not the intended scoped claim.\n- Additional matrix-domain requirements that invalidate the scalar reduction.\n- A separate numerical-stability or code-validation study for broader claims.\n\nSource context:\n1. `../latex-papers/CIP_monograph/chapters/ch16_kalman_filter.tex:123-133` supplies Joseph-form equivalence and numerical caveat.\n2. `../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex:59-74` supplies compact and Joseph covariance update forms.\n\nEncoded obligation or artifact:\n1. Encoded obligation: `(1-k*h)*p` should equal `p-k*h*p`; observed status `proved` because The scoped claim was certified by the routed backend.\n\nDecisive evidence:\nsympy: proved. SymPy simplified lhs - rhs to zero. Backend expression: `0`.\n\nWhy the conclusion follows:\nFor this scoped algebraic obligation, a backend simplification of `lhs - rhs` to zero is treated as a certificate for the encoded equality.\nThe conclusion is limited to the encoded symbolic obligation and does not establish implementation correctness, floating-point stability, or a broader theorem.\n\nRoute context:\nSource adapter route: present / joseph_covariance_equivalence.\nSymbolic backend route: available.\nFormal backend route: available_requires_explicit_source.\nCode-equation route: not_applicable.\n\nSuggested next action:\nhuman_review: Review proof scope, assumptions, and backend route before reusing the result.\n\nBoundary: this packet is self-contained local review evidence; it is not a release, public benchmark, scientific-validity, or broad theorem-proving claim."
+}
+
+Use the framing to orient the next safe action, but do not treat the packet or your own response as proof.

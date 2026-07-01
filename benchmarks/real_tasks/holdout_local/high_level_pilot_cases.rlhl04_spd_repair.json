@@ -1,0 +1,407 @@
+{
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "real_local_high_level_pilot_cases",
+    "status": "draft_local_holdout",
+    "scope": "local_non_gating_pilot_only",
+    "created": "2026-06-29",
+    "source_root_policy": "Paths are relative to the MathDevMCP checkout root. Sibling repositories use ../ segments and are not public/CI fixtures.",
+    "execution_policy": "Executable probes are bounded diagnostics for the current high-level workflow layer. They are not full proofs of the source obligations.",
+    "non_claims": [
+      "This manifest is not benchmark-gate evidence.",
+      "This manifest is not a public redistributable fixture pack.",
+      "A passing executable probe does not prove the full source derivation.",
+      "Adapter-required source obligations are not passed or failed by probe status.",
+      "No release readiness, external benchmark validity, scientific validity, or broad theorem-proving ability is concluded."
+    ],
+    "environment_contract": {
+      "python": "current local Python used by MathDevMCP tests",
+      "required_runtime": [
+        "mathdevmcp high-level workflow modules",
+        "sympy available through the current test environment"
+      ],
+      "optional_backends": [
+        "sage",
+        "lean",
+        "latexml"
+      ],
+      "optional_backend_policy": "Unavailable optional backends are diagnostic and must not be treated as refutations."
+    }
+  },
+  "cases": [
+    {
+      "id": "RLHL-01-ift-gradient-bias-sign",
+      "title": "IFT gradient-bias sign consistency",
+      "workflow": "debug_derivation",
+      "tier": "holdout_local",
+      "source_snapshot": {
+        "repo": "dsge_hmc",
+        "repo_path": "../dsge_hmc",
+        "git_commit_short": "48fb41f",
+        "repo_dirty": true,
+        "source_file_dirty": false,
+        "source_files": [
+          {
+            "path": "../dsge_hmc/docs/gradient_accuracy_analysis.tex",
+            "line_range": "536-589",
+            "role": "theorem statement and proof algebra"
+          },
+          {
+            "path": "../dsge_hmc/docs/gradient_accuracy_analysis.tex",
+            "line_range": "883-893",
+            "role": "summary repeat of sign convention"
+          }
+        ]
+      },
+      "source_obligation": {
+        "question": "Can we prove the stated IFT gradient-bias formula from the theorem definitions, or is there a sign inconsistency?",
+        "expected_boundary": "negative_control_sign_inconsistency_candidate",
+        "required_evidence": [
+          "derive algebra from definitions of IFT gradient, FD gradient, and adjoint convention",
+          "identify the first inconsistent sign boundary",
+          "preserve the distinction between theorem-local sign algebra and practical HMC conclusions"
+        ],
+        "adapter_required": true
+      },
+      "executable_probe": {
+        "kind": "workflow_call",
+        "workflow": "debug_derivation",
+        "call": {
+          "steps": [
+            "-lam*dr",
+            "lam*dr"
+          ],
+          "assumptions": [],
+          "backend": "auto"
+        },
+        "expected": {
+          "status": "refuted",
+          "evidence_classes": [
+            "backend_counterexample"
+          ],
+          "certification_source": "backend",
+          "required_non_claim_codes": [
+            "general_theorem_proving_not_claimed",
+            "release_readiness_not_claimed"
+          ],
+          "expected_counterexample": true
+        },
+        "faithfulness": "The scalar sign-flip probe exercises the same local sign-inconsistency pattern as the source obligation.",
+        "does_not_prove": "It does not prove the full DSGE theorem, assess solver residuals, or validate/invalidate HMC conclusions."
+      },
+      "adapter_gap": {
+        "status": "adapter_required",
+        "needed": [
+          "LaTeX equation extraction for the theorem/proof block",
+          "notation-aware adjoint convention tracking",
+          "source-line proof-gap packet"
+        ]
+      },
+      "forbidden_claims": [
+        "The whole DSGE note is false.",
+        "The HMC practical conclusion is invalid.",
+        "The executable probe proves the source theorem."
+      ]
+    },
+    {
+      "id": "RLHL-04-kalman-prediction-error-loglik",
+      "title": "Kalman prediction-error log-likelihood",
+      "workflow": "assumptions_for",
+      "tier": "holdout_local",
+      "source_snapshot": {
+        "repo": "latex-papers and BayesFilter",
+        "repo_path": "../latex-papers; ../BayesFilter",
+        "git_commit_short": "latex-papers:fdf456e; BayesFilter:da4469d",
+        "repo_dirty": true,
+        "source_file_dirty": true,
+        "source_files": [
+          {
+            "path": "../latex-papers/CIP_monograph/chapters/ch16_kalman_filter.tex",
+            "line_range": "197-223",
+            "role": "CIP monograph prediction-error decomposition"
+          },
+          {
+            "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+            "line_range": "76-105",
+            "role": "BayesFilter likelihood spine"
+          },
+          {
+            "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+            "line_range": "32-39",
+            "role": "innovation regularity assumption"
+          }
+        ]
+      },
+      "source_obligation": {
+        "question": "Can we derive the prediction-error log-likelihood from the Kalman innovations?",
+        "expected_boundary": "positive_derivation_with_domain_assumptions",
+        "required_evidence": [
+          "use probability chain rule",
+          "use Gaussian log density for each innovation",
+          "state positive-definite selected innovation covariance and mask policy"
+        ],
+        "adapter_required": true
+      },
+      "executable_probe": {
+        "kind": "workflow_call",
+        "workflow": "assumptions_for",
+        "call": {
+          "target": "logdet(S) + v.T @ solve(S, v)",
+          "provided_assumptions": []
+        },
+        "expected": {
+          "status": "missing_assumptions",
+          "evidence_classes": [
+            "missing_assumption"
+          ],
+          "certification_source": "none",
+          "required_non_claim_codes": [
+            "general_theorem_proving_not_claimed",
+            "release_readiness_not_claimed",
+            "route_assumptions_not_global_minimality"
+          ],
+          "required_assumption_terms": [
+            "invertible",
+            "determinant domain",
+            "dimensions are conformable"
+          ]
+        },
+        "faithfulness": "The probe checks the domain assumptions for the log-determinant and solve-form quadratic terms that appear in the Kalman likelihood.",
+        "does_not_prove": "It does not derive the full likelihood, validate masking semantics, or validate a Kalman implementation."
+      },
+      "adapter_gap": {
+        "status": "adapter_required",
+        "needed": [
+          "source-aware derivation packet from innovation distribution",
+          "mask/dense panel assumption extraction",
+          "line-linked likelihood proof summary"
+        ]
+      },
+      "forbidden_claims": [
+        "Nonlinear filters are exact.",
+        "The score or Hessian is validated by this likelihood probe.",
+        "The executable probe proves the source likelihood derivation."
+      ]
+    },
+    {
+      "id": "RLHL-06-joseph-covariance-equivalence",
+      "title": "Joseph covariance update equivalence",
+      "workflow": "prove_or_counterexample",
+      "tier": "holdout_local",
+      "source_snapshot": {
+        "repo": "latex-papers and BayesFilter",
+        "repo_path": "../latex-papers; ../BayesFilter",
+        "git_commit_short": "latex-papers:fdf456e; BayesFilter:da4469d",
+        "repo_dirty": true,
+        "source_file_dirty": true,
+        "source_files": [
+          {
+            "path": "../latex-papers/CIP_monograph/chapters/ch16_kalman_filter.tex",
+            "line_range": "123-133",
+            "role": "Joseph-form equivalence and numerical caveat"
+          },
+          {
+            "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+            "line_range": "59-74",
+            "role": "compact and Joseph covariance update forms"
+          }
+        ]
+      },
+      "source_obligation": {
+        "question": "Can we prove that the Joseph covariance update is algebraically equivalent to the compact Kalman covariance update under the standard gain definition?",
+        "expected_boundary": "positive_proof_with_exact_arithmetic_and_numerical_caveat",
+        "required_evidence": [
+          "expand Joseph form",
+          "use the standard Kalman gain and innovation covariance relation",
+          "state exact-arithmetic and numerical-stability boundary"
+        ],
+        "adapter_required": true
+      },
+      "executable_probe": {
+        "kind": "workflow_call",
+        "workflow": "prove_or_counterexample",
+        "call": {
+          "claim": "joseph_scalar_expansion",
+          "lhs": "(1-k*h)*p",
+          "rhs": "p-k*h*p",
+          "assumptions": [],
+          "backend": "auto"
+        },
+        "expected": {
+          "status": "proved",
+          "evidence_classes": [
+            "backend_certificate"
+          ],
+          "certification_source": "backend",
+          "required_non_claim_codes": [
+            "general_theorem_proving_not_claimed",
+            "release_readiness_not_claimed"
+          ]
+        },
+        "faithfulness": "The scalar probe checks a small algebraic cancellation used in covariance-update equivalence arguments.",
+        "does_not_prove": "It does not prove the full matrix Joseph equivalence, positive semidefiniteness under rounding, or backend implementation correctness."
+      },
+      "adapter_gap": {
+        "status": "adapter_required",
+        "needed": [
+          "matrix-aware symbolic assumptions",
+          "Kalman-gain substitution support",
+          "exact-arithmetic versus floating-point caveat packet"
+        ]
+      },
+      "forbidden_claims": [
+        "The compact form preserves PSD under rounding.",
+        "A particular backend implements Joseph form correctly.",
+        "The scalar executable probe proves full matrix equivalence."
+      ]
+    },
+    {
+      "id": "RLHL-07-affine-pricing-master-recursion",
+      "title": "Affine pricing master recursion",
+      "workflow": "derive_from",
+      "tier": "holdout_local",
+      "source_snapshot": {
+        "repo": "latex-papers",
+        "repo_path": "../latex-papers",
+        "git_commit_short": "fdf456e",
+        "repo_dirty": true,
+        "source_file_dirty": false,
+        "source_files": [
+          {
+            "path": "../latex-papers/CIP_monograph/chapters/ch11_state_space_recursions.tex",
+            "line_range": "242-322",
+            "role": "general discrete-time affine pricing recursion"
+          }
+        ]
+      },
+      "source_obligation": {
+        "question": "Can I derive the affine recursion coefficients A_n and B_n from the exponential-affine ansatz and Gaussian transition law?",
+        "expected_boundary": "positive_derivation_with_gaussian_mgf_and_collection",
+        "required_evidence": [
+          "substitute exponential-affine ansatz",
+          "apply Gaussian moment-generating function",
+          "collect constant and state-dependent terms"
+        ],
+        "adapter_required": true
+      },
+      "executable_probe": {
+        "kind": "workflow_call",
+        "workflow": "derive_from",
+        "call": {
+          "target": "affine_collect",
+          "lhs": "A + B*x",
+          "rhs": "A + x*B",
+          "givens": [],
+          "assumptions": [],
+          "backend": "auto"
+        },
+        "expected": {
+          "status": "inconclusive",
+          "evidence_classes": [
+            "human_review_required"
+          ],
+          "certification_source": "none",
+          "required_non_claim_codes": [
+            "general_theorem_proving_not_claimed",
+            "release_readiness_not_claimed",
+            "givens_not_formal_assumptions"
+          ],
+          "required_veto_codes": [
+            "unresolved_low_level_status"
+          ]
+        },
+        "faithfulness": "The probe checks that the current high-level layer refuses to over-certify a matrix-looking affine collection step it cannot safely route.",
+        "does_not_prove": "It does not derive the affine recursion, apply the Gaussian MGF, or validate any asset-pricing approximation."
+      },
+      "adapter_gap": {
+        "status": "adapter_required",
+        "needed": [
+          "LaTeX-to-symbolic extraction for affine recursions",
+          "Gaussian MGF rule support",
+          "coefficient collection with vector/matrix dimensions"
+        ]
+      },
+      "forbidden_claims": [
+        "Every later non-affine approximation is exact.",
+        "Empirical pricing validity or identification follows.",
+        "The inconclusive executable probe is a failed source derivation."
+      ]
+    },
+    {
+      "id": "RLHL-10-kalman-score-same-scalar-contract",
+      "title": "Kalman score same-scalar derivative contract",
+      "workflow": "assumptions_for",
+      "tier": "holdout_local",
+      "source_snapshot": {
+        "repo": "BayesFilter",
+        "repo_path": "../BayesFilter",
+        "git_commit_short": "da4469d",
+        "repo_dirty": true,
+        "source_file_dirty": false,
+        "source_files": [
+          {
+            "path": "../BayesFilter/docs/chapters/ch09_kalman_score.tex",
+            "line_range": "20-103",
+            "role": "first-order Kalman score and solve-form score"
+          },
+          {
+            "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+            "line_range": "120-130",
+            "role": "same scalar likelihood contract"
+          }
+        ]
+      },
+      "source_obligation": {
+        "question": "Can I derive the solve-form Kalman score contribution from the prediction-error log-likelihood, and what must be true for it to be a valid HMC gradient?",
+        "expected_boundary": "derivation_plus_same_scalar_assumption_boundary",
+        "required_evidence": [
+          "differentiate log determinant and quadratic form",
+          "substitute solve variable S_t w_t = v_t",
+          "state same-scalar condition for HMC"
+        ],
+        "adapter_required": true
+      },
+      "executable_probe": {
+        "kind": "workflow_call",
+        "workflow": "assumptions_for",
+        "call": {
+          "target": "grad(logdet(S) + v.T @ solve(S, v))",
+          "provided_assumptions": []
+        },
+        "expected": {
+          "status": "missing_assumptions",
+          "evidence_classes": [
+            "missing_assumption"
+          ],
+          "certification_source": "none",
+          "required_non_claim_codes": [
+            "general_theorem_proving_not_claimed",
+            "release_readiness_not_claimed",
+            "route_assumptions_not_global_minimality"
+          ],
+          "required_assumption_terms": [
+            "invertible",
+            "determinant domain",
+            "differentiable",
+            "dimensions are conformable"
+          ]
+        },
+        "faithfulness": "The probe checks assumptions required by the logdet, solve, and gradient terms in the same-scalar score contract.",
+        "does_not_prove": "It does not derive the score recursion, prove same-scalar HMC validity, validate Hessian readiness, or establish sampler convergence."
+      },
+      "adapter_gap": {
+        "status": "adapter_required",
+        "needed": [
+          "derivative-rule support for solve-form Kalman score",
+          "same-scalar value/gradient contract checker",
+          "line-linked review packet for HMC gradient validity"
+        ]
+      },
+      "forbidden_claims": [
+        "Hessian readiness is established.",
+        "Posterior validity or sampler convergence follows.",
+        "Backend correctness follows from the assumption probe."
+      ]
+    }
+  ]
+}

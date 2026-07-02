@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from .equation_code_match import code_implements_equation
-from .high_level_contracts import action, validate_high_level_result
+from .high_level_contracts import action, refresh_evidence_ledger, validate_high_level_result
 from .high_level_workflows import package_code_audit_result
 
 
@@ -24,6 +24,7 @@ def audit_math_to_code(
             "Review structural matches, missing terms, aliases, and audit-only extras before treating code as correct.",
         )
     )
+    refresh_evidence_ledger(result)
     errors = validate_high_level_result(result)
     if errors:
         raise ValueError(f"invalid audit_math_to_code result: {errors}")

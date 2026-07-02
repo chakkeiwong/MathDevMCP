@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .high_level_contracts import action, default_non_claims, evidence_entry, high_level_result, validate_high_level_result, veto_reason
+from .high_level_contracts import action, default_non_claims, evidence_entry, high_level_result, refresh_evidence_ledger, validate_high_level_result, veto_reason
 from .high_level_workflows import package_low_level_math_result
 from .prove_or_refute import prove_or_refute
 
@@ -61,6 +61,7 @@ def prove_or_counterexample(
         question=f"Can we prove {claim}?",
     )
     result["actions"].append(action("human_review", "Review proof scope, assumptions, and backend route before reusing the result."))
+    refresh_evidence_ledger(result)
     errors = validate_high_level_result(result)
     if errors:
         raise ValueError(f"invalid prove_or_counterexample result: {errors}")

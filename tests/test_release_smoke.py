@@ -106,6 +106,70 @@ def test_cli_high_level_workflow_commands_return_contract_envelopes():
     assert "structural_evidence_not_proof" in {item["code"] for item in code_payload["non_claims"]}
 
 
+def test_cli_prepare_review_packet_preserves_phase6_packet_fields(tmp_path):
+    derive = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "mathdevmcp.cli",
+            "derive-from",
+            "a + b = b + a",
+            "--given",
+            "a,b are scalars",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        env={"PYTHONPATH": str(ROOT / "src")},
+    )
+    code = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "mathdevmcp.cli",
+            "audit-math-to-code",
+            "logdet(S)",
+            "def f(S):\n    return logdet(S)\n",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        env={"PYTHONPATH": str(ROOT / "src")},
+    )
+    assert derive.returncode == 0, derive.stderr
+    assert code.returncode == 0, code.stderr
+
+    evidence_path = tmp_path / "evidence.json"
+    evidence_path.write_text(f"[{derive.stdout}, {code.stdout}]", encoding="utf-8")
+    packet = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "mathdevmcp.cli",
+            "prepare-review-packet",
+            "Review CLI packet",
+            "--evidence",
+            str(evidence_path),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        env={"PYTHONPATH": str(ROOT / "src")},
+    )
+
+    assert packet.returncode == 0, packet.stderr
+    payload = json.loads(packet.stdout)
+    low_level = payload["evidence"][0]["low_level"]
+    assert payload["status"] == "diagnostic_only"
+    assert payload["certification_source"] == "none"
+    assert low_level["backend_checks"]
+    assert low_level["nested_evidence_summary"]
+    assert low_level["route_plans"]
+    assert low_level["trace_maps"]
+    assert low_level["decision_criteria"]
+    assert any(item["code"] == "diagnostic_route_and_trace_context_not_proof" for item in low_level["non_claims"])
+
+
 def test_cli_high_level_workflow_quality_module_command_passes():
     result = subprocess.run(
         [

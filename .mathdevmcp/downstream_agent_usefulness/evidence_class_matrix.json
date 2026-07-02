@@ -1,0 +1,96 @@
+{
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "downstream_agent_usefulness_evidence_class_matrix",
+    "status": "phase_02_frozen_before_prompt_generation",
+    "created": "2026-07-01"
+  },
+  "evidence_classes": {
+    "backend_certificate": {
+      "certification_level": "certified_scoped_obligation",
+      "allowed_claim": "The encoded obligation passed a scoped backend check.",
+      "forbidden_claim": "Do not claim broad theorem proving, numerical stability, or implementation correctness."
+    },
+    "backend_counterexample": {
+      "certification_level": "certified_scoped_refutation",
+      "allowed_claim": "The encoded obligation is refuted within the represented semantics.",
+      "forbidden_claim": "Do not claim the whole source is false or that unencoded semantics are refuted."
+    },
+    "missing_assumption": {
+      "certification_level": "diagnostic_assumption_gap",
+      "allowed_claim": "The route lacks required assumptions.",
+      "forbidden_claim": "Do not proceed as if assumptions were supplied or globally minimal."
+    },
+    "human_review_required": {
+      "certification_level": "diagnostic_route_gap",
+      "allowed_claim": "The current local route is insufficient and needs a source-backed artifact or human review.",
+      "forbidden_claim": "Do not treat abstention as proof, refutation, or product readiness."
+    },
+    "structural_mismatch": {
+      "certification_level": "diagnostic_code_structure",
+      "allowed_claim": "Expected structural terms are missing or mismatched in the inspected code form.",
+      "forbidden_claim": "Do not claim semantic implementation incorrectness without deeper code and runtime evidence."
+    },
+    "review_packet": {
+      "certification_level": "diagnostic_review_artifact",
+      "allowed_claim": "A packet organizes evidence, gaps, and next actions.",
+      "forbidden_claim": "Do not treat the packet itself as a proof certificate."
+    }
+  },
+  "case_matrix": [
+    {
+      "case_id": "RLHLB-01-ift-sign-gap",
+      "workflow": "debug_derivation",
+      "expected_output_family": "refuted",
+      "evidence_class": "backend_counterexample"
+    },
+    {
+      "case_id": "RLHLB-02-kalman-loglik-assumptions",
+      "workflow": "assumptions_for",
+      "expected_output_family": "missing_assumptions",
+      "evidence_class": "missing_assumption"
+    },
+    {
+      "case_id": "RLHLB-03-joseph-equivalence",
+      "workflow": "prove_or_counterexample",
+      "expected_output_family": "proved",
+      "evidence_class": "backend_certificate"
+    },
+    {
+      "case_id": "RLHLB-04-affine-pricing-recursion",
+      "workflow": "derive_from",
+      "expected_output_family": "inconclusive",
+      "evidence_class": "human_review_required"
+    },
+    {
+      "case_id": "RLHLB-05-kalman-score-same-scalar",
+      "workflow": "assumptions_for",
+      "expected_output_family": "missing_assumptions",
+      "evidence_class": "missing_assumption"
+    },
+    {
+      "case_id": "RLHLB-06-state-space-code-missing-solve",
+      "workflow": "audit_math_to_code",
+      "expected_output_family": "structural_mismatch",
+      "evidence_class": "structural_mismatch"
+    },
+    {
+      "case_id": "RLHLB-07-proof-boundary-review-packet",
+      "workflow": "prepare_review_packet",
+      "expected_output_family": "diagnostic_only",
+      "evidence_class": "review_packet"
+    },
+    {
+      "case_id": "RLHLB-08-hmc-value-only-boundary",
+      "workflow": "prove_or_counterexample",
+      "expected_output_family": "inconclusive",
+      "evidence_class": "human_review_required"
+    },
+    {
+      "case_id": "RLHLB-09-affine-recovery-assumption-limit",
+      "workflow": "derive_from",
+      "expected_output_family": "missing_assumptions",
+      "evidence_class": "missing_assumption"
+    }
+  ]
+}

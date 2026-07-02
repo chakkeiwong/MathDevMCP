@@ -1,0 +1,94 @@
+{
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "downstream_agent_usefulness_v2_baseline_hash_manifest",
+    "created": "2026-07-02",
+    "status": "phase_00_baseline_frozen",
+    "baseline_root": ".mathdevmcp/downstream_agent_usefulness",
+    "v2_root": ".mathdevmcp/downstream_agent_usefulness_v2",
+    "purpose": "Record repaired-baseline hashes before v2 candidate design begins."
+  },
+  "primary_artifacts": [
+    {
+      "path": ".mathdevmcp/downstream_agent_usefulness/case_manifest.json",
+      "sha256": "0575efcf7050c12930a09c25b6d42f5f6b13bc144eadfd8e5b124aae3aba672b"
+    },
+    {
+      "path": ".mathdevmcp/downstream_agent_usefulness/scoring_rubric.json",
+      "sha256": "b834b7f805a7d740755c3658e7d3e9de0a6920635705666f7cd1f1024e239d6e"
+    },
+    {
+      "path": ".mathdevmcp/downstream_agent_usefulness/benchmark_contract.json",
+      "sha256": "16509cc4708ac3546e866343a200b1720f789da8a7a5de7e007c0f56041ed64c"
+    },
+    {
+      "path": ".mathdevmcp/downstream_agent_usefulness/response_subject_policy.json",
+      "sha256": "715713010420343a5b646a4b1561f0751e3c9e8af210b1c1b726915a11923761"
+    },
+    {
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompt_manifest_repaired_candidate.json",
+      "sha256": "55a9e87fde387641f7b4544f353b1702aa080827c766242de7ce8c86451c8ffd"
+    },
+    {
+      "path": ".mathdevmcp/downstream_agent_usefulness/repaired_prompt_contract_validation.json",
+      "sha256": "749fc27fdb4f57b888d73fde814c55ecf7c7312cee877b9d800ad8c30bc5f5b4"
+    },
+    {
+      "path": ".mathdevmcp/downstream_agent_usefulness/response_manifest_repaired_candidate.json",
+      "sha256": "76de0a6def159c25d210379f630c24abadbb5fd2da9152b1381bc639200ac48d"
+    },
+    {
+      "path": ".mathdevmcp/downstream_agent_usefulness/scored_responses_repaired_candidate.json",
+      "sha256": "0b737559480d7211b9e6dbaee86124865e046f955fb139feb26502fd2529d14f"
+    },
+    {
+      "path": ".mathdevmcp/downstream_agent_usefulness/scored_responses_repaired_candidate.md",
+      "sha256": "cb191f811d1afeb1f8c0fc74502a346595dd00e43b67ccf9dd764d0329cc1418"
+    },
+    {
+      "path": "docs/plans/mathdevmcp-downstream-agent-usefulness-repaired-collection-result-2026-07-02.md",
+      "sha256": "70d4248afd6ecf8771b5e29d64b867ac192e88283ab83713091f37a147196608"
+    },
+    {
+      "path": "docs/plans/mathdevmcp-benchmark-maintenance-handoff-2026-07-02.md",
+      "sha256": "286c8aec9f149a14b3d0e734275d01dd4ea2034a8ae409bcbf68d458f83f8cea"
+    }
+  ],
+  "directory_aggregates": [
+    {
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts_repaired_candidate",
+      "file_count": 27,
+      "aggregate_sha256": "94e8c7d824c185a4a8026d260d2016fc977be1cccaba8b858fb973290be409f8"
+    },
+    {
+      "path": ".mathdevmcp/downstream_agent_usefulness/responses_repaired_candidate",
+      "file_count": 27,
+      "aggregate_sha256": "c6ca57d8ee3edc9f24cec215f9d0eaa8c09311dd2d97945f95f094c213f4ecdf"
+    }
+  ],
+  "baseline_summary": {
+    "repaired_prompt_count": 27,
+    "repaired_case_count": 9,
+    "repaired_response_count": 27,
+    "retry_policy": "one_attempt_per_prompt_no_hidden_retries",
+    "response_subject": "Codex subagents",
+    "claude_role": "read_only_reviewer_only",
+    "hard_vetoes": {
+      "A_task_only": 0,
+      "B_evidence_only": 0,
+      "C_human_framed": 0
+    },
+    "required_passes": {
+      "A_task_only": "8/9",
+      "B_evidence_only": "9/9",
+      "C_human_framed": "9/9"
+    },
+    "c_over_b_promotion_supported": false
+  },
+  "non_claims": [
+    "Hash preservation is not benchmark validity evidence.",
+    "Hash preservation is not response quality evidence.",
+    "Hash preservation is not C-over-B superiority evidence.",
+    "Hash preservation is not release, public benchmark, scientific, product, or general model reliability evidence."
+  ]
+}

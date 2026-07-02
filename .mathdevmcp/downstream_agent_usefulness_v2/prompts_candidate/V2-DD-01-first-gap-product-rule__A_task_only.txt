@@ -1,0 +1,26 @@
+# Downstream-Agent Usefulness V2 Candidate Prompt
+
+Condition A: task plus bounded context only. Decisive executable/source evidence and evaluator labels are intentionally absent.
+
+Case: V2-DD-01 - First-gap derivation audit
+Workflow: debug_derivation
+
+Task
+Where does the derivation first fail? State the missing condition or invalid transformation and avoid overclaiming beyond the local trace.
+
+Bounded Context
+A multi-step derivation has more than one suspicious transition. The task is to identify the first failing step in dependency order.
+
+Source Boundary
+Synthetic local derivation-summary context only.
+
+Required Response Shape
+- Give a direct local conclusion or abstention justified by the prompt.
+- State assumptions or gaps needed for the route.
+- Preserve local/non-claim boundaries.
+- Name the next concrete artifact that would settle unresolved obligations.
+
+Non-Claims
+- Use only the information in this prompt.
+- Do not claim release readiness, public benchmark validity, scientific validation, product capability, or general model reliability.
+- Do not treat diagnostic checks as proof beyond their stated scope.

@@ -108,6 +108,62 @@ def _backend_evidence_summary(attempt: dict[str, Any] | None, fallback: str) -> 
     return fallback
 
 
+def _first_workbench_obligation(low_level: dict[str, Any]) -> dict[str, Any] | None:
+    workbench = low_level.get("workbench_result")
+    obligations = workbench.get("obligations") if isinstance(workbench, dict) else None
+    if isinstance(obligations, list) and obligations and isinstance(obligations[0], dict):
+        return obligations[0]
+    return None
+
+
+def _proof_evidence_extra(low_level: dict[str, Any], attempt: dict[str, Any] | None) -> dict[str, Any]:
+    obligation = _first_workbench_obligation(low_level)
+    extra: dict[str, Any] = {
+        "low_level": low_level,
+        "backend_route_status": low_level.get("status"),
+    }
+    if isinstance(attempt, dict):
+        extra["backend_attempt"] = {
+            key: attempt.get(key)
+            for key in ("backend", "status", "reason", "severity")
+            if key in attempt
+        }
+    if isinstance(obligation, dict):
+        extra["obligation"] = {
+            key: obligation.get(key)
+            for key in ("id", "lhs", "rhs", "status", "reason")
+            if key in obligation
+        }
+    return extra
+
+
+def _counterexample_evidence_extra(
+    low_level: dict[str, Any],
+    attempt: dict[str, Any] | None,
+    counterexamples: list[dict[str, Any]],
+) -> dict[str, Any]:
+    extra = _proof_evidence_extra(low_level, attempt)
+    if counterexamples:
+        counterexample = counterexamples[0]
+        extra["counterexample"] = {
+            key: counterexample.get(key)
+            for key in ("assignments", "lhs_value", "rhs_value", "reason", "backend")
+            if key in counterexample
+        }
+    return extra
+
+
+def _has_proof_artifacts(attempt: dict[str, Any] | None, obligation: dict[str, Any] | None) -> bool:
+    if not isinstance(attempt, dict) or not isinstance(obligation, dict):
+        return False
+    return (
+        attempt.get("status") == "proved"
+        and attempt.get("severity") == "certifying"
+        and obligation.get("status") == "proved"
+        and bool(obligation.get("id"))
+    )
+
+
 def package_low_level_math_result(
     low_level: dict[str, Any],
     *,
@@ -129,31 +185,56 @@ def package_low_level_math_result(
     extra_non_claim_codes: set[str] = set()
 
     if high_status == "proved":
-        certification_source = "backend"
-        evidence.append(
-            evidence_entry(
-                id=f"{workflow}:backend-certificate",
-                evidence_class="backend_certificate",
-                source="backend",
-                summary=_backend_evidence_summary(attempt, "Scoped obligation was certified by backend evidence."),
-                extra={"low_level": low_level},
+        obligation = _first_workbench_obligation(low_level)
+        if _has_proof_artifacts(attempt, obligation):
+            certification_source = "backend"
+            evidence.append(
+                evidence_entry(
+                    id=f"{workflow}:backend-certificate",
+                    evidence_class="backend_certificate",
+                    source="backend",
+                    summary=_backend_evidence_summary(attempt, "Scoped obligation was certified by backend evidence."),
+                    extra=_proof_evidence_extra(low_level, attempt),
+                )
             )
-        )
+        else:
+            high_status = "inconclusive"
+            evidence.append(
+                evidence_entry(
+                    id=f"{workflow}:human-review-required",
+                    evidence_class="human_review_required",
+                    source="kernel",
+                    summary="Low-level proof status was not promoted because certifying artifacts were incomplete.",
+                    extra={"low_level": low_level},
+                )
+            )
+            vetoes.append(veto_reason("certifying_evidence_not_promoted", "Proof status lacked a certifying backend attempt or scoped obligation artifact."))
+            actions.append(action("supply_more_evidence", "Provide backend attempt and scoped obligation artifacts before promoting proof."))
     elif high_status == "refuted":
-        certification_source = "backend"
-        evidence.append(
-            evidence_entry(
-                id=f"{workflow}:backend-counterexample",
-                evidence_class="backend_counterexample",
-                source="backend",
-                summary=_backend_evidence_summary(attempt, "Scoped obligation was refuted by backend evidence."),
-                extra={"low_level": low_level},
+        if counterexamples:
+            certification_source = "backend"
+            evidence.append(
+                evidence_entry(
+                    id=f"{workflow}:backend-counterexample",
+                    evidence_class="backend_counterexample",
+                    source="backend",
+                    summary=_backend_evidence_summary(attempt, "Scoped obligation was refuted by backend evidence."),
+                    extra=_counterexample_evidence_extra(low_level, attempt, counterexamples),
+                )
             )
-        )
-        if not counterexamples:
+        else:
             high_status = "inconclusive"
             certification_source = "none"
-            vetoes.append(veto_reason("counterexample_missing", "Refutation was not promoted because no counterexample object was present."))
+            evidence.append(
+                evidence_entry(
+                    id=f"{workflow}:human-review-required",
+                    evidence_class="human_review_required",
+                    source="kernel",
+                    summary="Low-level refutation status was not promoted because no counterexample artifact was present.",
+                    extra={"low_level": low_level},
+                )
+            )
+            vetoes.append(veto_reason("counterexample_missing", "Refutation evidence was not promoted because no counterexample object was present."))
             vetoes.append(veto_reason("certifying_evidence_not_promoted", "Blocking evidence lacked the Phase 1 counterexample artifact."))
             actions.append(action("supply_more_evidence", "Provide a concrete counterexample artifact."))
     elif high_status == "missing_assumptions":

@@ -1,0 +1,313 @@
+{
+  "fairness_controls": {
+    "b_c_machine_evidence_parity": "All non-framing machine evidence present in C must also be present in B.",
+    "condition_labels": "Prompts should avoid describing conditions as better or worse.",
+    "identical_question_per_case": true,
+    "identical_requested_output_schema_per_case": true,
+    "ordering": "Collection order should be randomized or counterbalanced if feasible; otherwise manifest order must be recorded as a limitation.",
+    "retry_policy": "One response per prompt unless a predeclared transport failure produces no model output. No hidden retries. Malformed or incomplete outputs are recorded.",
+    "scoring_policy": "Score against frozen rubric only. Hard vetoes dominate all numeric scores.",
+    "source_excerpt_policy": "Use bounded summaries and source provenance rather than large copied source excerpts."
+  },
+  "metadata": {
+    "case_count": 9,
+    "conditions": [
+      "A_task_only",
+      "B_evidence_only",
+      "C_human_framed"
+    ],
+    "contract": "downstream_agent_usefulness_prompt_manifest",
+    "created": "2026-07-01",
+    "prompt_count": 27,
+    "schema_version": "1.0",
+    "status": "phase_03_frozen_before_response_collection"
+  },
+  "prompts": [
+    {
+      "case_id": "RLHLB-01-ift-sign-gap",
+      "condition": "A_task_only",
+      "evidence_class_for_evaluator": "backend_counterexample",
+      "expected_output_family_for_evaluator": "refuted",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-01-ift-sign-gap__A_task_only.txt",
+      "prompt_id": "RLHLB-01-ift-sign-gap__A_task_only",
+      "sha256": "2e9473588888be08ae6b27a5c72ddad2a95fa85f713235320dea118be7d28e00",
+      "workflow": "debug_derivation"
+    },
+    {
+      "case_id": "RLHLB-01-ift-sign-gap",
+      "condition": "B_evidence_only",
+      "evidence_class_for_evaluator": "backend_counterexample",
+      "expected_output_family_for_evaluator": "refuted",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-01-ift-sign-gap__B_evidence_only.txt",
+      "prompt_id": "RLHLB-01-ift-sign-gap__B_evidence_only",
+      "sha256": "8a83f608fc18d8b25ee0f9fb2fc220b630a1668416c7f3eea68828894aabde5a",
+      "workflow": "debug_derivation"
+    },
+    {
+      "case_id": "RLHLB-01-ift-sign-gap",
+      "condition": "C_human_framed",
+      "evidence_class_for_evaluator": "backend_counterexample",
+      "expected_output_family_for_evaluator": "refuted",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-01-ift-sign-gap__C_human_framed.txt",
+      "prompt_id": "RLHLB-01-ift-sign-gap__C_human_framed",
+      "sha256": "e0411c7a4e5c32b0c389cba7b7662b9f1c2efd8eb01a50c168fb32b05dfd1d7f",
+      "workflow": "debug_derivation"
+    },
+    {
+      "case_id": "RLHLB-02-kalman-loglik-assumptions",
+      "condition": "A_task_only",
+      "evidence_class_for_evaluator": "missing_assumption",
+      "expected_output_family_for_evaluator": "missing_assumptions",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-02-kalman-loglik-assumptions__A_task_only.txt",
+      "prompt_id": "RLHLB-02-kalman-loglik-assumptions__A_task_only",
+      "sha256": "8b519e43450f2ebcf144da0eaaa1486b2ea814a805587143e70a7e29e67cabaa",
+      "workflow": "assumptions_for"
+    },
+    {
+      "case_id": "RLHLB-02-kalman-loglik-assumptions",
+      "condition": "B_evidence_only",
+      "evidence_class_for_evaluator": "missing_assumption",
+      "expected_output_family_for_evaluator": "missing_assumptions",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-02-kalman-loglik-assumptions__B_evidence_only.txt",
+      "prompt_id": "RLHLB-02-kalman-loglik-assumptions__B_evidence_only",
+      "sha256": "d0b613bbbefbc3065c1c33c48db1e2d07339451745921ea150ad3f28b5d53ccb",
+      "workflow": "assumptions_for"
+    },
+    {
+      "case_id": "RLHLB-02-kalman-loglik-assumptions",
+      "condition": "C_human_framed",
+      "evidence_class_for_evaluator": "missing_assumption",
+      "expected_output_family_for_evaluator": "missing_assumptions",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-02-kalman-loglik-assumptions__C_human_framed.txt",
+      "prompt_id": "RLHLB-02-kalman-loglik-assumptions__C_human_framed",
+      "sha256": "9310897a432f15eac7b2ecc98d9659fceae540bd14d086e8c8b667cc8a1b79c9",
+      "workflow": "assumptions_for"
+    },
+    {
+      "case_id": "RLHLB-03-joseph-equivalence",
+      "condition": "A_task_only",
+      "evidence_class_for_evaluator": "backend_certificate",
+      "expected_output_family_for_evaluator": "proved",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-03-joseph-equivalence__A_task_only.txt",
+      "prompt_id": "RLHLB-03-joseph-equivalence__A_task_only",
+      "sha256": "d5d89b48d078b3368e2c9d6178ff064ee9e4db8a53246b6913ee400f2d3714c2",
+      "workflow": "prove_or_counterexample"
+    },
+    {
+      "case_id": "RLHLB-03-joseph-equivalence",
+      "condition": "B_evidence_only",
+      "evidence_class_for_evaluator": "backend_certificate",
+      "expected_output_family_for_evaluator": "proved",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-03-joseph-equivalence__B_evidence_only.txt",
+      "prompt_id": "RLHLB-03-joseph-equivalence__B_evidence_only",
+      "sha256": "2d7e9db66e1904ff2aad743522c22fdd3ab920e20ca6bbabb2a59d6f9420802c",
+      "workflow": "prove_or_counterexample"
+    },
+    {
+      "case_id": "RLHLB-03-joseph-equivalence",
+      "condition": "C_human_framed",
+      "evidence_class_for_evaluator": "backend_certificate",
+      "expected_output_family_for_evaluator": "proved",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-03-joseph-equivalence__C_human_framed.txt",
+      "prompt_id": "RLHLB-03-joseph-equivalence__C_human_framed",
+      "sha256": "34dcd58dea778a3e7fa0788c22ba1ab2dd64f0c0218b3436409734bc9a4a990e",
+      "workflow": "prove_or_counterexample"
+    },
+    {
+      "case_id": "RLHLB-04-affine-pricing-recursion",
+      "condition": "A_task_only",
+      "evidence_class_for_evaluator": "human_review_required",
+      "expected_output_family_for_evaluator": "inconclusive",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-04-affine-pricing-recursion__A_task_only.txt",
+      "prompt_id": "RLHLB-04-affine-pricing-recursion__A_task_only",
+      "sha256": "49b13bacff5a48de420764877723b3a8b74543f3023d575a9cd4efaca857a7ab",
+      "workflow": "derive_from"
+    },
+    {
+      "case_id": "RLHLB-04-affine-pricing-recursion",
+      "condition": "B_evidence_only",
+      "evidence_class_for_evaluator": "human_review_required",
+      "expected_output_family_for_evaluator": "inconclusive",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-04-affine-pricing-recursion__B_evidence_only.txt",
+      "prompt_id": "RLHLB-04-affine-pricing-recursion__B_evidence_only",
+      "sha256": "9aeb5f4b71c3ce409bd88aa780ea00612a91fffd1ff782ccb067f7d913682d64",
+      "workflow": "derive_from"
+    },
+    {
+      "case_id": "RLHLB-04-affine-pricing-recursion",
+      "condition": "C_human_framed",
+      "evidence_class_for_evaluator": "human_review_required",
+      "expected_output_family_for_evaluator": "inconclusive",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-04-affine-pricing-recursion__C_human_framed.txt",
+      "prompt_id": "RLHLB-04-affine-pricing-recursion__C_human_framed",
+      "sha256": "3a19ab48e621ae2a7f953f5e180f35e6ae25ee3533f20e93036e3b3483ad2ff4",
+      "workflow": "derive_from"
+    },
+    {
+      "case_id": "RLHLB-05-kalman-score-same-scalar",
+      "condition": "A_task_only",
+      "evidence_class_for_evaluator": "missing_assumption",
+      "expected_output_family_for_evaluator": "missing_assumptions",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-05-kalman-score-same-scalar__A_task_only.txt",
+      "prompt_id": "RLHLB-05-kalman-score-same-scalar__A_task_only",
+      "sha256": "03fdfcbe60d290827469e01dce43d1b4046eccf53f04fb48c08c5604d4aa9cca",
+      "workflow": "assumptions_for"
+    },
+    {
+      "case_id": "RLHLB-05-kalman-score-same-scalar",
+      "condition": "B_evidence_only",
+      "evidence_class_for_evaluator": "missing_assumption",
+      "expected_output_family_for_evaluator": "missing_assumptions",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-05-kalman-score-same-scalar__B_evidence_only.txt",
+      "prompt_id": "RLHLB-05-kalman-score-same-scalar__B_evidence_only",
+      "sha256": "761b371ef55d78371b627ec8f720cc6b42d07d86a042022b71aa7b08e8dd93ab",
+      "workflow": "assumptions_for"
+    },
+    {
+      "case_id": "RLHLB-05-kalman-score-same-scalar",
+      "condition": "C_human_framed",
+      "evidence_class_for_evaluator": "missing_assumption",
+      "expected_output_family_for_evaluator": "missing_assumptions",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-05-kalman-score-same-scalar__C_human_framed.txt",
+      "prompt_id": "RLHLB-05-kalman-score-same-scalar__C_human_framed",
+      "sha256": "f28a5f5533540387e1040558a1093775484f0204ac35b37531d371f1b08bbfbb",
+      "workflow": "assumptions_for"
+    },
+    {
+      "case_id": "RLHLB-06-state-space-code-missing-solve",
+      "condition": "A_task_only",
+      "evidence_class_for_evaluator": "structural_mismatch",
+      "expected_output_family_for_evaluator": "structural_mismatch",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-06-state-space-code-missing-solve__A_task_only.txt",
+      "prompt_id": "RLHLB-06-state-space-code-missing-solve__A_task_only",
+      "sha256": "6ea819c15bac695523f8d963c9665509fe91954e0a4c9936d8c7254c1845b697",
+      "workflow": "audit_math_to_code"
+    },
+    {
+      "case_id": "RLHLB-06-state-space-code-missing-solve",
+      "condition": "B_evidence_only",
+      "evidence_class_for_evaluator": "structural_mismatch",
+      "expected_output_family_for_evaluator": "structural_mismatch",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-06-state-space-code-missing-solve__B_evidence_only.txt",
+      "prompt_id": "RLHLB-06-state-space-code-missing-solve__B_evidence_only",
+      "sha256": "c409c4d79d1169406c1adbaae632a0e3908b6b21bacbca8973363fa526dcc54e",
+      "workflow": "audit_math_to_code"
+    },
+    {
+      "case_id": "RLHLB-06-state-space-code-missing-solve",
+      "condition": "C_human_framed",
+      "evidence_class_for_evaluator": "structural_mismatch",
+      "expected_output_family_for_evaluator": "structural_mismatch",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-06-state-space-code-missing-solve__C_human_framed.txt",
+      "prompt_id": "RLHLB-06-state-space-code-missing-solve__C_human_framed",
+      "sha256": "0f475f76ecb143a35e42c6f45218d3cb25c3c5d79661890ed0c7dabce848246f",
+      "workflow": "audit_math_to_code"
+    },
+    {
+      "case_id": "RLHLB-07-proof-boundary-review-packet",
+      "condition": "A_task_only",
+      "evidence_class_for_evaluator": "review_packet",
+      "expected_output_family_for_evaluator": "diagnostic_only",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-07-proof-boundary-review-packet__A_task_only.txt",
+      "prompt_id": "RLHLB-07-proof-boundary-review-packet__A_task_only",
+      "sha256": "3587068216cb44a1d84eb770a6407ca34a6889d7f4323ec4f3edf59ef2961eb1",
+      "workflow": "prepare_review_packet"
+    },
+    {
+      "case_id": "RLHLB-07-proof-boundary-review-packet",
+      "condition": "B_evidence_only",
+      "evidence_class_for_evaluator": "review_packet",
+      "expected_output_family_for_evaluator": "diagnostic_only",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-07-proof-boundary-review-packet__B_evidence_only.txt",
+      "prompt_id": "RLHLB-07-proof-boundary-review-packet__B_evidence_only",
+      "sha256": "2a53f4b87359255e951727276173e355993b1e3c3771dafc1aa926bc4b2cb72c",
+      "workflow": "prepare_review_packet"
+    },
+    {
+      "case_id": "RLHLB-07-proof-boundary-review-packet",
+      "condition": "C_human_framed",
+      "evidence_class_for_evaluator": "review_packet",
+      "expected_output_family_for_evaluator": "diagnostic_only",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-07-proof-boundary-review-packet__C_human_framed.txt",
+      "prompt_id": "RLHLB-07-proof-boundary-review-packet__C_human_framed",
+      "sha256": "b8e9cdb02c301658545152c37aca48501044b19733fe07ea2207d8ba8dc7c8f8",
+      "workflow": "prepare_review_packet"
+    },
+    {
+      "case_id": "RLHLB-08-hmc-value-only-boundary",
+      "condition": "A_task_only",
+      "evidence_class_for_evaluator": "human_review_required",
+      "expected_output_family_for_evaluator": "inconclusive",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-08-hmc-value-only-boundary__A_task_only.txt",
+      "prompt_id": "RLHLB-08-hmc-value-only-boundary__A_task_only",
+      "sha256": "4e008d6ebeb77fd62af7cbd1f34d64fc7e08ab09730ab45415bfbc5382d9bf93",
+      "workflow": "prove_or_counterexample"
+    },
+    {
+      "case_id": "RLHLB-08-hmc-value-only-boundary",
+      "condition": "B_evidence_only",
+      "evidence_class_for_evaluator": "human_review_required",
+      "expected_output_family_for_evaluator": "inconclusive",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-08-hmc-value-only-boundary__B_evidence_only.txt",
+      "prompt_id": "RLHLB-08-hmc-value-only-boundary__B_evidence_only",
+      "sha256": "4f6af652cea7c6dab3e8f9d899c9d30fe6e0115e2dd90d501d05409eaaf76b45",
+      "workflow": "prove_or_counterexample"
+    },
+    {
+      "case_id": "RLHLB-08-hmc-value-only-boundary",
+      "condition": "C_human_framed",
+      "evidence_class_for_evaluator": "human_review_required",
+      "expected_output_family_for_evaluator": "inconclusive",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-08-hmc-value-only-boundary__C_human_framed.txt",
+      "prompt_id": "RLHLB-08-hmc-value-only-boundary__C_human_framed",
+      "sha256": "d2530e5541b5d3a2a382f56b531686dd1ad96228d12ca8b0cf5c13fc778c916e",
+      "workflow": "prove_or_counterexample"
+    },
+    {
+      "case_id": "RLHLB-09-affine-recovery-assumption-limit",
+      "condition": "A_task_only",
+      "evidence_class_for_evaluator": "missing_assumption",
+      "expected_output_family_for_evaluator": "missing_assumptions",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-09-affine-recovery-assumption-limit__A_task_only.txt",
+      "prompt_id": "RLHLB-09-affine-recovery-assumption-limit__A_task_only",
+      "sha256": "0ccd256cfb41c12c2d386611502bae65b1850ae53cd7eb781de34ef184ca2874",
+      "workflow": "derive_from"
+    },
+    {
+      "case_id": "RLHLB-09-affine-recovery-assumption-limit",
+      "condition": "B_evidence_only",
+      "evidence_class_for_evaluator": "missing_assumption",
+      "expected_output_family_for_evaluator": "missing_assumptions",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-09-affine-recovery-assumption-limit__B_evidence_only.txt",
+      "prompt_id": "RLHLB-09-affine-recovery-assumption-limit__B_evidence_only",
+      "sha256": "d11712c46f638b3d4fcb54ad2763b90f60be92bc80aace5511369f581b1c9fe7",
+      "workflow": "derive_from"
+    },
+    {
+      "case_id": "RLHLB-09-affine-recovery-assumption-limit",
+      "condition": "C_human_framed",
+      "evidence_class_for_evaluator": "missing_assumption",
+      "expected_output_family_for_evaluator": "missing_assumptions",
+      "path": ".mathdevmcp/downstream_agent_usefulness/prompts/RLHLB-09-affine-recovery-assumption-limit__C_human_framed.txt",
+      "prompt_id": "RLHLB-09-affine-recovery-assumption-limit__C_human_framed",
+      "sha256": "3edb3b61fd0966f752a9700d0b11ea77a25202f5b5c933e82442bb68aeb8dbc0",
+      "workflow": "derive_from"
+    }
+  ],
+  "response_subject_policy": {
+    "allowed_subjects": [
+      "Codex subagent or another explicitly approved non-Claude model/agent surface"
+    ],
+    "approval_required_before_collection": true,
+    "forbidden_subjects": [
+      "Claude as response worker",
+      "human expert panel as required gate",
+      "unrecorded retries or replacement responses"
+    ]
+  },
+  "source_artifacts": {
+    "benchmark_contract": ".mathdevmcp/downstream_agent_usefulness/benchmark_contract.json",
+    "case_manifest": ".mathdevmcp/downstream_agent_usefulness/case_manifest.json",
+    "scoring_rubric": ".mathdevmcp/downstream_agent_usefulness/scoring_rubric.json"
+  }
+}

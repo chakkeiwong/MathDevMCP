@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .high_level_contracts import action, validate_high_level_result
+from .high_level_contracts import action, refresh_evidence_ledger, validate_high_level_result
 from .high_level_workflows import package_proof_gap_result
 from .proof_gap import localize_proof_gap
 
@@ -28,6 +28,7 @@ def debug_derivation(
         }
     result = package_proof_gap_result(low_level, question="Where does this derivation first fail?")
     result["actions"].append(action("human_review", "Inspect the localized transition before changing the derivation."))
+    refresh_evidence_ledger(result)
     errors = validate_high_level_result(result)
     if errors:
         raise ValueError(f"invalid debug_derivation result: {errors}")

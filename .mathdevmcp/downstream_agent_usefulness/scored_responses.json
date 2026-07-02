@@ -1,0 +1,886 @@
+{
+  "condition_summary": {
+    "A_task_only": {
+      "explanatory_dimension_totals_before_hard_veto": {
+        "artifact_specificity": 18,
+        "context_reuse": 18,
+        "efficiency": 18
+      },
+      "hard_veto_count": 9,
+      "malformed_count": 0,
+      "prompt_condition_contract_violation_count": 9,
+      "required_dimension_totals_before_hard_veto": {
+        "actionability_for_next_agent": 18,
+        "assumption_and_gap_handling": 18,
+        "boundary_and_nonclaim_discipline": 18,
+        "decisive_evidence_use": 18,
+        "self_contained_reasoning": 18,
+        "task_outcome_correctness": 18
+      },
+      "required_pass_count": 0,
+      "row_count": 9
+    },
+    "B_evidence_only": {
+      "explanatory_dimension_totals_before_hard_veto": {
+        "artifact_specificity": 18,
+        "context_reuse": 18,
+        "efficiency": 18
+      },
+      "hard_veto_count": 0,
+      "malformed_count": 0,
+      "prompt_condition_contract_violation_count": 0,
+      "required_dimension_totals_before_hard_veto": {
+        "actionability_for_next_agent": 18,
+        "assumption_and_gap_handling": 18,
+        "boundary_and_nonclaim_discipline": 18,
+        "decisive_evidence_use": 18,
+        "self_contained_reasoning": 18,
+        "task_outcome_correctness": 18
+      },
+      "required_pass_count": 9,
+      "row_count": 9
+    },
+    "C_human_framed": {
+      "explanatory_dimension_totals_before_hard_veto": {
+        "artifact_specificity": 18,
+        "context_reuse": 18,
+        "efficiency": 18
+      },
+      "hard_veto_count": 0,
+      "malformed_count": 0,
+      "prompt_condition_contract_violation_count": 0,
+      "required_dimension_totals_before_hard_veto": {
+        "actionability_for_next_agent": 18,
+        "assumption_and_gap_handling": 18,
+        "boundary_and_nonclaim_discipline": 18,
+        "decisive_evidence_use": 18,
+        "self_contained_reasoning": 18,
+        "task_outcome_correctness": 18
+      },
+      "required_pass_count": 9,
+      "row_count": 9
+    }
+  },
+  "fixture_contract_violations": {
+    "a_task_only_evaluator_field_leakage": [
+      "RLHLB-01-ift-sign-gap__A_task_only",
+      "RLHLB-02-kalman-loglik-assumptions__A_task_only",
+      "RLHLB-03-joseph-equivalence__A_task_only",
+      "RLHLB-04-affine-pricing-recursion__A_task_only",
+      "RLHLB-05-kalman-score-same-scalar__A_task_only",
+      "RLHLB-06-state-space-code-missing-solve__A_task_only",
+      "RLHLB-07-proof-boundary-review-packet__A_task_only",
+      "RLHLB-08-hmc-value-only-boundary__A_task_only",
+      "RLHLB-09-affine-recovery-assumption-limit__A_task_only"
+    ],
+    "effect": "A_task_only rows are hard-vetoed for condition_artifact_leakage and must not be used as a clean baseline comparator."
+  },
+  "hard_veto_summary": {
+    "A_task_only": 9,
+    "B_evidence_only": 0,
+    "C_human_framed": 0
+  },
+  "limitations": [
+    "A_task_only prompt fixtures leaked evaluator evidence/status fields, invalidating the clean A baseline comparison.",
+    "Single response subject per prompt gives high variance and cannot establish general model reliability.",
+    "Manifest-order collection was not randomized or counterbalanced.",
+    "B and C rows passed, producing a ceiling effect that prevents an observed C-over-B superiority claim.",
+    "Scores are local diagnostics only and are not proof certificates, release gates, public benchmark results, scientific validation, product capability evidence, or general model reliability evidence.",
+    "Subagent identifiers for the first thirteen response artifacts were not preserved in local files after reboot/context compaction; the raw response artifacts remain recorded, and the one-attempt policy is preserved by the run ledger and handoff summary."
+  ],
+  "metadata": {
+    "contract": "downstream_agent_usefulness_scored_responses",
+    "created": "2026-07-02",
+    "rubric_source": ".mathdevmcp/downstream_agent_usefulness/scoring_rubric.json",
+    "rubric_status": "phase_01_frozen_before_case_fixture_and_response_collection",
+    "schema_version": "1.0",
+    "scoring_interpretation": "local non-gating diagnostic; hard-veto-first; A baseline contaminated by fixture leakage; no release/public/scientific/product/general-reliability claim",
+    "status": "phase_04_scored_diagnostic_single_response_per_prompt_with_a_condition_leakage_veto"
+  },
+  "minimum_candidate_rule": {
+    "a_baseline_valid": false,
+    "aggregate_only_forbidden": true,
+    "c_better_than_b_on_predeclared_usefulness_axis": false,
+    "c_no_hard_veto_regression_vs_b": true,
+    "c_preserves_b_machine_evidence": true,
+    "c_required_pass_all_scored_cases": true,
+    "candidate_rule_pass": false,
+    "interpretation": "B and C rows pass without hard vetoes, but C ties B numerically on required dimensions. A is not a valid baseline because A_task_only prompts leaked evaluator evidence/status fields. No C-superiority or A/B/C benchmark-success claim is established."
+  },
+  "rows": [
+    {
+      "case_id": "RLHLB-01-ift-sign-gap",
+      "condition": "A_task_only",
+      "evidence_class": "backend_counterexample",
+      "expected_output_family": "refuted",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [
+        "condition_artifact_leakage"
+      ],
+      "malformed_output": false,
+      "notes": "A-condition fixture leaked evaluator evidence/status fields; row is useful as a raw response but not valid A-baseline evidence.",
+      "prompt_condition_contract_violation": true,
+      "prompt_id": "RLHLB-01-ift-sign-gap__A_task_only",
+      "required_pass": false,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-01-ift-sign-gap__A_task_only.response.md",
+      "usefulness_delta_vs_b": "worse",
+      "workflow": "debug_derivation"
+    },
+    {
+      "case_id": "RLHLB-01-ift-sign-gap",
+      "condition": "B_evidence_only",
+      "evidence_class": "backend_counterexample",
+      "expected_output_family": "refuted",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [],
+      "malformed_output": false,
+      "notes": "Localized the counterexample/sign gap and preserved source-wide boundary.",
+      "prompt_condition_contract_violation": false,
+      "prompt_id": "RLHLB-01-ift-sign-gap__B_evidence_only",
+      "required_pass": true,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-01-ift-sign-gap__B_evidence_only.response.md",
+      "usefulness_delta_vs_b": "not_applicable",
+      "workflow": "debug_derivation"
+    },
+    {
+      "case_id": "RLHLB-01-ift-sign-gap",
+      "condition": "C_human_framed",
+      "evidence_class": "backend_counterexample",
+      "expected_output_family": "refuted",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [],
+      "malformed_output": false,
+      "notes": "Localized the counterexample/sign gap and preserved source-wide boundary.",
+      "prompt_condition_contract_violation": false,
+      "prompt_id": "RLHLB-01-ift-sign-gap__C_human_framed",
+      "required_pass": true,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-01-ift-sign-gap__C_human_framed.response.md",
+      "usefulness_delta_vs_b": "tied",
+      "workflow": "debug_derivation"
+    },
+    {
+      "case_id": "RLHLB-02-kalman-loglik-assumptions",
+      "condition": "A_task_only",
+      "evidence_class": "missing_assumption",
+      "expected_output_family": "missing_assumptions",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [
+        "condition_artifact_leakage"
+      ],
+      "malformed_output": false,
+      "notes": "A-condition fixture leaked evaluator evidence/status fields; row is useful as a raw response but not valid A-baseline evidence.",
+      "prompt_condition_contract_violation": true,
+      "prompt_id": "RLHLB-02-kalman-loglik-assumptions__A_task_only",
+      "required_pass": false,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-02-kalman-loglik-assumptions__A_task_only.response.md",
+      "usefulness_delta_vs_b": "worse",
+      "workflow": "assumptions_for"
+    },
+    {
+      "case_id": "RLHLB-02-kalman-loglik-assumptions",
+      "condition": "B_evidence_only",
+      "evidence_class": "missing_assumption",
+      "expected_output_family": "missing_assumptions",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [],
+      "malformed_output": false,
+      "notes": "Returned missing-assumption status with route-required assumptions and no equivalence/guarantee overclaim.",
+      "prompt_condition_contract_violation": false,
+      "prompt_id": "RLHLB-02-kalman-loglik-assumptions__B_evidence_only",
+      "required_pass": true,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-02-kalman-loglik-assumptions__B_evidence_only.response.md",
+      "usefulness_delta_vs_b": "not_applicable",
+      "workflow": "assumptions_for"
+    },
+    {
+      "case_id": "RLHLB-02-kalman-loglik-assumptions",
+      "condition": "C_human_framed",
+      "evidence_class": "missing_assumption",
+      "expected_output_family": "missing_assumptions",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [],
+      "malformed_output": false,
+      "notes": "Returned missing-assumption status with route-required assumptions and no equivalence/guarantee overclaim.",
+      "prompt_condition_contract_violation": false,
+      "prompt_id": "RLHLB-02-kalman-loglik-assumptions__C_human_framed",
+      "required_pass": true,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-02-kalman-loglik-assumptions__C_human_framed.response.md",
+      "usefulness_delta_vs_b": "tied",
+      "workflow": "assumptions_for"
+    },
+    {
+      "case_id": "RLHLB-03-joseph-equivalence",
+      "condition": "A_task_only",
+      "evidence_class": "backend_certificate",
+      "expected_output_family": "proved",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [
+        "condition_artifact_leakage"
+      ],
+      "malformed_output": false,
+      "notes": "A-condition fixture leaked evaluator evidence/status fields; row is useful as a raw response but not valid A-baseline evidence.",
+      "prompt_condition_contract_violation": true,
+      "prompt_id": "RLHLB-03-joseph-equivalence__A_task_only",
+      "required_pass": false,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-03-joseph-equivalence__A_task_only.response.md",
+      "usefulness_delta_vs_b": "worse",
+      "workflow": "prove_or_counterexample"
+    },
+    {
+      "case_id": "RLHLB-03-joseph-equivalence",
+      "condition": "B_evidence_only",
+      "evidence_class": "backend_certificate",
+      "expected_output_family": "proved",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [],
+      "malformed_output": false,
+      "notes": "Used scoped backend-certificate/equivalent exact-arithmetic algebra and kept numerical/implementation boundaries.",
+      "prompt_condition_contract_violation": false,
+      "prompt_id": "RLHLB-03-joseph-equivalence__B_evidence_only",
+      "required_pass": true,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-03-joseph-equivalence__B_evidence_only.response.md",
+      "usefulness_delta_vs_b": "not_applicable",
+      "workflow": "prove_or_counterexample"
+    },
+    {
+      "case_id": "RLHLB-03-joseph-equivalence",
+      "condition": "C_human_framed",
+      "evidence_class": "backend_certificate",
+      "expected_output_family": "proved",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [],
+      "malformed_output": false,
+      "notes": "Used scoped backend-certificate/equivalent exact-arithmetic algebra and kept numerical/implementation boundaries.",
+      "prompt_condition_contract_violation": false,
+      "prompt_id": "RLHLB-03-joseph-equivalence__C_human_framed",
+      "required_pass": true,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-03-joseph-equivalence__C_human_framed.response.md",
+      "usefulness_delta_vs_b": "tied",
+      "workflow": "prove_or_counterexample"
+    },
+    {
+      "case_id": "RLHLB-04-affine-pricing-recursion",
+      "condition": "A_task_only",
+      "evidence_class": "human_review_required",
+      "expected_output_family": "inconclusive",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [
+        "condition_artifact_leakage"
+      ],
+      "malformed_output": false,
+      "notes": "A-condition fixture leaked evaluator evidence/status fields; row is useful as a raw response but not valid A-baseline evidence.",
+      "prompt_condition_contract_violation": true,
+      "prompt_id": "RLHLB-04-affine-pricing-recursion__A_task_only",
+      "required_pass": false,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-04-affine-pricing-recursion__A_task_only.response.md",
+      "usefulness_delta_vs_b": "worse",
+      "workflow": "derive_from"
+    },
+    {
+      "case_id": "RLHLB-04-affine-pricing-recursion",
+      "condition": "B_evidence_only",
+      "evidence_class": "human_review_required",
+      "expected_output_family": "inconclusive",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [],
+      "malformed_output": false,
+      "notes": "Abstained or returned inconclusive status and proposed the next source-backed/human-review artifact.",
+      "prompt_condition_contract_violation": false,
+      "prompt_id": "RLHLB-04-affine-pricing-recursion__B_evidence_only",
+      "required_pass": true,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-04-affine-pricing-recursion__B_evidence_only.response.md",
+      "usefulness_delta_vs_b": "not_applicable",
+      "workflow": "derive_from"
+    },
+    {
+      "case_id": "RLHLB-04-affine-pricing-recursion",
+      "condition": "C_human_framed",
+      "evidence_class": "human_review_required",
+      "expected_output_family": "inconclusive",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [],
+      "malformed_output": false,
+      "notes": "Abstained or returned inconclusive status and proposed the next source-backed/human-review artifact.",
+      "prompt_condition_contract_violation": false,
+      "prompt_id": "RLHLB-04-affine-pricing-recursion__C_human_framed",
+      "required_pass": true,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-04-affine-pricing-recursion__C_human_framed.response.md",
+      "usefulness_delta_vs_b": "tied",
+      "workflow": "derive_from"
+    },
+    {
+      "case_id": "RLHLB-05-kalman-score-same-scalar",
+      "condition": "A_task_only",
+      "evidence_class": "missing_assumption",
+      "expected_output_family": "missing_assumptions",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [
+        "condition_artifact_leakage"
+      ],
+      "malformed_output": false,
+      "notes": "A-condition fixture leaked evaluator evidence/status fields; row is useful as a raw response but not valid A-baseline evidence.",
+      "prompt_condition_contract_violation": true,
+      "prompt_id": "RLHLB-05-kalman-score-same-scalar__A_task_only",
+      "required_pass": false,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-05-kalman-score-same-scalar__A_task_only.response.md",
+      "usefulness_delta_vs_b": "worse",
+      "workflow": "assumptions_for"
+    },
+    {
+      "case_id": "RLHLB-05-kalman-score-same-scalar",
+      "condition": "B_evidence_only",
+      "evidence_class": "missing_assumption",
+      "expected_output_family": "missing_assumptions",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [],
+      "malformed_output": false,
+      "notes": "Returned missing-assumption status with route-required assumptions and no equivalence/guarantee overclaim.",
+      "prompt_condition_contract_violation": false,
+      "prompt_id": "RLHLB-05-kalman-score-same-scalar__B_evidence_only",
+      "required_pass": true,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-05-kalman-score-same-scalar__B_evidence_only.response.md",
+      "usefulness_delta_vs_b": "not_applicable",
+      "workflow": "assumptions_for"
+    },
+    {
+      "case_id": "RLHLB-05-kalman-score-same-scalar",
+      "condition": "C_human_framed",
+      "evidence_class": "missing_assumption",
+      "expected_output_family": "missing_assumptions",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [],
+      "malformed_output": false,
+      "notes": "Returned missing-assumption status with route-required assumptions and no equivalence/guarantee overclaim.",
+      "prompt_condition_contract_violation": false,
+      "prompt_id": "RLHLB-05-kalman-score-same-scalar__C_human_framed",
+      "required_pass": true,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-05-kalman-score-same-scalar__C_human_framed.response.md",
+      "usefulness_delta_vs_b": "tied",
+      "workflow": "assumptions_for"
+    },
+    {
+      "case_id": "RLHLB-06-state-space-code-missing-solve",
+      "condition": "A_task_only",
+      "evidence_class": "structural_mismatch",
+      "expected_output_family": "structural_mismatch",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [
+        "condition_artifact_leakage"
+      ],
+      "malformed_output": false,
+      "notes": "A-condition fixture leaked evaluator evidence/status fields; row is useful as a raw response but not valid A-baseline evidence.",
+      "prompt_condition_contract_violation": true,
+      "prompt_id": "RLHLB-06-state-space-code-missing-solve__A_task_only",
+      "required_pass": false,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-06-state-space-code-missing-solve__A_task_only.response.md",
+      "usefulness_delta_vs_b": "worse",
+      "workflow": "audit_math_to_code"
+    },
+    {
+      "case_id": "RLHLB-06-state-space-code-missing-solve",
+      "condition": "B_evidence_only",
+      "evidence_class": "structural_mismatch",
+      "expected_output_family": "structural_mismatch",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [],
+      "malformed_output": false,
+      "notes": "Reported local structural mismatch and preserved implementation-equivalence alternatives.",
+      "prompt_condition_contract_violation": false,
+      "prompt_id": "RLHLB-06-state-space-code-missing-solve__B_evidence_only",
+      "required_pass": true,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-06-state-space-code-missing-solve__B_evidence_only.response.md",
+      "usefulness_delta_vs_b": "not_applicable",
+      "workflow": "audit_math_to_code"
+    },
+    {
+      "case_id": "RLHLB-06-state-space-code-missing-solve",
+      "condition": "C_human_framed",
+      "evidence_class": "structural_mismatch",
+      "expected_output_family": "structural_mismatch",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [],
+      "malformed_output": false,
+      "notes": "Reported local structural mismatch and preserved implementation-equivalence alternatives.",
+      "prompt_condition_contract_violation": false,
+      "prompt_id": "RLHLB-06-state-space-code-missing-solve__C_human_framed",
+      "required_pass": true,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-06-state-space-code-missing-solve__C_human_framed.response.md",
+      "usefulness_delta_vs_b": "tied",
+      "workflow": "audit_math_to_code"
+    },
+    {
+      "case_id": "RLHLB-07-proof-boundary-review-packet",
+      "condition": "A_task_only",
+      "evidence_class": "review_packet",
+      "expected_output_family": "diagnostic_only",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [
+        "condition_artifact_leakage"
+      ],
+      "malformed_output": false,
+      "notes": "A-condition fixture leaked evaluator evidence/status fields; row is useful as a raw response but not valid A-baseline evidence.",
+      "prompt_condition_contract_violation": true,
+      "prompt_id": "RLHLB-07-proof-boundary-review-packet__A_task_only",
+      "required_pass": false,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-07-proof-boundary-review-packet__A_task_only.response.md",
+      "usefulness_delta_vs_b": "worse",
+      "workflow": "prepare_review_packet"
+    },
+    {
+      "case_id": "RLHLB-07-proof-boundary-review-packet",
+      "condition": "B_evidence_only",
+      "evidence_class": "review_packet",
+      "expected_output_family": "diagnostic_only",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [],
+      "malformed_output": false,
+      "notes": "Treated packet as diagnostic organization only, not proof.",
+      "prompt_condition_contract_violation": false,
+      "prompt_id": "RLHLB-07-proof-boundary-review-packet__B_evidence_only",
+      "required_pass": true,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-07-proof-boundary-review-packet__B_evidence_only.response.md",
+      "usefulness_delta_vs_b": "not_applicable",
+      "workflow": "prepare_review_packet"
+    },
+    {
+      "case_id": "RLHLB-07-proof-boundary-review-packet",
+      "condition": "C_human_framed",
+      "evidence_class": "review_packet",
+      "expected_output_family": "diagnostic_only",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [],
+      "malformed_output": false,
+      "notes": "Treated packet as diagnostic organization only, not proof.",
+      "prompt_condition_contract_violation": false,
+      "prompt_id": "RLHLB-07-proof-boundary-review-packet__C_human_framed",
+      "required_pass": true,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-07-proof-boundary-review-packet__C_human_framed.response.md",
+      "usefulness_delta_vs_b": "tied",
+      "workflow": "prepare_review_packet"
+    },
+    {
+      "case_id": "RLHLB-08-hmc-value-only-boundary",
+      "condition": "A_task_only",
+      "evidence_class": "human_review_required",
+      "expected_output_family": "inconclusive",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [
+        "condition_artifact_leakage"
+      ],
+      "malformed_output": false,
+      "notes": "A-condition fixture leaked evaluator evidence/status fields; row is useful as a raw response but not valid A-baseline evidence.",
+      "prompt_condition_contract_violation": true,
+      "prompt_id": "RLHLB-08-hmc-value-only-boundary__A_task_only",
+      "required_pass": false,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-08-hmc-value-only-boundary__A_task_only.response.md",
+      "usefulness_delta_vs_b": "worse",
+      "workflow": "prove_or_counterexample"
+    },
+    {
+      "case_id": "RLHLB-08-hmc-value-only-boundary",
+      "condition": "B_evidence_only",
+      "evidence_class": "human_review_required",
+      "expected_output_family": "inconclusive",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [],
+      "malformed_output": false,
+      "notes": "Abstained or returned inconclusive status and proposed the next source-backed/human-review artifact.",
+      "prompt_condition_contract_violation": false,
+      "prompt_id": "RLHLB-08-hmc-value-only-boundary__B_evidence_only",
+      "required_pass": true,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-08-hmc-value-only-boundary__B_evidence_only.response.md",
+      "usefulness_delta_vs_b": "not_applicable",
+      "workflow": "prove_or_counterexample"
+    },
+    {
+      "case_id": "RLHLB-08-hmc-value-only-boundary",
+      "condition": "C_human_framed",
+      "evidence_class": "human_review_required",
+      "expected_output_family": "inconclusive",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [],
+      "malformed_output": false,
+      "notes": "Abstained or returned inconclusive status and proposed the next source-backed/human-review artifact.",
+      "prompt_condition_contract_violation": false,
+      "prompt_id": "RLHLB-08-hmc-value-only-boundary__C_human_framed",
+      "required_pass": true,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-08-hmc-value-only-boundary__C_human_framed.response.md",
+      "usefulness_delta_vs_b": "tied",
+      "workflow": "prove_or_counterexample"
+    },
+    {
+      "case_id": "RLHLB-09-affine-recovery-assumption-limit",
+      "condition": "A_task_only",
+      "evidence_class": "missing_assumption",
+      "expected_output_family": "missing_assumptions",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [
+        "condition_artifact_leakage"
+      ],
+      "malformed_output": false,
+      "notes": "A-condition fixture leaked evaluator evidence/status fields; row is useful as a raw response but not valid A-baseline evidence.",
+      "prompt_condition_contract_violation": true,
+      "prompt_id": "RLHLB-09-affine-recovery-assumption-limit__A_task_only",
+      "required_pass": false,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-09-affine-recovery-assumption-limit__A_task_only.response.md",
+      "usefulness_delta_vs_b": "worse",
+      "workflow": "derive_from"
+    },
+    {
+      "case_id": "RLHLB-09-affine-recovery-assumption-limit",
+      "condition": "B_evidence_only",
+      "evidence_class": "missing_assumption",
+      "expected_output_family": "missing_assumptions",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [],
+      "malformed_output": false,
+      "notes": "Returned missing-assumption status with route-required assumptions and no equivalence/guarantee overclaim.",
+      "prompt_condition_contract_violation": false,
+      "prompt_id": "RLHLB-09-affine-recovery-assumption-limit__B_evidence_only",
+      "required_pass": true,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-09-affine-recovery-assumption-limit__B_evidence_only.response.md",
+      "usefulness_delta_vs_b": "not_applicable",
+      "workflow": "derive_from"
+    },
+    {
+      "case_id": "RLHLB-09-affine-recovery-assumption-limit",
+      "condition": "C_human_framed",
+      "evidence_class": "missing_assumption",
+      "expected_output_family": "missing_assumptions",
+      "explanatory_scores": {
+        "artifact_specificity": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "hard_vetoes_present": [],
+      "malformed_output": false,
+      "notes": "Returned missing-assumption status with route-required assumptions and no equivalence/guarantee overclaim.",
+      "prompt_condition_contract_violation": false,
+      "prompt_id": "RLHLB-09-affine-recovery-assumption-limit__C_human_framed",
+      "required_pass": true,
+      "required_scores": {
+        "actionability_for_next_agent": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "task_outcome_correctness": 2
+      },
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness/responses/RLHLB-09-affine-recovery-assumption-limit__C_human_framed.response.md",
+      "usefulness_delta_vs_b": "tied",
+      "workflow": "derive_from"
+    }
+  ]
+}

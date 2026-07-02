@@ -879,7 +879,7 @@ def _high_level_math_workflow_cases(root: Path) -> list[dict]:
             "category": "high_level_math_workflows",
             "evaluation_focus": "hlf_backend_certificate",
             "expected_status": "proved",
-            "expected_evidence_classes": ["backend_certificate"],
+            "expected_evidence_classes": ["backend_certificate", "review_packet"],
             "expected_abstention": False,
             "negative_control": False,
             "call": lambda: high_level_derive_from("a + b = b + a"),
@@ -890,7 +890,7 @@ def _high_level_math_workflow_cases(root: Path) -> list[dict]:
             "category": "high_level_math_workflows",
             "evaluation_focus": "hlf_false_confidence_control",
             "expected_status": "refuted",
-            "expected_evidence_classes": ["backend_counterexample"],
+            "expected_evidence_classes": ["backend_counterexample", "review_packet"],
             "expected_abstention": False,
             "negative_control": True,
             "call": derive_refuted,
@@ -901,7 +901,7 @@ def _high_level_math_workflow_cases(root: Path) -> list[dict]:
             "category": "high_level_math_workflows",
             "evaluation_focus": "hlf_false_confidence_control",
             "expected_status": "inconclusive",
-            "expected_evidence_classes": ["backend_counterexample"],
+            "expected_evidence_classes": ["human_review_required", "review_packet"],
             "expected_abstention": True,
             "negative_control": True,
             "required_veto": "certifying_evidence_not_promoted",
@@ -1635,7 +1635,11 @@ def _high_level_boundary_ok(case: dict, result: dict) -> bool:
     non_claim_codes = {item.get("code") for item in result.get("non_claims", []) if isinstance(item, dict)}
     veto_codes = {item.get("code") for item in result.get("veto_reasons", []) if isinstance(item, dict)}
     if status == "proved":
-        return result.get("certification_source") == "backend" and evidence_classes == {"backend_certificate"}
+        return (
+            result.get("certification_source") == "backend"
+            and "backend_certificate" in evidence_classes
+            and evidence_classes <= {"backend_certificate", "review_packet"}
+        )
     if status == "refuted":
         return result.get("certification_source") in {"backend", "scoped_contradiction"} and bool(result.get("counterexamples") or "scoped_contradiction" in evidence_classes)
     if status == "inconclusive":

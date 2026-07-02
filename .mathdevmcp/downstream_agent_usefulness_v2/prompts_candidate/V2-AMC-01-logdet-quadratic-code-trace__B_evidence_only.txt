@@ -1,0 +1,28 @@
+# Downstream-Agent Usefulness V2 Candidate Prompt
+
+Condition B: compact machine evidence only. Human framing, recommended next actions, and narrative answer scaffolding are intentionally absent.
+
+Case: V2-AMC-01-logdet-quadratic-code-trace - Logdet/quadratic formula-to-code trace
+Workflow: audit_math_to_code
+
+Task
+Does the pseudocode structurally implement the documented expression? Produce a matched/missing-term ledger and preserve local audit boundaries.
+
+Bounded Context
+Audit whether a pseudocode likelihood implements both logdet and quadratic solve terms when aliases make one term easy to miss.
+
+Compact Machine Evidence
+- formula_terms: logdet(S_t); v_t transpose solve(S_t, v_t)
+- code_terms: residual r; Cholesky L; sum(log(diag(L))); q initialized to zero
+- alias_note: no explicit solve contribution is visible unless q is later assigned elsewhere
+
+Response Fields
+- local_answer
+- evidence_used
+- assumptions_or_gaps
+- boundary_notes
+
+Non-Claims
+- Use only the information in this prompt.
+- Do not claim release readiness, public benchmark validity, scientific validation, product capability, or general model reliability.
+- Do not treat diagnostic checks as proof beyond their stated scope.

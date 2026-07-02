@@ -1,0 +1,34 @@
+# Downstream-Agent Usefulness V2 Candidate Prompt
+
+Condition C: self-contained agent handoff packet. Use the framing to decide, derive, refute, or abstain while preserving non-claim boundaries.
+
+Case: V2-DF-01-affine-matrix-domain-obligation - Affine recursion matrix-domain obligation
+Workflow: derive_from
+
+Background
+A scalar sanity check verifies a one-dimensional expectation identity. The target claim is a matrix-valued affine recursion requiring a Gaussian MGF step, dimension compatibility, and a positive-definite covariance-domain condition.
+
+Task
+Can the target affine recursion be derived from the supplied assumptions and evidence? Provide the route or the missing obligations without overclaiming.
+
+Compact Evidence To Use Carefully
+- compact_check: scalar expectation identity verified for one-dimensional sanity case
+- target_shape: matrix-valued affine recursion with coefficient matrices and covariance term
+- domain_marker: covariance-domain and dimension compatibility are not fully encoded in the scalar check
+
+Handoff Framing
+- Decision criteria: separate scalar sanity evidence from the matrix recursion route.
+- Audit the Gaussian MGF step, dimension compatibility, and covariance-domain condition before deriving the target.
+- Requested artifact: route-obligation ledger with settled, missing, and next-check entries.
+
+Required Response Sections
+- answer_or_abstention
+- evidence_route
+- assumptions_gaps_or_domain_obligations
+- boundary_and_nonclaim_notes
+- next_artifact
+
+Non-Claims
+- Use only the information in this prompt.
+- Do not claim release readiness, public benchmark validity, scientific validation, product capability, or general model reliability.
+- Do not treat diagnostic checks as proof beyond their stated scope.

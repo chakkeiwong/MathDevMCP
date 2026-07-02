@@ -1,0 +1,86 @@
+{
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "downstream_agent_usefulness_failure_taxonomy",
+    "created": "2026-07-02",
+    "status": "phase_05_failure_taxonomy",
+    "source_result": "docs/plans/mathdevmcp-downstream-agent-usefulness-phase-04-response-collection-scoring-result-2026-07-01.md"
+  },
+  "failures": [
+    {
+      "id": "F1_a_condition_evaluator_status_leakage",
+      "severity": "hard_veto",
+      "phase4_evidence": "All nine A_task_only prompt fixtures included evaluator/status fields outside the Phase 1 A-condition allowed payload.",
+      "affected_artifacts": [
+        ".mathdevmcp/downstream_agent_usefulness/prompts/*__A_task_only.txt",
+        ".mathdevmcp/downstream_agent_usefulness/prompt_manifest.json",
+        ".mathdevmcp/downstream_agent_usefulness/scored_responses.json"
+      ],
+      "effect": "A_task_only rows are preserved as raw responses but are not valid clean-baseline evidence; the A/B/C comparison cannot support a usefulness promotion.",
+      "classification": "repaired_candidate_created",
+      "repair_artifacts": [
+        "src/mathdevmcp/downstream_usefulness_prompts.py",
+        "tests/test_downstream_usefulness_prompts.py",
+        ".mathdevmcp/downstream_agent_usefulness/prompt_manifest_repaired_candidate.json",
+        ".mathdevmcp/downstream_agent_usefulness/prompts_repaired_candidate/"
+      ],
+      "required_followup": "Before any new response collection, obtain explicit human approval for repaired prompt count, response-subject surface, retry policy, and artifact paths."
+    },
+    {
+      "id": "F2_single_response_high_variance",
+      "severity": "measurement_limit",
+      "phase4_evidence": "The approved collection used one downstream-agent response per prompt.",
+      "affected_artifacts": [
+        ".mathdevmcp/downstream_agent_usefulness/response_manifest.json",
+        ".mathdevmcp/downstream_agent_usefulness/scored_responses.json"
+      ],
+      "effect": "Even after prompt repair, a single response per prompt is diagnostic and cannot establish general downstream-agent reliability.",
+      "classification": "deferred_to_recollection_design",
+      "repair_artifacts": [],
+      "required_followup": "If stronger claims are desired, predeclare replicated response-subject sampling, randomization/counterbalancing, and uncertainty reporting before collection."
+    },
+    {
+      "id": "F3_manifest_order_collection",
+      "severity": "measurement_limit",
+      "phase4_evidence": "Prompt collection followed manifest order, with later prompts collected in small batches as agent capacity allowed.",
+      "affected_artifacts": [
+        ".mathdevmcp/downstream_agent_usefulness/response_manifest.json"
+      ],
+      "effect": "Order effects cannot be ruled out.",
+      "classification": "deferred_to_recollection_design",
+      "repair_artifacts": [],
+      "required_followup": "Use randomized or counterbalanced prompt order in any new approved collection."
+    },
+    {
+      "id": "F4_b_c_ceiling_effect",
+      "severity": "measurement_limit",
+      "phase4_evidence": "B and C rows passed all required dimensions and tied numerically under the frozen rubric.",
+      "affected_artifacts": [
+        ".mathdevmcp/downstream_agent_usefulness/scored_responses.json",
+        ".mathdevmcp/downstream_agent_usefulness/scored_responses.md"
+      ],
+      "effect": "C_human_framed superiority over B_evidence_only is not established; the benchmark may need more discriminating cases or scoring dimensions before it can measure framing benefit.",
+      "classification": "deferred_to_benchmark_design",
+      "repair_artifacts": [],
+      "required_followup": "Design harder cases or predeclared discriminability checks without changing Phase 4 scoring post hoc."
+    },
+    {
+      "id": "F5_incomplete_subagent_identity_for_early_responses",
+      "severity": "audit_limit",
+      "phase4_evidence": "Subagent identifiers for the first thirteen response artifacts were not preserved in local files after reboot/context compaction.",
+      "affected_artifacts": [
+        ".mathdevmcp/downstream_agent_usefulness/response_manifest.json"
+      ],
+      "effect": "Raw response artifacts and no-retry ledger remain preserved, but early response-subject identity is incomplete.",
+      "classification": "recorded_limitation",
+      "repair_artifacts": [],
+      "required_followup": "Future collection manifests should record subagent id/nickname immediately after each response is saved."
+    }
+  ],
+  "non_claims": [
+    "This taxonomy does not establish downstream-agent usefulness.",
+    "This taxonomy does not validate a repaired benchmark result.",
+    "This taxonomy does not authorize new response collection.",
+    "This taxonomy does not support release, public benchmark, scientific, product, broad theorem-proving, or general model-reliability claims."
+  ]
+}

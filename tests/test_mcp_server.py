@@ -99,6 +99,32 @@ def test_mcp_server_high_level_workflows_return_contract_envelopes():
     assert packet["certification_source"] == "none"
 
 
+def test_mcp_server_prepare_review_packet_preserves_phase6_packet_fields():
+    derived = derive_from("a + b = b + a", givens=["a,b are scalars"])
+    code = audit_math_to_code(
+        "logdet(Sigma) + trace(Cov)",
+        "def f(S):\n    return logdet(S) + trace(S)\n",
+        aliases={"Sigma": "S", "Cov": "S"},
+    )
+    packet = prepare_review_packet(
+        "Review derivation and implementation context",
+        evidence=[derived, code],
+        source={"context_summary": "MCP server preservation fixture."},
+    )
+    low_level = packet["evidence"][0]["low_level"]
+
+    assert packet["status"] == "diagnostic_only"
+    assert packet["certification_source"] == "none"
+    assert low_level["backend_checks"]
+    assert low_level["nested_evidence_summary"]
+    assert low_level["route_plans"]
+    assert low_level["trace_maps"]
+    assert low_level["residual_gaps"]
+    assert low_level["decision_criteria"]
+    assert low_level["risk_register"]
+    assert any(item["code"] == "diagnostic_route_and_trace_context_not_proof" for item in low_level["non_claims"])
+
+
 
 def test_mcp_server_run_benchmarks_returns_structured_report():
     result = run_benchmarks(str(ROOT))

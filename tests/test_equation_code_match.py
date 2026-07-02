@@ -11,6 +11,8 @@ def test_equation_code_match_reports_consistent_structural_terms() -> None:
     assert result["metadata"] == {"schema_version": "1.0", "contract": "equation_code_match_result"}
     assert result["status"] == "consistent"
     assert {"logdet", "solve", "S", "v"}.issubset(set(result["matched_terms"]))
+    assert result["trace_map"]["matched_terms"] == result["matched_terms"]
+    assert "not semantic proof" in result["trace_map"]["boundary"]
     assert result["workbench_result"]["status"] == "unknown"
 
 
@@ -22,6 +24,7 @@ def test_equation_code_match_reports_missing_logdet() -> None:
 
     assert result["status"] == "mismatch"
     assert "logdet" in result["missing_terms"]
+    assert "logdet" in result["trace_map"]["missing_terms"]
 
 
 def test_equation_code_match_reports_extra_regularizer_as_audit_only() -> None:
@@ -32,6 +35,7 @@ def test_equation_code_match_reports_extra_regularizer_as_audit_only() -> None:
 
     assert result["status"] == "consistent"
     assert "lam" in result["extra_code_terms"]
+    assert "lam" in result["trace_map"]["extra_code_terms"]
 
 
 def test_equation_code_match_reports_transpose_conflict() -> None:
@@ -53,6 +57,23 @@ def test_equation_code_match_uses_alias_map() -> None:
 
     assert result["status"] == "consistent"
     assert "S" in result["matched_terms"]
+    assert result["trace_map"]["alias_map"] == {"Sigma": "S"}
+    assert "S" in result["trace_map"]["mapped_terms"]
+    assert {"equation_term": "Sigma", "mapped_code_term": "S", "matched": True, "source": "alias_map"} in result["trace_map"]["term_traces"]
+
+
+def test_equation_code_match_trace_map_records_alias_collisions() -> None:
+    result = code_implements_equation(
+        "logdet(Sigma) + trace(Cov)",
+        "def f(S):\n    return logdet(S) + trace(S)\n",
+        aliases={"Sigma": "S", "Cov": "S"},
+    )
+
+    assert result["status"] == "consistent"
+    assert result["trace_map"]["alias_collisions"] == [
+        {"mapped_code_term": "S", "equation_terms": ["Cov", "Sigma"]}
+    ]
+    assert {item["equation_term"] for item in result["trace_map"]["term_traces"]} >= {"Sigma", "Cov"}
 
 
 def test_equation_code_match_mcp_facade_exposes_workflow() -> None:

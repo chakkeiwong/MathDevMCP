@@ -1,0 +1,78 @@
+{
+  "checks": [
+    {
+      "command": "python3 -m pytest tests/test_downstream_usefulness_prompts.py tests/test_agent_handoff_packet.py",
+      "result": "13 passed"
+    },
+    {
+      "command": "JSON parse over .mathdevmcp/downstream_agent_usefulness/*.json",
+      "result": "json_parse_ok 14"
+    },
+    {
+      "command": "prompt contract validation over original and repaired manifests",
+      "result": "current_errors=18, current_a_leak_errors=18, repaired_errors=0"
+    },
+    {
+      "command": "response count and prompt-hash validation",
+      "result": "response_count=27, missing_count=0, prompt_hash_mismatches=0"
+    },
+    {
+      "command": "git diff --check over touched downstream artifacts",
+      "result": "clean"
+    }
+  ],
+  "final_decision": {
+    "approval_needed_for_next_collection": false,
+    "decision": "repaired_collection_complete_no_c_over_b_promotion",
+    "next_human_decision": "Decide whether to design a harder replicated benchmark to test B-vs-C discriminability.",
+    "rationale": "The repaired collection removed the A-condition leakage and produced a valid local A/B/C diagnostic. C improves over A on one backend-certificate case, but C ties B under the frozen required dimensions, so no C-over-B promotion is supported."
+  },
+  "key_artifacts": [
+    ".mathdevmcp/downstream_agent_usefulness/response_manifest.json",
+    ".mathdevmcp/downstream_agent_usefulness/scored_responses.json",
+    ".mathdevmcp/downstream_agent_usefulness/scored_responses.md",
+    ".mathdevmcp/downstream_agent_usefulness/failure_taxonomy.json",
+    ".mathdevmcp/downstream_agent_usefulness/prompt_manifest_repaired_candidate.json",
+    ".mathdevmcp/downstream_agent_usefulness/repaired_prompt_contract_validation.json",
+    ".mathdevmcp/downstream_agent_usefulness/response_manifest_repaired_candidate.json",
+    ".mathdevmcp/downstream_agent_usefulness/scored_responses_repaired_candidate.json",
+    ".mathdevmcp/downstream_agent_usefulness/scored_responses_repaired_candidate.md",
+    "docs/plans/mathdevmcp-downstream-agent-usefulness-repaired-collection-result-2026-07-02.md",
+    "src/mathdevmcp/downstream_usefulness_prompts.py",
+    "tests/test_downstream_usefulness_prompts.py"
+  ],
+  "metadata": {
+    "contract": "downstream_agent_usefulness_final_summary",
+    "created": "2026-07-02",
+    "schema_version": "1.0",
+    "status": "final_repaired_collection_complete_no_promotion"
+  },
+  "non_claims": [
+    "No C-over-B superiority is established.",
+    "No release readiness, public benchmark validity, scientific validation, product capability, broad theorem-proving, proof-correctness beyond scoped certified obligations, or general model reliability claim is made.",
+    "The repaired result is a local diagnostic with one response per prompt and non-randomized collection order."
+  ],
+  "phase_results": {
+    "phase_4": {
+      "promotion_status": "not_supported",
+      "response_collection": "27 of 27 approved Codex-subagent responses recorded; no hidden retries; no Claude response worker.",
+      "scoring": "A_task_only hard-vetoed for condition_artifact_leakage; B and C passed locally but tied numerically."
+    },
+    "phase_5": {
+      "promotion_status": "candidate_artifacts_only_not_response_evidence",
+      "repair": "Added prompt-condition validator and repaired candidate prompt fixtures.",
+      "validation": "Current frozen manifest reports 18 A leak errors; repaired candidate manifest reports 0 errors."
+    },
+    "phase_6": {
+      "claude_review": "attempted but unavailable; Opus wrapper reported server-side model unavailable.",
+      "final_status": "closed_without_promotion_before_repaired_collection",
+      "focused_checks": "passed"
+    },
+    "repaired_collection_addendum": {
+      "collection": "27 of 27 repaired Codex-subagent responses recorded; no hidden retries; no Claude response worker.",
+      "promotion_status": "not_supported",
+      "scoring": "A=8/9 required passes, B=9/9, C=9/9; hard vetoes all zero; C ties B under frozen required dimensions.",
+      "validation": "Repaired A/B/C comparison is valid as a local diagnostic; original Phase 4 artifacts are preserved."
+    }
+  }
+}

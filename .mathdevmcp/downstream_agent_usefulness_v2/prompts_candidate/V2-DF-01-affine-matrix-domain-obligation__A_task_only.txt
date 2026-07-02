@@ -1,0 +1,26 @@
+# Downstream-Agent Usefulness V2 Candidate Prompt
+
+Condition A: task plus bounded context only. Decisive executable/source evidence and evaluator labels are intentionally absent.
+
+Case: V2-DF-01 - Affine route obligation check
+Workflow: derive_from
+
+Task
+Can the target route be justified from the supplied assumptions, or must the answer stop at unresolved obligations?
+
+Bounded Context
+A target recursion is compared against a limited lower-dimensional route summary. Some domain and shape obligations may matter for the target route.
+
+Source Boundary
+Synthetic route-summary context only.
+
+Required Response Shape
+- Give a direct local conclusion or abstention justified by the prompt.
+- State assumptions or gaps needed for the route.
+- Preserve local/non-claim boundaries.
+- Name the next concrete artifact that would settle unresolved obligations.
+
+Non-Claims
+- Use only the information in this prompt.
+- Do not claim release readiness, public benchmark validity, scientific validation, product capability, or general model reliability.
+- Do not treat diagnostic checks as proof beyond their stated scope.

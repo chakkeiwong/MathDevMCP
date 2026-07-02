@@ -1,0 +1,227 @@
+{
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "downstream_agent_usefulness_case_manifest",
+    "status": "phase_02_frozen_before_prompt_generation",
+    "created": "2026-07-01",
+    "scope": "local_non_gating_downstream_agent_usefulness",
+    "source_manifest": "benchmarks/real_tasks/holdout_local/real_local_high_level_workflow_benchmark_cases.json",
+    "source_final_matrix": ".mathdevmcp/real_local_high_level_workflow_benchmark_closure_phase08_final_matrix.json",
+    "source_packet_report": ".mathdevmcp/real_local_high_level_workflow_benchmark_closure_phase08_packets.json"
+  },
+  "source_boundary": {
+    "policy": "Use bounded summaries, case ids, workflow labels, source families, and existing packet/final-matrix fields. Do not copy substantial neighboring-repo text into downstream prompt fixtures.",
+    "neighboring_repo_use": "Existing committed real-local summaries reference neighboring repositories. This manifest does not add new raw source excerpts.",
+    "copyright_privacy_boundary": "Prompt fixtures should use local summaries and provenance, not large unpublished excerpts."
+  },
+  "coverage": {
+    "case_total": 9,
+    "workflow_families": [
+      "assumptions_for",
+      "audit_math_to_code",
+      "debug_derivation",
+      "derive_from",
+      "prepare_review_packet",
+      "prove_or_counterexample"
+    ],
+    "evidence_classes": [
+      "backend_certificate",
+      "backend_counterexample",
+      "human_review_required",
+      "missing_assumption",
+      "review_packet",
+      "structural_mismatch"
+    ]
+  },
+  "cases": [
+    {
+      "case_id": "RLHLB-01-ift-sign-gap",
+      "title": "IFT gradient-bias sign gap",
+      "workflow": "debug_derivation",
+      "source_family": "dsge_hmc",
+      "task_question": "Where does this sign derivation first fail?",
+      "bounded_context_summary": "A localized IFT-style sign transition is encoded as -lam*dr = lam*dr. The case asks whether that transition is valid under the stated assumptions without judging the whole source document.",
+      "expected_output_family": "refuted",
+      "evidence_class": "backend_counterexample",
+      "expected_agent_work": "Use the concrete counterexample or equivalent algebraic difference to localize the first sign gap and state source/adapter alternatives.",
+      "source_boundary": "Use existing local summary and source-family provenance only.",
+      "scoring_applicability": [
+        "task_outcome_correctness",
+        "decisive_evidence_use",
+        "self_contained_reasoning",
+        "assumption_and_gap_handling",
+        "boundary_and_nonclaim_discipline",
+        "actionability_for_next_agent"
+      ]
+    },
+    {
+      "case_id": "RLHLB-02-kalman-loglik-assumptions",
+      "title": "Kalman prediction-error log-likelihood assumptions",
+      "workflow": "assumptions_for",
+      "source_family": "latex-papers/CIP_monograph; BayesFilter",
+      "task_question": "What assumptions are required to derive Kalman prediction-error log-likelihood?",
+      "bounded_context_summary": "The route target uses logdet(S) plus a quadratic solve term. The case asks which Gaussian state-space and covariance-domain assumptions must be explicit before the likelihood route is well posed.",
+      "expected_output_family": "missing_assumptions",
+      "evidence_class": "missing_assumption",
+      "expected_agent_work": "List route-required assumptions and avoid treating the likelihood expression as well posed without positive-definite selected innovation covariance and model assumptions.",
+      "source_boundary": "Use existing local summary and source-family provenance only.",
+      "scoring_applicability": [
+        "task_outcome_correctness",
+        "decisive_evidence_use",
+        "self_contained_reasoning",
+        "assumption_and_gap_handling",
+        "boundary_and_nonclaim_discipline",
+        "actionability_for_next_agent"
+      ]
+    },
+    {
+      "case_id": "RLHLB-03-joseph-equivalence",
+      "title": "Joseph covariance update equivalence",
+      "workflow": "prove_or_counterexample",
+      "source_family": "latex-papers/CIP_monograph; BayesFilter",
+      "task_question": "Can we prove Joseph and compact covariance updates are equivalent in scope?",
+      "bounded_context_summary": "A scoped scalarized algebraic obligation checks Joseph/compact covariance update equivalence under exact arithmetic, while numerical-stability and implementation claims remain out of scope.",
+      "expected_output_family": "proved",
+      "evidence_class": "backend_certificate",
+      "expected_agent_work": "Use the backend certificate or equivalent scoped algebra to prove the encoded obligation while preserving numerical and implementation boundaries.",
+      "source_boundary": "Use existing local summary and source-family provenance only.",
+      "scoring_applicability": [
+        "task_outcome_correctness",
+        "decisive_evidence_use",
+        "self_contained_reasoning",
+        "assumption_and_gap_handling",
+        "boundary_and_nonclaim_discipline",
+        "actionability_for_next_agent"
+      ]
+    },
+    {
+      "case_id": "RLHLB-04-affine-pricing-recursion",
+      "title": "Affine pricing recursion",
+      "workflow": "derive_from",
+      "source_family": "latex-papers/CIP_monograph",
+      "task_question": "Can we derive affine pricing recursion from Gaussian affine assumptions?",
+      "bounded_context_summary": "The current scalar symbolic route is too weak for the matrix/domain affine pricing recursion. The honest local outcome is abstention or route gap, not a derivation from a proxy.",
+      "expected_output_family": "inconclusive",
+      "evidence_class": "human_review_required",
+      "expected_agent_work": "Explain why the scalar proxy does not encode the Gaussian MGF, affine transition, dimensions, and recursion coefficient obligations; propose the next source-backed artifact.",
+      "source_boundary": "Use existing local summary and source-family provenance only.",
+      "scoring_applicability": [
+        "task_outcome_correctness",
+        "decisive_evidence_use",
+        "self_contained_reasoning",
+        "assumption_and_gap_handling",
+        "boundary_and_nonclaim_discipline",
+        "actionability_for_next_agent"
+      ]
+    },
+    {
+      "case_id": "RLHLB-05-kalman-score-same-scalar",
+      "title": "Kalman score same-scalar assumptions",
+      "workflow": "assumptions_for",
+      "source_family": "BayesFilter",
+      "task_question": "What assumptions are needed for the Kalman score to match the same scalar likelihood?",
+      "bounded_context_summary": "The case asks which assumptions are missing before a Kalman score expression can be treated as differentiating the same scalar likelihood used by the value route.",
+      "expected_output_family": "missing_assumptions",
+      "evidence_class": "missing_assumption",
+      "expected_agent_work": "Identify same-scalar likelihood, differentiability, covariance-domain, masking, and route-linking assumptions before any score equivalence claim.",
+      "source_boundary": "Use existing local summary and source-family provenance only.",
+      "scoring_applicability": [
+        "task_outcome_correctness",
+        "decisive_evidence_use",
+        "self_contained_reasoning",
+        "assumption_and_gap_handling",
+        "boundary_and_nonclaim_discipline",
+        "actionability_for_next_agent"
+      ]
+    },
+    {
+      "case_id": "RLHLB-06-state-space-code-missing-solve",
+      "title": "State-space code missing solve",
+      "workflow": "audit_math_to_code",
+      "source_family": "MathDevMCP fixtures and docs",
+      "task_question": "Does code implement the documented Kalman likelihood solve/quadratic form?",
+      "bounded_context_summary": "A structural code audit checks for both documented logdet and solve/quadratic-form components. The case is a structural mismatch, not a semantic proof that the whole code is mathematically wrong.",
+      "expected_output_family": "structural_mismatch",
+      "evidence_class": "structural_mismatch",
+      "expected_agent_work": "Report matched and missing structural terms, preserve implementation-equivalence alternatives, and propose a focused human/code audit.",
+      "source_boundary": "Use existing local fixture/doc summary only.",
+      "scoring_applicability": [
+        "task_outcome_correctness",
+        "decisive_evidence_use",
+        "self_contained_reasoning",
+        "assumption_and_gap_handling",
+        "boundary_and_nonclaim_discipline",
+        "actionability_for_next_agent"
+      ]
+    },
+    {
+      "case_id": "RLHLB-07-proof-boundary-review-packet",
+      "title": "Proof-boundary review packet",
+      "workflow": "prepare_review_packet",
+      "source_family": "MathDevMCP docs",
+      "task_question": "Can we produce a packet for a difficult Gaussian score derivation without overclaiming proof?",
+      "bounded_context_summary": "A durable review packet can organize a difficult score derivation, but the packet is not a proof certificate and must preserve residual gaps.",
+      "expected_output_family": "diagnostic_only",
+      "evidence_class": "review_packet",
+      "expected_agent_work": "Prepare or describe a review artifact that names missing proof obligations and avoids treating packet completeness as proof.",
+      "source_boundary": "Use existing local summary only.",
+      "scoring_applicability": [
+        "task_outcome_correctness",
+        "decisive_evidence_use",
+        "self_contained_reasoning",
+        "assumption_and_gap_handling",
+        "boundary_and_nonclaim_discipline",
+        "actionability_for_next_agent"
+      ]
+    },
+    {
+      "case_id": "RLHLB-08-hmc-value-only-boundary",
+      "title": "HMC value-only boundary",
+      "workflow": "prove_or_counterexample",
+      "source_family": "BayesFilter",
+      "task_question": "Does a value-only filtering likelihood route prove HMC production readiness?",
+      "bounded_context_summary": "The case tests refusal to infer HMC production readiness from value-only likelihood evidence. The honest outcome is insufficiency or human review, not product readiness.",
+      "expected_output_family": "inconclusive",
+      "evidence_class": "human_review_required",
+      "expected_agent_work": "State why value-only likelihood evidence cannot establish HMC production readiness and list the missing sampler, gradient, numerical, and validation artifacts.",
+      "source_boundary": "Use existing local summary and source-family provenance only.",
+      "scoring_applicability": [
+        "task_outcome_correctness",
+        "decisive_evidence_use",
+        "self_contained_reasoning",
+        "assumption_and_gap_handling",
+        "boundary_and_nonclaim_discipline",
+        "actionability_for_next_agent"
+      ]
+    },
+    {
+      "case_id": "RLHLB-09-affine-recovery-assumption-limit",
+      "title": "Affine recovery assumption limit",
+      "workflow": "derive_from",
+      "source_family": "latex-papers/CIP_monograph",
+      "task_question": "Can neural-solver approximation guarantees be derived from affine recovery text alone?",
+      "bounded_context_summary": "Affine recovery prose alone does not supply approximation theorem, domain, training, and bridge assumptions needed for rigorous neural-solver guarantees.",
+      "expected_output_family": "missing_assumptions",
+      "evidence_class": "missing_assumption",
+      "expected_agent_work": "Return missing assumptions, avoid deriving neural-solver guarantees, and propose the formal theorem/assumption artifacts needed to change the conclusion.",
+      "source_boundary": "Use existing local summary and source-family provenance only.",
+      "scoring_applicability": [
+        "task_outcome_correctness",
+        "decisive_evidence_use",
+        "self_contained_reasoning",
+        "assumption_and_gap_handling",
+        "boundary_and_nonclaim_discipline",
+        "actionability_for_next_agent"
+      ]
+    }
+  ],
+  "non_claims": [
+    "This case manifest is local/non-gating.",
+    "This case manifest is not response-quality evidence.",
+    "This case manifest is not public benchmark validity evidence.",
+    "This case manifest is not release-readiness evidence.",
+    "This case manifest is not scientific validation.",
+    "This case manifest is not product capability evidence.",
+    "This case manifest does not prove any mathematical claim."
+  ]
+}

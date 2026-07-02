@@ -1,0 +1,108 @@
+{
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "downstream_agent_usefulness_v2_adversarial_ceiling_analysis",
+    "created": "2026-07-02",
+    "status": "phase_04_analysis_only_no_response_collection",
+    "case_manifest": ".mathdevmcp/downstream_agent_usefulness_v2/case_manifest_candidate.json",
+    "prompt_manifest": ".mathdevmcp/downstream_agent_usefulness_v2/prompt_manifest_candidate.json",
+    "prompt_validation": ".mathdevmcp/downstream_agent_usefulness_v2/prompt_contract_validation.json"
+  },
+  "summary": {
+    "case_count": 6,
+    "prompt_count": 18,
+    "validation_errors": 0,
+    "high_c_sensitivity_cases": 4,
+    "response_collection_status": "not_authorized_not_run"
+  },
+  "adversarial_risks": [
+    {
+      "id": "A_LEAKAGE_BY_TITLE_OR_SUMMARY",
+      "risk": "A prompts can leak decisive evidence through case titles, source-boundary notes, or summaries even when explicit evidence fields are omitted.",
+      "current_mitigation": "Phase 3 repaired A prompts with sanitized visible labels, summaries, and source-boundary phrases; final validation errors are zero.",
+      "remaining_risk": "Manual future edits could reintroduce leakage.",
+      "future_check": "Rerun prompt-contract and v2 leakage checks after any prompt edit."
+    },
+    {
+      "id": "B_TOO_DECISIVE",
+      "risk": "B compact evidence may remain sufficient for full score, reproducing the repaired benchmark ceiling.",
+      "current_mitigation": "Cases include alias reconciliation, domain obligations, first-gap localization, matched/missing ledgers, and non-claim boundaries.",
+      "remaining_risk": "Strong downstream agents may still infer the intended artifact from compact evidence.",
+      "future_check": "Score per-case C-sensitivity dimensions as explanatory and avoid C-over-B promotion unless predeclared required dimensions separate."
+    },
+    {
+      "id": "C_ANSWER_LEAKAGE",
+      "risk": "C framing can become a disguised answer key if it names evaluator outcomes or first-failure labels.",
+      "current_mitigation": "C prompts include decision criteria and requested artifact structures, not manifest-only expected output fields or evaluator labels.",
+      "remaining_risk": "Some requested artifact wording may still make expected output style easier.",
+      "future_check": "Treat C advantage as valid only when task/evidence quality improves without hidden labels or authority statements."
+    },
+    {
+      "id": "PROMPT_POLISH_PROXY",
+      "risk": "Scoring may reward polished packet format instead of mathematical task success.",
+      "current_mitigation": "Scoring applicability map keeps frozen required dimensions primary and labels candidate-only stressors as explanatory unless approved before collection.",
+      "remaining_risk": "Human scorer may overvalue completeness of sections.",
+      "future_check": "Score hard-veto-first and require task outcome, evidence use, assumptions/gaps, boundaries, and actionability before crediting format."
+    },
+    {
+      "id": "SYNTHETIC_CASE_ARTIFICIALITY",
+      "risk": "Synthetic fixtures may be easier, cleaner, or less representative than real local source tasks.",
+      "current_mitigation": "Synthetic cases are modeled on repaired benchmark failure modes and workflow families, while avoiding private-source excerpts.",
+      "remaining_risk": "Future result remains a local diagnostic, not public/scientific/model reliability evidence.",
+      "future_check": "Keep non-claims in result notes; add real bounded cases only under a separate source-boundary review."
+    },
+    {
+      "id": "SINGLE_RESPONSE_VARIANCE",
+      "risk": "One response per prompt can be noisy and cannot establish general model reliability.",
+      "current_mitigation": "Future runbook requires explicit approval for response subject, prompt count, retry policy, and artifact paths; replication is a separate approval choice.",
+      "remaining_risk": "Single-run diagnostic may still be overinterpreted.",
+      "future_check": "State one-response results as local diagnostic only; require preapproved replication for stronger claims."
+    }
+  ],
+  "ceiling_effect_countermeasures": [
+    {
+      "case_id": "V2-DF-01-affine-matrix-domain-obligation",
+      "countermeasure": "Compact scalar evidence is insufficient without matrix/domain route obligations.",
+      "residual_ceiling_risk": "B may still abstain correctly if it notices the domain marker."
+    },
+    {
+      "case_id": "V2-PC-01-domain-restricted-counterexample",
+      "countermeasure": "Witness evidence must be scoped through a domain map.",
+      "residual_ceiling_risk": "B may correctly preserve the unrestricted/restricted distinction from terse notes."
+    },
+    {
+      "case_id": "V2-AF-01-masked-likelihood-score-assumptions",
+      "countermeasure": "Same-scalar and mask/domain assumptions must be organized into a ledger.",
+      "residual_ceiling_risk": "B may list all assumptions from compact route notes."
+    },
+    {
+      "case_id": "V2-AMC-01-logdet-quadratic-code-trace",
+      "countermeasure": "A matched/missing-term ledger is required and local/global code claims must be separated.",
+      "residual_ceiling_risk": "B may infer the missing solve contribution from compact AST evidence."
+    },
+    {
+      "case_id": "V2-DD-01-first-gap-product-rule",
+      "countermeasure": "First-gap dependency ordering is required.",
+      "residual_ceiling_risk": "The trace may be simple enough for B to localize correctly."
+    },
+    {
+      "case_id": "V2-PRP-01-gaussian-score-review-packet",
+      "countermeasure": "The expected artifact is a diagnostic packet, not a proof.",
+      "residual_ceiling_risk": "B may produce a good packet from the compact facts alone."
+    }
+  ],
+  "decision_table": {
+    "decision": "v2 candidate prompts are ready for future approved collection, not collection now",
+    "primary_criterion_status": "prompt validation and adversarial analysis pass",
+    "veto_diagnostic_status": "no response collection, no Claude worker role, no prompt-contract errors, no repaired baseline mutation",
+    "main_uncertainty": "whether B remains at ceiling under future response collection",
+    "next_justified_action": "write final candidate handoff with explicit collection approval requirements",
+    "what_is_not_concluded": "no C-over-B superiority, model reliability, public benchmark validity, release readiness, scientific validation, or product capability"
+  },
+  "non_claims": [
+    "This analysis is not scored response evidence.",
+    "This analysis does not prove v2 will separate B and C.",
+    "This analysis does not authorize response collection.",
+    "This analysis is not release, public benchmark, scientific, product, or general model reliability evidence."
+  ]
+}

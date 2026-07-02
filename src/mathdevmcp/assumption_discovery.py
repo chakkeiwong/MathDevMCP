@@ -16,42 +16,49 @@ _ASSUMPTION_RULES = [
         "patterns": [re.compile(r"/"), re.compile(r"\*\*-1\b"), re.compile(r"\^-1\b")],
         "text": "denominator is nonzero",
         "source": "division or reciprocal",
+        "route_categories": ["domain_condition"],
     },
     {
         "kind": "inverse_invertible",
         "patterns": [re.compile(r"\binv\s*\("), re.compile(r"\bsolve\s*\(")],
         "text": "matrix operand is square and invertible",
         "source": "inverse or solve",
+        "route_categories": ["domain_condition", "shape_condition"],
     },
     {
         "kind": "logdet_domain",
         "patterns": [re.compile(r"\blogdet\s*\("), re.compile(r"\bdet\s*\(")],
         "text": "matrix operand is square with valid determinant domain, usually positive definite for logdet",
         "source": "determinant or logdet",
+        "route_categories": ["covariance_condition", "domain_condition"],
     },
     {
         "kind": "sqrt_domain",
         "patterns": [re.compile(r"\bsqrt\s*\(")],
         "text": "square-root argument is nonnegative in the target domain",
         "source": "square root",
+        "route_categories": ["domain_condition"],
     },
     {
         "kind": "differentiability",
         "patterns": [re.compile(r"\\partial"), re.compile(r"\bd/d"), re.compile(r"\bgrad\s*\("), re.compile(r"\bderivative\s*\(")],
         "text": "target function is differentiable on the stated domain",
         "source": "derivative",
+        "route_categories": ["smoothness_condition"],
     },
     {
         "kind": "matrix_conformability",
         "patterns": [re.compile(r"@"), re.compile(r"\btrace\s*\("), re.compile(r"\btr\s*\("), re.compile(r"\btranspose\s*\(")],
         "text": "matrix dimensions are conformable for the operation",
         "source": "matrix operation",
+        "route_categories": ["shape_condition"],
     },
     {
         "kind": "rank_condition",
         "patterns": [re.compile(r"\brank\s*\("), re.compile(r"full rank", re.IGNORECASE)],
         "text": "matrix has the stated full-rank condition",
         "source": "rank condition",
+        "route_categories": ["rank_condition"],
     },
 ]
 
@@ -87,6 +94,8 @@ def assumptions_required(target: str, *, provided_assumptions: list[str] | None 
                 source=rule["source"],
                 necessity="required_by_route",
                 used_by=[rule["kind"]],
+                route_categories=list(rule["route_categories"]),
+                route_category_sources=[f"assumption_rule:{rule['kind']}"],
             )
         )
 
@@ -95,8 +104,8 @@ def assumptions_required(target: str, *, provided_assumptions: list[str] | None 
         status = "missing_assumptions"
         reason = "At least one route-required assumption is missing."
     elif assumptions:
-        status = "proved"
-        reason = "All assumptions required by this diagnostic route were provided."
+        status = "unknown"
+        reason = "All route-detected assumptions were provided, but this diagnostic route does not prove the target."
     else:
         status = "unknown"
         reason = "No route-required assumptions were detected by the bounded rule set."

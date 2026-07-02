@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from .assumption_discovery import assumptions_required
-from .high_level_contracts import action, validate_high_level_result
+from .high_level_contracts import action, refresh_evidence_ledger, validate_high_level_result
 from .high_level_workflows import package_assumption_result
 
 
@@ -23,6 +23,7 @@ def assumptions_for(
             "Review whether route-required assumptions are sufficient for the intended mathematical setting.",
         )
     )
+    refresh_evidence_ledger(result)
     errors = validate_high_level_result(result)
     if errors:
         raise ValueError(f"invalid assumptions_for result: {errors}")

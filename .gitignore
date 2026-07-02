@@ -7,6 +7,8 @@ build/
 dist/
 .codex
 .claude/
+.claude_reviews/
+**/.claude_reviews/
 .serena/
 artifacts/release-evidence/
 *.latexml.log

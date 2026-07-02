@@ -6,6 +6,7 @@ from mathdevmcp.high_level_contracts import (
     evidence_entry,
     high_level_result,
     non_claim,
+    refresh_evidence_ledger,
     validate_high_level_result,
     veto_reason,
 )
@@ -38,6 +39,61 @@ def test_high_level_result_builds_stable_contract_envelope() -> None:
     assert result["workflow"] == "derive_from"
     assert result["claim_class"] == "derivation"
     assert result["evidence_classes"] == ["backend_certificate"]
+    assert result["evidence_ledger"]["provenance"]["workflow"] == "derive_from"
+    assert result["evidence_ledger"]["evidence_items"] == [
+        {
+            "id": "ev-backend-proof",
+            "class": "backend_certificate",
+            "source": "backend",
+            "summary": "SymPy simplified lhs-rhs to zero.",
+        }
+    ]
+    assert "not independent proof" in result["evidence_ledger"]["boundary"]
+    assert validate_high_level_result(result) == []
+
+
+def test_optional_evidence_ledger_rejects_stale_mirror_on_valid_result() -> None:
+    result = _proved_result()
+    result["evidence_ledger"]["provenance"]["status"] = "refuted"
+
+    assert validate_high_level_result(result) == [
+        "evidence_ledger.provenance.status must match result"
+    ]
+
+    refresh_evidence_ledger(result)
+    assert validate_high_level_result(result) == []
+
+
+def test_evidence_ledger_preserves_record_extension_metadata() -> None:
+    result = high_level_result(
+        status="missing_assumptions",
+        workflow="assumptions_for",
+        question="What assumptions are needed for logdet(A)?",
+        claim_class="assumption_discovery",
+        answer="A route-required assumption is missing.",
+        evidence=[
+            evidence_entry(
+                id="ev-missing-assumption",
+                evidence_class="missing_assumption",
+                source="route",
+                summary="logdet requires a determinant-domain assumption.",
+                extra={"route_category": "domain_condition"},
+            )
+        ],
+        certification_source="none",
+        assumptions=[
+            assumption_record(
+                text="A has a valid determinant domain.",
+                status="missing",
+                source="logdet route",
+                necessity="required_by_route",
+                extra={"route_category": "domain_condition"},
+            )
+        ],
+    )
+
+    assert result["evidence_ledger"]["evidence_items"][0]["route_category"] == "domain_condition"
+    assert result["evidence_ledger"]["assumption_items"][0]["route_category"] == "domain_condition"
     assert validate_high_level_result(result) == []
 
 
@@ -265,6 +321,7 @@ def test_certifying_evidence_inside_abstention_requires_veto() -> None:
     ]
 
     result["veto_reasons"].append(veto_reason("certifying_evidence_not_promoted", "Scope mismatch prevents promotion."))
+    refresh_evidence_ledger(result)
     assert validate_high_level_result(result) == []
 
 

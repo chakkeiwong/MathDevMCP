@@ -9,6 +9,8 @@ def test_prove_or_counterexample_proves_scoped_identity() -> None:
     assert result["workflow"] == "prove_or_counterexample"
     assert result["claim_class"] == "proof"
     assert result["evidence_classes"] == ["backend_certificate"]
+    assert result["evidence"][0]["obligation"]["status"] == "proved"
+    assert result["evidence"][0]["backend_attempt"]["severity"] == "certifying"
     assert validate_high_level_result(result) == []
 
 
@@ -18,6 +20,13 @@ def test_prove_or_counterexample_refutes_with_counterexample() -> None:
     assert result["status"] == "refuted"
     assert result["evidence_classes"] == ["backend_counterexample"]
     assert result["counterexamples"]
+    assert result["evidence"][0]["counterexample"] == {
+        "assignments": result["counterexamples"][0]["assignments"],
+        "lhs_value": result["counterexamples"][0]["lhs_value"],
+        "rhs_value": result["counterexamples"][0]["rhs_value"],
+        "reason": result["counterexamples"][0]["reason"],
+        "backend": result["counterexamples"][0]["backend"],
+    }
     assert validate_high_level_result(result) == []
 
 
@@ -25,6 +34,8 @@ def test_prove_or_counterexample_does_not_disprove_without_counterexample_artifa
     result = prove_or_counterexample("1 + 1 = 3")
 
     assert result["status"] == "inconclusive"
+    assert result["evidence_classes"] == ["human_review_required"]
+    assert not any(item["class"] == "backend_counterexample" for item in result["evidence"])
     assert "certifying_evidence_not_promoted" in {item["code"] for item in result["veto_reasons"]}
     assert validate_high_level_result(result) == []
 

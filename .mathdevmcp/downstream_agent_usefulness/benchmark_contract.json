@@ -1,0 +1,151 @@
+{
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "downstream_agent_usefulness_benchmark_contract",
+    "status": "phase_01_frozen_before_case_fixture_and_response_collection",
+    "created": "2026-07-01",
+    "scope": "local_non_gating_downstream_agent_usefulness"
+  },
+  "question": "Do MathDevMCP high-level workflow packets measurably improve downstream-agent task performance on governed local math tasks?",
+  "baseline": {
+    "git_commit": "0e7f9a28cd9a7aee540c109654a7962cbbec4fe8",
+    "prior_packet_standard_decision": "freeze_local_standard_candidate",
+    "prior_calibration_limitation": "C_human_framed tied B_evidence_only numerically under the frozen rubric; C must not be claimed scored-superior to B from prior calibration."
+  },
+  "conditions": {
+    "A_task_only": {
+      "purpose": "Measure what a downstream agent can do from the task statement and bounded source/provenance anchors without packet evidence.",
+      "allowed_payload": [
+        "case_id",
+        "workflow",
+        "question",
+        "bounded_context_summary",
+        "source_provenance",
+        "requested_output_schema",
+        "forbidden_claims"
+      ],
+      "forbidden_payload": [
+        "observed_status",
+        "decisive_backend_evidence",
+        "counterexample",
+        "proof_or_derivation_steps",
+        "gap_ledger",
+        "machine_evidence_ledger",
+        "human_framed_packet_reasoning",
+        "recommended_next_action"
+      ]
+    },
+    "B_evidence_only": {
+      "purpose": "Measure whether machine-readable evidence, status, gaps, assumptions, and actions help without human narrative framing.",
+      "allowed_payload": [
+        "case_id",
+        "workflow",
+        "question",
+        "bounded_context_summary",
+        "source_provenance",
+        "observed_status",
+        "evidence_class",
+        "decisive_backend_evidence",
+        "counterexample",
+        "proof_or_derivation_steps",
+        "gap_ledger",
+        "assumption_ledger",
+        "machine_evidence_ledger",
+        "non_claims",
+        "requested_output_schema",
+        "forbidden_claims"
+      ],
+      "forbidden_payload": [
+        "human_framed_packet_reasoning",
+        "narrative_answer",
+        "recommended_next_action"
+      ]
+    },
+    "C_human_framed": {
+      "purpose": "Measure whether the full agent-handoff packet improves downstream work beyond B's machine evidence by adding self-contained framing, reasoning, and actionability.",
+      "allowed_payload": [
+        "case_id",
+        "workflow",
+        "question",
+        "bounded_context_summary",
+        "source_provenance",
+        "observed_status",
+        "evidence_class",
+        "decisive_backend_evidence",
+        "counterexample",
+        "proof_or_derivation_steps",
+        "gap_ledger",
+        "assumption_ledger",
+        "machine_evidence_ledger",
+        "non_claims",
+        "human_framed_packet_reasoning",
+        "narrative_answer",
+        "recommended_next_action",
+        "requested_output_schema",
+        "forbidden_claims"
+      ],
+      "forbidden_payload": []
+    }
+  },
+  "fairness_controls": {
+    "identical_question_per_case": true,
+    "identical_requested_output_schema_per_case": true,
+    "b_c_machine_evidence_parity": "All non-framing machine evidence present in C must also be present in B.",
+    "condition_labels": "Prompts should avoid describing conditions as better or worse.",
+    "ordering": "Collection order should be randomized or counterbalanced if feasible; otherwise manifest order must be recorded as a limitation.",
+    "retry_policy": "One response per prompt unless a predeclared transport failure produces no model output. No hidden retries. Malformed or incomplete outputs are recorded.",
+    "source_excerpt_policy": "Use bounded summaries and source provenance rather than large copied source excerpts.",
+    "scoring_policy": "Score against frozen rubric only. Hard vetoes dominate all numeric scores."
+  },
+  "response_subject_policy": {
+    "allowed_subjects": [
+      "Codex subagent or another explicitly approved non-Claude model/agent surface"
+    ],
+    "forbidden_subjects": [
+      "Claude as response worker",
+      "human expert panel as required gate",
+      "unrecorded retries or replacement responses"
+    ],
+    "approval_required_before_collection": true
+  },
+  "requested_response_schema": [
+    "answer_or_decision",
+    "reasoning_chain",
+    "evidence_used",
+    "assumptions_or_gaps",
+    "next_artifact_or_action",
+    "what_would_change_conclusion",
+    "forbidden_claims_avoided",
+    "residual_risks"
+  ],
+  "primary_usefulness_dimensions": [
+    "task_outcome_correctness",
+    "decisive_evidence_use",
+    "self_contained_reasoning",
+    "assumption_and_gap_handling",
+    "boundary_and_nonclaim_discipline",
+    "actionability_for_next_agent"
+  ],
+  "explanatory_dimensions": [
+    "efficiency",
+    "context_reuse",
+    "artifact_specificity"
+  ],
+  "promotion_policy": {
+    "hard_vetoes_dominate": true,
+    "per_case_before_aggregate": true,
+    "minimum_internal_promotion_candidate": "C must have no hard-veto regression relative to A or B, must meet all required pass floors on every scored case, and must show a predeclared usefulness improvement over B on actionability, self-contained reasoning, or task outcome without evidence loss.",
+    "single_response_limitation": "If only one response per prompt is collected, results are diagnostic local evidence unless a later phase explicitly justifies a stronger internal gate.",
+    "aggregate_accuracy": null
+  },
+  "non_claims": [
+    "This is not a public benchmark.",
+    "This is not release-readiness evidence.",
+    "This is not scientific validation.",
+    "This is not product capability evidence.",
+    "This is not proof of general downstream-agent reliability.",
+    "This does not prove any mathematical claim.",
+    "This does not prove broad theorem-proving ability.",
+    "This does not establish C as superior to B unless this frozen usefulness contract is satisfied by later scored evidence."
+  ]
+}

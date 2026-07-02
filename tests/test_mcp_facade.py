@@ -83,6 +83,45 @@ def test_call_mcp_tool_high_level_surfaces_preserve_boundaries():
     assert "diagnostic_evidence_not_proof" in {item["code"] for item in packet["non_claims"]}
 
 
+def test_call_mcp_tool_prepare_review_packet_preserves_phase6_packet_fields():
+    derived = call_mcp_tool(
+        "derive_from",
+        {"target": "a + b = b + a", "givens": ["a,b are scalars"]},
+    )
+    code = call_mcp_tool(
+        "audit_math_to_code",
+        {
+            "math": "logdet(Sigma) + trace(Cov)",
+            "code": "def f(S):\n    return logdet(S) + trace(S)\n",
+            "aliases": {"Sigma": "S", "Cov": "S"},
+        },
+    )
+    packet = call_mcp_tool(
+        "prepare_review_packet",
+        {
+            "question": "Review derivation and implementation context",
+            "evidence": [derived, code],
+            "source": {"context_summary": "MCP surface preservation fixture."},
+        },
+    )
+    low_level = packet["evidence"][0]["low_level"]
+    non_claim_codes = {item["code"] for item in low_level["non_claims"]}
+
+    assert packet["ok"] is True
+    assert packet["status"] == "diagnostic_only"
+    assert packet["certification_source"] == "none"
+    assert low_level["backend_checks"]
+    assert low_level["nested_evidence_summary"]
+    assert low_level["route_plans"]
+    assert low_level["trace_maps"]
+    assert low_level["residual_gaps"]
+    assert low_level["decision_criteria"]
+    assert low_level["risk_register"]
+    assert "diagnostic_route_and_trace_context_not_proof" in non_claim_codes
+    assert "not recertified" in low_level["backend_checks"][0]["boundary"]
+    assert "not semantic proof" in low_level["trace_maps"][0]["boundary"]
+
+
 def test_call_mcp_tool_high_level_workflow_quality_returns_threshold_report():
     result = call_mcp_tool("high_level_workflow_quality", {"root": str(ROOT)})
 

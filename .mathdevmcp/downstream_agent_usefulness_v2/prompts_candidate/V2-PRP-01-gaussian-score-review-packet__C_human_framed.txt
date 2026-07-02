@@ -1,0 +1,34 @@
+# Downstream-Agent Usefulness V2 Candidate Prompt
+
+Condition C: self-contained agent handoff packet. Use the framing to decide, derive, refute, or abstain while preserving non-claim boundaries.
+
+Case: V2-PRP-01-gaussian-score-review-packet - Gaussian score diagnostic review packet
+Workflow: prepare_review_packet
+
+Background
+Available facts include a value-route smoke check, a partial symbolic derivative for the scalar observation case, and an unresolved matrix calculus step for the full covariance case.
+
+Task
+Prepare the review packet a downstream mathematical reviewer needs next. Do not present the packet as proof.
+
+Compact Evidence To Use Carefully
+- known_check: value-route smoke check passed for a small scalar observation case
+- partial_symbolic_fact: scalar derivative route has a local expression
+- open_obligation: full covariance matrix calculus step remains unresolved
+
+Handoff Framing
+- Decision criteria: prepare a review packet rather than a proof.
+- Keep smoke checks, partial symbolic facts, and unresolved matrix obligations in separate sections.
+- Requested artifact: diagnostic packet with question, assumptions, checked facts, gaps, veto risks, next artifacts, and non-claims.
+
+Required Response Sections
+- answer_or_abstention
+- evidence_route
+- assumptions_gaps_or_domain_obligations
+- boundary_and_nonclaim_notes
+- next_artifact
+
+Non-Claims
+- Use only the information in this prompt.
+- Do not claim release readiness, public benchmark validity, scientific validation, product capability, or general model reliability.
+- Do not treat diagnostic checks as proof beyond their stated scope.

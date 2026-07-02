@@ -109,6 +109,7 @@ TOP_LEVEL_FIELDS: set[str] = {
     "counterexamples",
     "actions",
     "non_claims",
+    "evidence_ledger",
     "metadata",
 }
 
@@ -183,6 +184,66 @@ def summarize_evidence_classes(evidence: list[dict[str, Any]]) -> list[str]:
     return sorted({str(item.get("class")) for item in evidence if isinstance(item, dict) and item.get("class")})
 
 
+def _copy_fields(item: dict[str, Any], fields: tuple[str, ...]) -> dict[str, Any]:
+    projected = {field: item.get(field) for field in fields}
+    for key in sorted(item):
+        if key not in projected:
+            projected[key] = item[key]
+    return projected
+
+
+def build_evidence_ledger(
+    *,
+    status: str,
+    workflow: str,
+    certification_source: str,
+    evidence: list[dict[str, Any]],
+    assumptions: list[dict[str, Any]],
+    veto_reasons: list[dict[str, Any]],
+    actions: list[dict[str, Any]],
+    non_claims: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Build a case-local ledger from the high-level envelope itself."""
+    return {
+        "version": "1.0",
+        "scope": "scoped_high_level_workflow_result",
+        "provenance": {
+            "workflow": workflow,
+            "status": status,
+            "certification_source": certification_source,
+            "evidence_classes": summarize_evidence_classes(evidence),
+        },
+        "evidence_items": [_copy_fields(item, ("id", "class", "source", "summary")) for item in evidence],
+        "assumption_items": [_copy_fields(item, ("text", "status", "source", "necessity")) for item in assumptions],
+        "veto_items": [_copy_fields(item, ("code", "reason")) for item in veto_reasons],
+        "action_items": [_copy_fields(item, ("code", "description")) for item in actions],
+        "non_claim_items": [_copy_fields(item, ("code", "text")) for item in non_claims],
+        "non_claim_codes": sorted(item["code"] for item in non_claims if isinstance(item.get("code"), str)),
+        "boundary": (
+            "This ledger is case-local provenance for the same high-level workflow envelope. "
+            "It is not independent proof, release evidence, public benchmark validation, "
+            "or a claim of broad downstream-agent usefulness."
+        ),
+    }
+
+
+def refresh_evidence_ledger(result: dict[str, Any]) -> dict[str, Any]:
+    """Refresh the optional evidence ledger after in-place envelope edits."""
+    if isinstance(result.get("evidence"), list):
+        result["evidence_classes"] = summarize_evidence_classes(result["evidence"])
+    result["evidence_ledger"] = build_evidence_ledger(
+        status=str(result.get("status", "")),
+        workflow=str(result.get("workflow", "")),
+        certification_source=str(result.get("certification_source", "")),
+        evidence=result.get("evidence") if isinstance(result.get("evidence"), list) else [],
+        assumptions=result.get("assumptions") if isinstance(result.get("assumptions"), list) else [],
+        veto_reasons=result.get("veto_reasons") if isinstance(result.get("veto_reasons"), list) else [],
+        actions=result.get("actions") if isinstance(result.get("actions"), list) else [],
+        non_claims=result.get("non_claims") if isinstance(result.get("non_claims"), list) else [],
+    )
+    return result
+
+
 def high_level_result(
     *,
     status: str,
@@ -197,8 +258,23 @@ def high_level_result(
     counterexamples: list[dict[str, Any]] | None = None,
     actions: list[dict[str, Any]] | None = None,
     non_claims: list[dict[str, Any]] | None = None,
+    evidence_ledger: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     evidence_items = evidence or []
+    assumption_items = assumptions or []
+    veto_items = veto_reasons or []
+    action_items = actions or []
+    non_claim_items = non_claims or default_non_claims(extra_codes=STATUS_REQUIRED_NON_CLAIM_CODES.get(status, set()))
+    ledger = evidence_ledger or build_evidence_ledger(
+        status=status,
+        workflow=workflow,
+        certification_source=certification_source,
+        evidence=evidence_items,
+        assumptions=assumption_items,
+        veto_reasons=veto_items,
+        actions=action_items,
+        non_claims=non_claim_items,
+    )
     return attach_contract(
         {
             "status": status,
@@ -209,11 +285,12 @@ def high_level_result(
             "evidence": evidence_items,
             "evidence_classes": summarize_evidence_classes(evidence_items),
             "certification_source": certification_source,
-            "veto_reasons": veto_reasons or [],
-            "assumptions": assumptions or [],
+            "veto_reasons": veto_items,
+            "assumptions": assumption_items,
             "counterexamples": counterexamples or [],
-            "actions": actions or [],
-            "non_claims": non_claims or default_non_claims(extra_codes=STATUS_REQUIRED_NON_CLAIM_CODES.get(status, set())),
+            "actions": action_items,
+            "non_claims": non_claim_items,
+            "evidence_ledger": ledger,
         },
         HIGH_LEVEL_CONTRACT,
     )
@@ -256,6 +333,62 @@ def _has_evidence(evidence: list[dict[str, Any]], evidence_class: str, *, source
 
 def _has_any_evidence(evidence_classes: set[str], candidates: set[str]) -> bool:
     return bool(evidence_classes & candidates)
+
+
+def _ledger_expected_items(items: list[dict[str, Any]], fields: tuple[str, ...]) -> list[dict[str, Any]]:
+    return [_copy_fields(item, fields) for item in items if isinstance(item, dict)]
+
+
+def _validate_evidence_ledger(result: dict[str, Any], errors: list[str]) -> None:
+    ledger = result.get("evidence_ledger")
+    if ledger is None:
+        return
+    if not isinstance(ledger, dict):
+        errors.append("evidence_ledger must be an object")
+        return
+    if ledger.get("version") != "1.0":
+        errors.append("evidence_ledger.version must be 1.0")
+    if ledger.get("scope") != "scoped_high_level_workflow_result":
+        errors.append("evidence_ledger.scope must be scoped_high_level_workflow_result")
+    boundary = ledger.get("boundary")
+    if not _is_non_empty_string(boundary):
+        errors.append("evidence_ledger.boundary must be a non-empty string")
+    else:
+        lowered = boundary.lower()
+        for phrase in ("not independent proof", "public benchmark", "downstream-agent usefulness"):
+            if phrase not in lowered:
+                errors.append(f"evidence_ledger.boundary must mention {phrase}")
+
+    provenance = ledger.get("provenance")
+    if not isinstance(provenance, dict):
+        errors.append("evidence_ledger.provenance must be an object")
+    else:
+        for field in ("workflow", "status", "certification_source"):
+            if provenance.get(field) != result.get(field):
+                errors.append(f"evidence_ledger.provenance.{field} must match result")
+        if provenance.get("evidence_classes") != result.get("evidence_classes"):
+            errors.append("evidence_ledger.provenance.evidence_classes must match result")
+
+    list_specs = {
+        "evidence_items": ("evidence", ("id", "class", "source", "summary")),
+        "assumption_items": ("assumptions", ("text", "status", "source", "necessity")),
+        "veto_items": ("veto_reasons", ("code", "reason")),
+        "action_items": ("actions", ("code", "description")),
+        "non_claim_items": ("non_claims", ("code", "text")),
+    }
+    for ledger_field, (result_field, fields) in list_specs.items():
+        value = ledger.get(ledger_field)
+        if not isinstance(value, list):
+            errors.append(f"evidence_ledger.{ledger_field} must be a list")
+            continue
+        expected = _ledger_expected_items(result.get(result_field, []), fields)
+        if value != expected:
+            errors.append(f"evidence_ledger.{ledger_field} must mirror {result_field}")
+
+    non_claim_codes = ledger.get("non_claim_codes")
+    expected_codes = sorted(item["code"] for item in result.get("non_claims", []) if isinstance(item, dict) and isinstance(item.get("code"), str))
+    if non_claim_codes != expected_codes:
+        errors.append("evidence_ledger.non_claim_codes must mirror non_claims")
 
 
 def validate_high_level_result(result: dict[str, Any]) -> list[str]:
@@ -431,5 +564,8 @@ def validate_high_level_result(result: dict[str, Any]) -> list[str]:
         errors.append(f"{status} requires non-empty veto_reasons")
     if not non_claims:
         errors.append("non_claims must be non-empty")
+
+    if not errors:
+        _validate_evidence_ledger(result, errors)
 
     return errors

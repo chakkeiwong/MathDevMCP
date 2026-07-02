@@ -1,0 +1,19 @@
+{
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "downstream_agent_usefulness_repaired_prompt_contract_validation",
+    "created": "2026-07-02",
+    "status": "phase_05_repaired_candidate_validated"
+  },
+  "validated_artifact": ".mathdevmcp/downstream_agent_usefulness/prompt_manifest_repaired_candidate.json",
+  "prompt_count": 27,
+  "case_count": 9,
+  "condition_counts": {
+    "A_task_only": 9,
+    "B_evidence_only": 9,
+    "C_human_framed": 9
+  },
+  "validator": "mathdevmcp.downstream_usefulness_prompts.validate_downstream_prompt_contract",
+  "validation_errors": [],
+  "approval_boundary": "Candidate prompts only. New downstream-agent response collection requires explicit human approval."
+}

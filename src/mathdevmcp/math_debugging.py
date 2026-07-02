@@ -55,6 +55,8 @@ class AssumptionRecord:
     source: str
     necessity: str = "unknown"
     used_by: list[str] | None = None
+    route_categories: list[str] | None = None
+    route_category_sources: list[str] | None = None
 
 
 @dataclass(frozen=True)
@@ -133,8 +135,20 @@ def assumption_record(
     source: str,
     necessity: str = "unknown",
     used_by: list[str] | None = None,
+    route_categories: list[str] | None = None,
+    route_category_sources: list[str] | None = None,
 ) -> dict:
-    return asdict(AssumptionRecord(text=text, status=status, source=source, necessity=necessity, used_by=used_by or []))
+    return asdict(
+        AssumptionRecord(
+            text=text,
+            status=status,
+            source=source,
+            necessity=necessity,
+            used_by=used_by or [],
+            route_categories=route_categories or [],
+            route_category_sources=route_category_sources or [],
+        )
+    )
 
 
 def backend_attempt_record(

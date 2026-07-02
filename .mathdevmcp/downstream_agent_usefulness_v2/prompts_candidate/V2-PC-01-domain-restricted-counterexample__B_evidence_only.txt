@@ -1,0 +1,28 @@
+# Downstream-Agent Usefulness V2 Candidate Prompt
+
+Condition B: compact machine evidence only. Human framing, recommended next actions, and narrative answer scaffolding are intentionally absent.
+
+Case: V2-PC-01-domain-restricted-counterexample - Domain-restricted symbolic counterexample
+Workflow: prove_or_counterexample
+
+Task
+Can the symbolic claim be proved or refuted in the stated scope? Use only scoped evidence and preserve domain boundaries.
+
+Bounded Context
+Assess a symbolic identity where a compact backend witness refutes the unrestricted claim, but a domain restriction changes the scope of what may be concluded.
+
+Compact Machine Evidence
+- machine_witness: x = 0 refutes the unrestricted all-real identity after denominator clearing
+- scope_note: source route states intended domain x > 0 with denominators nonzero
+- obligation_marker: unrestricted witness and intended restricted route are different scopes
+
+Response Fields
+- local_answer
+- evidence_used
+- assumptions_or_gaps
+- boundary_notes
+
+Non-Claims
+- Use only the information in this prompt.
+- Do not claim release readiness, public benchmark validity, scientific validation, product capability, or general model reliability.
+- Do not treat diagnostic checks as proof beyond their stated scope.

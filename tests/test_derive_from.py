@@ -8,9 +8,17 @@ def test_derive_from_proves_scoped_identity_with_backend_certificate() -> None:
     assert result["status"] == "proved"
     assert result["workflow"] == "derive_from"
     assert result["claim_class"] == "derivation"
-    assert result["evidence_classes"] == ["backend_certificate"]
+    assert result["evidence_classes"] == ["backend_certificate", "review_packet"]
     assert result["certification_source"] == "backend"
-    assert result["evidence"][0]["givens"] == ["a,b are scalars"]
+    certifying_evidence = next(item for item in result["evidence"] if item["class"] == "backend_certificate")
+    route_evidence = next(item for item in result["evidence"] if item["id"] == "derive_from:route-plan")
+    assert route_evidence["class"] == "review_packet"
+    assert route_evidence["givens"] == ["a,b are scalars"]
+    assert "givens" not in certifying_evidence
+    assert route_evidence["route_plan"]["scope"] == "derive_from_route_plan"
+    assert route_evidence["route_plan"]["givens"] == ["a,b are scalars"]
+    assert route_evidence["route_plan"]["backend_route"]["status"] == "proved"
+    assert route_evidence["route_plan"]["obligations"][0]["status"] == "proved"
     assert "givens_not_formal_assumptions" in {item["code"] for item in result["non_claims"]}
     assert validate_high_level_result(result) == []
 
@@ -19,7 +27,7 @@ def test_derive_from_refutes_only_when_counterexample_artifact_exists() -> None:
     result = derive_from("A*B = B*A")
 
     assert result["status"] == "refuted"
-    assert result["evidence_classes"] == ["backend_counterexample"]
+    assert result["evidence_classes"] == ["backend_counterexample", "review_packet"]
     assert result["counterexamples"]
     assert validate_high_level_result(result) == []
 
@@ -37,6 +45,9 @@ def test_derive_from_reports_missing_assumptions_without_inserting_them() -> Non
 
     assert result["status"] == "missing_assumptions"
     assert result["assumptions"]
+    route_evidence = next(item for item in result["evidence"] if item["id"] == "derive_from:route-plan")
+    assert route_evidence["route_plan"]["route_gaps"][0]["kind"] == "missing_assumptions"
+    assert route_evidence["route_plan"]["obligations"][0]["missing_assumptions"]
     assert "route_assumptions_not_global_minimality" in {item["code"] for item in result["non_claims"]}
     assert validate_high_level_result(result) == []
 
@@ -57,7 +68,12 @@ def test_derive_from_records_explicit_assumptions_separately_from_givens() -> No
         assumptions=["denominator is nonzero"],
     )
 
-    assert result["evidence"][0]["givens"] == ["we usually divide by nonzero denominators"]
-    assert result["evidence"][0]["explicit_assumptions"] == ["denominator is nonzero"]
+    route_evidence = next(item for item in result["evidence"] if item["id"] == "derive_from:route-plan")
+    assert route_evidence["givens"] == ["we usually divide by nonzero denominators"]
+    assert route_evidence["explicit_assumptions"] == ["denominator is nonzero"]
+    route_plan = route_evidence["route_plan"]
+    assert route_plan["givens"] == ["we usually divide by nonzero denominators"]
+    assert route_plan["explicit_assumptions"] == ["denominator is nonzero"]
+    assert "not an unchecked derivation chain" in route_plan["boundary"]
     assert "givens_not_formal_assumptions" in {item["code"] for item in result["non_claims"]}
     assert validate_high_level_result(result) == []

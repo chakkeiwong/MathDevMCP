@@ -1,0 +1,296 @@
+{
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "downstream_agent_usefulness_v2_case_manifest_candidate",
+    "created": "2026-07-02",
+    "status": "phase_02_case_manifest_candidate_no_prompt_fixtures",
+    "baseline": ".mathdevmcp/downstream_agent_usefulness_v2/baseline_hash_manifest.json",
+    "difficulty_requirements": ".mathdevmcp/downstream_agent_usefulness_v2/difficulty_requirements.json",
+    "scope": "local_non_gating_benchmark_maintenance_candidate"
+  },
+  "source_boundary": {
+    "policy": "Use synthetic fixtures, bounded summaries, and provenance labels. Do not copy substantial private or neighboring-repo source excerpts into cases or prompts.",
+    "source_material_type": "synthetic_and_bounded_local_summary",
+    "copyright_privacy_boundary": "No substantial unpublished source excerpts are required for this candidate manifest."
+  },
+  "coverage": {
+    "case_total": 6,
+    "workflow_families": [
+      "assumptions_for",
+      "audit_math_to_code",
+      "debug_derivation",
+      "derive_from",
+      "prepare_review_packet",
+      "prove_or_counterexample"
+    ],
+    "required_artifact_types": [
+      "assumption_ledger",
+      "backend_certificate_with_domain_map",
+      "diagnostic_review_packet",
+      "equation_to_code_trace",
+      "first_gap_localization",
+      "route_obligation_ledger"
+    ],
+    "high_c_sensitivity_cases": 4
+  },
+  "cases": [
+    {
+      "case_id": "V2-DF-01-affine-matrix-domain-obligation",
+      "title": "Affine recursion matrix-domain obligation",
+      "workflow_family": "derive_from",
+      "source_family": "synthetic affine-pricing route modeled on bounded local benchmark summaries",
+      "source_boundary": "Synthetic scalar/matrix route summary only; no raw private source excerpt.",
+      "task_prompt_summary": "Decide whether a target affine recursion follows from a set of Gaussian-affine assumptions when a compact scalar check and a matrix recursion target are both present.",
+      "bounded_context_for_prompts": "A scalar sanity check verifies a one-dimensional expectation identity. The target claim is a matrix-valued affine recursion requiring a Gaussian MGF step, dimension compatibility, and a positive-definite covariance-domain condition.",
+      "prompt_visible_question": "Can the target affine recursion be derived from the supplied assumptions and evidence? Provide the route or the missing obligations without overclaiming.",
+      "evaluator_only": {
+        "expected_output_family": "missing_obligations",
+        "evidence_class": "human_review_required",
+        "required_artifact_type": "route_obligation_ledger",
+        "expected_agent_work": "Reject the scalar check as sufficient for the matrix recursion, identify the missing Gaussian MGF, dimension, and covariance-domain obligations, and propose the next formal route artifact.",
+        "forbidden_failure_modes": [
+          "treating scalar sanity check as matrix derivation",
+          "claiming theorem-level derivation without route obligations",
+          "making source-wide correctness claims"
+        ]
+      },
+      "condition_design": {
+        "A_task_only": "Task plus bounded target/assumption context. No scalar-check result, no obligation ledger, no evaluator labels.",
+        "B_evidence_only": "Compact evidence: scalar sanity check result, target matrix shape, and missing domain marker, without route-prioritization prose or next action.",
+        "C_human_framed": "Self-contained handoff with background, route obligations to audit, decision criteria, non-claim boundaries, and requested route-obligation ledger."
+      },
+      "difficulty_tags": [
+        "matrix_domain_gap",
+        "scalar_proxy_trap",
+        "abstention_when_route_insufficient"
+      ],
+      "c_sensitivity": "high",
+      "scoring_applicability": [
+        "task_outcome_correctness",
+        "decisive_evidence_use",
+        "self_contained_reasoning",
+        "assumption_and_gap_handling",
+        "boundary_and_nonclaim_discipline",
+        "actionability_for_next_agent",
+        "domain_obligation_tracking",
+        "abstention_when_route_insufficient"
+      ]
+    },
+    {
+      "case_id": "V2-PC-01-domain-restricted-counterexample",
+      "title": "Domain-restricted symbolic counterexample",
+      "workflow_family": "prove_or_counterexample",
+      "source_family": "synthetic symbolic backend witness",
+      "source_boundary": "Synthetic polynomial/rational expression and witness only.",
+      "task_prompt_summary": "Assess a symbolic identity where a compact backend witness refutes the unrestricted claim, but a domain restriction changes the scope of what may be concluded.",
+      "bounded_context_for_prompts": "The claim states f(x) = g(x) for all real x. Compact backend evidence gives x = 0 as a witness for the unrestricted expression after clearing denominators. A side note says the source route only intended x > 0 and denominators nonzero.",
+      "prompt_visible_question": "Can the symbolic claim be proved or refuted in the stated scope? Use only scoped evidence and preserve domain boundaries.",
+      "evaluator_only": {
+        "expected_output_family": "scoped_refutation",
+        "evidence_class": "backend_counterexample",
+        "required_artifact_type": "backend_certificate_with_domain_map",
+        "expected_agent_work": "Use the witness to refute the unrestricted claim, state that it does not refute the x > 0 restricted route by itself, and request or propose a scoped backend obligation for the intended domain.",
+        "forbidden_failure_modes": [
+          "global source false claim from unrestricted witness",
+          "ignoring domain restriction",
+          "claiming proof because restricted route remains possible"
+        ]
+      },
+      "condition_design": {
+        "A_task_only": "Task and high-level claim only. No witness or domain-map evidence.",
+        "B_evidence_only": "Compact witness and domain note as terse machine evidence, without narrative boundary framing.",
+        "C_human_framed": "Handoff packet with notation map, intended/unrestricted scope distinction, decision criteria, and requested scoped certificate or counterexample artifact."
+      },
+      "difficulty_tags": [
+        "alias_reconciliation",
+        "domain_restriction",
+        "counterexample_scope_boundary"
+      ],
+      "c_sensitivity": "high",
+      "scoring_applicability": [
+        "task_outcome_correctness",
+        "decisive_evidence_use",
+        "self_contained_reasoning",
+        "assumption_and_gap_handling",
+        "boundary_and_nonclaim_discipline",
+        "actionability_for_next_agent",
+        "alias_reconciliation",
+        "domain_obligation_tracking"
+      ]
+    },
+    {
+      "case_id": "V2-AF-01-masked-likelihood-score-assumptions",
+      "title": "Masked likelihood and score route assumptions",
+      "workflow_family": "assumptions_for",
+      "source_family": "synthetic Kalman-style likelihood route",
+      "source_boundary": "Synthetic likelihood/score summary modeled on bounded local benchmark summaries.",
+      "task_prompt_summary": "Identify assumptions needed before a masked likelihood value route and a score route can be treated as differentiating the same scalar objective.",
+      "bounded_context_for_prompts": "The value route uses selected innovations and a logdet/solve term. The score route differentiates a full covariance expression. A mask aliases observed components, and the covariance domain is only partially stated.",
+      "prompt_visible_question": "What assumptions are required before the score route can be treated as differentiating the same scalar likelihood as the value route?",
+      "evaluator_only": {
+        "expected_output_family": "missing_assumptions",
+        "evidence_class": "missing_assumption",
+        "required_artifact_type": "assumption_ledger",
+        "expected_agent_work": "Name same-scalar target, mask/selection consistency, differentiability through the selected covariance, positive-definite selected innovation covariance, and route-link assumptions; avoid claiming score equivalence.",
+        "forbidden_failure_modes": [
+          "equating full and masked likelihoods silently",
+          "ignoring covariance-domain assumptions",
+          "claiming gradient correctness without route-link assumptions"
+        ]
+      },
+      "condition_design": {
+        "A_task_only": "Task plus bounded value/score route summary only. No compact evidence ledger.",
+        "B_evidence_only": "Compact equations and mask notes, but no prioritized assumption ledger or non-claim framing.",
+        "C_human_framed": "Handoff with assumption categories, route-link decision criteria, non-claims, and requested assumption ledger."
+      },
+      "difficulty_tags": [
+        "same_scalar_obligation",
+        "mask_alias",
+        "covariance_domain"
+      ],
+      "c_sensitivity": "high",
+      "scoring_applicability": [
+        "task_outcome_correctness",
+        "decisive_evidence_use",
+        "self_contained_reasoning",
+        "assumption_and_gap_handling",
+        "boundary_and_nonclaim_discipline",
+        "actionability_for_next_agent",
+        "alias_reconciliation",
+        "domain_obligation_tracking"
+      ]
+    },
+    {
+      "case_id": "V2-AMC-01-logdet-quadratic-code-trace",
+      "title": "Logdet/quadratic formula-to-code trace",
+      "workflow_family": "audit_math_to_code",
+      "source_family": "synthetic formula-to-code audit fixture",
+      "source_boundary": "Synthetic formula and pseudocode snippets only.",
+      "task_prompt_summary": "Audit whether a pseudocode likelihood implements both logdet and quadratic solve terms when aliases make one term easy to miss.",
+      "bounded_context_for_prompts": "The documented expression contains logdet(S_t) and v_t' solve(S_t, v_t). The pseudocode computes residual r, Cholesky L, and sum(log(diag(L))) but the solve contribution is hidden behind an ambiguous alias q that is initialized to zero.",
+      "prompt_visible_question": "Does the pseudocode structurally implement the documented expression? Produce a matched/missing-term ledger and preserve local audit boundaries.",
+      "evaluator_only": {
+        "expected_output_family": "structural_mismatch",
+        "evidence_class": "structural_mismatch",
+        "required_artifact_type": "equation_to_code_trace",
+        "expected_agent_work": "Match the logdet term, identify the missing or unimplemented quadratic solve term, note alias ambiguity, and avoid claiming the whole implementation is mathematically wrong.",
+        "forbidden_failure_modes": [
+          "prose-only answer without matched/missing ledger",
+          "global code false claim from structural mismatch",
+          "missing the ambiguous alias issue"
+        ]
+      },
+      "condition_design": {
+        "A_task_only": "Task plus formula/pseudocode summary, without compact matched/missing evidence.",
+        "B_evidence_only": "Compact token/AST evidence for formula terms and pseudocode terms, without audit framing or local/global boundary wording.",
+        "C_human_framed": "Handoff with audit objective, ledger template, alias note, equivalence alternatives, local/global claim boundary, and next focused code check."
+      },
+      "difficulty_tags": [
+        "matched_missing_artifact_ledger",
+        "alias_reconciliation",
+        "local_global_code_boundary"
+      ],
+      "c_sensitivity": "high",
+      "scoring_applicability": [
+        "task_outcome_correctness",
+        "decisive_evidence_use",
+        "self_contained_reasoning",
+        "assumption_and_gap_handling",
+        "boundary_and_nonclaim_discipline",
+        "actionability_for_next_agent",
+        "matched_missing_artifact_ledger",
+        "alias_reconciliation"
+      ]
+    },
+    {
+      "case_id": "V2-DD-01-first-gap-product-rule",
+      "title": "First derivation gap in product-rule trace",
+      "workflow_family": "debug_derivation",
+      "source_family": "synthetic local derivation trace",
+      "source_boundary": "Synthetic four-step derivation trace only.",
+      "task_prompt_summary": "Localize the first failing step in a derivation where later steps also look suspicious but depend on the earlier invalid move.",
+      "bounded_context_for_prompts": "A four-step derivation differentiates h(theta) = a(theta)b(theta). Step 2 drops b'(theta) while Step 4 later changes sign after substituting a stationarity condition.",
+      "prompt_visible_question": "Where does the derivation first fail? State the missing condition or invalid transformation and avoid judging later dependent steps as the first failure.",
+      "evaluator_only": {
+        "expected_output_family": "first_gap_localized",
+        "evidence_class": "local_derivation_gap",
+        "required_artifact_type": "first_gap_localization",
+        "expected_agent_work": "Identify Step 2 as the first failure unless b' = 0 is supplied, explain that later sign issues are downstream or separate, and propose the smallest check or assumption ledger.",
+        "forbidden_failure_modes": [
+          "choosing later sign substitution as first failure",
+          "repairing the derivation by inventing b' = 0",
+          "claiming entire proof false beyond local gap"
+        ]
+      },
+      "condition_design": {
+        "A_task_only": "Task and derivation trace only.",
+        "B_evidence_only": "Compact derivative comparison and candidate gap markers, without first-gap protocol or downstream-dependency framing.",
+        "C_human_framed": "Handoff with first-failing-step discipline, dependency note, missing-condition criterion, and requested localization artifact."
+      },
+      "difficulty_tags": [
+        "first_failing_step_localization",
+        "dependency_ordering",
+        "missing_condition"
+      ],
+      "c_sensitivity": "medium",
+      "scoring_applicability": [
+        "task_outcome_correctness",
+        "decisive_evidence_use",
+        "self_contained_reasoning",
+        "assumption_and_gap_handling",
+        "boundary_and_nonclaim_discipline",
+        "actionability_for_next_agent",
+        "first_failing_step_localization"
+      ]
+    },
+    {
+      "case_id": "V2-PRP-01-gaussian-score-review-packet",
+      "title": "Gaussian score diagnostic review packet",
+      "workflow_family": "prepare_review_packet",
+      "source_family": "synthetic difficult derivation packet fixture",
+      "source_boundary": "Synthetic derivation-summary fixture only.",
+      "task_prompt_summary": "Prepare a diagnostic packet for a difficult Gaussian score derivation where available checks are incomplete and proof is not authorized.",
+      "bounded_context_for_prompts": "Available facts include a value-route smoke check, a partial symbolic derivative for the scalar observation case, and an unresolved matrix calculus step for the full covariance case.",
+      "prompt_visible_question": "Prepare the review packet a downstream mathematical reviewer needs next. Do not present the packet as proof.",
+      "evaluator_only": {
+        "expected_output_family": "diagnostic_packet",
+        "evidence_class": "review_packet",
+        "required_artifact_type": "diagnostic_review_packet",
+        "expected_agent_work": "Produce a packet with question, assumptions, checked facts, missing proof obligations, veto risks, next artifacts, and non-claims; avoid proof or readiness claims.",
+        "forbidden_failure_modes": [
+          "prose-only conclusion without packet sections",
+          "treating smoke check as proof",
+          "claiming score derivation or release readiness"
+        ]
+      },
+      "condition_design": {
+        "A_task_only": "Task plus high-level derivation situation only.",
+        "B_evidence_only": "Compact facts/checks list without packet sections or boundary framing.",
+        "C_human_framed": "Handoff with packet section contract, known checks, missing obligations, veto risks, and next-artifact instructions."
+      },
+      "difficulty_tags": [
+        "diagnostic_review_packet",
+        "non_claim_boundary_preservation",
+        "next_artifact_specificity"
+      ],
+      "c_sensitivity": "medium",
+      "scoring_applicability": [
+        "task_outcome_correctness",
+        "decisive_evidence_use",
+        "self_contained_reasoning",
+        "assumption_and_gap_handling",
+        "boundary_and_nonclaim_discipline",
+        "actionability_for_next_agent",
+        "non_claim_boundary_preservation",
+        "next_artifact_specificity"
+      ]
+    }
+  ],
+  "non_claims": [
+    "This case manifest is a candidate design artifact only.",
+    "This case manifest is not response-quality evidence.",
+    "This case manifest does not prove v2 will separate B and C.",
+    "This case manifest does not authorize response collection.",
+    "This case manifest is not release, public benchmark, scientific, product, or general model reliability evidence."
+  ]
+}

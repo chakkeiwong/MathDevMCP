@@ -1,0 +1,271 @@
+{
+  "metadata": {
+    "case_count": 6,
+    "case_manifest": ".mathdevmcp/downstream_agent_usefulness_v2/case_manifest_candidate.json",
+    "conditions": [
+      "A_task_only",
+      "B_evidence_only",
+      "C_human_framed"
+    ],
+    "contract": "downstream_agent_usefulness_v2_prompt_manifest_candidate",
+    "created": "2026-07-02",
+    "non_claim": "Candidate prompt fixtures only; no response collection or usefulness result is authorized by this artifact.",
+    "prompt_count": 18,
+    "schema_version": "1.0",
+    "status": "phase_03_prompt_candidate_no_response_collection"
+  },
+  "prompts": [
+    {
+      "candidate_note": "V2 candidate prompt. Evaluator-only labels stay in manifest and must not be copied into prompt text.",
+      "case_id": "V2-DF-01-affine-matrix-domain-obligation",
+      "condition": "A_task_only",
+      "evaluator_only": {
+        "evidence_class": "human_review_required",
+        "expected_output_family": "missing_obligations",
+        "required_artifact_type": "route_obligation_ledger"
+      },
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/prompts_candidate/V2-DF-01-affine-matrix-domain-obligation__A_task_only.txt",
+      "prompt_id": "V2-DF-01-affine-matrix-domain-obligation__A_task_only",
+      "sha256": "5636fe6554a488bd94d490088014d575d530dc4c0523bbeb7b7612debaedf1d9",
+      "workflow": "derive_from"
+    },
+    {
+      "candidate_note": "V2 candidate prompt. Evaluator-only labels stay in manifest and must not be copied into prompt text.",
+      "case_id": "V2-DF-01-affine-matrix-domain-obligation",
+      "condition": "B_evidence_only",
+      "evaluator_only": {
+        "evidence_class": "human_review_required",
+        "expected_output_family": "missing_obligations",
+        "required_artifact_type": "route_obligation_ledger"
+      },
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/prompts_candidate/V2-DF-01-affine-matrix-domain-obligation__B_evidence_only.txt",
+      "prompt_id": "V2-DF-01-affine-matrix-domain-obligation__B_evidence_only",
+      "sha256": "80d2c9c20c349787d8742f40082ba6b5c17955262f9edca1f4b21a7784cc5d1e",
+      "workflow": "derive_from"
+    },
+    {
+      "candidate_note": "V2 candidate prompt. Evaluator-only labels stay in manifest and must not be copied into prompt text.",
+      "case_id": "V2-DF-01-affine-matrix-domain-obligation",
+      "condition": "C_human_framed",
+      "evaluator_only": {
+        "evidence_class": "human_review_required",
+        "expected_output_family": "missing_obligations",
+        "required_artifact_type": "route_obligation_ledger"
+      },
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/prompts_candidate/V2-DF-01-affine-matrix-domain-obligation__C_human_framed.txt",
+      "prompt_id": "V2-DF-01-affine-matrix-domain-obligation__C_human_framed",
+      "sha256": "697cf5af19f47915810aa0b17ec5dfabb98458df65d3bfe505af31b088ff8c00",
+      "workflow": "derive_from"
+    },
+    {
+      "candidate_note": "V2 candidate prompt. Evaluator-only labels stay in manifest and must not be copied into prompt text.",
+      "case_id": "V2-PC-01-domain-restricted-counterexample",
+      "condition": "A_task_only",
+      "evaluator_only": {
+        "evidence_class": "backend_counterexample",
+        "expected_output_family": "scoped_refutation",
+        "required_artifact_type": "backend_certificate_with_domain_map"
+      },
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/prompts_candidate/V2-PC-01-domain-restricted-counterexample__A_task_only.txt",
+      "prompt_id": "V2-PC-01-domain-restricted-counterexample__A_task_only",
+      "sha256": "914f95d26c2903202b35faf4cc198ba56eba0b75376a665b22739f45866476dc",
+      "workflow": "prove_or_counterexample"
+    },
+    {
+      "candidate_note": "V2 candidate prompt. Evaluator-only labels stay in manifest and must not be copied into prompt text.",
+      "case_id": "V2-PC-01-domain-restricted-counterexample",
+      "condition": "B_evidence_only",
+      "evaluator_only": {
+        "evidence_class": "backend_counterexample",
+        "expected_output_family": "scoped_refutation",
+        "required_artifact_type": "backend_certificate_with_domain_map"
+      },
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/prompts_candidate/V2-PC-01-domain-restricted-counterexample__B_evidence_only.txt",
+      "prompt_id": "V2-PC-01-domain-restricted-counterexample__B_evidence_only",
+      "sha256": "8dd8200a75081bd452c2e8b19f7e480af0030f945c2bdaeb71923b4b84945216",
+      "workflow": "prove_or_counterexample"
+    },
+    {
+      "candidate_note": "V2 candidate prompt. Evaluator-only labels stay in manifest and must not be copied into prompt text.",
+      "case_id": "V2-PC-01-domain-restricted-counterexample",
+      "condition": "C_human_framed",
+      "evaluator_only": {
+        "evidence_class": "backend_counterexample",
+        "expected_output_family": "scoped_refutation",
+        "required_artifact_type": "backend_certificate_with_domain_map"
+      },
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/prompts_candidate/V2-PC-01-domain-restricted-counterexample__C_human_framed.txt",
+      "prompt_id": "V2-PC-01-domain-restricted-counterexample__C_human_framed",
+      "sha256": "7ddab4811eb359f73eb491dd0d7d896810270d991ded3745ad245ac456eb8b16",
+      "workflow": "prove_or_counterexample"
+    },
+    {
+      "candidate_note": "V2 candidate prompt. Evaluator-only labels stay in manifest and must not be copied into prompt text.",
+      "case_id": "V2-AF-01-masked-likelihood-score-assumptions",
+      "condition": "A_task_only",
+      "evaluator_only": {
+        "evidence_class": "missing_assumption",
+        "expected_output_family": "missing_assumptions",
+        "required_artifact_type": "assumption_ledger"
+      },
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/prompts_candidate/V2-AF-01-masked-likelihood-score-assumptions__A_task_only.txt",
+      "prompt_id": "V2-AF-01-masked-likelihood-score-assumptions__A_task_only",
+      "sha256": "1b6a53b720fdfed5ca88119afd687c6f13fe26d170bb5ca8b16f79d66449a34d",
+      "workflow": "assumptions_for"
+    },
+    {
+      "candidate_note": "V2 candidate prompt. Evaluator-only labels stay in manifest and must not be copied into prompt text.",
+      "case_id": "V2-AF-01-masked-likelihood-score-assumptions",
+      "condition": "B_evidence_only",
+      "evaluator_only": {
+        "evidence_class": "missing_assumption",
+        "expected_output_family": "missing_assumptions",
+        "required_artifact_type": "assumption_ledger"
+      },
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/prompts_candidate/V2-AF-01-masked-likelihood-score-assumptions__B_evidence_only.txt",
+      "prompt_id": "V2-AF-01-masked-likelihood-score-assumptions__B_evidence_only",
+      "sha256": "c160789bf42c758df62cfd8cb4259cb4460ad0167dd451482f65409a0cab0035",
+      "workflow": "assumptions_for"
+    },
+    {
+      "candidate_note": "V2 candidate prompt. Evaluator-only labels stay in manifest and must not be copied into prompt text.",
+      "case_id": "V2-AF-01-masked-likelihood-score-assumptions",
+      "condition": "C_human_framed",
+      "evaluator_only": {
+        "evidence_class": "missing_assumption",
+        "expected_output_family": "missing_assumptions",
+        "required_artifact_type": "assumption_ledger"
+      },
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/prompts_candidate/V2-AF-01-masked-likelihood-score-assumptions__C_human_framed.txt",
+      "prompt_id": "V2-AF-01-masked-likelihood-score-assumptions__C_human_framed",
+      "sha256": "c1126627441ce573910f8226217e8d6d92c28f630dcf1ae224df08ebcf58c141",
+      "workflow": "assumptions_for"
+    },
+    {
+      "candidate_note": "V2 candidate prompt. Evaluator-only labels stay in manifest and must not be copied into prompt text.",
+      "case_id": "V2-AMC-01-logdet-quadratic-code-trace",
+      "condition": "A_task_only",
+      "evaluator_only": {
+        "evidence_class": "structural_mismatch",
+        "expected_output_family": "structural_mismatch",
+        "required_artifact_type": "equation_to_code_trace"
+      },
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/prompts_candidate/V2-AMC-01-logdet-quadratic-code-trace__A_task_only.txt",
+      "prompt_id": "V2-AMC-01-logdet-quadratic-code-trace__A_task_only",
+      "sha256": "7c1c6bb2dba733a1dc859210e192af343505720d64f6c2c16470413fbd83025d",
+      "workflow": "audit_math_to_code"
+    },
+    {
+      "candidate_note": "V2 candidate prompt. Evaluator-only labels stay in manifest and must not be copied into prompt text.",
+      "case_id": "V2-AMC-01-logdet-quadratic-code-trace",
+      "condition": "B_evidence_only",
+      "evaluator_only": {
+        "evidence_class": "structural_mismatch",
+        "expected_output_family": "structural_mismatch",
+        "required_artifact_type": "equation_to_code_trace"
+      },
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/prompts_candidate/V2-AMC-01-logdet-quadratic-code-trace__B_evidence_only.txt",
+      "prompt_id": "V2-AMC-01-logdet-quadratic-code-trace__B_evidence_only",
+      "sha256": "8c7b44ce85b14380978c3a0436293d88953d6083d49bccae662ebfffc3f01b0d",
+      "workflow": "audit_math_to_code"
+    },
+    {
+      "candidate_note": "V2 candidate prompt. Evaluator-only labels stay in manifest and must not be copied into prompt text.",
+      "case_id": "V2-AMC-01-logdet-quadratic-code-trace",
+      "condition": "C_human_framed",
+      "evaluator_only": {
+        "evidence_class": "structural_mismatch",
+        "expected_output_family": "structural_mismatch",
+        "required_artifact_type": "equation_to_code_trace"
+      },
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/prompts_candidate/V2-AMC-01-logdet-quadratic-code-trace__C_human_framed.txt",
+      "prompt_id": "V2-AMC-01-logdet-quadratic-code-trace__C_human_framed",
+      "sha256": "e14eeda7f3319d71db59b8ceb7bec5dca812a0b10ff621f3c530c52240ed6881",
+      "workflow": "audit_math_to_code"
+    },
+    {
+      "candidate_note": "V2 candidate prompt. Evaluator-only labels stay in manifest and must not be copied into prompt text.",
+      "case_id": "V2-DD-01-first-gap-product-rule",
+      "condition": "A_task_only",
+      "evaluator_only": {
+        "evidence_class": "local_derivation_gap",
+        "expected_output_family": "first_gap_localized",
+        "required_artifact_type": "first_gap_localization"
+      },
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/prompts_candidate/V2-DD-01-first-gap-product-rule__A_task_only.txt",
+      "prompt_id": "V2-DD-01-first-gap-product-rule__A_task_only",
+      "sha256": "57982a09b598a0b78dd87b9542b0b197927babf8f653f5de472cc218e2d1291b",
+      "workflow": "debug_derivation"
+    },
+    {
+      "candidate_note": "V2 candidate prompt. Evaluator-only labels stay in manifest and must not be copied into prompt text.",
+      "case_id": "V2-DD-01-first-gap-product-rule",
+      "condition": "B_evidence_only",
+      "evaluator_only": {
+        "evidence_class": "local_derivation_gap",
+        "expected_output_family": "first_gap_localized",
+        "required_artifact_type": "first_gap_localization"
+      },
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/prompts_candidate/V2-DD-01-first-gap-product-rule__B_evidence_only.txt",
+      "prompt_id": "V2-DD-01-first-gap-product-rule__B_evidence_only",
+      "sha256": "c53b2b7c5332c260367b08f0fa41ab6389bb8e2011e18c783289fd07df35703f",
+      "workflow": "debug_derivation"
+    },
+    {
+      "candidate_note": "V2 candidate prompt. Evaluator-only labels stay in manifest and must not be copied into prompt text.",
+      "case_id": "V2-DD-01-first-gap-product-rule",
+      "condition": "C_human_framed",
+      "evaluator_only": {
+        "evidence_class": "local_derivation_gap",
+        "expected_output_family": "first_gap_localized",
+        "required_artifact_type": "first_gap_localization"
+      },
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/prompts_candidate/V2-DD-01-first-gap-product-rule__C_human_framed.txt",
+      "prompt_id": "V2-DD-01-first-gap-product-rule__C_human_framed",
+      "sha256": "93ce411ef0d02c434a232e9ce2fff704edc53cd07f335b62b552ae3c404e2389",
+      "workflow": "debug_derivation"
+    },
+    {
+      "candidate_note": "V2 candidate prompt. Evaluator-only labels stay in manifest and must not be copied into prompt text.",
+      "case_id": "V2-PRP-01-gaussian-score-review-packet",
+      "condition": "A_task_only",
+      "evaluator_only": {
+        "evidence_class": "review_packet",
+        "expected_output_family": "diagnostic_packet",
+        "required_artifact_type": "diagnostic_review_packet"
+      },
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/prompts_candidate/V2-PRP-01-gaussian-score-review-packet__A_task_only.txt",
+      "prompt_id": "V2-PRP-01-gaussian-score-review-packet__A_task_only",
+      "sha256": "5b46c30764bfdb6a757100b9117750218d7229864ad7373247da0059fe146045",
+      "workflow": "prepare_review_packet"
+    },
+    {
+      "candidate_note": "V2 candidate prompt. Evaluator-only labels stay in manifest and must not be copied into prompt text.",
+      "case_id": "V2-PRP-01-gaussian-score-review-packet",
+      "condition": "B_evidence_only",
+      "evaluator_only": {
+        "evidence_class": "review_packet",
+        "expected_output_family": "diagnostic_packet",
+        "required_artifact_type": "diagnostic_review_packet"
+      },
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/prompts_candidate/V2-PRP-01-gaussian-score-review-packet__B_evidence_only.txt",
+      "prompt_id": "V2-PRP-01-gaussian-score-review-packet__B_evidence_only",
+      "sha256": "4856c56f9ff094de56a4c56accf41b70222100c3805d07af4665ddf87712726c",
+      "workflow": "prepare_review_packet"
+    },
+    {
+      "candidate_note": "V2 candidate prompt. Evaluator-only labels stay in manifest and must not be copied into prompt text.",
+      "case_id": "V2-PRP-01-gaussian-score-review-packet",
+      "condition": "C_human_framed",
+      "evaluator_only": {
+        "evidence_class": "review_packet",
+        "expected_output_family": "diagnostic_packet",
+        "required_artifact_type": "diagnostic_review_packet"
+      },
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/prompts_candidate/V2-PRP-01-gaussian-score-review-packet__C_human_framed.txt",
+      "prompt_id": "V2-PRP-01-gaussian-score-review-packet__C_human_framed",
+      "sha256": "504a3c6b12710c290ae7686c9cb50162e22e48233f5cdc23843e52dc403e31a5",
+      "workflow": "prepare_review_packet"
+    }
+  ]
+}

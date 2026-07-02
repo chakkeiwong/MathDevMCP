@@ -1,0 +1,127 @@
+{
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "downstream_agent_usefulness_scoring_rubric",
+    "status": "phase_01_frozen_before_case_fixture_and_response_collection",
+    "created": "2026-07-01",
+    "scope": "local_non_gating_downstream_agent_usefulness"
+  },
+  "score_scale": {
+    "0": "Fails the dimension, misses decisive information, or introduces material confusion.",
+    "1": "Partially satisfies the dimension but omits important evidence, reasoning, assumptions, boundaries, or next-action detail.",
+    "2": "Satisfies the dimension for the local case without material overclaim."
+  },
+  "required_dimensions": [
+    {
+      "id": "task_outcome_correctness",
+      "description": "Answers the task with the locally expected outcome family: derive/prove, refute by counterexample, identify missing assumptions, localize the first gap, audit code structurally, or abstain when evidence is insufficient.",
+      "pass_floor": 2
+    },
+    {
+      "id": "decisive_evidence_use",
+      "description": "Uses the decisive source, backend, counterexample, gap, assumption, or code-structure evidence available in the prompt condition; does not invent unsupported evidence.",
+      "pass_floor": 2
+    },
+    {
+      "id": "self_contained_reasoning",
+      "description": "Explains why the conclusion follows in a way another agent can continue without needing to rediscover core context.",
+      "pass_floor": 2
+    },
+    {
+      "id": "assumption_and_gap_handling",
+      "description": "States route-required assumptions, missing assumptions, unencoded semantics, or proof/code gaps without silently promoting them.",
+      "pass_floor": 2
+    },
+    {
+      "id": "boundary_and_nonclaim_discipline",
+      "description": "Preserves local, diagnostic, backend-certified, not-encodable, release, public-benchmark, product, scientific, and general-reliability boundaries.",
+      "pass_floor": 2
+    },
+    {
+      "id": "actionability_for_next_agent",
+      "description": "Gives a concrete next artifact or action appropriate to the evidence, such as a Lean/SymPy/Sage obligation, counterexample check, source-adapter repair, assumption ledger, focused code audit, or bounded abstention.",
+      "pass_floor": 2
+    }
+  ],
+  "explanatory_dimensions": [
+    {
+      "id": "efficiency",
+      "description": "Avoids unnecessary broad research, unrelated implementation, or rediscovery. Explanatory only unless all required dimensions pass."
+    },
+    {
+      "id": "context_reuse",
+      "description": "Reuses local packet context or evidence efficiently. Explanatory only unless all required dimensions pass."
+    },
+    {
+      "id": "artifact_specificity",
+      "description": "Names concrete files, equations, obligations, cases, or checks where available. Explanatory only unless all required dimensions pass."
+    }
+  ],
+  "hard_vetoes": [
+    {
+      "id": "proof_without_certificate",
+      "description": "Claims a proof or derivation certificate without a scoped certifying backend, accepted source-backed derivation, or explicit proof obligation."
+    },
+    {
+      "id": "diagnostic_as_semantic_truth",
+      "description": "Treats structural, routing, packet, local smoke-test, or diagnostic evidence as semantic proof or refutation."
+    },
+    {
+      "id": "missing_assumptions_ignored",
+      "description": "Proceeds as if route-required assumptions were supplied when the case marks them missing."
+    },
+    {
+      "id": "counterexample_overclaim",
+      "description": "Uses a placeholder, type mismatch, finite probe, or unbound numeric example as a mathematical refutation beyond its encoded semantics."
+    },
+    {
+      "id": "source_or_code_global_false_claim",
+      "description": "Claims a whole source document is false or code is mathematically wrong from a local diagnostic or structural mismatch."
+    },
+    {
+      "id": "condition_artifact_leakage",
+      "description": "Uses information forbidden in the prompt condition."
+    },
+    {
+      "id": "agent_or_claude_as_authority",
+      "description": "Treats Claude, Codex, or a downstream response as authority to approve proofs, boundaries, release decisions, or scientific claims."
+    },
+    {
+      "id": "release_public_scientific_product_claim",
+      "description": "Claims release readiness, public benchmark validity, product capability, scientific validation, broad theorem proving, or general model reliability."
+    }
+  ],
+  "row_output_schema": {
+    "case_id": "string",
+    "condition": "A_task_only | B_evidence_only | C_human_framed",
+    "response_artifact": "string",
+    "malformed_output": "boolean",
+    "hard_vetoes_present": "array of hard_veto ids",
+    "required_scores": "object mapping required dimension id to 0, 1, or 2",
+    "explanatory_scores": "object mapping explanatory dimension id to 0, 1, or 2",
+    "required_pass": "boolean",
+    "usefulness_delta_vs_b": "worse | tied | better | not_applicable",
+    "notes": "short string"
+  },
+  "condition_summary_rule": "Report hard-veto counts first, then required-pass counts, then per-dimension totals, then usefulness deltas. A condition cannot be declared improved if it has a hard-veto regression relative to any comparator.",
+  "minimum_candidate_rule": {
+    "c_no_hard_veto_regression": true,
+    "c_required_pass_all_scored_cases": true,
+    "c_preserves_b_machine_evidence": true,
+    "c_better_than_b_on_predeclared_usefulness_axis": [
+      "task_outcome_correctness",
+      "self_contained_reasoning",
+      "actionability_for_next_agent"
+    ],
+    "aggregate_only_forbidden": true
+  },
+  "non_claims": [
+    "Scores are local downstream-usefulness diagnostics only.",
+    "Scores are not proof certificates.",
+    "Scores are not release gates.",
+    "Scores are not public benchmark results.",
+    "Scores are not scientific validation.",
+    "Scores are not product capability evidence.",
+    "Scores are not proof of general model reliability."
+  ]
+}

@@ -5,8 +5,65 @@ from __future__ import annotations
 from typing import Any
 
 from .derive_or_refute import derive_or_refute
-from .high_level_contracts import action, default_non_claims, evidence_entry, high_level_result, validate_high_level_result, veto_reason
+from .high_level_contracts import action, default_non_claims, evidence_entry, high_level_result, refresh_evidence_ledger, validate_high_level_result, veto_reason
 from .high_level_workflows import package_low_level_math_result
+
+
+def _derive_route_plan(
+    low_level: dict[str, Any],
+    *,
+    givens: list[str],
+    explicit_assumptions: list[str],
+) -> dict[str, Any]:
+    route = low_level.get("route_decision") if isinstance(low_level.get("route_decision"), dict) else {}
+    workbench = low_level.get("workbench_result") if isinstance(low_level.get("workbench_result"), dict) else {}
+    obligations = workbench.get("obligations") if isinstance(workbench.get("obligations"), list) else []
+    assumption_diagnostic = (
+        low_level.get("assumption_diagnostic")
+        if isinstance(low_level.get("assumption_diagnostic"), dict)
+        else {}
+    )
+    route_gaps: list[dict[str, Any]] = []
+    if assumption_diagnostic.get("missing_assumptions"):
+        route_gaps.append(
+            {
+                "kind": "missing_assumptions",
+                "items": assumption_diagnostic["missing_assumptions"],
+            }
+        )
+    if low_level.get("status") in {"unknown", "inconclusive", "not_encodable", "backend_unavailable"}:
+        route_gaps.append(
+            {
+                "kind": str(low_level.get("status")),
+                "reason": str(low_level.get("reason", "Route did not produce a certifying result.")),
+            }
+        )
+    return {
+        "version": "1.0",
+        "scope": "derive_from_route_plan",
+        "givens": list(givens),
+        "explicit_assumptions": list(explicit_assumptions),
+        "backend_route": {
+            "route": route.get("route"),
+            "status": route.get("status"),
+            "reason": route.get("reason"),
+        },
+        "obligations": [
+            {
+                key: obligation.get(key)
+                for key in ("id", "lhs", "rhs", "status", "reason", "missing_assumptions")
+                if key in obligation
+            }
+            for obligation in obligations
+            if isinstance(obligation, dict)
+        ],
+        "route_gaps": route_gaps,
+        "boundary": (
+            "This route plan records attempted derivation evidence and gaps; "
+            "it is not an unchecked derivation chain or a proof beyond scoped "
+            "backend evidence."
+        ),
+    }
 
 
 def derive_from(
@@ -28,7 +85,7 @@ def derive_from(
     try:
         low_level = derive_or_refute(
             target,
-            givens=given_list,
+            givens=[],
             assumptions=assumption_list,
             lhs=lhs,
             rhs=rhs,
@@ -82,8 +139,24 @@ def derive_from(
             "givens_not_formal_assumptions",
         }
     )
-    result["evidence"][0]["givens"] = given_list
-    result["evidence"][0]["explicit_assumptions"] = assumption_list
+    result["evidence"].append(
+        evidence_entry(
+            id="derive_from:route-plan",
+            evidence_class="review_packet",
+            source="derive_from_route_plan",
+            summary="Diagnostic route plan records givens, explicit assumptions, obligations, and gaps.",
+            extra={
+                "givens": given_list,
+                "explicit_assumptions": assumption_list,
+                "route_plan": _derive_route_plan(
+                    low_level,
+                    givens=given_list,
+                    explicit_assumptions=assumption_list,
+                ),
+            },
+        )
+    )
+    refresh_evidence_ledger(result)
     errors = validate_high_level_result(result)
     if errors:
         raise ValueError(f"invalid derive_from result: {errors}")

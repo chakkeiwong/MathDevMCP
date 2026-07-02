@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .high_level_contracts import action, validate_high_level_result
+from .high_level_contracts import action, refresh_evidence_ledger, validate_high_level_result
 from .high_level_workflows import package_review_packet_result
 from .math_review_packet import build_math_review_packet
 
@@ -21,6 +21,7 @@ def prepare_review_packet(
     low_level = build_math_review_packet(question, source=source, evidence=evidence_items, packet_id=packet_id)
     result = package_review_packet_result(low_level, question=question)
     result["actions"].append(action("human_review", "Inspect nested evidence, non-claims, and action items."))
+    refresh_evidence_ledger(result)
     errors = validate_high_level_result(result)
     if errors:
         raise ValueError(f"invalid prepare_review_packet result: {errors}")

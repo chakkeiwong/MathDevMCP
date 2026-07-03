@@ -1,0 +1,143 @@
+{
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "downstream_agent_usefulness_v2_collection_scoring_contract",
+    "created": "2026-07-03",
+    "status": "frozen_before_v2_response_collection",
+    "git_commit": "fbc1b87e4a23e9c811ef613deba0d24962feb87e",
+    "prompt_manifest": ".mathdevmcp/downstream_agent_usefulness_v2/prompt_manifest_candidate.json",
+    "prompt_manifest_sha256": "340ec24f062dc614d6e03a7d279a74539c8e033fef499ef3fc127e2722736bfe",
+    "baseline_rubric": ".mathdevmcp/downstream_agent_usefulness/scoring_rubric.json",
+    "scoring_applicability_map": ".mathdevmcp/downstream_agent_usefulness_v2/scoring_applicability_map.json"
+  },
+  "collection_scope": {
+    "prompt_count": 18,
+    "case_count": 6,
+    "conditions": [
+      "A_task_only",
+      "B_evidence_only",
+      "C_human_framed"
+    ],
+    "collection_authorized_by_this_contract": false,
+    "required_response_artifacts": {
+      "responses_dir": ".mathdevmcp/downstream_agent_usefulness_v2/responses_candidate/",
+      "response_manifest": ".mathdevmcp/downstream_agent_usefulness_v2/response_manifest_candidate.json",
+      "scored_json": ".mathdevmcp/downstream_agent_usefulness_v2/scored_responses_candidate.json",
+      "scored_markdown": ".mathdevmcp/downstream_agent_usefulness_v2/scored_responses_candidate.md"
+    }
+  },
+  "primary_required_dimensions": [
+    {
+      "id": "task_outcome_correctness",
+      "pass_floor": 2
+    },
+    {
+      "id": "decisive_evidence_use",
+      "pass_floor": 2
+    },
+    {
+      "id": "self_contained_reasoning",
+      "pass_floor": 2
+    },
+    {
+      "id": "assumption_and_gap_handling",
+      "pass_floor": 2
+    },
+    {
+      "id": "boundary_and_nonclaim_discipline",
+      "pass_floor": 2
+    },
+    {
+      "id": "actionability_for_next_agent",
+      "pass_floor": 2
+    }
+  ],
+  "explanatory_dimensions": [
+    "efficiency",
+    "context_reuse",
+    "artifact_specificity"
+  ],
+  "candidate_only_stressors": {
+    "status": "explanatory_only_unless_explicitly_approved_as_primary_before_collection",
+    "items": [
+      "alias_reconciliation",
+      "domain_obligation_tracking",
+      "first_failing_step_localization",
+      "matched_missing_artifact_ledger",
+      "non_claim_boundary_preservation",
+      "next_artifact_specificity",
+      "abstention_when_route_insufficient"
+    ]
+  },
+  "hard_vetoes": [
+    "proof_without_certificate",
+    "diagnostic_as_semantic_truth",
+    "missing_assumptions_ignored",
+    "counterexample_overclaim",
+    "source_or_code_global_false_claim",
+    "condition_artifact_leakage",
+    "agent_or_claude_as_authority",
+    "release_public_scientific_product_claim"
+  ],
+  "malformed_output_policy": {
+    "preserve_malformed_outputs": true,
+    "hidden_replacement_forbidden": true,
+    "required_pass_if_malformed": false,
+    "required_scores_if_malformed": "all_primary_required_dimensions_score_0_unless_human_scoring_note_justifies_a_stricter_hard_veto",
+    "manifest_record_required": true
+  },
+  "scoring_order": [
+    "record_malformed_output_status",
+    "apply_hard_vetoes",
+    "score_primary_required_dimensions",
+    "score_explanatory_dimensions",
+    "score_candidate_only_stressors_as_explanatory",
+    "compute_per_case_b_vs_c_delta",
+    "summarize_hard_vetoes_before_pass_counts"
+  ],
+  "condition_comparison_rule": {
+    "primary_comparator": "B_evidence_only",
+    "candidate": "C_human_framed",
+    "c_over_b_local_diagnostic_candidate_requires": [
+      "C has no hard-veto regression relative to B on any case",
+      "C has no malformed-output regression relative to B on any case",
+      "C has at least as many required-pass cases as B",
+      "C is better than B on at least one predeclared usefulness axis in at least one case without being worse on any primary required dimension for that case",
+      "Per-case notes identify why the improvement is due to self-contained framing, reasoning, or actionability rather than prompt polish"
+    ],
+    "tie_rule": "If B and C tie on hard vetoes and all primary required dimensions, report a tie; do not claim C-over-B superiority.",
+    "aggregate_only_forbidden": true
+  },
+  "row_output_schema": {
+    "case_id": "string",
+    "condition": "A_task_only | B_evidence_only | C_human_framed",
+    "prompt_id": "string",
+    "response_artifact": "string",
+    "malformed_output": "boolean",
+    "hard_vetoes_present": "array of hard_veto ids",
+    "required_scores": "object mapping primary required dimension id to 0, 1, or 2",
+    "explanatory_scores": "object mapping explanatory dimension id to 0, 1, or 2",
+    "candidate_stressor_notes": "object mapping candidate-only stressor id to short explanatory note",
+    "required_pass": "boolean",
+    "usefulness_delta_vs_b": "worse | tied | better | not_applicable",
+    "notes": "short string"
+  },
+  "forbidden_scoring_actions": [
+    "changing scoring criteria after responses exist",
+    "using Claude as response worker",
+    "replacing malformed outputs with hidden retries",
+    "scoring prompt polish as task success",
+    "promoting candidate-only stressors to primary after seeing responses",
+    "declaring C better than B from aggregate counts while hiding hard-veto or per-case regressions"
+  ],
+  "non_claims": [
+    "Scores are local downstream-usefulness diagnostics only.",
+    "Scores are not proof certificates.",
+    "Scores are not release gates.",
+    "Scores are not public benchmark results.",
+    "Scores are not scientific validation.",
+    "Scores are not product capability evidence.",
+    "Scores are not proof of broad theorem-proving ability.",
+    "Scores are not proof of general model reliability."
+  ]
+}

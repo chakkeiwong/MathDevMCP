@@ -1,0 +1,47 @@
+{
+  "metadata": {
+    "schema_version": "1.1",
+    "contract": "downstream_agent_usefulness_v2_collection_authorization_record",
+    "created": "2026-07-03",
+    "status": "collection_authorized_by_current_human_approval_for_exact_scope",
+    "supersedes_status": "invalid_superseded_not_collection_authorized"
+  },
+  "audit_note": {
+    "prior_invalid_interpretation_preserved": true,
+    "current_record_basis": "The current resumed run includes explicit user approval to continue the Phase 3 collection scope described in the stop handoff and run summary.",
+    "boundary": "This authorization covers collection/scoring artifacts only; it does not authorize Claude as response worker, scoring-criteria changes after responses, release/public/scientific/product/general-reliability claims, package installs, credential changes, model-file changes, or destructive actions."
+  },
+  "human_approval": {
+    "source": "chat",
+    "verbatim": "I approve",
+    "interpreted_scope": "Approve Phase 3 response collection for the exact scope requested in the Phase 2 stop handoff and collection approval packet."
+  },
+  "approved_scope": {
+    "prompt_manifest": ".mathdevmcp/downstream_agent_usefulness_v2/prompt_manifest_candidate.json",
+    "prompt_manifest_sha256": "340ec24f062dc614d6e03a7d279a74539c8e033fef499ef3fc127e2722736bfe",
+    "prompt_count": 18,
+    "response_worker_surface": "Codex subagents via multi_agent_v1.spawn_agent",
+    "forbidden_response_worker": "Claude",
+    "retry_policy": "one visible attempt per prompt; no hidden retries",
+    "malformed_output_policy": "preserve malformed, empty, partial, or off-schema output as the response artifact and score it as malformed; do not replace it",
+    "scoring_contract": ".mathdevmcp/downstream_agent_usefulness_v2/scoring_contract_v2_collection.json",
+    "responses_dir": ".mathdevmcp/downstream_agent_usefulness_v2/responses_candidate/",
+    "response_manifest": ".mathdevmcp/downstream_agent_usefulness_v2/response_manifest_candidate.json",
+    "scored_json": ".mathdevmcp/downstream_agent_usefulness_v2/scored_responses_candidate.json",
+    "scored_markdown": ".mathdevmcp/downstream_agent_usefulness_v2/scored_responses_candidate.md"
+  },
+  "boundaries": {
+    "collection_authorized": true,
+    "collection_extension_requires_new_approval": true,
+    "scoring_criteria_change_after_responses_forbidden": true,
+    "hidden_retries_forbidden": true,
+    "response_replacement_forbidden": true,
+    "claude_read_only_reviewer_only": true
+  },
+  "non_claims": [
+    "Authorization is not response-quality evidence.",
+    "Authorization is not a scored v2 result.",
+    "Authorization does not establish C-over-B superiority.",
+    "Authorization does not establish public benchmark validity, release readiness, scientific validation, product capability, or general model reliability."
+  ]
+}

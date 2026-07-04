@@ -1,0 +1,1056 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage[expansion=false]{microtype}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric}
+\usepackage{hyperref}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{cleveref}
+\emergencystretch=2em
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash\sloppy}p{#1}}
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.12}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue
+}
+
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\PPNR}{\mathrm{PPNR}}
+\newcommand{\EL}{\mathrm{EL}}
+\newcommand{\NPV}{\mathrm{NPV}}
+\newcommand{\1}{\mathbf{1}}
+\newcommand{\code}[1]{\nolinkurl{#1}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator{\softmax}{softmax}
+\DeclareMathOperator{\diag}{diag}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{assumption}[definition]{Assumption}
+\newtheorem{proposition}[definition]{Proposition}
+\newtheorem{remark}[definition]{Remark}
+
+\title{A Full Bayesian State-Space and Belief-State Control Specification\\
+for Credit-Card Customer NPV Decisioning}
+\author{Chak Wong}
+\date{July 2, 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This note gives a full stochastic-process assembly of the credit-card customer
+NPV proposal into a constrained Bayesian state-space model with belief-state
+control. The goal is not to replace the proposal's valuation semantics. It is
+to make the dynamic object explicit enough that forward simulation under a
+fixed declared policy is mathematically well defined and later offline policy
+evaluation or constrained challenger optimization can be discussed without
+handwaving. The note reuses the current proposal's valuation object, wallet
+accounting, module decomposition, path-engine semantics, and policy-value
+conventions, then adds the missing layers required for a committee-level
+stochastic specification: timing and filtration, explicit latent and observed
+state blocks, module-level controlled transition equations, observation
+equations, Bayesian filtering recursions, constrained Bellman equations, and an
+identification / governance boundary. The resulting object is a lifecycle
+belief-state control model, not a claim that the bank is already ready for
+production reinforcement learning. The literature supports the sequential
+control framing, partial observability, state-space filtering, and offline
+policy-evaluation toolkit
+\citep{puterman1994mdp,murphy2003dynamic,smallwood1973pomdp,kaelbling1998pomdp,
+trench2003bankone,durbinkoopman2012ssm,westharrison1997bfdm,doucet2001smc,
+jiangli2016dr,huwager2021pomdpope,laroche2019spibb,khraishiokhrati2022offlinecredit};
+it does not identify this issuer's exact latent state, reward ledger,
+constraint set, or safe rollout threshold.
+\end{abstract}
+
+\section{Introduction and contribution boundary}
+
+The credit-card NPV proposal already contains the essential economic pieces of a
+dynamic decision system: a versioned valuation object, a modular state
+structure, wallet accounting, action-dependent terms, a path engine, a
+cash-flow compiler, and policy-value notation. What it does not yet present is a
+single stochastic process that assembles those pieces into one mathematically
+explicit control object. Without that object the proposal can say that future
+policy matters, but it cannot fully specify what is being filtered, what is
+transitioning, what is observed with noise or lag, or exactly which state a
+policy should condition on.
+
+That gap matters because many committee-level objections are structural rather
+than stylistic. If the proposal names outside wallet, movable wallet, repayment
+propensity, rewards response, attrition, PD/LGD/EAD, and macro sensitivity as
+important drivers, then a mathematically serious note must say where those
+objects live in the state, how they evolve, how they are observed, and how they
+enter the reward and feasible action set. A high-level POMDP discussion is not
+enough.
+
+This note therefore contributes a full stochastic-process specification. It
+makes five bounded claims.
+\begin{enumerate}[label=\arabic*.]
+  \item Credit-card customer value can be represented as a sequential control
+        problem, with discounted incremental NPV as the policy-value object
+        \citep{trench2003bankone,puterman1994mdp,murphy2003dynamic}.
+  \item A fully observed MDP is generally an approximation because important
+        economic drivers are latent or only partially observed; a belief-state
+        or POMDP formulation is therefore the correct umbrella language
+        \citep{smallwood1973pomdp,kaelbling1998pomdp}.
+  \item The current proposal's macro, spend, balance, payment, loss, reward,
+        attrition, and relationship modules can be assembled into one controlled
+        state-space system.
+  \item Bayesian filtering supplies the correct updating object: the policy
+        should depend on the posterior distribution of the latent state, not
+        only on a point estimate
+        \citep{durbinkoopman2012ssm,westharrison1997bfdm,doucet2001smc}.
+  \item Offline policy evaluation and safe-improvement tools are relevant only
+        after the dynamic system, logged behavior policy, and support conditions
+        are explicit
+        \citep{jiangli2016dr,huwager2021pomdpope,laroche2019spibb,
+        khraishiokhrati2022offlinecredit}.
+\end{enumerate}
+
+The note does \emph{not} claim that the literature already identifies this
+issuer's exact latent state vector, its competitor-wallet dynamics, its future
+policy bundle, or its live deployment threshold. Those remain bank-specific
+empirical and governance questions.
+
+\section{Notation and timing contract}
+
+This note reuses the main proposal's global notation. Unit $i$ is a customer,
+account, prospect, application, or account-action unit. Time $t$ is monthly.
+Action is $a$. The decision-specific baseline is $a_0(d)$. Decision context is
+$d$. Scenario and valuation bundle is $s$. Downstream account-management policy
+bundle is $\pi^{down}$. Governance and hard admissibility are represented by
+$\pi^{gov}$. The decision-time information set is $\mathcal{I}_{id}$ or
+$X_{it}^{d}$.
+
+The current proposal's one-period incremental cash-flow primitive and NPV
+functional are retained:
+\begin{align}
+  \Delta CF_{i,t+h}(a,\pi;s)
+  &=
+  \Delta \PPNR_{i,t+h}(a,\pi;s)
+  - \Delta \EL_{i,t+h}(a,\pi;s)
+  - \Delta Kchg_{i,t+h}(a,\pi;s)
+  \nonumber\\
+  &\quad
+  - \Delta Tax_{i,t+h}(a,\pi;s)
+  + \Delta RelValue_{i,t+h}(a,\pi;s),
+  \label{eq:cf-primitive}\\
+  \Delta \NPV_i(a;d,s,\pi)
+  &=
+  -C_i^{\mathrm{acq}}(a)
+  +
+  \E\!\left[
+    \sum_{h=0}^{H}\delta_h\Delta CF_{i,t+h}(a,\pi;s)
+    + \delta_H\Delta TV_{i,t+H}(a,\pi;s)
+    \mid X_{it}^{d}
+  \right].
+  \label{eq:npv-functional}
+\end{align}
+
+This note distinguishes three policy objects. The symbol $\pi^{down}$ denotes
+the downstream operating policy bundle assumed in valuation. The symbol $\mu$
+denotes the historical logged behavior policy that generated observed actions.
+The symbol $\varphi$ denotes a candidate or challenger rule to be simulated,
+evaluated, or eventually optimized. When the older proposal notation uses
+$\pi$ generically, the reader should check whether it refers to $\pi^{down}$,
+$\mu$, $\varphi$, or the governance bundle $\pi^{gov}$.
+
+\subsection{Intra-month timing}
+
+A committee-level dynamic model needs an explicit within-month sequence. Let the
+month-$t$ cycle be:
+\begin{enumerate}[label=\textbf{T\arabic*.},leftmargin=*]
+  \item At the opening of month $t$, the bank has observed history
+        $H_{it}^{-}$ and a posterior belief $b_{it}^{-}$ over the latent state.
+  \item Macro or scenario inputs available at decision time are incorporated;
+        lagged or not-yet-released macro variables remain unavailable.
+  \item The bank constructs the decision feature state $O_{it}$ and chooses an
+        admissible action
+        \[
+          a_{it}\in\mathcal{A}_t(O_{it},b_{it}^{-};d,s,\pi^{gov}).
+        \]
+  \item Conditional on $a_{it}$ and the current latent/full state, within-month
+        customer behavior realizes: activation or use, category spend,
+        cash-advance or balance-transfer use, balances, payments, delinquency
+        migration, rewards accrual, attrition or retention outcomes, and any
+        collections response.
+  \item Raw signals $Y_{i,t+1}$ are observed with the data lags, censoring, or
+        partial observability implied by the source system.
+  \item The posterior is updated to $b_{i,t+1}^{-}$ using Bayes' rule, and the
+        month-$t$ reward is compiled from the realized or expected incremental
+        cash-flow mapping.
+\end{enumerate}
+
+The relevant filtration should be written in two steps. The pre-action
+information set is
+\begin{equation}
+  \mathcal{F}^{-}_{it}
+  =
+  \sigma(H_{it}^{-},O_{it},b_{it}^{-}),
+  \label{eq:pre-action-filtration}
+\end{equation}
+and the action must be measurable with respect to it:
+\begin{equation}
+  a_{it}=\varphi_t(O_{it},b_{it}^{-},d,s,\pi^{down})
+  \quad\text{or}\quad
+  a_{it}\sim\varphi_t(\cdot\mid O_{it},b_{it}^{-},d,s,\pi^{down}).
+  \label{eq:policy-measurability}
+\end{equation}
+After the action and raw signals are realized, the post-observation information
+set is
+\begin{equation}
+  \mathcal{F}^{+}_{i,t+1}
+  =
+  \sigma(\mathcal{F}^{-}_{it},a_{it},Y_{i,t+1},O_{i,t+1}).
+  \label{eq:post-action-filtration}
+\end{equation}
+
+\section{State decomposition}
+
+\subsection{Observed state}
+
+Let the observed decision state be
+\begin{equation}
+  O_{it}
+  =
+  (G_{it},B_{it},L_{it},P_{it},D_{it},Rwd_{it},Rel^{obs}_{it},M^{obs}_{it},C_{it}),
+  \label{eq:observed-state}
+\end{equation}
+where:
+\begin{itemize}[leftmargin=*]
+  \item $G_{it}$ is lifecycle regime,
+  \item $B_{it}$ is the balance-subledger vector,
+  \item $L_{it}$ is line and term state,
+  \item $P_{it}$ is observed payment behavior,
+  \item $D_{it}$ is observed delinquency/default/cure status,
+  \item $Rwd_{it}$ is observed reward and promotion state,
+  \item $Rel^{obs}_{it}$ is observed relationship state,
+  \item $M^{obs}_{it}$ is the observed macro signal vector available at decision
+        time, and
+  \item $C_{it}$ is decision-context metadata such as channel, offer family,
+        feature-cut timestamp, and eligibility indicators.
+\end{itemize}
+
+The balance-subledger vector should be explicit:
+\begin{equation}
+  B_{it}
+  =
+  (B^{pur}_{it},B^{cash}_{it},B^{BT}_{it},B^{fee}_{it},B^{int}_{it},B^{chg}_{it}),
+  \label{eq:balance-subledger}
+\end{equation}
+so that principal, non-principal, promo, and charge-related balances are not
+collapsed into one scalar.
+
+The lifecycle regime should also be explicit:
+\begin{equation}
+  \begin{split}
+  G_{it}\in\{&
+    \text{prospect},\text{targeted},\text{applicant},
+    \text{approved},\text{booked},\text{activated},
+    \text{active-transactor},\\
+    &\text{active-revolver},\text{promo},\text{dormant},
+    \text{retained},\text{converted},\text{delinquent},
+    \text{collections},\\
+    &\text{closed},\text{charged-off}\}.
+  \end{split}
+  \label{eq:lifecycle-regime}
+\end{equation}
+
+\subsection{Latent state}
+
+Let the latent economic state be
+\begin{equation}
+  U_{it}
+  =
+  (M^{lat}_{it},W^{out}_{it},\Theta^{route}_{it},\Theta^{repay}_{it},
+   \Theta^{attr}_{it},\Theta^{promo}_{it},Rel^{lat}_{it}),
+  \label{eq:latent-state}
+\end{equation}
+where:
+\begin{itemize}[leftmargin=*]
+  \item $M^{lat}_{it}$ is a latent macro or local economic regime, if the bank
+        chooses to smooth or nowcast macro conditions beyond raw releases,
+  \item $W^{out}_{it}$ is outside wallet or outside balance opportunity,
+  \item $\Theta^{route}_{it}$ captures latent routing / card-on-file / issuer-
+        preference frictions,
+  \item $\Theta^{repay}_{it}$ captures latent repayment, liquidity, and
+        distress state not fully summarized by observed balances and payments,
+  \item $\Theta^{attr}_{it}$ captures latent attrition / dormancy / retention
+        propensity,
+  \item $\Theta^{promo}_{it}$ captures latent promotion-response and decay
+        state, and
+  \item $Rel^{lat}_{it}$ captures latent relationship spillover state.
+\end{itemize}
+
+The full economic state is
+\begin{equation}
+  X_{it} = (O_{it},U_{it}).
+  \label{eq:full-state}
+\end{equation}
+
+\subsection{Belief state}
+
+Because $U_{it}$ is not observed, the control object is the posterior
+belief state
+\begin{equation}
+  b^{-}_{it}(u)
+  =
+  p(U_{it}=u\mid H_{it}^{-},s,\pi^{gov}).
+  \label{eq:belief-state}
+\end{equation}
+The policy may use a finite-dimensional approximation to $b_{it}$ in
+implementation, but the conceptual sufficient statistic is the posterior
+distribution itself.
+For readability, later equations usually write $b_{it}$ or simply $b$ for this
+pre-action belief unless the distinction between pre-action and post-observation
+beliefs is material.
+
+For a first implementation, the operational belief can be a finite-dimensional
+summary,
+\begin{equation}
+  \widehat b_{it}
+  =
+  (\widehat p^{primary}_{it},\widehat W^{out}_{it},
+   \widehat p^{promo}_{it},\widehat p^{revolver}_{it},
+   \widehat p^{stress}_{it},\widehat p^{attr}_{it},
+   \widehat M^{lat}_{it},\widehat Rel^{lat}_{it}),
+  \label{eq:operational-belief}
+\end{equation}
+with uncertainty and evidence grade attached to entries that materially affect
+NPV. This is an implementable approximation to the belief-state object, not a
+claim that the coordinates are uniquely correct.
+
+\section{Controlled stochastic process}
+
+\subsection{Action space by regime}
+
+The feasible action set must depend on lifecycle regime and governance state:
+\begin{equation}
+  a_{it}\in\mathcal{A}_t(O_{it},b_{it};d,s,\pi^{gov}).
+  \label{eq:feasible-actions}
+\end{equation}
+Representative stage-specific actions are:
+\begin{itemize}[leftmargin=*]
+  \item acquisition: suppress/contact, channel, offer family,
+  \item underwriting or line assignment: approve/decline, line bucket, APR and
+        fee terms, promo cell,
+  \item existing-account treatment: line change, repricing, promo, retention,
+        conversion,
+  \item collections: no treatment, reminder, hardship, plan, escalation.
+\end{itemize}
+
+Product terms should be treated as a governed action vector,
+\begin{equation}
+  a_{it}
+  =
+  (\ell_{it},r^{pur}_{it},r^{cash}_{it},r^{BT}_{it},r^{promo}_{it},
+   T^{promo}_{it},f_{it},q_{it},b_{it}^{signup},d_{it}^{disc}),
+  \label{eq:action-vector}
+\end{equation}
+consistent with the main proposal's offer-vector representation.
+
+\subsection{Macro block}
+
+A full stochastic note should include an explicit macro law of motion. One
+flexible specification is a linear-Gaussian latent macro regime with observed
+releases:
+\begin{align}
+  M^{lat}_{i,t+1} &= A_M M^{lat}_{it} + \eta^M_{t+1},
+    &\eta^M_{t+1}\sim\mathcal{N}(0,Q_M),
+    \label{eq:macro-transition}\\
+  M^{obs}_{i,t+1} &= H_M M^{lat}_{i,t+1} + \nu^M_{t+1},
+    &\nu^M_{t+1}\sim\mathcal{N}(0,R_M),
+    \label{eq:macro-observation}
+\end{align}
+with release lags handled through missing or stale components of
+$M^{obs}_{i,t+1}$.
+
+If the bank prefers deterministic stress scenarios, then
+\eqref{eq:macro-transition} can be replaced by an exogenous scenario path. But
+for a committee-level stochastic-process note, an explicit macro block is the
+cleanest baseline because the main proposal repeatedly makes macro state a
+structural driver of spend, payment, loss, and attrition
+\citep{ganong2019unemployment,johnson2004rebates,gross2001liquidity,baker2020epidemic}.
+
+\subsection{Usage, wallet, and routing block}
+
+Let total cardable category-$j$ spending opportunity satisfy
+\begin{equation}
+  \log(1+C_{ij,t+1})
+  =
+  \mu_{ij}^{C} + \beta_j^{M\top} M^{lat}_{i,t+1}
+  + \beta_j^{X\top} X_{it}^{obs}
+  + \beta_j^{U\top} \Theta^{repay}_{it}
+  + \varepsilon^C_{ij,t+1},
+  \label{eq:cardable-spend-process}
+\end{equation}
+where $C_{ij,t+1}$ is latent total cardable spend opportunity in category $j$.
+This lifts the proposal's category-spend specification into the latent dynamic
+system.
+
+Let routing shares across payment rails be
+\begin{equation}
+  q_{ij,t+1}(a)
+  =
+  \softmax\Bigl(
+    \alpha_j + \Gamma_j O_{it} + \Lambda_j U_{it} + \Psi_j a_{it}
+  \Bigr),
+  \label{eq:routing-softmax}
+\end{equation}
+with components corresponding to new-bank card, old-bank card, outside-card,
+debit/deposit, and cash/other rails. Then observed or latent rail-specific spend
+is
+\begin{equation}
+  S^{rail}_{ij,t+1}(a) = q^{rail}_{ij,t+1}(a)\,C_{ij,t+1}.
+  \label{eq:rail-specific-spend}
+\end{equation}
+This gives a true stochastic-process interpretation to the main proposal's
+wallet accounting and spend-source decomposition.
+
+The outside-wallet state evolves as
+\begin{equation}
+  W^{out}_{i,t+1}
+  =
+  h_W(W^{out}_{it},M^{lat}_{i,t+1},G_{it},\Theta^{route}_{it},a_{it})
+  + \varepsilon^W_{i,t+1},
+  \label{eq:outside-wallet-transition}
+\end{equation}
+and the offer-specific movable-wallet state is a derived functional
+\begin{equation}
+  W^{mov}_{it}(a)
+  =
+  m(U_{it},O_{it},a,d,s,\pi).
+  \label{eq:movable-wallet-functional}
+\end{equation}
+
+\subsection{Lifecycle and activation block}
+
+The lifecycle state transition is controlled and stage-dependent:
+\begin{equation}
+  \Pr(G_{i,t+1}=g'\mid G_{it}=g,O_{it},U_{it},a_{it},s)
+  = p_G(g'\mid g,O_{it},U_{it},a_{it},s).
+  \label{eq:lifecycle-transition}
+\end{equation}
+For adoption and first use, a useful two-step structure is
+\begin{align}
+  A_{im,t+1}^{*}
+    &= \alpha_m^{\top} O_{it} + \gamma_m^{\top} U_{it} + \xi_{im,t+1},
+    \qquad
+    A_{im,t+1}=\1\{A^*_{im,t+1}>0\},
+    \label{eq:adoption-transition}\\
+  U^{use}_{ijm,t+1}
+    &= \beta_m^{\top} O_{it} + \phi_m A_{im,t+1} + \rho_m^{\top} U_{it}
+       + \epsilon_{ijm,t+1},
+    \label{eq:conditional-use-utility}
+\end{align}
+with the new-bank-card rail choice generated through the routing system in
+\eqref{eq:routing-softmax}. This retains the proposal's adoption/use logic while
+placing it inside a monthly controlled process.
+
+\subsection{Balance, payment, and line block}
+
+The stock-flow identity must hold pathwise:
+\begin{align}
+  B_{i,t+1}^{pur}
+    &= B_{it}^{pur} + S^{newbank,pur}_{i,t+1} - Pay^{pur}_{i,t+1}
+       - Chg^{pur}_{i,t+1},
+    \label{eq:balance-pur}\\
+  B_{i,t+1}^{cash}
+    &= B_{it}^{cash} + S^{cashadv}_{i,t+1} - Pay^{cash}_{i,t+1}
+       - Chg^{cash}_{i,t+1},
+    \label{eq:balance-cash}\\
+  B_{i,t+1}^{BT}
+    &= B_{it}^{BT} + BT_{i,t+1} - Pay^{BT}_{i,t+1}
+       - Chg^{BT}_{i,t+1},
+    \label{eq:balance-bt}\\
+  B_{i,t+1}^{fee}
+    &= B_{it}^{fee} + Fee_{i,t+1} - Pay^{fee}_{i,t+1},
+    \label{eq:balance-fee}\\
+  B_{i,t+1}^{int}
+    &= B_{it}^{int} + Int_{i,t+1} - Pay^{int}_{i,t+1},
+    \label{eq:balance-int}\\
+  B_{i,t+1}^{tot}
+    &= B_{i,t+1}^{pur}+B_{i,t+1}^{cash}+B_{i,t+1}^{BT}
+       +B_{i,t+1}^{fee}+B_{i,t+1}^{int},
+    \label{eq:balance-total}
+\end{align}
+where the flows indexed by $t+1$ are realized during $(t,t+1]$ after action
+$a_{it}$ is chosen. The interest, fee, and charge-off components are generated
+by the action, subledger, and delinquency states.
+
+Payment behavior should be controlled by latent repayment state and observed
+balance burden:
+\begin{equation}
+  Pay_{i,t+1}
+  =
+  g_P\bigl(B_{it}^{tot},\mathrm{Util}_{it},G_{it},D_{it},O_{it},\Theta^{repay}_{it},a_{it},M^{lat}_{i,t+1}\bigr)
+  + \varepsilon^P_{i,t+1}.
+  \label{eq:payment-transition}
+\end{equation}
+
+Line and term dynamics are also controlled:
+\begin{equation}
+  L_{i,t+1}
+  =
+  g_L(L_{it},B_{it}^{tot},D_{it},O_{it},a_{it},\pi^{gov}) + \varepsilon^L_{i,t+1}.
+  \label{eq:line-transition}
+\end{equation}
+
+\subsection{Risk, delinquency, and recovery block}
+
+The delinquency/default process is a controlled finite-state Markov chain or
+hazard model. One flexible representation is
+\begin{equation}
+  \Pr(D_{i,t+1}=d'\mid D_{it}=d,G_{it},B_{it}^{tot},Pay_{i,t+1},L_{it},O_{it},U_{it},a_{it},M^{lat}_{i,t+1})
+  = p_D(d'\mid \cdot).
+  \label{eq:delinquency-transition}
+\end{equation}
+
+Expected exposure at default is tied to the subledgers and undrawn behavior:
+\begin{equation}
+  EAD_{i,t+1}
+  =
+  B_{i,t+1}^{pur}+B_{i,t+1}^{cash}+B_{i,t+1}^{BT}+B_{i,t+1}^{fee}+B_{i,t+1}^{int}
+  + UndrawnDraw_{i,t+1}.
+  \label{eq:ead-identity}
+\end{equation}
+
+LGD and recovery evolve conditionally on default state and collections action:
+\begin{align}
+  Rec^{work}_{i,t+1:t+W}
+  &= g_R(D_{i,t+1},O_{it},U_{it},a_{it},M^{lat}_{i,t+1})
+     + \varepsilon^R_{i,t+1},
+    \label{eq:recovery-process}\\
+  LGD_{i,t+1}
+  &=
+  1-\frac{\delta^{work}Rec^{work}_{i,t+1:t+W}}
+          {\max(EAD_{i,t+1},\varepsilon_{EAD})}.
+  \label{eq:lgd-identity}
+\end{align}
+Here $Rec^{work}_{i,t+1:t+W}$ is discounted recovery over the workout window,
+conditional on default or charge-off. In implementation, LGD is defined only on
+the default/exposure population and must reconcile to approved recovery and
+charge-off conventions.
+
+These equations make the main proposal's PD/LGD/EAD structure part of the full
+state process rather than a detached risk appendix.
+
+\subsection{Rewards, promotions, attrition, conversion, and relationship block}
+
+Promotion state should evolve explicitly:
+\begin{equation}
+  Rwd_{i,t+1}
+  =
+  g_{Rwd}(Rwd_{it},S^{newbank}_{i,t+1},a_{it},\Theta^{promo}_{it})
+  + \varepsilon^{Rwd}_{i,t+1},
+  \label{eq:promo-transition}
+\end{equation}
+with latent promo response state
+\begin{equation}
+  \Theta^{promo}_{i,t+1}
+  =
+  A_{\Theta,p}\Theta^{promo}_{it} + \Gamma_p a_{it} + \eta^p_{i,t+1}.
+  \label{eq:promo-latent-transition}
+\end{equation}
+
+Attrition and dormancy should also be explicit:
+\begin{equation}
+  \Pr(G_{i,t+1}\in\{\mathrm{dormant},\mathrm{closed}\}
+    \mid G_{it},O_{it},U_{it},S_{it},B_{it},a_{it})
+  = p_A(\cdot\mid\cdot),
+  \label{eq:attrition-transition}
+\end{equation}
+and product conversion should satisfy
+\begin{equation}
+  \Pr(Product_{i,t+1}=p'\mid Product_{it}=p,G_{it},O_{it},U_{it},a_{it})
+  = p_{conv}(p'\mid p,\cdot).
+  \label{eq:conversion-transition}
+\end{equation}
+
+Finally, relationship spillover should have a dynamic block rather than appear
+only as a terminal scalar:
+\begin{equation}
+  Rel^{lat}_{i,t+1}
+  =
+  g_{Rel}(Rel^{lat}_{it},Rel^{obs}_{it},a_{it},G_{it},M^{lat}_{i,t+1})
+  + \varepsilon^{Rel}_{i,t+1}.
+  \label{eq:relationship-transition}
+\end{equation}
+
+\section{Observation system}
+
+A full state-space note must say what the bank observes and how. The observation
+system is module-specific.
+
+\subsection{Transactional and statement observations}
+
+Observed new-bank-card and old-bank-card spend are exact or nearly exact ledger
+aggregates conditional on source-system quality:
+\begin{align}
+  Y_{ij,t+1}^{new} &= S^{newbank}_{ij,t+1} + \nu^{new}_{ij,t+1},
+    \label{eq:obs-new-spend}\\
+  Y_{ij,t+1}^{old} &= S^{oldbank}_{ij,t+1} + \nu^{old}_{ij,t+1},
+    \label{eq:obs-old-spend}
+\end{align}
+with $\nu$ typically zero or small reconciliation noise. Statement balances,
+payments, fees, and interest are observed through the ledger:
+\begin{align}
+  Y_{i,t+1}^{B} &= B_{i,t+1}^{tot} + \nu^B_{i,t+1},
+    \label{eq:obs-balance}\\
+  Y_{i,t+1}^{Pay} &= Pay_{i,t+1} + \nu^{Pay}_{i,t+1}.
+    \label{eq:obs-payment}
+\end{align}
+
+\subsection{Risk and bureau observations}
+
+Delinquency and charge-off are observed discrete states,
+\begin{equation}
+  Y_{i,t+1}^{D} = h_D(D_{i,t+1}) + \nu^D_{i,t+1},
+  \label{eq:obs-delinquency}
+\end{equation}
+while bureau refreshes are periodic and noisy observations of broader external
+credit condition,
+\begin{equation}
+  Y_{i,t+1}^{bureau}
+  =
+  h_{bureau}(U_{i,t+1},D_{i,t+1},B_{i,t+1}^{tot}) + \nu^{bureau}_{i,t+1}.
+  \label{eq:obs-bureau}
+\end{equation}
+
+\subsection{Wallet and routing anchors}
+
+The bank does not directly observe outside wallet every month. It may observe
+partial anchors such as balance transfers into the card, payoff events,
+account-aggregation samples, network aggregates, or deposit-rail substitution
+signals. Represent these as sparse or partial measurements:
+\begin{equation}
+  Y_{i,t+1}^{wallet}
+  =
+  h_{wallet}(W^{out}_{i,t+1},\Theta^{route}_{i,t+1},O_{i,t+1}) + \nu^{wallet}_{i,t+1},
+  \label{eq:obs-wallet}
+\end{equation}
+where missingness itself is informative and must be retained in the filter.
+
+\subsection{Macro observations}
+
+Observed macro data are release-lagged measurements of the latent macro regime,
+already written in \eqref{eq:macro-observation}. The note should treat revised
+macro data as different objects from the as-of-decision releases used in the
+filter.
+
+\section{Bayesian filtering and belief-state recursion}
+
+The full posterior satisfies
+\begin{equation}
+  b_{i,t+1}(u')
+  \propto
+  p(Y_{i,t+1},O_{i,t+1}\mid u',O_{it},a_{it},s,\pi^{down})
+  \int p(u'\mid u,O_{it},a_{it},s,\pi^{down})b_{it}(u)\,du.
+  \label{eq:generic-filter}
+\end{equation}
+where $O_{i,t+1}$ is the approved next decision state constructed from raw
+signals. If that construction is deterministic, the likelihood includes the
+state-construction rule rather than an additional random observation.
+For the full enterprise model, exact filtering is generally infeasible. The
+proposal should therefore define a blockwise filtering architecture.
+
+\paragraph{Macro block.}
+If \eqref{eq:macro-transition}--\eqref{eq:macro-observation} is used, the macro
+posterior can be updated with Kalman-style state-space recursions
+\citep{durbinkoopman2012ssm}.
+
+\paragraph{Lifecycle and delinquency blocks.}
+Finite-state transitions for $G_t$ and $D_t$ can use exact hidden Markov model
+recursions conditional on observed transactional and delinquency signals.
+
+\paragraph{Latent repayment and promo response blocks.}
+If these are modeled as approximately Gaussian dynamic linear states, posterior
+updates can use dynamic-linear-model recursions \citep{westharrison1997bfdm}.
+
+\paragraph{Outside-wallet and routing block.}
+Because the observation system is sparse and nonlinear, this block should be
+filtered with particle or sequential Monte Carlo approximations when the bank
+requires full posterior uncertainty \citep{doucet2001smc}.
+
+The implementation may retain a structured approximate posterior,
+\begin{equation}
+  b_{it}(u)
+  \approx
+  b^{M}_{it}(M^{lat})
+  b^{wallet}_{it}(W^{out},\Theta^{route})
+  b^{repay}_{it}(\Theta^{repay})
+  b^{promo}_{it}(\Theta^{promo})
+  b^{rel}_{it}(Rel^{lat}),
+  \label{eq:factorized-belief}
+\end{equation}
+provided the approximation error is treated as part of model risk rather than
+ignored.
+
+\begin{proposition}[Belief-state sufficiency]
+Under the controlled Markov transition and observation equations above, any
+history-dependent policy has an equivalent policy measurable with respect to the
+current observed state $O_{it}$ and belief state $b_{it}$, with the same
+finite-horizon value. The control problem is therefore an MDP on belief space
+\citep{smallwood1973pomdp,kaelbling1998pomdp}.
+\end{proposition}
+
+\begin{proof}
+By the tower property, any continuation value depends on past history only
+through the conditional distribution of the latent state and the observed state
+that indexes the transition, reward, and feasible-action correspondence. The
+filter in \eqref{eq:generic-filter} constructs exactly that conditional
+distribution. Replacing a history-dependent policy by one measurable with
+respect to $(b_{it},O_{it})$ therefore preserves the distribution of future
+rewards and the resulting value.
+\end{proof}
+
+\section{Reward and valuation mapping}
+
+The reward must be compiled from the same economic decomposition already
+proposed, not replaced by an abstract utility index. Conditional on the full
+state, action, next state, and realized monthly signals,
+\begin{align}
+  r_{i,t+1}(X_{it},a_{it},X_{i,t+1},Y_{i,t+1};s,\pi^{down})
+  &=
+  \Delta \PPNR_{i,t+1}(X_{it},a_{it},X_{i,t+1};s,\pi^{down})
+  \nonumber\\
+  &\quad
+  - \Delta \EL_{i,t+1}(X_{it},a_{it},X_{i,t+1};s,\pi^{down})
+  \nonumber\\
+  &\quad
+  - \Delta Kchg_{i,t+1}(X_{it},a_{it},X_{i,t+1};s,\pi^{down})
+  \nonumber\\
+  &\quad
+  - \Delta Tax_{i,t+1}(X_{it},a_{it},X_{i,t+1};s,\pi^{down})
+  \nonumber\\
+  &\quad
+  + \Delta RelValue_{i,t+1}(X_{it},a_{it},X_{i,t+1};s,\pi^{down}).
+  \label{eq:full-state-reward}
+\end{align}
+The belief-state reward is then
+\begin{equation}
+  \bar r_{it}(b_{it},O_{it},a_{it};s,\pi^{down})
+  =
+  \E\!\left[
+    r_{i,t+1}(X_{it},a_{it},X_{i,t+1},Y_{i,t+1};s,\pi^{down})
+    \mid b_{it},O_{it},a_{it},s,\pi^{down}
+  \right].
+  \label{eq:belief-reward}
+\end{equation}
+
+The path engine in the main proposal is then reinterpreted as simulation of the
+state-space system under candidate action and baseline action, with the
+subledger identities enforced exactly and the reward compiled from the simulated
+paths.
+
+\section{Constrained policy value and Bellman recursion}
+
+Let $H$ denote the terminal valuation month for this note. The fixed-policy
+value under a candidate rule $\varphi$ and downstream policy bundle
+$\pi^{down}$ is
+\begin{equation}
+  \begin{split}
+  V_t^{\varphi;\pi^{down}}(b_{it},O_{it};s)
+  =
+  \E^{\varphi,\pi^{down}}\!\Biggl[
+    \sum_{h=t}^{H-1}\delta^{h-t}
+      \bar r_h(b_{ih},O_{ih},a_{ih};s,\pi^{down})
+    \\
+    + \delta^{H-t}\Delta TV_{iH}(b_{iH},O_{iH};s,\pi^{down})
+    \mid b_{it},O_{it}
+  \Biggr].
+  \end{split}
+  \label{eq:policy-value}
+\end{equation}
+
+The constrained Bellman recursion is
+\begin{align}
+  V_t^{\star}(b,O;s)
+  &=
+  \max_{a\in\mathcal{A}_t(b,O;d,s,\pi^{gov})}
+  \Bigl\{
+    \bar r_t(b,O,a;s,\pi^{down})
+    \nonumber\\
+    &\qquad\qquad
+    + \delta\,\E\left[V_{t+1}^{\star}(b',O';s)\mid b,O,a,s,\pi^{down}\right]
+  \Bigr\}
+  \label{eq:bellman-main}
+\end{align}
+with pointwise hard admissibility
+\begin{equation}
+  a\in \mathcal{A}^{hard}_{t}(O,b,d,s,\pi^{gov}),
+  \label{eq:hard-feasible}
+\end{equation}
+and cumulative constraint costs
+\begin{equation}
+  J^{\varphi}_{c,k}(b,O;s)
+  =
+  \E^{\varphi,\pi^{down}}\!\left[
+    \sum_{h=t}^{H-1}\delta^{h-t}
+    c_{k,h}(b_{ih},O_{ih},a_{ih};s)
+    \mid b_{it}=b,O_{it}=O
+  \right]
+  \le \kappa_k.
+  \label{eq:cumulative-constraints}
+\end{equation}
+Loss, capital, liquidity, operational, complaint, and fairness constraints are
+usually cumulative or portfolio-level objects, not merely one-period
+inequalities. They can be handled through remaining-budget state augmentation or
+Lagrangian relaxations when the policy class and evidence support optimization.
+
+A fully observed MDP is the special case in which $U_{it}$ is either empty or
+exactly observed and $b_{it}$ degenerates to a point mass.
+
+\section{Module-to-process mapping}
+
+\begin{table}[t]
+\centering
+\caption{How the existing proposal modules enter the full stochastic process.}
+\label{tab:module-map}
+\begin{tabular}{L{0.18\linewidth}L{0.21\linewidth}L{0.20\linewidth}L{0.28\linewidth}}
+\toprule
+Module & Transition role & Observation role & Reward / constraint role \\
+\midrule
+Macro and labor state
+  & latent and observed macro regime transitions
+  & release-lagged macro signals
+  & scenario conditioning; stress and drift constraints \\
+Adoption / activation / use
+  & lifecycle transitions and route choice
+  & application, booking, activation, first use, repeat use
+  & gates future value and contact-policy feasibility \\
+Wallet and cannibalization
+  & outside wallet and routing dynamics
+  & partial anchors from bank book, bureau, network, or experiments
+  & determines all-bank incremental spend versus raw new-card spend \\
+Balances / payments / lines
+  & subledger and payment transitions
+  & statement balances, payments, interest, fees
+  & finance charges, funding, EAD, line constraints \\
+Delinquency / losses / recoveries
+  & delinquency, default, cure, and recovery transitions
+  & delinquency buckets, charge-off, recoveries, bureau refreshes
+  & expected loss, capital, downside-risk constraints \\
+Rewards / promos
+  & promo-state and latent response evolution
+  & qualification, redemption, reward liability, post-promo decay
+  & reward cost and temporary-versus-durable lift \\
+Attrition / conversion / relationship
+  & dormancy, closure, conversion, retention, relationship state
+  & activity, closure, other-product observations
+  & horizon length, relationship value, retention constraints \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Identification, estimation, and evidence discipline}
+
+The stochastic-process note should classify each equation or block as one of the
+following:
+\begin{enumerate}[label=\arabic*.]
+  \item accounting identity,
+  \item probabilistic factorization,
+  \item literature-supported control or filtering principle,
+  \item bank-specific empirical object,
+  \item governance or admissibility convention.
+\end{enumerate}
+
+The literature directly supports:
+\begin{itemize}[leftmargin=*]
+  \item the MDP / dynamic treatment regime framing
+        \citep{puterman1994mdp,murphy2003dynamic};
+  \item a credit-card precedent for sequential NPV optimization
+        \citep{trench2003bankone};
+  \item dynamic stochastic repayment and collections processes
+        \citep{chehrazi2015dynamicvaluation,chehrazi2019collections};
+  \item belief-state or POMDP control language
+        \citep{smallwood1973pomdp,kaelbling1998pomdp};
+  \item Bayesian filtering language
+        \citep{durbinkoopman2012ssm,westharrison1997bfdm,doucet2001smc};
+  \item offline evaluation and safe-improvement tools
+        \citep{dudik2011dr,jiangli2016dr,thomasbrunskill2016ope,
+        huwager2021pomdpope,laroche2019spibb,levine2020offline,
+        fujimoto2019bcq,kumar2020cql,khraishiokhrati2022offlinecredit}.
+\end{itemize}
+
+The literature does not identify this bank's:
+\begin{itemize}[leftmargin=*]
+  \item exact latent state vector,
+  \item outside-wallet and movable-wallet laws of motion,
+  \item reward ledger detail,
+  \item feasible action correspondence,
+  \item behavior-policy logging quality,
+  \item or policy-promotion threshold.
+\end{itemize}
+
+Those objects must be justified with internal experiments, quasi-experiments,
+logged-action support, finance/risk reconciliation, and governance approval.
+
+\section{Implementation and governance ladder}
+
+The stochastic process implies four component interfaces: \code{simulate_policy}
+for fixed-policy forward simulation, \code{score_action_grid} for finite-menu
+line/offer/retention decisions, \code{evaluate_policy_offline} for comparing a
+candidate rule $\varphi$ against the logged policy $\mu$, and
+\code{register_policy} for versioning policy rules and their allowed-use scope.
+These are NPV-component interfaces, not ownership of the bank's campaign,
+underwriting, line-management, or servicing platforms.
+
+The correct rollout sequence is:
+\begin{enumerate}[label=\arabic*.]
+  \item build the fixed-policy forward simulator under the incumbent or declared
+        policy bundle;
+  \item calibrate and reconcile transitions, cash-flow compiler, and risk
+        outputs;
+  \item evaluate challenger policies offline with support diagnostics, behavior-
+        policy probabilities $\mu(a_t\mid H_t)$ where available, and policy-value
+        estimators \citep{dudik2011dr,jiangli2016dr,thomasbrunskill2016ope};
+  \item allow constrained challenger optimization only for narrow approved
+        subproblems, preferably with discrete action grids and conservative
+        support-aware methods \citep{ernst2005fqi,laroche2019spibb,
+        fujimoto2019bcq,kumar2020cql};
+  \item allow live influence only through governed experimentation and rollback
+        controls.
+\end{enumerate}
+
+This ordering is not optional. Without it, the belief-state control language can
+launder weakly identified modules into apparently precise policy recommendations.
+
+\section{Source-support audit}
+\label{sec:audit}
+
+This note is a mathematical assembly of the current NPV proposal into a full
+state-space control specification. It is not a completed empirical validation
+package. Table~\ref{tab:audit-ledger} records the support class for the main
+claims.
+
+\begin{longtable}{L{0.25\linewidth}L{0.23\linewidth}L{0.42\linewidth}}
+\caption{Claim-support ledger for the full stochastic-process note.}
+\label{tab:audit-ledger}\\
+\toprule
+Design claim & Support class & What remains bank-specific \\
+\midrule
+\endfirsthead
+\toprule
+Design claim & Support class & What remains bank-specific \\
+\midrule
+\endhead
+Credit-card customer value should be modeled as a sequential control problem.
+  & Direct literature support plus card-management precedent
+  & Exact state/action granularity and policy scope \\
+Partial observability requires a belief-state or POMDP formulation.
+  & Direct control/filtering support; proposal derivation for wallet and latent
+    response states
+  & Exact posterior approximation and state coordinates \\
+Macro, spend, payment, loss, reward, and attrition blocks must be assembled in
+one stochastic system.
+  & Proposal derivation from reused equations and literature-supported
+    mechanisms
+  & Exact parametrization and empirical calibration \\
+Policy should condition on the posterior distribution, not only a point estimate.
+  & Direct filtering and POMDP support
+  & Chosen finite-dimensional approximation and evidence threshold \\
+Offline policy evaluation must precede challenger optimization.
+  & Direct OPE / safe-improvement literature support
+  & Logged behavior-policy quality, overlap, support, and promotion rule \\
+Safe live rollout is not implied by the literature alone.
+  & Governance conclusion from the limits of the cited methods
+  & All live thresholds, rollback rules, and compliance approval \\
+\bottomrule
+\end{longtable}
+
+\section{Conclusion}
+
+A committee-ready dynamic note for the credit-card NPV component cannot stop at
+a high-level POMDP backbone. It must specify the whole stochastic process:
+macro block, usage and routing, wallet and cannibalization, balances, payments,
+delinquency and recovery, rewards and promotions, attrition and conversion,
+relationship state, observation equations, posterior update, reward mapping, and
+constrained policy recursion. This note does that by reassembling the current
+proposal's modules into one belief-state control model.
+
+The resulting object is mathematically strong enough to define forward
+simulation under a fixed policy and conceptually strong enough to support later
+offline policy evaluation and constrained challenger optimization. It remains
+properly conservative: the literature supports the control and filtering
+language, but the empirical state content, parameterization, and rollout
+thresholds remain issuer-specific obligations.
+
+\appendix
+
+\section{Notation summary}
+
+\begin{longtable}{L{0.18\linewidth}L{0.72\linewidth}}
+\toprule
+Symbol & Meaning \\
+\midrule
+\endfirsthead
+\toprule
+Symbol & Meaning \\
+\midrule
+\endhead
+$i$ & customer / account / prospect / application unit \\
+$t$ & monthly time index \\
+$d$ & decision context \\
+$a, a_0(d)$ & action and baseline action \\
+$s$ & scenario and valuation-semantics bundle \\
+$\pi^{down}$ & downstream operating policy bundle assumed in valuation \\
+$\mu$ & historical logged behavior policy that generated observed actions \\
+$\varphi$ & candidate or challenger decision rule \\
+$\pi^{gov}$ & governance and hard-admissibility bundle \\
+$O_t$ & observed decision state \\
+$U_t$ & latent state \\
+$X_t$ & full state $(O_t,U_t)$ \\
+$b_t$ & posterior belief over the latent state \\
+$G_t$ & lifecycle regime \\
+$M_t^{lat},M_t^{obs}$ & latent and observed macro state \\
+$W_t^{out},W_t^{mov}$ & outside wallet and movable wallet \\
+$B_t$ & balance-subledger vector \\
+$D_t$ & delinquency/default/cure state \\
+$Rwd_t$ & reward / promotion state \\
+$Rel_t$ & relationship state \\
+$\Delta CF_t$ & one-period incremental cash-flow primitive \\
+$\Delta \NPV$ & discounted incremental value \\
+\bottomrule
+\end{longtable}
+
+\section{Assumptions ledger}
+
+\begin{longtable}{L{0.22\linewidth}L{0.68\linewidth}}
+\toprule
+Assumption & Role in the model \\
+\midrule
+\endfirsthead
+\toprule
+Assumption & Role in the model \\
+\midrule
+\endhead
+Controlled Markov structure & Defines the latent-state law of motion under action \\
+Observation model & Links latent/full state to observed bank signals \\
+Belief-state sufficiency & Justifies control on posterior state rather than full history \\
+Subledger accounting & Prevents impossible balance / revenue / loss paths \\
+Constraint admissibility & Restricts optimization to compliant and approved actions \\
+Offline evaluation assumptions & Required for policy-value estimation from logs \\
+Evidence-grade separation & Prevents weak latent modules from being silently promoted to causal policy value \\
+\bottomrule
+\end{longtable}
+
+\bibliographystyle{plainnat}
+\bibliography{credit_card_npv_component_refs}
+
+\end{document}

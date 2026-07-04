@@ -1,0 +1,580 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage[expansion=false]{microtype}
+\usepackage{hyperref}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{cleveref}
+\emergencystretch=2em
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash\sloppy}p{#1}}
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.12}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue
+}
+
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\NPV}{\mathrm{NPV}}
+\newcommand{\code}[1]{\nolinkurl{#1}}
+
+\title{Gap-Closing Literature Note for the Credit-Card Customer NPV Proposal\\
+What Existing Literatures Can and Cannot Close}
+\author{Chak Wong}
+\date{July 2, 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This note is a companion to the credit-card customer NPV proposal. Its purpose
+is not to restate the proposal or to replace the stochastic-process note. It is
+to map the proposal's remaining theoretical and modeling gaps to the relevant
+literatures and to state, gap by gap, what those literatures can actually
+support. The note is therefore a committee-facing crosswalk. For each major gap,
+it identifies the exact proposal sections and equations where the issue matters,
+explains why the gap is material, cites the literature families that can close
+or tighten it, distinguishes literature support from proposal derivation and
+bank-specific empirical work, and states what remains unresolved even after the
+literature is added. The note is intentionally conservative: many gaps can be
+narrowed substantially by existing literature, but few are eliminated without
+issuer-specific data, experiments, and governance choices.
+\end{abstract}
+
+\section{Introduction and scope}
+
+The current proposal has become much stronger on valuation semantics,
+component decomposition, and dynamic structure. It now contains a long section
+that assembles the proposal into a Bayesian state-space / belief-state control
+system. Even so, a committee of econometrics and stochastic-control reviewers
+can still press on deeper theoretical and modeling gaps. Some are about
+mathematical structure: is the state sufficient, is the filtration explicit, is
+the joint kernel coherent? Others are about modeling and identification: how is
+outside wallet identified, what is the state unit, when is relationship value
+causal rather than confounded, and where exactly does fixed-policy valuation end
+and optimization begin?
+
+This note answers those objections in a structured way. It does not claim that
+literature alone solves the bank's problem. Instead, it uses literature to do
+four narrower jobs:
+\begin{enumerate}[label=\arabic*.]
+  \item justify formal language or abstraction,
+  \item justify a modeling move or computational approximation,
+  \item show what has already been studied in nearby dynamic decision settings,
+  \item and mark the line between what can be defended theoretically and what
+        still requires internal bank evidence.
+\end{enumerate}
+
+\section{How to read this note}
+
+Each gap section follows the same template.
+\begin{enumerate}[label=\arabic*.]
+  \item \textbf{Gap in current proposal.} What remains under-specified or
+        vulnerable.
+  \item \textbf{Where the gap appears.} Exact section or equation references in
+        the main proposal.
+  \item \textbf{Literatures that can close or tighten it.} The literature family
+        and key citations.
+  \item \textbf{What the literature actually supports.} The strongest claim that
+        can be defended.
+  \item \textbf{What remains bank-specific.} The part that still must be treated
+        as an issuer-specific empirical object, assumption, or governance rule.
+\end{enumerate}
+
+The note uses four support labels throughout:
+\begin{enumerate}[label=\arabic*.]
+  \item \emph{literature-supported mechanism},
+  \item \emph{literature-supported formalism},
+  \item \emph{proposal derivation},
+  \item \emph{bank-specific empirical object or governance convention}.
+\end{enumerate}
+A reader should not infer that all gaps can be closed to the same degree.
+Several can be tightened greatly at the theoretical level while remaining only
+partially resolved empirically.
+
+\section{Crosswalk table}
+
+Proposal equations live in the main proposal file, not in this companion note, so
+all equation anchors below are written as plain labels in parentheses rather than
+as live \verb|\eqref| cross-references. The purpose is provenance, not internal
+LaTeX navigation.
+
+\begin{longtable}{L{0.18\linewidth}L{0.22\linewidth}L{0.22\linewidth}L{0.18\linewidth}L{0.12\linewidth}}
+\caption{Gap-to-literature crosswalk for the main proposal.}
+\label{tab:gap-crosswalk}\\
+\toprule
+Gap category & Main proposal anchors & Literature family & What the literature can support & What remains bank-specific \\
+\midrule
+\endfirsthead
+\toprule
+Gap category & Main proposal anchors & Literature family & What the literature can support & What remains bank-specific \\
+\midrule
+\endhead
+State unit / aggregation
+  & proposal objective (eq:proposal-objective), state kernel (eq:state-kernel-panel), balance stock-flow (eq:balance-stock-flow)
+  & state aggregation, approximate DP, CLV state models
+  & disciplined aggregation and compression of dynamic states
+  & exact bank unit and sufficient aggregation \\
+Markov sufficiency / filtration
+  & dynamic-policy system (eq:dynamic-policy-system), policy value (eq:policy-value), state-space assembly section
+  & MDP, DTR, POMDP, Bayesian filtering
+  & explicit information-state and belief-state language
+  & whether the chosen bank features are empirically sufficient \\
+Shared macro common state
+  & category spend (eq:category-spend), PD transition (eq:pd-transition), term/loss mapping (eq:terms-loss)
+  & factor models, macro state-space models, scenario design
+  & low-dimensional common-shock macro block
+  & exact latent macro law and elasticities \\
+Joint kernel / factorization
+  & state kernel (eq:state-kernel-panel), balance stock-flow (eq:balance-stock-flow), PD transition (eq:pd-transition)
+  & dynamic state-space decomposition, modular conditional laws
+  & coherent structured approximation to the joint kernel
+  & exact factorization validity \\
+Belief approximation / compression
+  & stochastic-process section belief-state equations
+  & Bayesian filtering, belief compression, finite-memory approximations
+  & approximate posterior summaries as implementation objects
+  & exact compressed belief sufficient for this bank \\
+Incremental baseline semantics
+  & proposal objective (eq:proposal-objective), NPV functional (eq:panel-npv-functional), policy value (eq:policy-value)
+  & causal inference, DTRs, policy evaluation
+  & fixed-policy value vs optimized-policy value distinction
+  & approved baseline and policy-bundle semantics \\
+Wallet / latent demand identification
+  & wallet accounting through cannibalization-to-NPV (eq:wallet-accounting)--(eq:cannibalization-to-npv)
+  & payment choice, demand/substitution, uplift, partial identification
+  & latent wallet / substitution language and bounded identification
+  & issuer-specific wallet capture and movable fraction \\
+Relationship value integration
+  & relationship value (eq:relationship-value), valuation semantics sections
+  & CLV, customer equity, banking profitability
+  & cautious separation of core card value and spillover value
+  & causal spillover magnitude and inclusion rule \\
+Valuation vs optimization boundary
+  & dynamic-policy system (eq:dynamic-policy-system), policy value (eq:policy-value), allowed-use and governance sections
+  & MDP, DTR, OPE, safe improvement, offline RL
+  & fixed-policy simulation first, challenger evaluation second
+  & production optimization threshold and governance gate \\
+\bottomrule
+\end{longtable}
+
+\section{State unit and aggregation}
+
+\paragraph{Gap in current proposal.}
+The proposal allows the unit $i$ to be a customer, account, prospect,
+household, application, or account-action unit, while the dynamic sections also
+use wallet, relationship, and all-bank incremental value objects. This creates a
+structural question: what is the actual dynamic state unit? If the state is too
+fine, the process becomes intractable; if it is too coarse, internal
+cannibalization and relationship effects may be misrepresented.
+
+\paragraph{Where the gap appears.}
+This issue enters through proposal objective (eq:proposal-objective),
+state kernel (eq:state-kernel-panel), wallet accounting (eq:wallet-accounting),
+balance stock-flow (eq:balance-stock-flow), and the new state-space assembly
+section where observed and latent state blocks are introduced.
+
+\paragraph{Literatures that can close or tighten it.}
+State aggregation and approximate dynamic programming literature directly helps
+here. The most useful starting point is \citet{bean1987aggregation}, which is a
+general operations-research reference for aggregation in dynamic programming.
+For a banking or customer-relationship context, CLV and duration/state models
+already present in the proposal's bibliography also help define economically
+meaningful state blocks \citep{schmittlein1987counting,fader2005bgnbd,
+bolton1998duration}. Banking-specific dynamic optimization references such as
+\citet{thomas2011creditcardmdp} and \citet{lewis2005relationshippricing} can be
+used to show how dynamic pricing/control papers work with deliberately chosen
+state abstractions.
+
+\paragraph{What the literature actually supports.}
+The literature supports the claim that state aggregation is a legitimate and
+often necessary modeling device, and that economically distinct blocks should
+not be collapsed carelessly if they carry different transition or reward
+semantics. It also supports the use of lifecycle, balance, payment, risk, and
+relationship states as meaningful dynamic components.
+
+\paragraph{What remains bank-specific.}
+The literature does not choose the bank's unique correct state unit. It does not
+prove whether the correct object is account-level, customer-level,
+household-level, or a multi-account relationship state. That remains a proposal
+and governance choice to be defended against the bank's actual use cases and
+internal cannibalization structure.
+
+\section{Markov sufficiency and filtration}
+
+\paragraph{Gap in current proposal.}
+The proposal now distinguishes observed state, latent state, and belief state,
+but reviewers can still ask whether the chosen information state is truly
+sufficient. If omitted history matters beyond the proposal's declared observed
+state and posterior state, then the Bellman recursion is not properly grounded.
+
+\paragraph{Where the gap appears.}
+This issue appears in the proposal's dynamic-policy language around
+dynamic-policy system (eq:dynamic-policy-system) and policy value
+(eq:policy-value), and more sharply in the full stochastic-process section where
+the filtration and belief-state objects are introduced.
+
+\paragraph{Literatures that can close or tighten it.}
+This is one of the clearest places where the literature can add theoretical
+weight. The MDP text of \citet{puterman1994mdp}, the dynamic treatment-regime
+reference \citet{murphy2003dynamic}, and especially the POMDP / state-space
+literature \citep{smallwood1973pomdp,kaelbling1998pomdp,
+ledoux2005recursivefilters,durbinkoopman2012ssm,westharrison1997bfdm} provide
+the correct language for explicit filtration, belief-state sufficiency, and
+recursive updating.
+
+\paragraph{What the literature actually supports.}
+These references strongly support the need to write down:
+- a pre-action information set,
+- a post-observation information set,
+- a belief or filtering distribution over latent state,
+- and a policy measurable with respect to the available information.
+They justify the proposal's move from static feature stacks to an information-
+state or belief-state formulation.
+
+\paragraph{What remains bank-specific.}
+The literature does not prove that the proposal's chosen observed state is
+actually Markov-sufficient for this bank's problem. That depends on the bank's
+real data lags, omitted state variables, missingness, delayed collections
+signals, future-policy dependence, and empirical adequacy of the latent-state
+model.
+
+\section{Shared macro common-shock state}
+
+\paragraph{Gap in current proposal.}
+The proposal repeatedly uses macro and labor-market variables in spend, payment,
+loss, and scenario language, but a committee can still ask: how exactly should a
+common macro state be represented? If every module conditions on macro
+variables separately, the model risks being a loose collection of reduced-form
+controls rather than one coherent common-shock dynamic system.
+
+\paragraph{Where the gap appears.}
+This matters in the macro section, especially category spend
+(eq:category-spend), and in the balance, payment, and loss equations such as PD
+transition (eq:pd-transition) and term/loss mapping (eq:terms-loss). It also
+matters in the state-space assembly section's macro block.
+
+\paragraph{Literatures that can close or tighten it.}
+The most useful gap-closing literatures here are dynamic factor and data-rich
+macro-state literatures. \citet{bernankeboivineliasz2005favar} and
+\citet{bernankeboivin2003datarich} support reducing a high-dimensional macro
+environment to a lower-dimensional latent common state, while
+\citet{stockwatson2005factorvar} supports the use of dynamic factor structures
+as inputs to multivariate dynamic systems.
+
+\paragraph{What the literature actually supports.}
+These references support the proposal's use of a low-dimensional shared macro
+state or latent factor block that can feed multiple modules jointly---spend,
+payment, delinquency, funding, and attrition---rather than treating macro state
+as unrelated controls in each equation.
+
+\paragraph{What remains bank-specific.}
+The literature does not identify the bank's exact latent macro regime, how many
+factors to retain, how geography enters, or the issuer-specific elasticities of
+spend, payment, and risk with respect to that macro state.
+
+\section{Joint kernel and factorization}
+
+\paragraph{Gap in current proposal.}
+The proposal has many useful module equations, but the committee can still ask
+whether they define one coherent joint stochastic kernel or merely a set of local
+conditional blocks that may not compose cleanly.
+
+\paragraph{Where the gap appears.}
+This issue sits behind state kernel (eq:state-kernel-panel),
+balance stock-flow (eq:balance-stock-flow), payment component
+(eq:payment-component), line component (eq:line-component), and PD transition
+(eq:pd-transition), and it becomes sharper in the state-space assembly where
+routing, balances, payments, delinquency, promotions, and relationship value all
+appear as blocks in one process.
+
+\paragraph{Literatures that can close or tighten it.}
+The state-space and recursive-filtering literature already in the bibliography is
+helpful here because it supports writing joint dynamic systems through
+structured conditional laws \citep{durbinkoopman2012ssm,westharrison1997bfdm,
+doucet2001smc,ledoux2005recursivefilters}. This does not by itself prove the
+proposal's factorization, but it supports the idea that modular conditional
+specifications are an acceptable way to approximate high-dimensional joint
+dynamics.
+
+\paragraph{What the literature actually supports.}
+The literature supports structured decomposition of a high-dimensional process
+into conditional blocks when the objective is tractable filtering, simulation,
+and control. It also supports the idea that exact joint laws are often replaced
+by modular approximations that must then be validated.
+
+\paragraph{What remains bank-specific.}
+The exact factorization used in the proposal remains a proposal-specific
+approximation. The literature cannot prove that the bank's chosen decomposition
+is exact rather than a pragmatic modeling choice.
+
+\section{Belief approximation and compression}
+
+\paragraph{Gap in current proposal.}
+Once the proposal introduces latent state and belief-state control, it inherits a
+tractability problem: posterior beliefs can be very high-dimensional. A committee
+will ask how the bank will retain a usable information state without pretending
+that a low-dimensional approximation is exact.
+
+\paragraph{Where the gap appears.}
+This issue appears in the state-space assembly section's belief-state equations
+and filtering discussion, especially where the proposal suggests finite-
+dimensional posterior summaries.
+
+\paragraph{Literatures that can close or tighten it.}
+The Bayesian filtering and POMDP literatures provide the formal backdrop. In
+addition, belief-approximation and finite-memory references can tighten the
+story. The POMDP approximation literature
+\citep{smallwood1973pomdp,kaelbling1998pomdp} and more explicit aggregation /
+finite-memory references such as \citet{bean1987aggregation} can support the
+idea that reduced belief summaries may be legitimate if their approximation role
+is made explicit. The proposal's new filtering section already cites the core
+state-space and sequential Monte Carlo references
+\citep{durbinkoopman2012ssm,westharrison1997bfdm,doucet2001smc}.
+
+\paragraph{What the literature actually supports.}
+The literature supports the distinction between the exact sufficient statistic
+(the full posterior distribution) and an operational approximation used for
+tractability. It also supports the view that approximate filtering and
+finite-dimensional compression are legitimate implementation devices.
+
+\paragraph{What remains bank-specific.}
+The exact compressed belief state the bank should use is not identified by the
+literature. Its quality must be evaluated in the bank's setting by calibration,
+policy-value stability, and sensitivity analysis.
+
+\section{Incremental baseline semantics in dynamic settings}
+
+\paragraph{Gap in current proposal.}
+The proposal is strong on incremental valuation, but dynamic settings make the
+baseline more subtle. Value depends not only on the current action but also on
+the downstream policy bundle, the horizon, and the counterfactual path.
+
+\paragraph{Where the gap appears.}
+This gap appears in proposal objective (eq:proposal-objective),
+NPV functional (eq:panel-npv-functional), component delta-NPV
+(eq:component-delta-npv), dynamic-policy system (eq:dynamic-policy-system), and
+policy value (eq:policy-value). It also appears in the new Bellman-style section
+of the proposal.
+
+\paragraph{Literatures that can close or tighten it.}
+Causal inference and dynamic treatment-regime literatures are most helpful here
+\citep{murphy2003dynamic,imbensrubin2015causal,hernanrobins2020causal,
+puterman1994mdp}. They support the distinction between:
+- the value of a current action under a fixed downstream policy,
+- and the value of a newly optimized policy.
+
+\paragraph{What the literature actually supports.}
+These references strongly support the requirement that baseline action,
+downstream policy, horizon, and information set must be explicit if a dynamic
+incremental value object is to be interpretable.
+
+\paragraph{What remains bank-specific.}
+The bank must still choose the approved baseline semantics, the declared
+policy-bundle convention, and the exact bridge from one-step incremental cash
+flow to long-horizon value.
+
+\section{Wallet and latent demand identification}
+
+\paragraph{Gap in current proposal.}
+This is one of the hardest remaining modeling gaps. The proposal's cross-sell
+and cannibalization sections rely on outside wallet, movable wallet, competitor
+substitution, and promotion-timing objects that are central to bank value but
+only partially observed.
+
+\paragraph{Where the gap appears.}
+The gap is concentrated in wallet accounting (eq:wallet-accounting),
+spend-source panel (eq:spend-source-panel), spend-source decomposition
+(eq:spend-source-decomposition), movable-wallet object
+(eq:movable-card-wallet), incremental spend-source
+(eq:incremental-spend-source), new-card lift (eq:new-card-lift), bank-spend
+lift (eq:bank-spend-lift), cannibalization (eq:cannibalization), and
+cannibalization-to-NPV (eq:cannibalization-to-npv).
+
+\paragraph{Literatures that can close or tighten it.}
+Payment-choice and instrument-use models already in the bibliography are a first
+anchor \citep{koulayev2012payment,prelec2001creditcard,agarwal2010rewards}. The
+causal/uplift literature helps with treatment-effect framing
+\citep{rosenbaum1983propensity,lo2002true,wager2018causalforests,
+chernozhukov2018dml}. The new state-space and belief-state references justify
+modeling outside wallet and movable wallet as latent state rather than observed
+fact \citep{smallwood1973pomdp,kaelbling1998pomdp,
+durbinkoopman2012ssm,doucet2001smc}. Banking-specific dynamic control papers
+such as \citet{trench2003bankone} and \citet{thomas2011creditcardmdp} add
+weight that a dynamic value system can legitimately include credit-card profit
+and customer-state transitions even when not all drivers are observed directly.
+
+\paragraph{What the literature actually supports.}
+These literatures support separating adoption, use, routing, spend source, and
+policy response. They also support treating wallet-share and substitution objects
+as latent or partially anchored state components instead of pretending they are
+directly observed.
+
+\paragraph{What remains bank-specific.}
+No public literature identifies this issuer's exact competitor-wallet capture,
+movable-wallet fraction, or promotion-decay profile. Those remain bank-specific
+latent demand objects to be estimated, bounded, or scenario-tagged with internal
+anchors.
+
+\section{Relationship value integration}
+
+\paragraph{Gap in current proposal.}
+The proposal already treats relationship spillovers cautiously, but the dynamic
+model raises a harder question: when should relationship value be part of the
+core NPV object, and when should it remain a separately reported spillover?
+
+\paragraph{Where the gap appears.}
+This matters at relationship value (eq:relationship-value), in the
+valuation-semantics section, and in the allowed-use and evidence-grade
+sections.
+
+\paragraph{Literatures that can close or tighten it.}
+The current CLV and customer-equity references
+\citep{berger1998clv,rust2004return,venkatesan2004clv,bolton1998duration}
+support the general idea that multi-period customer value can include multiple
+revenue and cost channels. Banking-specific relationship and value references
+such as \citet{lewis2005relationshippricing} and \citet{egan2022bankvalue} can
+help explain why relationship-level value and deposit franchise value matter in
+bank economics, even if they do not directly identify card-driven spillovers.
+
+\paragraph{What the literature actually supports.}
+The literature supports reporting relationship value separately or giving it an
+explicit evidence grade. It supports the idea that relationship economics matter
+for bank value and customer policy design.
+
+\paragraph{What remains bank-specific.}
+The literature does not justify casually adding relationship spillover to core
+causal card NPV. Whether and when to include it remains an issuer-specific
+identification and governance choice.
+
+\section{Boundary between fixed-policy valuation and optimization}
+
+\paragraph{Gap in current proposal.}
+The proposal now contains dynamic-policy, belief-state, and Bellman language.
+That strengthens the theoretical backbone, but it also creates a boundary risk:
+is the proposal still a valuation component under a declared policy, or is it now
+quietly becoming an optimizer?
+
+\paragraph{Where the gap appears.}
+This gap appears in dynamic-policy system (eq:dynamic-policy-system),
+policy value (eq:policy-value), the state-space assembly section, the
+allowed-use taxonomy, and the governance / migration sections.
+
+\paragraph{Literatures that can close or tighten it.}
+The MDP and dynamic treatment-regime references support fixed-policy value and
+later optimization \citep{puterman1994mdp,murphy2003dynamic}. The off-policy
+evaluation and safe-improvement literature
+\citep{jiangli2016dr,huwager2021pomdpope,laroche2019spibb,
+khraishiokhrati2022offlinecredit} supports an offline-first ladder:
+- fixed-policy simulation,
+- challenger offline evaluation,
+- and only then constrained policy improvement.
+
+\paragraph{What the literature actually supports.}
+These literatures support the proposal's current direction if it says clearly:
+fixed-policy valuation is inside current scope; optimization is a future,
+governed extension. They support a staged path, not immediate production RL.
+
+\paragraph{What remains bank-specific.}
+The bank must still determine logging adequacy, overlap/support quality, model
+risk appetite, safe rollout threshold, and whether a valuation component should
+ever directly feed an optimizing policy layer in production.
+
+\section{What the literature can close more fully than bank evidence can}
+
+Some gaps are especially amenable to literature support. In particular, the
+proposal can become much stronger theoretically by citing literatures on:
+\begin{enumerate}[label=\arabic*.]
+  \item explicit filtration and belief-state sufficiency,
+  \item dynamic state aggregation and approximation,
+  \item common-shock macro factorization,
+  \item the difference between fixed-policy value and optimized-policy value,
+  \item and conservative offline policy evaluation / safe improvement.
+\end{enumerate}
+These are places where the literature can do real work for the proposal by
+clarifying formal language and valid abstraction.
+
+By contrast, some gaps remain stubbornly empirical even after the literature is
+added:
+\begin{enumerate}[label=\arabic*.]
+  \item issuer-specific outside-wallet capture,
+  \item movable-wallet magnitude,
+  \item relationship spillover causality,
+  \item exact behavior-policy logging quality,
+  \item and promotion thresholds for live challenger deployment.
+\end{enumerate}
+Those should remain explicitly flagged as bank-specific.
+
+\section{Writing and citation discipline for the proposal and companion notes}
+
+This note recommends the following discipline for the main proposal and the
+stochastic-process note.
+\begin{enumerate}[label=\arabic*.]
+  \item If a statement is about why a modeling language is appropriate, cite the
+        formal literature.
+  \item If a statement is about a dynamic equation already in the proposal,
+        cross-reference the proposal equation directly.
+  \item If a statement is about a new assembly equation, label it as proposal
+        derivation or assembly derivation.
+  \item If a statement is about an issuer-specific quantity, say that explicitly
+        and do not let the literature citation imply otherwise.
+  \item If a claim is only scenario, benchmark, or prior support, label it as
+        such and do not let it masquerade as identification.
+\end{enumerate}
+
+The note should therefore be read as a committee-defense crosswalk, not as a
+claim that the literatures close every gap completely.
+
+\section{Residual bank-specific open items}
+
+Even after the literature crosswalk, the bank still has to resolve:
+\begin{enumerate}[label=\arabic*.]
+  \item the exact dynamic state unit and aggregation level by use case,
+  \item the actual observed feature set and source-system timing contract,
+  \item the latent-state approximation used in production,
+  \item the internal anchors for wallet and substitution objects,
+  \item the relationship-value inclusion rule,
+  \item the approved valuation-semantics bundle,
+  \item the behavior-policy logging and overlap diagnostics for offline
+        evaluation,
+  \item and the governance threshold separating fixed-policy valuation from
+        approved challenger optimization.
+\end{enumerate}
+
+These residuals are not a weakness of the note. They are the correct boundary
+between literature-supported theory and issuer-specific implementation.
+
+\section{Conclusion}
+
+Yes, there are real literatures that can plug several of the remaining gaps in
+the current proposal. They are strongest where the proposal needs:
+- formal dynamic-language support,
+- explicit filtration and belief-state support,
+- structured aggregation and common-shock state treatment,
+- and disciplined boundaries between valuation, policy evaluation, and later
+  optimization.
+
+Those literatures can materially strengthen the proposal. But they do not remove
+the need for issuer-specific evidence on latent wallet capture, relationship
+spillovers, dynamic support, and deployment thresholds. The correct defense is
+therefore not that the literature solves the whole bank problem. It is that the
+literature sharply improves the theoretical and modeling discipline of the
+proposal while leaving the genuinely issuer-specific quantities where they
+belong: in internal data, experiments, quasi-experiments, and governance.
+
+\bibliographystyle{plainnat}
+\bibliography{credit_card_npv_component_refs}
+
+\end{document}

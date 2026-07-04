@@ -2,7 +2,7 @@
 
 Date: 2026-07-03
 
-Status: `STOPPED_PENDING_COLLECTION_APPROVAL_AND_REVIEWER_MODEL_DIRECTION`
+Status: `COMPLETE_BOUNDED_LOCAL_DIAGNOSTIC_FINAL_REVIEW_AGREED`
 
 ## Program Objective
 
@@ -22,6 +22,20 @@ usefulness v2 benchmark candidate:
 This program is separate from the v2 benchmark-construction program, which
 closed with a validated candidate and Claude `VERDICT=AGREE`.
 
+Mission alignment:
+
+- Canonical mission spine:
+  `docs/plans/mathdevmcp-mission-charter.md`.
+- Anti-drift gate:
+  `docs/plans/mathdevmcp-anti-drift-gate.md`.
+- Evidence-to-implementation ledger:
+  `docs/plans/mathdevmcp-evidence-to-implementation-ledger.md`.
+
+This collection/scoring program is an evidence instrument. Its product purpose
+is to decide whether MathDevMCP should invest in richer
+review-packet/handoff-packet generation for downstream agents. It is not a
+goal to keep iterating benchmarks for their own sake.
+
 ## Starting Point
 
 The v2 candidate is ready for human collection approval:
@@ -37,6 +51,31 @@ The v2 candidate is ready for human collection approval:
 The repaired baseline remains frozen under
 `.mathdevmcp/downstream_agent_usefulness/`. V2 candidate artifacts remain under
 `.mathdevmcp/downstream_agent_usefulness_v2/`.
+
+## Current Continuation State
+
+As of the 2026-07-04 continuation, the workspace contains a later local
+collection/scoring state:
+
+- collection authorization record status:
+  `collection_authorized_by_current_human_approval_for_exact_scope`;
+- prompt manifest hash:
+  `340ec24f062dc614d6e03a7d279a74539c8e033fef499ef3fc127e2722736bfe`;
+- prompt count: 18;
+- response manifest count: 18;
+- scored row count: 18;
+- Claude response-worker markers: 0;
+- retry issues: 0;
+- prompt validation errors: 0;
+- hard vetoes A/B/C: 0/0/0;
+- required passes A/B/C: 6/5/6.
+
+This later state supersedes the earlier Phase 2 stop as the current workspace
+state, but it does not erase the historical Phase 2 stop record. The current
+result is a bounded local diagnostic. Sonnet max read-only final-state review
+converged with `REVIEW_STATUS=agreed`, `VERDICT=AGREE` on 2026-07-04. This is
+not a public benchmark, release, scientific, product, funding,
+proof-correctness, broad theorem-proving, or general-reliability claim.
 
 ## Role Contract
 

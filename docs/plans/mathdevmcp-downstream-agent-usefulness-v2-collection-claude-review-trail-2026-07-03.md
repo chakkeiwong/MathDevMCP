@@ -2,7 +2,7 @@
 
 Date: 2026-07-03
 
-Status: `PHASE_00_SONNET_REVIEW_REPAIR_LOOP_ACTIVE`
+Status: `FINAL_STATE_REVIEW_AGREED`
 
 ## Role Boundary
 
@@ -160,3 +160,78 @@ Repair:
   Advance requires either a successful bounded reviewer verdict or explicit
   human waiver/direction that local-only Phase 2 preflight planning may
   continue without treating the phase as externally reviewed.
+
+### 2026-07-04 - Final-State Continuation Repair
+
+The 2026-07-04 continuation found that the workspace had advanced beyond the
+stale Phase 0/1 review state:
+
+- response artifacts exist: 18;
+- scored rows exist: 18;
+- collection authorization record currently says collection was authorized for
+  the exact Phase 3 scope;
+- hard vetoes A/B/C: 0/0/0;
+- required passes A/B/C: 6/5/6;
+- Claude response-worker markers: 0;
+- retry issues: 0.
+
+Repair:
+
+- Do not rerun the old Phase 0 bundle as current-state evidence because it
+  states that no v2 response artifacts exist.
+- Patch stale status/handoff records so the current state is a local
+  diagnostic complete pending final external review.
+- Create a bounded final-state review bundle that names only specific current
+  artifacts and asks for boundary-safety/correctness review.
+- Continue the repair loop on the final-state bundle with Sonnet max as the
+  approved substitute read-only reviewer. If review returns `REVISE`, patch
+  visibly and rerun focused checks, stopping after five rounds for the same
+  blocker.
+
+### 2026-07-04 - Final-State Sonnet Review Round 1
+
+Human approval:
+
+- Standing bounded approval granted for Codex-supervised Claude/Anthropic
+  read-only review gates in `/home/chakwong/python/MathDevMCP`, using Opus max
+  when available or Sonnet max as substitute, on compact bounded repo-local
+  review bundles despite non-public workspace artifact exfiltration risk.
+  Claude remains read-only reviewer only.
+
+Command:
+
+```bash
+bash /home/chakwong/python/claudecodex/scripts/claude_review_gate.sh \
+  --cwd /home/chakwong/python/MathDevMCP \
+  --review-name mathdevmcp-v2-collection-final-state-sonnet-r1 \
+  --bundle /home/chakwong/python/MathDevMCP/docs/reviews/mathdevmcp-v2-collection-final-state-review-bundle-2026-07-04.md \
+  --model sonnet \
+  --effort max \
+  --probe-timeout 90 \
+  --timeout-seconds 180 \
+  --max-retries 1 \
+  --allow-bounded-fallback
+```
+
+Status:
+
+- `REVIEW_STATUS=agreed`
+- `VERDICT=AGREE`
+- `RUN_DIR=.claude_reviews/20260704-014647-mathdevmcp-v2-collection-final-state-sonnet-r1`
+- `SUMMARY_JSON=.claude_reviews/20260704-014647-mathdevmcp-v2-collection-final-state-sonnet-r1/status.json`
+
+Findings:
+
+- No material blocker.
+- Current final-state artifacts are internally consistent on counts, hashes,
+  missing-artifact checks, no-Claude-worker markers, and no hidden retries.
+- Final handoff separates historical Phase 2 stop from later local
+  collection/scoring state.
+- Phase 5 result preserves local-diagnostic limitation and no longer treats
+  absent review as agreement.
+- Scored-result interpretation uses the frozen per-case rule, avoids
+  aggregate-only promotion, and preserves non-claims.
+
+Repair required:
+
+- None beyond clerical status closure.

@@ -11,6 +11,17 @@ usefulness benchmark. The implementation lane will improve MathDevMCP tools in
 parallel. The benchmark agent must keep the measuring instrument honest without
 tuning it to implementation changes.
 
+Mission alignment:
+
+- Read `docs/plans/mathdevmcp-mission-charter.md` before extending this lane.
+- The benchmark is a measuring instrument for the MathDevMCP product mission,
+  not the mission itself.
+- Benchmark results should feed
+  `docs/plans/mathdevmcp-evidence-to-implementation-ledger.md` as
+  implementation, release, or regression-guard requirements.
+- Use `docs/plans/mathdevmcp-anti-drift-gate.md` before starting another
+  benchmark iteration.
+
 ## Current Benchmark State
 
 The repaired benchmark is usable as a local diagnostic/regression benchmark.
@@ -187,6 +198,11 @@ The implementation lane may use the repaired benchmark as a regression harness
 and may add tool tests. The benchmark lane should not inspect unmerged
 implementation details to design favorable cases. The benchmark lane may report
 capability gaps as requirements, but must not patch implementation code.
+
+After any benchmark result, stop and translate the evidence into the
+evidence-to-implementation ledger. Do not start a new benchmark version unless
+the mission charter and anti-drift gate justify why measurement, rather than
+implementation, is the next product-serving action.
 
 ## Stop Conditions
 

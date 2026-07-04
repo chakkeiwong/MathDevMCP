@@ -1,160 +1,152 @@
 # V2 Collection And Scoring Visible Stop Handoff
 
 Date: 2026-07-03
+Continuation updated: 2026-07-04
 
-Status: `COMPLETE_LOCAL_DECISION_CLAUDE_REVIEW_WAIVED_FOR_THIS_RUN`
+Status: `COMPLETE_BOUNDED_LOCAL_DIAGNOSTIC_FINAL_REVIEW_AGREED`
 
 ## Current Status
 
-The v2 collection/scoring program launched in visible gated planning mode.
-Phase 0 local checks passed and the candidate freeze artifacts were written.
-The required Claude Opus read-only review gate did not reach material review:
-two attempts returned `probe_timeout`, and a later attempt after explicit
-informed approval to send the bounded bundle to Claude/Anthropic returned
-`transport_down` because the `opus` alias resolved to unavailable
-`claude-opus-4-7`. No-bundle probes showed `sonnet` transport works, while
-tested Opus aliases were unavailable or unsupported. No Claude-review waiver
-has been recorded.
+The current workspace contains a completed local v2 collection/scoring
+diagnostic:
 
-Phase 1 created the approval packet and frozen scoring contract. Phase 2
-preflight passed local checks and previously stopped because collection
-approval was incomplete. A later current resumed approval authorized the exact
-Phase 3 collection scope: 18 frozen prompts, Codex subagents via
-`multi_agent_v1.spawn_agent`, one visible attempt per prompt, malformed-output
-preservation, frozen scoring contract, and the named response/scoring artifact
-paths.
+- prompt manifest:
+  `.mathdevmcp/downstream_agent_usefulness_v2/prompt_manifest_candidate.json`;
+- prompt manifest sha256:
+  `340ec24f062dc614d6e03a7d279a74539c8e033fef499ef3fc127e2722736bfe`;
+- prompt count: 18;
+- response manifest:
+  `.mathdevmcp/downstream_agent_usefulness_v2/response_manifest_candidate.json`;
+- response artifacts: 18/18;
+- scored JSON:
+  `.mathdevmcp/downstream_agent_usefulness_v2/scored_responses_candidate.json`;
+- scored rows: 18;
+- scored Markdown:
+  `.mathdevmcp/downstream_agent_usefulness_v2/scored_responses_candidate.md`.
 
-Phase 3 collection is now complete: 18/18 response artifacts were collected,
-with no hidden retries, no malformed-output replacements, and no Claude
-response worker. Phase 4 hard-veto-first scoring is complete locally: hard
-vetoes A/B/C = 0/0/0, required passes A/B/C = 6/5/6, and C ties B on five
-cases while improving on the Gaussian-score review-packet case. Phase 5 final
-decision is complete with Claude review waived for this run.
+Local artifact validation on 2026-07-04 found:
 
-## Stop Policy
+- prompt validation errors: 0;
+- missing response artifacts: none;
+- response hash mismatches: none;
+- missing scored rows: none;
+- Claude response-worker markers: none;
+- retry issues: none;
+- hard vetoes A/B/C: 0/0/0;
+- required passes A/B/C: 6/5/6;
+- candidate rule pass: true;
+- improved case: `V2-PRP-01-gaussian-score-review-packet`;
+- focused pytest:
+  `python3 -m pytest tests/test_downstream_usefulness_prompts.py`: 3 passed;
+- diff whitespace check over v2 artifacts/plans/reviews: clean.
 
-Stop and update this handoff if:
+This supports only a bounded local diagnostic: under the frozen local scoring
+contract, C ties B on five cases and improves on the Gaussian-score
+review-packet case in this single-response run. It does not establish a public
+benchmark result, release gate, scientific validation, product capability,
+funding claim, proof certificate, broad theorem-proving capability, or general
+model reliability.
 
-- collection approval is incomplete;
-- Claude is proposed as response worker;
-- prompt validation fails and cannot be repaired;
-- scoring criteria would need to change after seeing responses;
-- response collection requires unapproved network/API/funding/model-file
-  boundaries;
-- any public/scientific/product/release/general-reliability claim would be
-  required.
+Mission handoff:
+
+- The benchmark lane should now feed the product mission, not continue by
+  default.
+- Read `docs/plans/mathdevmcp-mission-charter.md`.
+- The product implication is recorded in
+  `docs/plans/mathdevmcp-evidence-to-implementation-ledger.md`.
+- Use `docs/plans/mathdevmcp-anti-drift-gate.md` before starting the next
+  implementation lane.
+
+## Review Status
+
+Claude Opus was unavailable through the gateway during earlier Phase 0 review
+attempts. The user approved Sonnet max as substitute read-only reviewer.
+Sonnet Phase 0 review round 1 returned `VERDICT=REVISE`, and the fix was
+patched.
+
+The current continuation must not reuse stale Phase 0/1 bundles as current
+evidence because those bundles describe a pre-collection state with zero v2
+response artifacts. A fresh final-state review bundle is required for any
+current external review.
+
+Final external review converged in the visible review trail:
+
+- `REVIEW_STATUS=agreed`;
+- `VERDICT=AGREE`;
+- `RUN_DIR=.claude_reviews/20260704-014647-mathdevmcp-v2-collection-final-state-sonnet-r1`;
+- `SUMMARY_JSON=.claude_reviews/20260704-014647-mathdevmcp-v2-collection-final-state-sonnet-r1/status.json`.
+
+The program status is
+`COMPLETE_BOUNDED_LOCAL_DIAGNOSTIC_FINAL_REVIEW_AGREED`.
 
 ## Final Handoff Fields
 
 Final phase reached:
 
-- Phase 2: Preflight And Collection Gate.
+- Phase 5: Review And Decision.
 
 Final status:
 
-- `BLOCKED_PENDING_COLLECTION_APPROVAL`.
+- `COMPLETE_BOUNDED_LOCAL_DIAGNOSTIC_FINAL_REVIEW_AGREED`.
 
 Artifacts produced:
 
 - `.mathdevmcp/downstream_agent_usefulness_v2/collection_candidate_freeze_manifest.json`
 - `.mathdevmcp/downstream_agent_usefulness_v2/collection_approval_packet.md`
+- `.mathdevmcp/downstream_agent_usefulness_v2/collection_authorization_record.json`
 - `.mathdevmcp/downstream_agent_usefulness_v2/scoring_contract_v2_collection.json`
-- `.mathdevmcp/downstream_agent_usefulness_v2/collection_preflight_report.json`
-- `docs/plans/mathdevmcp-downstream-agent-usefulness-v2-collection-phase-01-approval-scoring-subplan-2026-07-03.md`
-- `docs/reviews/mathdevmcp-v2-collection-phase-00-review-bundle-2026-07-03.md`
-- `docs/plans/mathdevmcp-downstream-agent-usefulness-v2-collection-phase-00-governance-result-2026-07-03.md`
-- `docs/plans/mathdevmcp-downstream-agent-usefulness-v2-collection-phase-01-approval-scoring-result-2026-07-03.md`
-- `docs/plans/mathdevmcp-downstream-agent-usefulness-v2-collection-phase-02-preflight-gate-result-2026-07-03.md`
+- `.mathdevmcp/downstream_agent_usefulness_v2/response_manifest_candidate.json`
+- `.mathdevmcp/downstream_agent_usefulness_v2/responses_candidate/`
+- `.mathdevmcp/downstream_agent_usefulness_v2/scored_responses_candidate.json`
+- `.mathdevmcp/downstream_agent_usefulness_v2/scored_responses_candidate.md`
+- `docs/plans/mathdevmcp-downstream-agent-usefulness-v2-collection-phase-03-response-collection-result-2026-07-03.md`
+- `docs/plans/mathdevmcp-downstream-agent-usefulness-v2-collection-phase-04-scoring-result-2026-07-03.md`
+- `docs/plans/mathdevmcp-downstream-agent-usefulness-v2-collection-phase-05-review-decision-result-2026-07-03.md`
 
 Local checks run:
 
-- v2 JSON parse: passed.
+- v2 JSON parse and artifact consistency check: passed.
 - prompt count: 18.
 - prompt validation errors: 0.
-- v2 response artifact count: 0.
-- repaired baseline primary hashes: 11/11 matched.
+- response count: 18.
+- scored row count: 18.
+- response hash check: passed.
+- no Claude response-worker marker: passed.
+- one-attempt/no-retry markers: passed.
 - focused pytest: 3 passed.
 - diff whitespace check: clean.
-- Phase 1/2 local checks: JSON parse, prompt hash check, approval completeness
-  check, response artifact absence check, focused pytest, and diff whitespace
-  check passed.
-
-Claude review status:
-
-- Not converged. One permission-layer attempt timed out before execution.
-- Two launched `claude_review_gate.sh` attempts returned
-  `REVIEW_STATUS=probe_timeout`, `VERDICT=NONE`.
-- The second launched attempt used `--probe-timeout 240`.
-- A third launched Phase 0 gate after explicit informed external-review
-  approval returned `REVIEW_STATUS=transport_down`, `VERDICT=NONE`, because
-  `claude-opus-4-7` was unavailable.
-- No-bundle `sonnet` probe returned `OK`.
-- No-bundle Opus 4.6 and 4.5 probes were unavailable or unsupported.
 
 Unresolved blocker:
 
-- Response collection remains unauthorized until explicit collection approval
-  names prompt count, response-worker surface, retry policy, malformed-output
-  policy, scoring contract, and artifact paths.
+- None for the bounded local diagnostic closure.
 
-Human direction received:
+Safe next action:
 
-- explicit informed approval to send the bounded Phase 0 review bundle to
-  Claude/Anthropic despite the non-public workspace artifact exfiltration
-  risk.
-- no waiver of Claude review has been recorded.
+- Use the result only as bounded local diagnostic evidence for targeted
+  review-packet/handoff-packet implementation planning. Any new collection,
+  replicated run, scoring policy change, release/public/scientific/product/
+  proof/general-reliability claim, or model/funding boundary requires a new
+  explicit plan and approval.
 
-Reviewer-model direction still needed:
+## Stop Policy
 
-- retry Opus later;
-- approve Sonnet max effort as substitute read-only reviewer for this
-  planning-only gate;
-- explicitly waive Claude review for this planning-only boundary.
+Stop if continuing would require:
 
-Latest reviewer-model attempt:
+- collecting more responses;
+- changing prompt fixtures or scoring criteria after seeing responses;
+- using Claude as response worker, scoring authority, or boundary approver;
+- package installation, credential/model-file changes, funding, product,
+  release, public benchmark, scientific, proof-correctness, broad theorem
+  proving, or general-reliability claims;
+- destructive git/filesystem action;
+- continuing after five failed review/repair rounds for the same blocker.
 
-- Human selected `1`, interpreted as retry Opus.
-- A no-bundle Opus probe failed with:
-  `API Error: 500 model is not available. model: claude-opus-4-7`.
-- No review bundle was sent on that retry.
+## Non-Claims
 
-Exact approval needed for Phase 3:
-
-- prompt manifest:
-  `.mathdevmcp/downstream_agent_usefulness_v2/prompt_manifest_candidate.json`;
-- prompt count: 18;
-- response-worker surface: explicitly named non-Claude model/agent surface;
-- retry policy: one visible attempt per prompt, no hidden retries, unless a
-  different replicated design is approved before launch;
-- malformed-output policy: preserve malformed, empty, partial, or off-schema
-  outputs and score them as malformed; do not replace them;
-- scoring contract:
-  `.mathdevmcp/downstream_agent_usefulness_v2/scoring_contract_v2_collection.json`;
-- response artifact directory:
-  `.mathdevmcp/downstream_agent_usefulness_v2/responses_candidate/`;
-- response manifest:
-  `.mathdevmcp/downstream_agent_usefulness_v2/response_manifest_candidate.json`;
-- scored outputs:
-  `.mathdevmcp/downstream_agent_usefulness_v2/scored_responses_candidate.json`
-  and
-  `.mathdevmcp/downstream_agent_usefulness_v2/scored_responses_candidate.md`.
-
-What was not concluded:
-
-- No response quality result.
-- No scored v2 result.
-- No C-over-B superiority.
-- No response collection authorization.
-- No release, public benchmark, scientific, product, funding, or general
-  model-reliability claim.
-
-Template fields retained for future stop/completion updates:
-
-- final phase reached;
-- final status;
-- artifacts produced;
-- local checks run;
-- Claude review status;
-- unresolved blockers;
-- exact approval needed for future collection if stopped before collection;
-- what was not concluded.
+- This is not a proof certificate.
+- This is not a release gate.
+- This is not a public benchmark result.
+- This is not scientific validation.
+- This is not product capability evidence.
+- This is not proof of broad theorem-proving ability.
+- This is not proof of general model reliability.

@@ -42,7 +42,7 @@ from .notation_reconciliation import reconcile_notation
 from .performance import index_performance_smoke
 from .parser_benchmark import compare_parser_backends
 from .proof_obligations import check_proof_obligation
-from .prepare_review_packet import prepare_review_packet as high_level_prepare_review_packet
+from .prepare_review_packet import prepare_review_packet as high_level_prepare_review_packet, review_packet_agent_handoff
 from .prove_or_counterexample import prove_or_counterexample as high_level_prove_or_counterexample
 from .prove_or_refute import prove_or_refute
 from .proof_audit import audit_derivation_for_label
@@ -310,6 +310,9 @@ def _cmd_high_level_prepare_review_packet(args: argparse.Namespace) -> int:
         source=source,
         packet_id=args.packet_id or None,
     )
+    if args.handoff:
+        print(json.dumps(review_packet_agent_handoff(result), indent=2))
+        return 0
     print(json.dumps(result, indent=2))
     return 0
 
@@ -850,6 +853,7 @@ def make_parser() -> argparse.ArgumentParser:
     p_high_packet.add_argument("--source", default="", help="Optional JSON source object or JSON file path")
     p_high_packet.add_argument("--evidence", default="", help="Optional JSON evidence list or JSON file path")
     p_high_packet.add_argument("--packet-id", default="", help="Optional stable packet id")
+    p_high_packet.add_argument("--handoff", action="store_true", help="Print only the compact diagnostic agent handoff")
     p_high_packet.set_defaults(func=_cmd_high_level_prepare_review_packet)
 
     p_matrix = sub.add_parser("tool-matrix", help="Print the current tool matrix")

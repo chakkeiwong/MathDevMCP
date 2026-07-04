@@ -117,9 +117,104 @@ def test_call_mcp_tool_prepare_review_packet_preserves_phase6_packet_fields():
     assert low_level["residual_gaps"]
     assert low_level["decision_criteria"]
     assert low_level["risk_register"]
+    assert low_level["agent_handoff"]["scoped_question"] == "Review derivation and implementation context"
+    assert low_level["agent_handoff"]["evidence_ledger"]
+    assert low_level["agent_handoff"]["veto_risks"]
+    assert packet["agent_handoff"] == low_level["agent_handoff"]
     assert "diagnostic_route_and_trace_context_not_proof" in non_claim_codes
     assert "not recertified" in low_level["backend_checks"][0]["boundary"]
     assert "not semantic proof" in low_level["trace_maps"][0]["boundary"]
+
+
+def test_call_mcp_tool_prepare_review_packet_can_return_compact_handoff():
+    derived = call_mcp_tool(
+        "derive_from",
+        {"target": "a + b = b + a", "givens": ["a,b are scalars"]},
+    )
+    handoff = call_mcp_tool(
+        "prepare_review_packet",
+        {
+            "question": "Review compact MCP handoff",
+            "evidence": [derived],
+            "handoff": True,
+        },
+    )
+
+    assert handoff["scoped_question"] == "Review compact MCP handoff"
+    assert {
+        "status",
+        "reason",
+        "evidence_ledger",
+        "assumption_gap_ledger",
+        "veto_risks",
+        "non_claim_boundary",
+        "next_actions",
+        "next_artifact",
+        "certification_boundary",
+    }.issubset(handoff)
+    assert handoff["evidence_ledger"]
+    assert handoff["non_claim_boundary"]
+    assert "not a proof certificate" in handoff["certification_boundary"]
+    assert "metadata" not in handoff
+    assert "workflow" not in handoff
+
+
+def test_call_mcp_tool_end_to_end_review_handoff_preserves_evidence_risks_and_boundaries():
+    derived = call_mcp_tool(
+        "derive_from",
+        {"target": "a + b = b + a", "givens": ["a,b are scalars"]},
+    )
+    code = call_mcp_tool(
+        "audit_math_to_code",
+        {
+            "math": "logdet(Sigma) + trace(Cov)",
+            "code": "def f(S):\n    return logdet(S) + trace(S)\n",
+            "aliases": {"Sigma": "S", "Cov": "S"},
+        },
+    )
+
+    full_packet = call_mcp_tool(
+        "prepare_review_packet",
+        {
+            "question": "Review transport derivation and code handoff",
+            "evidence": [derived, code],
+            "source": {
+                "context_summary": "End-to-end fixture: backend derivation evidence plus structural code audit."
+            },
+        },
+    )
+    compact = call_mcp_tool(
+        "prepare_review_packet",
+        {
+            "question": "Review transport derivation and code handoff",
+            "evidence": [derived, code],
+            "source": {
+                "context_summary": "End-to-end fixture: backend derivation evidence plus structural code audit."
+            },
+            "handoff": True,
+        },
+    )
+
+    low_level = full_packet["evidence"][0]["low_level"]
+    compact_without_wrapper = {key: value for key, value in compact.items() if key != "ok"}
+    risk_codes = {item["code"] for item in compact["veto_risks"]}
+    non_claim_codes = {item["code"] for item in compact["non_claim_boundary"]}
+
+    assert full_packet["status"] == "diagnostic_only"
+    assert full_packet["certification_source"] == "none"
+    assert compact["ok"] is True
+    assert compact_without_wrapper == full_packet["agent_handoff"]
+    assert compact["scoped_question"] == "Review transport derivation and code handoff"
+    assert compact["source_context"] == "End-to-end fixture: backend derivation evidence plus structural code audit."
+    assert compact["evidence_ledger"]
+    assert compact["assumption_gap_ledger"]
+    assert {"route_plans_are_diagnostic", "trace_maps_are_structural"}.issubset(risk_codes)
+    assert "review_packet_not_proof_certificate" in non_claim_codes
+    assert "not a proof certificate" in compact["certification_boundary"]
+    assert compact["next_actions"]
+    assert low_level["route_plans"]
+    assert low_level["trace_maps"]
+    assert low_level["backend_checks"]
 
 
 def test_call_mcp_tool_high_level_workflow_quality_returns_threshold_report():

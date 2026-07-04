@@ -316,6 +316,7 @@ def prepare_review_packet(
     evidence: Sequence[dict] | None = None,
     source: dict | None = None,
     packet_id: str | None = None,
+    handoff: bool = False,
 ) -> dict:
     return call_mcp_tool(
         "prepare_review_packet",
@@ -324,6 +325,7 @@ def prepare_review_packet(
             "evidence": list(evidence) if evidence is not None else None,
             "source": source,
             "packet_id": packet_id,
+            "handoff": handoff,
         },
     )
 

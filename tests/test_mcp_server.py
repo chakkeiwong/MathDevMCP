@@ -122,7 +122,22 @@ def test_mcp_server_prepare_review_packet_preserves_phase6_packet_fields():
     assert low_level["residual_gaps"]
     assert low_level["decision_criteria"]
     assert low_level["risk_register"]
+    assert low_level["agent_handoff"]["scoped_question"] == "Review derivation and implementation context"
+    assert low_level["agent_handoff"]["evidence_ledger"]
+    assert low_level["agent_handoff"]["veto_risks"]
+    assert packet["agent_handoff"] == low_level["agent_handoff"]
     assert any(item["code"] == "diagnostic_route_and_trace_context_not_proof" for item in low_level["non_claims"])
+
+
+def test_mcp_server_prepare_review_packet_can_return_compact_handoff():
+    derived = derive_from("a + b = b + a", givens=["a,b are scalars"])
+    handoff = prepare_review_packet("Review compact server handoff", evidence=[derived], handoff=True)
+
+    assert handoff["scoped_question"] == "Review compact server handoff"
+    assert handoff["evidence_ledger"]
+    assert handoff["non_claim_boundary"]
+    assert "not a proof certificate" in handoff["certification_boundary"]
+    assert "metadata" not in handoff
 
 
 

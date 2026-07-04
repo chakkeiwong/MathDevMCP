@@ -163,11 +163,40 @@ def test_cli_prepare_review_packet_preserves_phase6_packet_fields(tmp_path):
     assert payload["status"] == "diagnostic_only"
     assert payload["certification_source"] == "none"
     assert low_level["backend_checks"]
+    assert low_level["agent_handoff"]["scoped_question"] == "Review CLI packet"
+    assert low_level["agent_handoff"]["evidence_ledger"]
+    assert low_level["agent_handoff"]["non_claim_boundary"]
+    assert payload["agent_handoff"] == low_level["agent_handoff"]
     assert low_level["nested_evidence_summary"]
     assert low_level["route_plans"]
     assert low_level["trace_maps"]
     assert low_level["decision_criteria"]
     assert any(item["code"] == "diagnostic_route_and_trace_context_not_proof" for item in low_level["non_claims"])
+
+    handoff_packet = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "mathdevmcp.cli",
+            "prepare-review-packet",
+            "Review CLI packet",
+            "--evidence",
+            str(evidence_path),
+            "--handoff",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        env={"PYTHONPATH": str(ROOT / "src")},
+    )
+
+    assert handoff_packet.returncode == 0, handoff_packet.stderr
+    handoff = json.loads(handoff_packet.stdout)
+    assert handoff["scoped_question"] == "Review CLI packet"
+    assert handoff["evidence_ledger"]
+    assert handoff["non_claim_boundary"]
+    assert "not a proof certificate" in handoff["certification_boundary"]
+    assert "metadata" not in handoff
 
 
 def test_cli_high_level_workflow_quality_module_command_passes():

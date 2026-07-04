@@ -109,6 +109,7 @@ TOP_LEVEL_FIELDS: set[str] = {
     "counterexamples",
     "actions",
     "non_claims",
+    "agent_handoff",
     "evidence_ledger",
     "metadata",
 }

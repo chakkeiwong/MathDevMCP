@@ -31,6 +31,7 @@ class MathReviewPacket:
     decision_criteria: list[str]
     risk_register: list[dict[str, Any]]
     non_claims: list[dict[str, Any]]
+    agent_handoff: dict[str, Any]
     evidence: list[dict[str, Any]]
     actions: list[dict[str, Any]]
     certification_boundary: str
@@ -141,6 +142,98 @@ def _record_non_claims(
         if copied:
             copied["source"] = source
             _append_unique(target, copied)
+
+
+def _source_context_summary(source: dict[str, Any] | None) -> str:
+    if not isinstance(source, dict):
+        return ""
+    for key in ("context_summary", "summary", "label", "source_label", "path"):
+        value = source.get(key)
+        if isinstance(value, str) and value:
+            return value
+    return ""
+
+
+def _action_target(action: dict[str, Any]) -> str:
+    for key in ("target", "summary", "text", "description", "kind", "code"):
+        value = action.get(key)
+        if isinstance(value, str) and value:
+            return value
+    return ""
+
+
+def _action_kind(action: dict[str, Any]) -> str:
+    for key in ("kind", "code", "next_action"):
+        value = action.get(key)
+        if isinstance(value, str) and value:
+            return value
+    return ""
+
+
+def _build_agent_handoff(
+    *,
+    question: str,
+    status: str,
+    reason: str,
+    source: dict[str, Any] | None,
+    nested_evidence_summary: list[dict[str, Any]],
+    residual_gaps: list[dict[str, Any]],
+    risk_register: list[dict[str, Any]],
+    non_claims: list[dict[str, Any]],
+    actions: list[dict[str, Any]],
+    certification_boundary: str,
+) -> dict[str, Any]:
+    """Create the compact downstream-agent guide without changing evidence."""
+    evidence_ledger = [
+        _compact_projection(
+            item,
+            ("scope", "contract", "workflow", "status", "question", "answer", "summary", "evidence_classes"),
+        )
+        for item in nested_evidence_summary[:8]
+    ]
+    gap_ledger = [
+        _compact_projection(item, ("kind", "source", "reason", "items", "obligation"))
+        for item in residual_gaps[:8]
+    ]
+    veto_risks = [
+        _compact_projection(item, ("code", "risk", "mitigation"))
+        for item in risk_register[:8]
+    ]
+    non_claim_boundary = [
+        _compact_projection(item, ("code", "text"))
+        for item in non_claims[:8]
+    ]
+    next_actions = [
+        _compact_projection(
+            {
+                **item,
+                "kind": _action_kind(item),
+                "target": _action_target(item),
+            },
+            ("kind", "target", "severity", "source"),
+        )
+        for item in actions[:8]
+    ]
+    if not next_actions:
+        next_actions = [
+            {
+                "kind": "inspect_packet",
+                "target": "Inspect evidence_ledger, assumption_gap_ledger, veto_risks, and non_claim_boundary before making a mathematical or code claim.",
+            }
+        ]
+    return {
+        "scoped_question": question,
+        "status": status,
+        "reason": reason,
+        "source_context": _source_context_summary(source),
+        "evidence_ledger": [item for item in evidence_ledger if item],
+        "assumption_gap_ledger": [item for item in gap_ledger if item],
+        "veto_risks": [item for item in veto_risks if item],
+        "non_claim_boundary": [item for item in non_claim_boundary if item],
+        "next_actions": [item for item in next_actions if item],
+        "next_artifact": "Use this packet as a diagnostic review handoff; produce a proof, code patch, assumption ledger, or follow-up backend check only after resolving the listed gaps and risks.",
+        "certification_boundary": certification_boundary,
+    }
 
 
 def build_math_review_packet(
@@ -457,6 +550,23 @@ def build_math_review_packet(
             }
         )
 
+    certification_boundary = (
+        "This packet is an evidence bundle, not a proof certificate. "
+        f"{CERTIFICATION_BOUNDARY}"
+    )
+    agent_handoff = _build_agent_handoff(
+        question=question,
+        status=status,
+        reason=reason,
+        source=source,
+        nested_evidence_summary=nested_evidence_summary,
+        residual_gaps=residual_gaps,
+        risk_register=risk_register,
+        non_claims=non_claims,
+        actions=actions,
+        certification_boundary=certification_boundary,
+    )
+
     packet = MathReviewPacket(
         packet_id=packet_id or f"math-review:{abs(hash(question)) % 10_000_000}",
         question=question,
@@ -478,11 +588,9 @@ def build_math_review_packet(
         decision_criteria=decision_criteria,
         risk_register=risk_register,
         non_claims=non_claims,
+        agent_handoff=agent_handoff,
         evidence=evidence_items,
         actions=actions,
-        certification_boundary=(
-            "This packet is an evidence bundle, not a proof certificate. "
-            f"{CERTIFICATION_BOUNDARY}"
-        ),
+        certification_boundary=certification_boundary,
     )
     return attach_contract(asdict(packet), "math_review_packet")

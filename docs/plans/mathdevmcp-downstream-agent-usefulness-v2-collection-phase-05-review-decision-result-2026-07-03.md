@@ -2,7 +2,7 @@
 
 Date: 2026-07-03
 
-Status: `COMPLETE_LOCAL_DECISION_CLAUDE_REVIEW_WAIVED_FOR_THIS_RUN`
+Status: `COMPLETE_BOUNDED_LOCAL_DIAGNOSTIC_FINAL_REVIEW_AGREED`
 
 ## Phase Objective
 
@@ -13,12 +13,21 @@ general reliability claim.
 
 ## Review Status
 
-Claude review was not run for Phase 5. This follows the user's instruction in
-this runbook context: no Claude review for this time. Claude was not used as a
-response worker, scoring authority, or boundary approver.
+Claude review was not run for the original Phase 5 close. The 2026-07-04
+continuation treated the prior `Claude review waived` wording as unsupported by
+the visible review trail, downgraded the result to pending review, and then ran
+a bounded final-state Sonnet max read-only review.
 
-The final decision below is therefore a local Codex-supervised decision based
-on the frozen scoring contract and local checks only.
+Final-state review outcome:
+
+- `REVIEW_STATUS=agreed`;
+- `VERDICT=AGREE`;
+- `RUN_DIR=.claude_reviews/20260704-014647-mathdevmcp-v2-collection-final-state-sonnet-r1`;
+- `SUMMARY_JSON=.claude_reviews/20260704-014647-mathdevmcp-v2-collection-final-state-sonnet-r1/status.json`.
+
+The final decision below remains a bounded local diagnostic. The review agrees
+that the runbook and artifact set are internally consistent and safely bounded;
+it does not authorize broader claims.
 
 ## Final Decision
 
@@ -38,14 +47,24 @@ Under the frozen per-case comparison rule, C ties B on five cases and improves
 on the Gaussian-score review-packet case. This supports a bounded local
 C-over-B diagnostic for this single-response run.
 
+Product implication:
+
+- This result is evidence for the MathDevMCP mission, not an endpoint.
+- The next mission-aligned move is to improve review-packet/handoff-packet
+  generation so downstream agents receive compact packets with scoped
+  question, provenance, assumptions, route gaps, veto risks, non-claims, and
+  next artifacts.
+- The implementation implication is recorded in
+  `docs/plans/mathdevmcp-evidence-to-implementation-ledger.md`.
+
 ## Evidence Contract Status
 
 | Field | Status |
 | --- | --- |
-| Question | Answered locally: the whole v2 collection/scoring program is complete as a bounded local diagnostic. |
+| Question | Answered: the whole v2 collection/scoring program is complete as a bounded local diagnostic and the final-state read-only review agreed with the boundary. |
 | Baseline/comparator | Phase 4 scored artifacts, response manifest, frozen scoring contract, and prior repaired benchmark as historical context only. |
-| Primary criterion | Passed: final decision states the local C-over-B diagnostic result, limitations, non-claims, review status, checks, and next justified action without crossing unsupported boundaries. |
-| Veto diagnostics | Passed: scored artifacts exist; hard-veto/pass-count order is explicit; no aggregate-only claim; no unsupported public/release/scientific/product/proof/general-reliability claim; Claude is not treated as authority; review waiver is explicit. |
+| Primary criterion | Passed: final decision states the local C-over-B diagnostic result, limitations, non-claims, converged final-state review status, checks, and next justified action without crossing unsupported boundaries. |
+| Veto diagnostics | Passed: scored artifacts exist; hard-veto/pass-count order is explicit; no aggregate-only claim; no unsupported public/release/scientific/product/proof/general-reliability claim; Claude is not treated as authority; final-state review converged. |
 | Explanatory diagnostics | Row counts, condition totals, per-case summary, limitations, artifact list, local checks. |
 | Not concluded | No proof certificate, release gate, public benchmark result, scientific validation, product capability evidence, broad theorem-proving proof, or general model reliability. |
 
@@ -73,13 +92,13 @@ C-over-B diagnostic for this single-response run.
 
 | Decision | Primary criterion status | Veto diagnostic status | Main uncertainty | Next justified action | What is not concluded |
 | --- | --- | --- | --- | --- | --- |
-| Close v2 collection/scoring as complete local diagnostic | Passed | No veto triggered | Single response per prompt, manual local scoring, and waived external review limit generality | Use this benchmark result to guide targeted tool improvements, especially review-packet/actionability support and maintaining B/C evidence use | No public/release/scientific/product/general-reliability claim and no broad proof capability claim |
+| Close v2 collection/scoring as a bounded local diagnostic | Passed, with final-state review `AGREE` | No veto triggered | Single response per prompt and manual local scoring limit generality | Use only as bounded local diagnostic evidence for targeted tool-improvement planning | No public/release/scientific/product/general-reliability claim and no broad proof capability claim |
 
 ## Limitations
 
 - One response per prompt; no replicated variance estimate.
 - Manual local scoring under the frozen contract.
-- Claude review was waived for this run.
+- Final external review converged with Sonnet max `VERDICT=AGREE`.
 - Candidate-only stressors remain explanatory only.
 - The result is a local diagnostic, not a publication-quality benchmark.
 

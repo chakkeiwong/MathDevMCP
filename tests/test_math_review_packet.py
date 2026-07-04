@@ -13,6 +13,9 @@ def test_math_review_packet_aggregates_true_identity_without_overclaim() -> None
     assert packet["status"] == "review_ready"
     assert packet["obligations"]
     assert "not a proof certificate" in packet["certification_boundary"]
+    assert packet["agent_handoff"]["scoped_question"] == "Can we derive commutativity?"
+    assert packet["agent_handoff"]["evidence_ledger"]
+    assert any(item["code"] == "review_packet_not_proof_certificate" for item in packet["agent_handoff"]["non_claim_boundary"])
 
 
 def test_math_review_packet_blocks_false_identity() -> None:
@@ -29,6 +32,8 @@ def test_math_review_packet_marks_missing_assumptions_for_review() -> None:
 
     assert packet["status"] == "needs_human_review"
     assert packet["actions"] == [{"kind": "add_assumption"}]
+    assert packet["agent_handoff"]["assumption_gap_ledger"]
+    assert packet["agent_handoff"]["next_actions"][0]["kind"] == "add_assumption"
 
 
 def test_math_review_packet_keeps_code_mismatch_nested() -> None:

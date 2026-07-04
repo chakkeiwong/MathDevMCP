@@ -2,7 +2,7 @@
 
 Date: 2026-07-03
 
-Status: `COMPLETE_LOCAL_DECISION_CLAUDE_REVIEW_WAIVED_FOR_THIS_RUN`
+Status: `COMPLETE_BOUNDED_LOCAL_DIAGNOSTIC_FINAL_REVIEW_AGREED`
 
 ## Ledger
 
@@ -517,7 +517,7 @@ Next action:
   explicitly waived; otherwise stop with local result plus review-boundary
   limitation.
 
-### 2026-07-04T00:07:00+08:00 - Phase 5 - FINAL_DECISION_CLOSE
+### 2026-07-04T00:07:00+08:00 - Phase 5 - LOCAL_DECISION_CLOSE_PENDING_EXTERNAL_REVIEW
 
 Skeptical audit:
 
@@ -525,8 +525,9 @@ Skeptical audit:
   contract, and local checks.
 - Proxy metric risk: the final decision does not promote local scores to a
   public/release/scientific/product/general-reliability claim.
-- Hidden assumptions checked: one-response limitation, manual local scoring,
-  and Claude-review waiver are explicit.
+- Hidden assumptions checked: one-response limitation and manual local scoring
+  are explicit. The continuation audit does not treat absent Claude review as
+  agreement or as a waiver.
 - Boundary: Claude was not used as response worker, scoring authority, or
   boundary approver.
 
@@ -555,9 +556,112 @@ Artifacts:
 
 Gate status:
 
-- `COMPLETE_LOCAL_DECISION_CLAUDE_REVIEW_WAIVED_FOR_THIS_RUN`
+- `LOCAL_DIAGNOSTIC_COMPLETE_PENDING_FINAL_EXTERNAL_REVIEW`
 
 Next action:
 
-- Use the v2 benchmark result to guide targeted tool improvements, especially
-  review-packet/actionability support and preserving scoped evidence use.
+- Patch stale handoff/status records and run a bounded final-state read-only
+  review if the reviewer boundary is approved and available. Until that review
+  converges or a human explicitly waives it, use the result only as an
+  unreviewed local diagnostic.
+
+### 2026-07-04T00:00:00+08:00 - Final-State Continuation - CONSISTENCY_AUDIT
+
+Skeptical audit:
+
+- Wrong baseline risk: older Phase 0/1 review bundles describe zero response
+  artifacts and must not be reused as current-state review evidence.
+- Proxy metric risk: response/scored artifact existence is not public,
+  release, scientific, product, proof, or general-reliability evidence.
+- Hidden assumption risk: prior `Claude review waived` wording is unsupported
+  by the visible review trail and must be replaced with pending-review wording.
+- Boundary: no new response collection, no scoring criteria changes, and no
+  Claude response-worker or scoring-authority role.
+
+Checks:
+
+- prompt count: 18;
+- prompt manifest hash:
+  `340ec24f062dc614d6e03a7d279a74539c8e033fef499ef3fc127e2722736bfe`;
+- prompt validation errors: 0;
+- collection authorization record parsed and records collection authorized for
+  the exact current scope;
+- response count: 18;
+- scored rows: 18;
+- missing responses/scores: none;
+- response hash mismatches: none;
+- Claude response-worker markers: none;
+- retry issues: none;
+- hard vetoes A/B/C: 0/0/0;
+- required passes A/B/C: 6/5/6;
+- candidate rule pass: true, improved case
+  `V2-PRP-01-gaussian-score-review-packet`;
+- focused pytest:
+  `python3 -m pytest tests/test_downstream_usefulness_prompts.py`: 3 passed;
+- diff whitespace check over v2 artifacts/plans/reviews: clean.
+
+Artifacts:
+
+- `docs/plans/mathdevmcp-downstream-agent-usefulness-v2-collection-final-state-consistency-audit-2026-07-04.md`
+- `docs/reviews/mathdevmcp-v2-collection-final-state-review-bundle-2026-07-04.md`
+
+Gate status:
+
+- `FINAL_STATE_REVIEW_AGREED`
+
+Next action:
+
+- Record the agreed final-state review and close the runbook as a bounded local
+  diagnostic.
+
+### 2026-07-04T01:46:47+08:00 - Final-State Review - SONNET_R1_AGREE
+
+Action:
+
+- Ran bounded Sonnet max read-only review gate on
+  `docs/reviews/mathdevmcp-v2-collection-final-state-review-bundle-2026-07-04.md`.
+
+Command:
+
+```bash
+bash /home/chakwong/python/claudecodex/scripts/claude_review_gate.sh \
+  --cwd /home/chakwong/python/MathDevMCP \
+  --review-name mathdevmcp-v2-collection-final-state-sonnet-r1 \
+  --bundle /home/chakwong/python/MathDevMCP/docs/reviews/mathdevmcp-v2-collection-final-state-review-bundle-2026-07-04.md \
+  --model sonnet \
+  --effort max \
+  --probe-timeout 90 \
+  --timeout-seconds 180 \
+  --max-retries 1 \
+  --allow-bounded-fallback
+```
+
+Outcome:
+
+- `REVIEW_STATUS=agreed`;
+- `VERDICT=AGREE`;
+- `RUN_DIR=.claude_reviews/20260704-014647-mathdevmcp-v2-collection-final-state-sonnet-r1`;
+- `SUMMARY_JSON=.claude_reviews/20260704-014647-mathdevmcp-v2-collection-final-state-sonnet-r1/status.json`.
+
+Reviewer summary:
+
+- No material blocker found.
+- The current artifact set is internally consistent on 18 prompts, 18
+  responses, 18 scored rows, matching prompt hash, no missing artifacts, no
+  response hash mismatches, no Claude response-worker markers, and no hidden
+  retries.
+- The final handoff separates the historical Phase 2 stop from the later local
+  collection/scoring state.
+- The Phase 5 result preserves the local-diagnostic limitation and no longer
+  treats absent Claude review as agreement.
+- The scored-result interpretation uses the per-case frozen rule, avoids
+  aggregate-only promotion, and preserves non-claims.
+
+Gate status:
+
+- `COMPLETE_BOUNDED_LOCAL_DIAGNOSTIC_FINAL_REVIEW_AGREED`
+
+Next action:
+
+- No additional collection, scoring mutation, or claim expansion. Use the
+  result only as the bounded local diagnostic described in the final artifacts.

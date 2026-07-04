@@ -39,7 +39,7 @@ from .math_review_packet import build_math_review_packet
 from .math_to_tests import generate_math_tests
 from .notation_reconciliation import reconcile_notation
 from .proof_obligations import check_proof_obligation
-from .prepare_review_packet import prepare_review_packet as high_level_prepare_review_packet
+from .prepare_review_packet import prepare_review_packet as high_level_prepare_review_packet, review_packet_agent_handoff
 from .prove_or_counterexample import prove_or_counterexample as high_level_prove_or_counterexample
 from .prove_or_refute import prove_or_refute
 from .proof_gap import localize_proof_gap
@@ -415,12 +415,15 @@ def _tool_high_level_prepare_review_packet(args: dict[str, Any]) -> dict[str, An
         raise ValueError("source must be an object")
     if evidence is not None and not isinstance(evidence, list):
         raise ValueError("evidence must be a list of objects")
-    return high_level_prepare_review_packet(
+    result = high_level_prepare_review_packet(
         _required_string(args, "question"),
         evidence=evidence,
         source=source,
         packet_id=args.get("packet_id") if isinstance(args.get("packet_id"), str) and args.get("packet_id") else None,
     )
+    if bool(args.get("handoff")):
+        return review_packet_agent_handoff(result)
+    return result
 
 
 def _tool_audit_implementation_label(args: dict[str, Any]) -> dict[str, Any]:

@@ -4,7 +4,7 @@ Date: 2026-07-03
 
 ## Status
 
-`COMPLETE_LOCAL_DECISION_CLAUDE_REVIEW_WAIVED_FOR_THIS_RUN`
+`COMPLETE_BOUNDED_LOCAL_DIAGNOSTIC_FINAL_REVIEW_AGREED`
 
 ## Role Contract
 
@@ -120,3 +120,23 @@ Stop if continuing requires:
 When execution completes or stops, write final phase reached, status,
 artifacts, Claude review trail, checks run, unresolved blockers, non-claims,
 and safest next human decision.
+
+## 2026-07-04 Continuation Correction
+
+The current workspace contains completed local Phase 3-5 artifacts, including
+18 response artifacts and 18 scored rows. Older Phase 0/1/2 review bundles and
+handoffs that describe a no-response pre-collection state are historical and
+must not be reused as current-state review bundles.
+
+Current continuation policy:
+
+- do not collect additional responses;
+- do not change the frozen scoring criteria;
+- do not use Claude as response worker or scoring authority;
+- validate the existing artifacts locally;
+- patch stale handoff/status records visibly;
+- final-state Sonnet max read-only review converged on 2026-07-04:
+  `REVIEW_STATUS=agreed`, `VERDICT=AGREE`,
+  `RUN_DIR=.claude_reviews/20260704-014647-mathdevmcp-v2-collection-final-state-sonnet-r1`;
+- close the runbook only as a bounded local diagnostic with the non-claims
+  preserved.

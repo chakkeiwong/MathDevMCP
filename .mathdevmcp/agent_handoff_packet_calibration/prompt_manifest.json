@@ -1,0 +1,126 @@
+{
+  "conditions": [
+    "A_task_only",
+    "B_evidence_only",
+    "C_human_framed"
+  ],
+  "fairness_controls": {
+    "b_c_machine_evidence_parity": "Condition C may add human framing and answer_text; all non-framing machine evidence available to C must also be available to B.",
+    "condition_ordering_policy": "Response collection should randomize or counterbalance case/condition ordering if the execution path permits; otherwise preserve manifest order and record that limitation.",
+    "identical_requested_output_sections": true,
+    "identical_response_length_band": "300-700 words unless the subject model uses structured bullets that are equivalent in content.",
+    "identical_retry_policy": "One response per prompt. No hidden retries. Malformed responses are recorded, not replaced, unless a predeclared transport failure occurs.",
+    "identical_task_skeleton": true,
+    "source_excerpt_policy": "No large raw source excerpts. Use bounded source anchors and summaries already present in packets."
+  },
+  "metadata": {
+    "contract": "agent_handoff_packet_calibration_prompt_manifest",
+    "created": "2026-07-01",
+    "schema_version": "1.0",
+    "status": "phase_02_generated_no_responses"
+  },
+  "non_claims": [
+    "This is not a public benchmark.",
+    "This is not release-readiness evidence.",
+    "This is not scientific validation.",
+    "This is not proof of general downstream-agent reliability.",
+    "This does not prove any mathematical claim.",
+    "This does not prove the packet standard is universally optimal."
+  ],
+  "prompt_count": 15,
+  "prompts": [
+    {
+      "bytes": 1576,
+      "case_id": "RLHLB-01-ift-sign-gap",
+      "condition": "A_task_only",
+      "path": ".mathdevmcp/agent_handoff_packet_calibration/prompts/RLHLB-01-ift-sign-gap__A_task_only.txt"
+    },
+    {
+      "bytes": 20843,
+      "case_id": "RLHLB-01-ift-sign-gap",
+      "condition": "B_evidence_only",
+      "path": ".mathdevmcp/agent_handoff_packet_calibration/prompts/RLHLB-01-ift-sign-gap__B_evidence_only.txt"
+    },
+    {
+      "bytes": 27693,
+      "case_id": "RLHLB-01-ift-sign-gap",
+      "condition": "C_human_framed",
+      "path": ".mathdevmcp/agent_handoff_packet_calibration/prompts/RLHLB-01-ift-sign-gap__C_human_framed.txt"
+    },
+    {
+      "bytes": 1808,
+      "case_id": "RLHLB-03-joseph-equivalence",
+      "condition": "A_task_only",
+      "path": ".mathdevmcp/agent_handoff_packet_calibration/prompts/RLHLB-03-joseph-equivalence__A_task_only.txt"
+    },
+    {
+      "bytes": 5944,
+      "case_id": "RLHLB-03-joseph-equivalence",
+      "condition": "B_evidence_only",
+      "path": ".mathdevmcp/agent_handoff_packet_calibration/prompts/RLHLB-03-joseph-equivalence__B_evidence_only.txt"
+    },
+    {
+      "bytes": 11431,
+      "case_id": "RLHLB-03-joseph-equivalence",
+      "condition": "C_human_framed",
+      "path": ".mathdevmcp/agent_handoff_packet_calibration/prompts/RLHLB-03-joseph-equivalence__C_human_framed.txt"
+    },
+    {
+      "bytes": 1546,
+      "case_id": "RLHLB-04-affine-pricing-recursion",
+      "condition": "A_task_only",
+      "path": ".mathdevmcp/agent_handoff_packet_calibration/prompts/RLHLB-04-affine-pricing-recursion__A_task_only.txt"
+    },
+    {
+      "bytes": 4697,
+      "case_id": "RLHLB-04-affine-pricing-recursion",
+      "condition": "B_evidence_only",
+      "path": ".mathdevmcp/agent_handoff_packet_calibration/prompts/RLHLB-04-affine-pricing-recursion__B_evidence_only.txt"
+    },
+    {
+      "bytes": 10671,
+      "case_id": "RLHLB-04-affine-pricing-recursion",
+      "condition": "C_human_framed",
+      "path": ".mathdevmcp/agent_handoff_packet_calibration/prompts/RLHLB-04-affine-pricing-recursion__C_human_framed.txt"
+    },
+    {
+      "bytes": 1799,
+      "case_id": "RLHLB-06-state-space-code-missing-solve",
+      "condition": "A_task_only",
+      "path": ".mathdevmcp/agent_handoff_packet_calibration/prompts/RLHLB-06-state-space-code-missing-solve__A_task_only.txt"
+    },
+    {
+      "bytes": 4069,
+      "case_id": "RLHLB-06-state-space-code-missing-solve",
+      "condition": "B_evidence_only",
+      "path": ".mathdevmcp/agent_handoff_packet_calibration/prompts/RLHLB-06-state-space-code-missing-solve__B_evidence_only.txt"
+    },
+    {
+      "bytes": 10772,
+      "case_id": "RLHLB-06-state-space-code-missing-solve",
+      "condition": "C_human_framed",
+      "path": ".mathdevmcp/agent_handoff_packet_calibration/prompts/RLHLB-06-state-space-code-missing-solve__C_human_framed.txt"
+    },
+    {
+      "bytes": 1477,
+      "case_id": "RLHLB-09-affine-recovery-assumption-limit",
+      "condition": "A_task_only",
+      "path": ".mathdevmcp/agent_handoff_packet_calibration/prompts/RLHLB-09-affine-recovery-assumption-limit__A_task_only.txt"
+    },
+    {
+      "bytes": 7130,
+      "case_id": "RLHLB-09-affine-recovery-assumption-limit",
+      "condition": "B_evidence_only",
+      "path": ".mathdevmcp/agent_handoff_packet_calibration/prompts/RLHLB-09-affine-recovery-assumption-limit__B_evidence_only.txt"
+    },
+    {
+      "bytes": 13868,
+      "case_id": "RLHLB-09-affine-recovery-assumption-limit",
+      "condition": "C_human_framed",
+      "path": ".mathdevmcp/agent_handoff_packet_calibration/prompts/RLHLB-09-affine-recovery-assumption-limit__C_human_framed.txt"
+    }
+  ],
+  "selected_case_count": 5,
+  "source_contract": ".mathdevmcp/agent_handoff_packet_calibration/calibration_contract.json",
+  "source_packets": ".mathdevmcp/real_local_high_level_workflow_benchmark_closure_phase08_packets.json"
+}

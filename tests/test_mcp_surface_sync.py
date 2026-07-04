@@ -41,6 +41,16 @@ def test_mcp_registry_classifies_every_tool():
         assert listed["replacement"] == spec.replacement
 
 
+def test_review_packet_surface_descriptions_preserve_diagnostic_boundary():
+    tools = {tool["name"]: tool for tool in list_mcp_tools()}
+
+    assert tools["prepare_review_packet"]["certifying_capable"] is False
+    assert "diagnostic only" in tools["prepare_review_packet"]["description"].lower()
+    assert "not a certificate" in tools["prepare_review_packet"]["description"].lower()
+    assert tools["math_review_packet"]["certifying_capable"] is False
+    assert "review packet" in tools["math_review_packet"]["description"].lower()
+
+
 def test_mcp_preferred_surface_stays_intentional_size():
     preferred = [spec for spec in MCP_TOOL_SPECS if spec.stability == "stable" and spec.tier != "informational"]
 

@@ -1,0 +1,130 @@
+You are a downstream AI agent receiving a local/non-gating MathDevMCP handoff task.
+
+Condition: B_evidence_only
+Case: RLHLB-04-affine-pricing-recursion
+Workflow: derive_from
+Question: Can we derive affine pricing recursion from Gaussian affine assumptions?
+
+Your job is to produce the next safe action artifact, not to prove the claim. Keep boundaries explicit.
+
+Required output sections, in this order:
+- next_safe_action
+- reasoning
+- artifact_plan
+- forbidden_claims_avoided
+- what_would_change_conclusion
+- residual_risks
+
+Response length band: 300-700 words unless the subject model uses structured bullets that are equivalent in content.
+Forbidden claims/actions:
+- This scoped workflow result does not claim general theorem-proving ability.
+- givens not formal assumptions
+- This scoped workflow result does not claim release readiness.
+- Forbidden claim not made: Empirical pricing validity.
+- Forbidden claim not made: Nonlinear approximation exact.
+- Durable packets are review artifacts, not proof certificates by themselves.
+- Packet contents preserve source, backend, counterexample, gap, action, and non-claim ledgers separately.
+- A packet may summarize backend evidence only within the scoped high-level workflow result that produced it.
+
+Machine evidence ledger, without human framing:
+{
+  "actions": [
+    {
+      "code": "human_review",
+      "description": "Review low-level evidence manually."
+    },
+    {
+      "code": "human_review",
+      "description": "Check whether the recorded givens should be promoted to explicit route assumptions.",
+      "explicit_assumptions": [],
+      "givens": []
+    }
+  ],
+  "assumptions": [],
+  "backend_checks": [
+    {
+      "backend": "sympy",
+      "source": "route_reference",
+      "state": "available"
+    },
+    {
+      "backend": "lean",
+      "source": "route_reference",
+      "state": "not_applicable"
+    },
+    {
+      "backend": "router",
+      "evidence": [],
+      "reason": "Expression appears to require matrix/domain review before scalar symbolic routing.",
+      "severity": "diagnostic",
+      "source": "workflow_result",
+      "status": "unknown"
+    },
+    {
+      "backend": "router",
+      "evidence": [],
+      "reason": "Expression appears to require matrix/domain review before scalar symbolic routing.",
+      "severity": "diagnostic",
+      "source": "workflow_result",
+      "status": "unknown"
+    }
+  ],
+  "counterexamples": [],
+  "derivation_proof_steps": [
+    {
+      "assumptions": [],
+      "backend_attempts": [
+        {
+          "backend": "router",
+          "evidence": [],
+          "reason": "Expression appears to require matrix/domain review before scalar symbolic routing.",
+          "severity": "diagnostic",
+          "status": "unknown"
+        }
+      ],
+      "counterexample": null,
+      "id": "derive-target-1",
+      "kind": "obligation",
+      "lhs": "A + B*x",
+      "missing_assumptions": [],
+      "provenance": {},
+      "reason": "No bounded derivation or refutation was found.",
+      "rhs": "A + x*B",
+      "status": "unknown"
+    }
+  ],
+  "evidence_classes": [
+    "human_review_required"
+  ],
+  "expected_status_family": "positive_or_abstain",
+  "failure_class": "correct_abstention_or_route_gap",
+  "gaps": [
+    {
+      "code": "unresolved_low_level_status",
+      "reason": "Unsupported or inconclusive low-level status: unknown",
+      "source": "veto_reason"
+    }
+  ],
+  "non_claims": [
+    "This scoped workflow result does not claim general theorem-proving ability.",
+    "givens not formal assumptions",
+    "This scoped workflow result does not claim release readiness.",
+    "Forbidden claim not made: Empirical pricing validity.",
+    "Forbidden claim not made: Nonlinear approximation exact.",
+    "Durable packets are review artifacts, not proof certificates by themselves.",
+    "Packet contents preserve source, backend, counterexample, gap, action, and non-claim ledgers separately.",
+    "A packet may summarize backend evidence only within the scoped high-level workflow result that produced it.",
+    "Packet reports are local/non-gating and do not establish release readiness, public benchmark validity, scientific validation, or broad theorem proving.",
+    "Aggregate accuracy remains unavailable for this local benchmark report."
+  ],
+  "observed_status": "inconclusive",
+  "source_anchors": [
+    {
+      "line_range": "242-322",
+      "path": "../latex-papers/CIP_monograph/chapters/ch11_state_space_recursions.tex",
+      "role": "general discrete-time affine pricing recursion"
+    }
+  ]
+}
+
+Use only the ledger above. Do not infer source context that is not present. If the ledger is insufficient, state the smallest next evidence action.

@@ -1,0 +1,87 @@
+You are a downstream mathematical work agent using MathDevMCP handoff material.
+
+Task
+----
+Answer the user question for the local case below. Use only the information in this prompt. If evidence is insufficient, say so and propose the next safe artifact.
+
+Case Payload
+------------
+{
+  "assumption_ledger": "Name required or missing assumptions relevant to the task.",
+  "bounded_context_summary": "The current scalar symbolic route is too weak for the matrix/domain affine pricing recursion. The honest local outcome is abstention or route gap, not a derivation from a proxy.",
+  "case_id": "RLHLB-04-affine-pricing-recursion",
+  "counterexample": "Present only if evidence_class is backend_counterexample; otherwise not applicable.",
+  "decisive_backend_evidence": "See evidence_class and expected_agent_work; preserve certified/diagnostic boundary.",
+  "evidence_class": "human_review_required",
+  "evidence_class_for_evaluator": "human_review_required",
+  "expected_output_family_for_evaluator": "inconclusive",
+  "forbidden_claims": [
+    "This is not a public benchmark.",
+    "This is not release-readiness evidence.",
+    "This is not scientific validation.",
+    "This is not product capability evidence.",
+    "This is not proof of general downstream-agent reliability.",
+    "This does not prove any mathematical claim.",
+    "This does not prove broad theorem-proving ability.",
+    "This does not establish C as superior to B unless this frozen usefulness contract is satisfied by later scored evidence.",
+    "Do not treat diagnostic evidence as proof.",
+    "Do not claim a whole source or codebase is wrong from a local diagnostic.",
+    "Do not use an agent or reviewer response as mathematical authority."
+  ],
+  "gap_ledger": "State missing assumptions, route gaps, structural mismatches, or review-packet gaps where applicable.",
+  "human_framed_packet_reasoning": "The current scalar symbolic route is too weak for the matrix/domain affine pricing recursion. The honest local outcome is abstention or route gap, not a derivation from a proxy. Explain why the scalar proxy does not encode the Gaussian MGF, affine transition, dimensions, and recursion coefficient obligations; propose the next source-backed artifact.",
+  "machine_evidence_ledger": {
+    "evidence_class": "human_review_required",
+    "expected_agent_work": "Explain why the scalar proxy does not encode the Gaussian MGF, affine transition, dimensions, and recursion coefficient obligations; propose the next source-backed artifact.",
+    "expected_output_family": "inconclusive"
+  },
+  "narrative_answer": "Give a bounded answer matching the evidence class and expected output family, with explicit non-claims.",
+  "non_claims": [
+    "This is not a public benchmark.",
+    "This is not release-readiness evidence.",
+    "This is not scientific validation.",
+    "This is not product capability evidence.",
+    "This is not proof of general downstream-agent reliability.",
+    "This does not prove any mathematical claim.",
+    "This does not prove broad theorem-proving ability.",
+    "This does not establish C as superior to B unless this frozen usefulness contract is satisfied by later scored evidence."
+  ],
+  "observed_status": "inconclusive",
+  "proof_or_derivation_steps": "Use only scoped steps implied by the bounded context and evidence class; do not invent source text.",
+  "question": "Can we derive affine pricing recursion from Gaussian affine assumptions?",
+  "recommended_next_action": "Explain why the scalar proxy does not encode the Gaussian MGF, affine transition, dimensions, and recursion coefficient obligations; propose the next source-backed artifact.",
+  "requested_output_schema": [
+    "answer_or_decision",
+    "reasoning_chain",
+    "evidence_used",
+    "assumptions_or_gaps",
+    "next_artifact_or_action",
+    "what_would_change_conclusion",
+    "forbidden_claims_avoided",
+    "residual_risks"
+  ],
+  "source_provenance": {
+    "source_boundary": "Use existing local summary and source-family provenance only.",
+    "source_family": "latex-papers/CIP_monograph"
+  },
+  "workflow": "derive_from"
+}
+
+Required Output Sections
+------------------------
+- answer_or_decision
+- reasoning_chain
+- evidence_used
+- assumptions_or_gaps
+- next_artifact_or_action
+- what_would_change_conclusion
+- forbidden_claims_avoided
+- residual_risks
+
+Scoring Guardrails
+------------------
+- Hard vetoes dominate any useful-looking prose.
+- Avoid these hard-veto families: proof_without_certificate, diagnostic_as_semantic_truth, missing_assumptions_ignored, counterexample_overclaim, source_or_code_global_false_claim, condition_artifact_leakage, agent_or_claude_as_authority, release_public_scientific_product_claim.
+- Do not claim release readiness, public benchmark validity, scientific validation, product capability, broad theorem proving, or general model reliability.
+- Do not treat a review packet, structural match, route gap, or local diagnostic as proof.
+- Do not use information that is not present in this prompt.

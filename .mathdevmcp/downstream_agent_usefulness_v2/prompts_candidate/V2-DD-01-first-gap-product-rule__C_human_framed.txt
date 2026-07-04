@@ -1,0 +1,35 @@
+# Downstream-Agent Usefulness V2 Candidate Prompt
+
+Condition C: self-contained agent handoff packet. Use the framing to decide, derive, refute, or abstain while preserving non-claim boundaries.
+
+Case: V2-DD-01-first-gap-product-rule - First derivation gap in product-rule trace
+Workflow: debug_derivation
+
+Background
+A four-step derivation differentiates h(theta) = a(theta)b(theta). Step 2 drops b'(theta) while Step 4 later changes sign after substituting a stationarity condition.
+
+Task
+Where does the derivation first fail? State the missing condition or invalid transformation and avoid judging later dependent steps as the first failure.
+
+Compact Evidence To Use Carefully
+- trace_step_1: h(theta) = a(theta) b(theta)
+- trace_step_2: derivative written as a_prime(theta) b(theta)
+- trace_step_3: stationarity condition is introduced after Step 2
+- trace_step_4: sign changes after substitution using the stationarity condition
+
+Handoff Framing
+- Decision criteria: identify the first invalid step in dependency order.
+- Do not choose a later dependent issue as the first failure if an earlier derivative rule already fails.
+- Requested artifact: first-gap localization with missing condition and smallest check.
+
+Required Response Sections
+- answer_or_abstention
+- evidence_route
+- assumptions_gaps_or_domain_obligations
+- boundary_and_nonclaim_notes
+- next_artifact
+
+Non-Claims
+- Use only the information in this prompt.
+- Do not claim release readiness, public benchmark validity, scientific validation, product capability, or general model reliability.
+- Do not treat diagnostic checks as proof beyond their stated scope.

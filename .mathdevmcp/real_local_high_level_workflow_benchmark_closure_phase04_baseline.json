@@ -1,0 +1,4292 @@
+{
+  "status": "completed",
+  "reason": "Current high-level workflows were run against the frozen real-local benchmark.",
+  "manifest_path": "/home/chakwong/python/MathDevMCP/benchmarks/real_tasks/holdout_local/real_local_high_level_workflow_benchmark_cases.json",
+  "route_report_summary": {
+    "case_total": 9,
+    "packet_stub_total": 9,
+    "source_adapter_present": 5,
+    "source_adapter_absent": 0,
+    "source_adapter_not_applicable": 4,
+    "symbolic_backend_available": true,
+    "aggregate_accuracy": null
+  },
+  "results": [
+    {
+      "case_id": "RLHLB-01-ift-sign-gap",
+      "workflow": "debug_derivation",
+      "question": "Where does this sign derivation first fail?",
+      "observed_status": "refuted",
+      "observed_evidence_classes": [
+        "backend_counterexample"
+      ],
+      "certification_source": "backend",
+      "expected_status_family": "refuted",
+      "expected_family_match": true,
+      "failure_class": "baseline_evaluable",
+      "boundary_checks": {
+        "global_non_claims_present": true,
+        "backend_unavailable_not_refutation": true,
+        "not_encodable_not_false": true,
+        "structural_not_proof": true,
+        "review_packet_not_certificate": true,
+        "refutation_has_counterexample_or_gap": true,
+        "non_certifying_status_has_no_backend_certification": true,
+        "inconclusive_has_veto_or_action": true,
+        "certifying_evidence_not_silently_demoted": true
+      },
+      "route_reference": {
+        "source_adapter_state": "present",
+        "source_adapter_route": "ift_sign_consistency",
+        "symbolic_backend_state": "available",
+        "formal_backend_state": "not_applicable",
+        "code_equation_route_state": "not_applicable",
+        "residual_unresolved": [
+          "negative_control_requires_boundary_preservation"
+        ]
+      },
+      "packet_summary": {
+        "fields_present": [
+          "actions",
+          "assumptions",
+          "backend_checks",
+          "counterexamples",
+          "derivation_proof_steps",
+          "evidence_classes",
+          "gaps",
+          "non_claims",
+          "question",
+          "route_availability",
+          "source_anchors"
+        ],
+        "source_anchor_count": 2,
+        "gap_count": 1,
+        "non_claim_count": 5
+      },
+      "result": {
+        "status": "refuted",
+        "workflow": "debug_derivation",
+        "question": "Where does this derivation first fail?",
+        "claim_class": "derivation_debugging",
+        "answer": "Step 0 was refuted by bounded evidence.",
+        "evidence": [
+          {
+            "id": "debug_derivation:backend-counterexample",
+            "class": "backend_counterexample",
+            "source": "backend",
+            "summary": "SymPy could not certify or refute this obligation by simplification.",
+            "low_level": {
+              "status": "refuted",
+              "reason": "Step 0 was refuted by bounded evidence.",
+              "steps": [
+                "-lam*dr",
+                "lam*dr"
+              ],
+              "step_results": [
+                {
+                  "index": 0,
+                  "lhs": "-lam*dr",
+                  "rhs": "lam*dr",
+                  "status": "refuted",
+                  "reason": "A bounded counterexample refuted the scoped claim.",
+                  "result": {
+                    "status": "refuted",
+                    "reason": "A bounded counterexample refuted the scoped claim.",
+                    "claim": "-lam*dr = lam*dr",
+                    "lhs": "-lam*dr",
+                    "rhs": "lam*dr",
+                    "route_decision": {
+                      "route": "symbolic",
+                      "status": "unknown",
+                      "reason": "SymPy could not certify or refute this obligation by simplification.",
+                      "backend_attempt": {
+                        "backend": "sympy",
+                        "status": "unknown",
+                        "reason": "SymPy could not certify or refute this obligation by simplification.",
+                        "evidence": [
+                          {
+                            "kind": "backend_unknown",
+                            "backend": "sympy",
+                            "backend_status": "unknown",
+                            "reason": "SymPy could not certify or refute this obligation by simplification.",
+                            "normalized_lhs": "-lam*dr",
+                            "normalized_rhs": "lam*dr",
+                            "readable_lhs": "-lam*dr",
+                            "readable_rhs": "lam*dr",
+                            "assumptions": [],
+                            "severity": "diagnostic",
+                            "backend_expression": "-2*dr*lam"
+                          }
+                        ],
+                        "severity": "diagnostic"
+                      },
+                      "obligation": {
+                        "id": "route-obligation-1",
+                        "lhs": "-lam*dr",
+                        "rhs": "lam*dr",
+                        "assumptions": [],
+                        "status": "unknown",
+                        "reason": "SymPy could not certify or refute this obligation by simplification.",
+                        "backend_attempts": [
+                          {
+                            "backend": "sympy",
+                            "status": "unknown",
+                            "reason": "SymPy could not certify or refute this obligation by simplification.",
+                            "evidence": [
+                              {
+                                "kind": "backend_unknown",
+                                "backend": "sympy",
+                                "backend_status": "unknown",
+                                "reason": "SymPy could not certify or refute this obligation by simplification.",
+                                "normalized_lhs": "-lam*dr",
+                                "normalized_rhs": "lam*dr",
+                                "readable_lhs": "-lam*dr",
+                                "readable_rhs": "lam*dr",
+                                "assumptions": [],
+                                "severity": "diagnostic",
+                                "backend_expression": "-2*dr*lam"
+                              }
+                            ],
+                            "severity": "diagnostic"
+                          }
+                        ],
+                        "counterexample": null,
+                        "missing_assumptions": [],
+                        "provenance": {}
+                      },
+                      "result": {
+                        "question": {
+                          "question_type": "route_obligation",
+                          "target": "-lam*dr == lam*dr",
+                          "givens": [],
+                          "assumptions": [],
+                          "context": {
+                            "route": "symbolic"
+                          },
+                          "metadata": {
+                            "schema_version": "1.0",
+                            "contract": "math_debugging_question"
+                          }
+                        },
+                        "status": "unknown",
+                        "reason": "SymPy could not certify or refute this obligation by simplification.",
+                        "obligations": [
+                          {
+                            "id": "route-obligation-1",
+                            "lhs": "-lam*dr",
+                            "rhs": "lam*dr",
+                            "assumptions": [],
+                            "status": "unknown",
+                            "reason": "SymPy could not certify or refute this obligation by simplification.",
+                            "backend_attempts": [
+                              {
+                                "backend": "sympy",
+                                "status": "unknown",
+                                "reason": "SymPy could not certify or refute this obligation by simplification.",
+                                "evidence": [
+                                  {
+                                    "kind": "backend_unknown",
+                                    "backend": "sympy",
+                                    "backend_status": "unknown",
+                                    "reason": "SymPy could not certify or refute this obligation by simplification.",
+                                    "normalized_lhs": "-lam*dr",
+                                    "normalized_rhs": "lam*dr",
+                                    "readable_lhs": "-lam*dr",
+                                    "readable_rhs": "lam*dr",
+                                    "assumptions": [],
+                                    "severity": "diagnostic",
+                                    "backend_expression": "-2*dr*lam"
+                                  }
+                                ],
+                                "severity": "diagnostic"
+                              }
+                            ],
+                            "counterexample": null,
+                            "missing_assumptions": [],
+                            "provenance": {}
+                          }
+                        ],
+                        "assumptions": [],
+                        "backend_attempts": [
+                          {
+                            "backend": "sympy",
+                            "status": "unknown",
+                            "reason": "SymPy could not certify or refute this obligation by simplification.",
+                            "evidence": [
+                              {
+                                "kind": "backend_unknown",
+                                "backend": "sympy",
+                                "backend_status": "unknown",
+                                "reason": "SymPy could not certify or refute this obligation by simplification.",
+                                "normalized_lhs": "-lam*dr",
+                                "normalized_rhs": "lam*dr",
+                                "readable_lhs": "-lam*dr",
+                                "readable_rhs": "lam*dr",
+                                "assumptions": [],
+                                "severity": "diagnostic",
+                                "backend_expression": "-2*dr*lam"
+                              }
+                            ],
+                            "severity": "diagnostic"
+                          }
+                        ],
+                        "counterexamples": [],
+                        "actions": [
+                          {
+                            "kind": "review_or_reencode",
+                            "route": "symbolic"
+                          }
+                        ],
+                        "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                        "metadata": {
+                          "schema_version": "1.0",
+                          "contract": "math_debugging_workbench_result"
+                        }
+                      },
+                      "metadata": {
+                        "schema_version": "1.0",
+                        "contract": "math_debugging_route_decision"
+                      }
+                    },
+                    "counterexample_search": {
+                      "status": "refuted",
+                      "reason": "A finite-domain scalar counterexample was found.",
+                      "lhs": "-lam*dr",
+                      "rhs": "lam*dr",
+                      "backend": "sympy_finite_domain",
+                      "search_space": {
+                        "kind": "finite_integer_domain",
+                        "domain": [
+                          -2,
+                          -1,
+                          0,
+                          1,
+                          2
+                        ],
+                        "status": "searched",
+                        "points": 1,
+                        "symbols": [
+                          "dr",
+                          "lam"
+                        ]
+                      },
+                      "counterexample": {
+                        "status": "found",
+                        "assignments": {
+                          "dr": -2,
+                          "lam": -2
+                        },
+                        "lhs_value": "-4",
+                        "rhs_value": "4",
+                        "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                        "backend": "sympy_finite_domain",
+                        "seed": null
+                      },
+                      "workbench_result": {
+                        "question": {
+                          "question_type": "find_counterexample",
+                          "target": "-lam*dr == lam*dr",
+                          "givens": [],
+                          "assumptions": [],
+                          "context": {
+                            "domain": [
+                              -2,
+                              -1,
+                              0,
+                              1,
+                              2
+                            ]
+                          },
+                          "metadata": {
+                            "schema_version": "1.0",
+                            "contract": "math_debugging_question"
+                          }
+                        },
+                        "status": "refuted",
+                        "reason": "A finite-domain scalar counterexample was found.",
+                        "obligations": [
+                          {
+                            "id": "counterexample-obligation-1",
+                            "lhs": "-lam*dr",
+                            "rhs": "lam*dr",
+                            "assumptions": [],
+                            "status": "refuted",
+                            "reason": "A finite-domain scalar counterexample was found.",
+                            "backend_attempts": [
+                              {
+                                "backend": "sympy_finite_domain",
+                                "status": "refuted",
+                                "reason": "A finite-domain scalar counterexample was found.",
+                                "evidence": [],
+                                "severity": "blocking"
+                              }
+                            ],
+                            "counterexample": {
+                              "status": "found",
+                              "assignments": {
+                                "dr": -2,
+                                "lam": -2
+                              },
+                              "lhs_value": "-4",
+                              "rhs_value": "4",
+                              "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                              "backend": "sympy_finite_domain",
+                              "seed": null
+                            },
+                            "missing_assumptions": [],
+                            "provenance": {}
+                          }
+                        ],
+                        "assumptions": [],
+                        "backend_attempts": [
+                          {
+                            "backend": "sympy_finite_domain",
+                            "status": "refuted",
+                            "reason": "A finite-domain scalar counterexample was found.",
+                            "evidence": [],
+                            "severity": "blocking"
+                          }
+                        ],
+                        "counterexamples": [
+                          {
+                            "status": "found",
+                            "assignments": {
+                              "dr": -2,
+                              "lam": -2
+                            },
+                            "lhs_value": "-4",
+                            "rhs_value": "4",
+                            "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                            "backend": "sympy_finite_domain",
+                            "seed": null
+                          }
+                        ],
+                        "actions": [],
+                        "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                        "metadata": {
+                          "schema_version": "1.0",
+                          "contract": "math_debugging_workbench_result"
+                        }
+                      },
+                      "metadata": {
+                        "schema_version": "1.0",
+                        "contract": "counterexample_search_result"
+                      }
+                    },
+                    "workbench_result": {
+                      "question": {
+                        "question_type": "prove_or_refute",
+                        "target": "-lam*dr = lam*dr",
+                        "givens": [],
+                        "assumptions": [],
+                        "context": {
+                          "backend": "auto"
+                        },
+                        "metadata": {
+                          "schema_version": "1.0",
+                          "contract": "math_debugging_question"
+                        }
+                      },
+                      "status": "refuted",
+                      "reason": "A bounded counterexample refuted the scoped claim.",
+                      "obligations": [
+                        {
+                          "id": "prove-target-1",
+                          "lhs": "-lam*dr",
+                          "rhs": "lam*dr",
+                          "assumptions": [],
+                          "status": "refuted",
+                          "reason": "A bounded counterexample refuted the scoped claim.",
+                          "backend_attempts": [
+                            {
+                              "backend": "sympy",
+                              "status": "unknown",
+                              "reason": "SymPy could not certify or refute this obligation by simplification.",
+                              "evidence": [
+                                {
+                                  "kind": "backend_unknown",
+                                  "backend": "sympy",
+                                  "backend_status": "unknown",
+                                  "reason": "SymPy could not certify or refute this obligation by simplification.",
+                                  "normalized_lhs": "-lam*dr",
+                                  "normalized_rhs": "lam*dr",
+                                  "readable_lhs": "-lam*dr",
+                                  "readable_rhs": "lam*dr",
+                                  "assumptions": [],
+                                  "severity": "diagnostic",
+                                  "backend_expression": "-2*dr*lam"
+                                }
+                              ],
+                              "severity": "diagnostic"
+                            }
+                          ],
+                          "counterexample": {
+                            "status": "found",
+                            "assignments": {
+                              "dr": -2,
+                              "lam": -2
+                            },
+                            "lhs_value": "-4",
+                            "rhs_value": "4",
+                            "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                            "backend": "sympy_finite_domain",
+                            "seed": null
+                          },
+                          "missing_assumptions": [],
+                          "provenance": {}
+                        }
+                      ],
+                      "assumptions": [],
+                      "backend_attempts": [
+                        {
+                          "backend": "sympy",
+                          "status": "unknown",
+                          "reason": "SymPy could not certify or refute this obligation by simplification.",
+                          "evidence": [
+                            {
+                              "kind": "backend_unknown",
+                              "backend": "sympy",
+                              "backend_status": "unknown",
+                              "reason": "SymPy could not certify or refute this obligation by simplification.",
+                              "normalized_lhs": "-lam*dr",
+                              "normalized_rhs": "lam*dr",
+                              "readable_lhs": "-lam*dr",
+                              "readable_rhs": "lam*dr",
+                              "assumptions": [],
+                              "severity": "diagnostic",
+                              "backend_expression": "-2*dr*lam"
+                            }
+                          ],
+                          "severity": "diagnostic"
+                        }
+                      ],
+                      "counterexamples": [
+                        {
+                          "status": "found",
+                          "assignments": {
+                            "dr": -2,
+                            "lam": -2
+                          },
+                          "lhs_value": "-4",
+                          "rhs_value": "4",
+                          "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                          "backend": "sympy_finite_domain",
+                          "seed": null
+                        }
+                      ],
+                      "actions": [],
+                      "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                      "metadata": {
+                        "schema_version": "1.0",
+                        "contract": "math_debugging_workbench_result"
+                      }
+                    },
+                    "metadata": {
+                      "schema_version": "1.0",
+                      "contract": "prove_or_refute_result"
+                    }
+                  }
+                }
+              ],
+              "first_gap": {
+                "index": 0,
+                "lhs": "-lam*dr",
+                "rhs": "lam*dr",
+                "status": "refuted",
+                "reason": "A bounded counterexample refuted the scoped claim.",
+                "result": {
+                  "status": "refuted",
+                  "reason": "A bounded counterexample refuted the scoped claim.",
+                  "claim": "-lam*dr = lam*dr",
+                  "lhs": "-lam*dr",
+                  "rhs": "lam*dr",
+                  "route_decision": {
+                    "route": "symbolic",
+                    "status": "unknown",
+                    "reason": "SymPy could not certify or refute this obligation by simplification.",
+                    "backend_attempt": {
+                      "backend": "sympy",
+                      "status": "unknown",
+                      "reason": "SymPy could not certify or refute this obligation by simplification.",
+                      "evidence": [
+                        {
+                          "kind": "backend_unknown",
+                          "backend": "sympy",
+                          "backend_status": "unknown",
+                          "reason": "SymPy could not certify or refute this obligation by simplification.",
+                          "normalized_lhs": "-lam*dr",
+                          "normalized_rhs": "lam*dr",
+                          "readable_lhs": "-lam*dr",
+                          "readable_rhs": "lam*dr",
+                          "assumptions": [],
+                          "severity": "diagnostic",
+                          "backend_expression": "-2*dr*lam"
+                        }
+                      ],
+                      "severity": "diagnostic"
+                    },
+                    "obligation": {
+                      "id": "route-obligation-1",
+                      "lhs": "-lam*dr",
+                      "rhs": "lam*dr",
+                      "assumptions": [],
+                      "status": "unknown",
+                      "reason": "SymPy could not certify or refute this obligation by simplification.",
+                      "backend_attempts": [
+                        {
+                          "backend": "sympy",
+                          "status": "unknown",
+                          "reason": "SymPy could not certify or refute this obligation by simplification.",
+                          "evidence": [
+                            {
+                              "kind": "backend_unknown",
+                              "backend": "sympy",
+                              "backend_status": "unknown",
+                              "reason": "SymPy could not certify or refute this obligation by simplification.",
+                              "normalized_lhs": "-lam*dr",
+                              "normalized_rhs": "lam*dr",
+                              "readable_lhs": "-lam*dr",
+                              "readable_rhs": "lam*dr",
+                              "assumptions": [],
+                              "severity": "diagnostic",
+                              "backend_expression": "-2*dr*lam"
+                            }
+                          ],
+                          "severity": "diagnostic"
+                        }
+                      ],
+                      "counterexample": null,
+                      "missing_assumptions": [],
+                      "provenance": {}
+                    },
+                    "result": {
+                      "question": {
+                        "question_type": "route_obligation",
+                        "target": "-lam*dr == lam*dr",
+                        "givens": [],
+                        "assumptions": [],
+                        "context": {
+                          "route": "symbolic"
+                        },
+                        "metadata": {
+                          "schema_version": "1.0",
+                          "contract": "math_debugging_question"
+                        }
+                      },
+                      "status": "unknown",
+                      "reason": "SymPy could not certify or refute this obligation by simplification.",
+                      "obligations": [
+                        {
+                          "id": "route-obligation-1",
+                          "lhs": "-lam*dr",
+                          "rhs": "lam*dr",
+                          "assumptions": [],
+                          "status": "unknown",
+                          "reason": "SymPy could not certify or refute this obligation by simplification.",
+                          "backend_attempts": [
+                            {
+                              "backend": "sympy",
+                              "status": "unknown",
+                              "reason": "SymPy could not certify or refute this obligation by simplification.",
+                              "evidence": [
+                                {
+                                  "kind": "backend_unknown",
+                                  "backend": "sympy",
+                                  "backend_status": "unknown",
+                                  "reason": "SymPy could not certify or refute this obligation by simplification.",
+                                  "normalized_lhs": "-lam*dr",
+                                  "normalized_rhs": "lam*dr",
+                                  "readable_lhs": "-lam*dr",
+                                  "readable_rhs": "lam*dr",
+                                  "assumptions": [],
+                                  "severity": "diagnostic",
+                                  "backend_expression": "-2*dr*lam"
+                                }
+                              ],
+                              "severity": "diagnostic"
+                            }
+                          ],
+                          "counterexample": null,
+                          "missing_assumptions": [],
+                          "provenance": {}
+                        }
+                      ],
+                      "assumptions": [],
+                      "backend_attempts": [
+                        {
+                          "backend": "sympy",
+                          "status": "unknown",
+                          "reason": "SymPy could not certify or refute this obligation by simplification.",
+                          "evidence": [
+                            {
+                              "kind": "backend_unknown",
+                              "backend": "sympy",
+                              "backend_status": "unknown",
+                              "reason": "SymPy could not certify or refute this obligation by simplification.",
+                              "normalized_lhs": "-lam*dr",
+                              "normalized_rhs": "lam*dr",
+                              "readable_lhs": "-lam*dr",
+                              "readable_rhs": "lam*dr",
+                              "assumptions": [],
+                              "severity": "diagnostic",
+                              "backend_expression": "-2*dr*lam"
+                            }
+                          ],
+                          "severity": "diagnostic"
+                        }
+                      ],
+                      "counterexamples": [],
+                      "actions": [
+                        {
+                          "kind": "review_or_reencode",
+                          "route": "symbolic"
+                        }
+                      ],
+                      "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                      "metadata": {
+                        "schema_version": "1.0",
+                        "contract": "math_debugging_workbench_result"
+                      }
+                    },
+                    "metadata": {
+                      "schema_version": "1.0",
+                      "contract": "math_debugging_route_decision"
+                    }
+                  },
+                  "counterexample_search": {
+                    "status": "refuted",
+                    "reason": "A finite-domain scalar counterexample was found.",
+                    "lhs": "-lam*dr",
+                    "rhs": "lam*dr",
+                    "backend": "sympy_finite_domain",
+                    "search_space": {
+                      "kind": "finite_integer_domain",
+                      "domain": [
+                        -2,
+                        -1,
+                        0,
+                        1,
+                        2
+                      ],
+                      "status": "searched",
+                      "points": 1,
+                      "symbols": [
+                        "dr",
+                        "lam"
+                      ]
+                    },
+                    "counterexample": {
+                      "status": "found",
+                      "assignments": {
+                        "dr": -2,
+                        "lam": -2
+                      },
+                      "lhs_value": "-4",
+                      "rhs_value": "4",
+                      "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                      "backend": "sympy_finite_domain",
+                      "seed": null
+                    },
+                    "workbench_result": {
+                      "question": {
+                        "question_type": "find_counterexample",
+                        "target": "-lam*dr == lam*dr",
+                        "givens": [],
+                        "assumptions": [],
+                        "context": {
+                          "domain": [
+                            -2,
+                            -1,
+                            0,
+                            1,
+                            2
+                          ]
+                        },
+                        "metadata": {
+                          "schema_version": "1.0",
+                          "contract": "math_debugging_question"
+                        }
+                      },
+                      "status": "refuted",
+                      "reason": "A finite-domain scalar counterexample was found.",
+                      "obligations": [
+                        {
+                          "id": "counterexample-obligation-1",
+                          "lhs": "-lam*dr",
+                          "rhs": "lam*dr",
+                          "assumptions": [],
+                          "status": "refuted",
+                          "reason": "A finite-domain scalar counterexample was found.",
+                          "backend_attempts": [
+                            {
+                              "backend": "sympy_finite_domain",
+                              "status": "refuted",
+                              "reason": "A finite-domain scalar counterexample was found.",
+                              "evidence": [],
+                              "severity": "blocking"
+                            }
+                          ],
+                          "counterexample": {
+                            "status": "found",
+                            "assignments": {
+                              "dr": -2,
+                              "lam": -2
+                            },
+                            "lhs_value": "-4",
+                            "rhs_value": "4",
+                            "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                            "backend": "sympy_finite_domain",
+                            "seed": null
+                          },
+                          "missing_assumptions": [],
+                          "provenance": {}
+                        }
+                      ],
+                      "assumptions": [],
+                      "backend_attempts": [
+                        {
+                          "backend": "sympy_finite_domain",
+                          "status": "refuted",
+                          "reason": "A finite-domain scalar counterexample was found.",
+                          "evidence": [],
+                          "severity": "blocking"
+                        }
+                      ],
+                      "counterexamples": [
+                        {
+                          "status": "found",
+                          "assignments": {
+                            "dr": -2,
+                            "lam": -2
+                          },
+                          "lhs_value": "-4",
+                          "rhs_value": "4",
+                          "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                          "backend": "sympy_finite_domain",
+                          "seed": null
+                        }
+                      ],
+                      "actions": [],
+                      "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                      "metadata": {
+                        "schema_version": "1.0",
+                        "contract": "math_debugging_workbench_result"
+                      }
+                    },
+                    "metadata": {
+                      "schema_version": "1.0",
+                      "contract": "counterexample_search_result"
+                    }
+                  },
+                  "workbench_result": {
+                    "question": {
+                      "question_type": "prove_or_refute",
+                      "target": "-lam*dr = lam*dr",
+                      "givens": [],
+                      "assumptions": [],
+                      "context": {
+                        "backend": "auto"
+                      },
+                      "metadata": {
+                        "schema_version": "1.0",
+                        "contract": "math_debugging_question"
+                      }
+                    },
+                    "status": "refuted",
+                    "reason": "A bounded counterexample refuted the scoped claim.",
+                    "obligations": [
+                      {
+                        "id": "prove-target-1",
+                        "lhs": "-lam*dr",
+                        "rhs": "lam*dr",
+                        "assumptions": [],
+                        "status": "refuted",
+                        "reason": "A bounded counterexample refuted the scoped claim.",
+                        "backend_attempts": [
+                          {
+                            "backend": "sympy",
+                            "status": "unknown",
+                            "reason": "SymPy could not certify or refute this obligation by simplification.",
+                            "evidence": [
+                              {
+                                "kind": "backend_unknown",
+                                "backend": "sympy",
+                                "backend_status": "unknown",
+                                "reason": "SymPy could not certify or refute this obligation by simplification.",
+                                "normalized_lhs": "-lam*dr",
+                                "normalized_rhs": "lam*dr",
+                                "readable_lhs": "-lam*dr",
+                                "readable_rhs": "lam*dr",
+                                "assumptions": [],
+                                "severity": "diagnostic",
+                                "backend_expression": "-2*dr*lam"
+                              }
+                            ],
+                            "severity": "diagnostic"
+                          }
+                        ],
+                        "counterexample": {
+                          "status": "found",
+                          "assignments": {
+                            "dr": -2,
+                            "lam": -2
+                          },
+                          "lhs_value": "-4",
+                          "rhs_value": "4",
+                          "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                          "backend": "sympy_finite_domain",
+                          "seed": null
+                        },
+                        "missing_assumptions": [],
+                        "provenance": {}
+                      }
+                    ],
+                    "assumptions": [],
+                    "backend_attempts": [
+                      {
+                        "backend": "sympy",
+                        "status": "unknown",
+                        "reason": "SymPy could not certify or refute this obligation by simplification.",
+                        "evidence": [
+                          {
+                            "kind": "backend_unknown",
+                            "backend": "sympy",
+                            "backend_status": "unknown",
+                            "reason": "SymPy could not certify or refute this obligation by simplification.",
+                            "normalized_lhs": "-lam*dr",
+                            "normalized_rhs": "lam*dr",
+                            "readable_lhs": "-lam*dr",
+                            "readable_rhs": "lam*dr",
+                            "assumptions": [],
+                            "severity": "diagnostic",
+                            "backend_expression": "-2*dr*lam"
+                          }
+                        ],
+                        "severity": "diagnostic"
+                      }
+                    ],
+                    "counterexamples": [
+                      {
+                        "status": "found",
+                        "assignments": {
+                          "dr": -2,
+                          "lam": -2
+                        },
+                        "lhs_value": "-4",
+                        "rhs_value": "4",
+                        "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                        "backend": "sympy_finite_domain",
+                        "seed": null
+                      }
+                    ],
+                    "actions": [],
+                    "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                    "metadata": {
+                      "schema_version": "1.0",
+                      "contract": "math_debugging_workbench_result"
+                    }
+                  },
+                  "metadata": {
+                    "schema_version": "1.0",
+                    "contract": "prove_or_refute_result"
+                  }
+                }
+              },
+              "workbench_result": {
+                "question": {
+                  "question_type": "localize_proof_gap",
+                  "target": "-lam*dr -> lam*dr",
+                  "givens": [],
+                  "assumptions": [],
+                  "context": {},
+                  "metadata": {
+                    "schema_version": "1.0",
+                    "contract": "math_debugging_question"
+                  }
+                },
+                "status": "refuted",
+                "reason": "Step 0 was refuted by bounded evidence.",
+                "obligations": [
+                  {
+                    "id": "prove-target-1",
+                    "lhs": "-lam*dr",
+                    "rhs": "lam*dr",
+                    "assumptions": [],
+                    "status": "refuted",
+                    "reason": "A bounded counterexample refuted the scoped claim.",
+                    "backend_attempts": [
+                      {
+                        "backend": "sympy",
+                        "status": "unknown",
+                        "reason": "SymPy could not certify or refute this obligation by simplification.",
+                        "evidence": [
+                          {
+                            "kind": "backend_unknown",
+                            "backend": "sympy",
+                            "backend_status": "unknown",
+                            "reason": "SymPy could not certify or refute this obligation by simplification.",
+                            "normalized_lhs": "-lam*dr",
+                            "normalized_rhs": "lam*dr",
+                            "readable_lhs": "-lam*dr",
+                            "readable_rhs": "lam*dr",
+                            "assumptions": [],
+                            "severity": "diagnostic",
+                            "backend_expression": "-2*dr*lam"
+                          }
+                        ],
+                        "severity": "diagnostic"
+                      }
+                    ],
+                    "counterexample": {
+                      "status": "found",
+                      "assignments": {
+                        "dr": -2,
+                        "lam": -2
+                      },
+                      "lhs_value": "-4",
+                      "rhs_value": "4",
+                      "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                      "backend": "sympy_finite_domain",
+                      "seed": null
+                    },
+                    "missing_assumptions": [],
+                    "provenance": {}
+                  }
+                ],
+                "assumptions": [],
+                "backend_attempts": [
+                  {
+                    "backend": "sympy",
+                    "status": "unknown",
+                    "reason": "SymPy could not certify or refute this obligation by simplification.",
+                    "evidence": [
+                      {
+                        "kind": "backend_unknown",
+                        "backend": "sympy",
+                        "backend_status": "unknown",
+                        "reason": "SymPy could not certify or refute this obligation by simplification.",
+                        "normalized_lhs": "-lam*dr",
+                        "normalized_rhs": "lam*dr",
+                        "readable_lhs": "-lam*dr",
+                        "readable_rhs": "lam*dr",
+                        "assumptions": [],
+                        "severity": "diagnostic",
+                        "backend_expression": "-2*dr*lam"
+                      }
+                    ],
+                    "severity": "diagnostic"
+                  }
+                ],
+                "counterexamples": [
+                  {
+                    "status": "found",
+                    "assignments": {
+                      "dr": -2,
+                      "lam": -2
+                    },
+                    "lhs_value": "-4",
+                    "rhs_value": "4",
+                    "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                    "backend": "sympy_finite_domain",
+                    "seed": null
+                  }
+                ],
+                "actions": [
+                  {
+                    "kind": "repair_or_justify_first_gap",
+                    "step_index": 0,
+                    "status": "refuted",
+                    "reason": "A bounded counterexample refuted the scoped claim."
+                  }
+                ],
+                "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                "metadata": {
+                  "schema_version": "1.0",
+                  "contract": "math_debugging_workbench_result"
+                }
+              },
+              "metadata": {
+                "schema_version": "1.0",
+                "contract": "proof_gap_result"
+              }
+            }
+          }
+        ],
+        "evidence_classes": [
+          "backend_counterexample"
+        ],
+        "certification_source": "backend",
+        "veto_reasons": [],
+        "assumptions": [],
+        "counterexamples": [
+          {
+            "status": "found",
+            "assignments": {
+              "dr": -2,
+              "lam": -2
+            },
+            "lhs_value": "-4",
+            "rhs_value": "4",
+            "reason": "Finite-domain substitution produced different lhs/rhs values.",
+            "backend": "sympy_finite_domain",
+            "seed": null
+          }
+        ],
+        "actions": [
+          {
+            "code": "human_review",
+            "description": "Inspect the localized transition before changing the derivation."
+          }
+        ],
+        "non_claims": [
+          {
+            "code": "general_theorem_proving_not_claimed",
+            "text": "This scoped workflow result does not claim general theorem-proving ability."
+          },
+          {
+            "code": "release_readiness_not_claimed",
+            "text": "This scoped workflow result does not claim release readiness."
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "high_level_workflow_result"
+        }
+      },
+      "forbidden_claims": [
+        "Whole DSGE note false",
+        "HMC conclusion invalid",
+        "Probe proves theorem"
+      ]
+    },
+    {
+      "case_id": "RLHLB-02-kalman-loglik-assumptions",
+      "workflow": "assumptions_for",
+      "question": "What assumptions are required to derive Kalman prediction-error log-likelihood?",
+      "observed_status": "missing_assumptions",
+      "observed_evidence_classes": [
+        "missing_assumption"
+      ],
+      "certification_source": "none",
+      "expected_status_family": "positive_or_abstain",
+      "expected_family_match": true,
+      "failure_class": "baseline_evaluable",
+      "boundary_checks": {
+        "global_non_claims_present": true,
+        "backend_unavailable_not_refutation": true,
+        "not_encodable_not_false": true,
+        "structural_not_proof": true,
+        "review_packet_not_certificate": true,
+        "refutation_has_counterexample_or_gap": true,
+        "non_certifying_status_has_no_backend_certification": true,
+        "inconclusive_has_veto_or_action": true,
+        "certifying_evidence_not_silently_demoted": true
+      },
+      "route_reference": {
+        "source_adapter_state": "present",
+        "source_adapter_route": "kalman_prediction_error_loglik",
+        "symbolic_backend_state": "not_applicable",
+        "formal_backend_state": "not_applicable",
+        "code_equation_route_state": "not_applicable",
+        "residual_unresolved": []
+      },
+      "packet_summary": {
+        "fields_present": [
+          "actions",
+          "assumptions",
+          "backend_checks",
+          "counterexamples",
+          "derivation_proof_steps",
+          "evidence_classes",
+          "gaps",
+          "non_claims",
+          "question",
+          "route_availability",
+          "source_anchors"
+        ],
+        "source_anchor_count": 3,
+        "gap_count": 0,
+        "non_claim_count": 5
+      },
+      "result": {
+        "status": "missing_assumptions",
+        "workflow": "assumptions_for",
+        "question": "What assumptions are required for logdet(S) + v.T @ solve(S, v)?",
+        "claim_class": "assumption_discovery",
+        "answer": "At least one route-required assumption is missing.",
+        "evidence": [
+          {
+            "id": "assumptions_for:missing-assumption",
+            "class": "missing_assumption",
+            "source": "route",
+            "summary": "At least one route-required assumption is missing.",
+            "low_level": {
+              "status": "missing_assumptions",
+              "reason": "At least one route-required assumption is missing.",
+              "target": "logdet(S) + v.T @ solve(S, v)",
+              "provided_assumptions": [],
+              "assumptions": [
+                {
+                  "text": "matrix operand is square and invertible",
+                  "status": "missing",
+                  "source": "inverse or solve",
+                  "necessity": "required_by_route",
+                  "used_by": [
+                    "inverse_invertible"
+                  ]
+                },
+                {
+                  "text": "matrix operand is square with valid determinant domain, usually positive definite for logdet",
+                  "status": "missing",
+                  "source": "determinant or logdet",
+                  "necessity": "required_by_route",
+                  "used_by": [
+                    "logdet_domain"
+                  ]
+                },
+                {
+                  "text": "matrix dimensions are conformable for the operation",
+                  "status": "missing",
+                  "source": "matrix operation",
+                  "necessity": "required_by_route",
+                  "used_by": [
+                    "matrix_conformability"
+                  ]
+                }
+              ],
+              "missing_assumptions": [
+                {
+                  "text": "matrix operand is square and invertible",
+                  "status": "missing",
+                  "source": "inverse or solve",
+                  "necessity": "required_by_route",
+                  "used_by": [
+                    "inverse_invertible"
+                  ]
+                },
+                {
+                  "text": "matrix operand is square with valid determinant domain, usually positive definite for logdet",
+                  "status": "missing",
+                  "source": "determinant or logdet",
+                  "necessity": "required_by_route",
+                  "used_by": [
+                    "logdet_domain"
+                  ]
+                },
+                {
+                  "text": "matrix dimensions are conformable for the operation",
+                  "status": "missing",
+                  "source": "matrix operation",
+                  "necessity": "required_by_route",
+                  "used_by": [
+                    "matrix_conformability"
+                  ]
+                }
+              ],
+              "workbench_result": {
+                "question": {
+                  "question_type": "assumptions_required",
+                  "target": "logdet(S) + v.T @ solve(S, v)",
+                  "givens": [],
+                  "assumptions": [],
+                  "context": {
+                    "necessity_boundary": "route-required or sufficient, not minimal necessity"
+                  },
+                  "metadata": {
+                    "schema_version": "1.0",
+                    "contract": "math_debugging_question"
+                  }
+                },
+                "status": "missing_assumptions",
+                "reason": "At least one route-required assumption is missing.",
+                "obligations": [
+                  {
+                    "id": "assumption-obligation-1",
+                    "lhs": "logdet(S) + v.T @ solve(S, v)",
+                    "rhs": "well-posed under route assumptions",
+                    "assumptions": [],
+                    "status": "missing_assumptions",
+                    "reason": "At least one route-required assumption is missing.",
+                    "backend_attempts": [],
+                    "counterexample": null,
+                    "missing_assumptions": [
+                      {
+                        "text": "matrix operand is square and invertible",
+                        "status": "missing",
+                        "source": "inverse or solve",
+                        "necessity": "required_by_route",
+                        "used_by": [
+                          "inverse_invertible"
+                        ]
+                      },
+                      {
+                        "text": "matrix operand is square with valid determinant domain, usually positive definite for logdet",
+                        "status": "missing",
+                        "source": "determinant or logdet",
+                        "necessity": "required_by_route",
+                        "used_by": [
+                          "logdet_domain"
+                        ]
+                      },
+                      {
+                        "text": "matrix dimensions are conformable for the operation",
+                        "status": "missing",
+                        "source": "matrix operation",
+                        "necessity": "required_by_route",
+                        "used_by": [
+                          "matrix_conformability"
+                        ]
+                      }
+                    ],
+                    "provenance": {}
+                  }
+                ],
+                "assumptions": [
+                  {
+                    "text": "matrix operand is square and invertible",
+                    "status": "missing",
+                    "source": "inverse or solve",
+                    "necessity": "required_by_route",
+                    "used_by": [
+                      "inverse_invertible"
+                    ]
+                  },
+                  {
+                    "text": "matrix operand is square with valid determinant domain, usually positive definite for logdet",
+                    "status": "missing",
+                    "source": "determinant or logdet",
+                    "necessity": "required_by_route",
+                    "used_by": [
+                      "logdet_domain"
+                    ]
+                  },
+                  {
+                    "text": "matrix dimensions are conformable for the operation",
+                    "status": "missing",
+                    "source": "matrix operation",
+                    "necessity": "required_by_route",
+                    "used_by": [
+                      "matrix_conformability"
+                    ]
+                  }
+                ],
+                "backend_attempts": [],
+                "counterexamples": [],
+                "actions": [
+                  {
+                    "kind": "state_or_verify_assumption",
+                    "assumption": "matrix operand is square and invertible",
+                    "source": "inverse or solve"
+                  },
+                  {
+                    "kind": "state_or_verify_assumption",
+                    "assumption": "matrix operand is square with valid determinant domain, usually positive definite for logdet",
+                    "source": "determinant or logdet"
+                  },
+                  {
+                    "kind": "state_or_verify_assumption",
+                    "assumption": "matrix dimensions are conformable for the operation",
+                    "source": "matrix operation"
+                  }
+                ],
+                "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                "metadata": {
+                  "schema_version": "1.0",
+                  "contract": "math_debugging_workbench_result"
+                }
+              },
+              "metadata": {
+                "schema_version": "1.0",
+                "contract": "assumption_discovery_result"
+              }
+            }
+          }
+        ],
+        "evidence_classes": [
+          "missing_assumption"
+        ],
+        "certification_source": "none",
+        "veto_reasons": [],
+        "assumptions": [
+          {
+            "text": "matrix operand is square and invertible",
+            "status": "missing",
+            "source": "inverse or solve",
+            "necessity": "required_by_route",
+            "used_by": [
+              "inverse_invertible"
+            ]
+          },
+          {
+            "text": "matrix operand is square with valid determinant domain, usually positive definite for logdet",
+            "status": "missing",
+            "source": "determinant or logdet",
+            "necessity": "required_by_route",
+            "used_by": [
+              "logdet_domain"
+            ]
+          },
+          {
+            "text": "matrix dimensions are conformable for the operation",
+            "status": "missing",
+            "source": "matrix operation",
+            "necessity": "required_by_route",
+            "used_by": [
+              "matrix_conformability"
+            ]
+          }
+        ],
+        "counterexamples": [],
+        "actions": [
+          {
+            "code": "human_review",
+            "description": "Review whether route-required assumptions are sufficient for the intended mathematical setting."
+          }
+        ],
+        "non_claims": [
+          {
+            "code": "general_theorem_proving_not_claimed",
+            "text": "This scoped workflow result does not claim general theorem-proving ability."
+          },
+          {
+            "code": "release_readiness_not_claimed",
+            "text": "This scoped workflow result does not claim release readiness."
+          },
+          {
+            "code": "route_assumptions_not_global_minimality",
+            "text": "Route-required assumptions are not claimed to be globally minimal."
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "high_level_workflow_result"
+        }
+      },
+      "forbidden_claims": [
+        "Nonlinear filters exact",
+        "Score/Hessian validated",
+        "Source likelihood is implementation proof"
+      ]
+    },
+    {
+      "case_id": "RLHLB-03-joseph-equivalence",
+      "workflow": "prove_or_counterexample",
+      "question": "Can we prove Joseph and compact covariance updates are equivalent in scope?",
+      "observed_status": "proved",
+      "observed_evidence_classes": [
+        "backend_certificate"
+      ],
+      "certification_source": "backend",
+      "expected_status_family": "positive_or_abstain",
+      "expected_family_match": true,
+      "failure_class": "baseline_evaluable",
+      "boundary_checks": {
+        "global_non_claims_present": true,
+        "backend_unavailable_not_refutation": true,
+        "not_encodable_not_false": true,
+        "structural_not_proof": true,
+        "review_packet_not_certificate": true,
+        "refutation_has_counterexample_or_gap": true,
+        "non_certifying_status_has_no_backend_certification": true,
+        "inconclusive_has_veto_or_action": true,
+        "certifying_evidence_not_silently_demoted": true
+      },
+      "route_reference": {
+        "source_adapter_state": "present",
+        "source_adapter_route": "joseph_covariance_equivalence",
+        "symbolic_backend_state": "available",
+        "formal_backend_state": "available_requires_explicit_source",
+        "code_equation_route_state": "not_applicable",
+        "residual_unresolved": []
+      },
+      "packet_summary": {
+        "fields_present": [
+          "actions",
+          "assumptions",
+          "backend_checks",
+          "counterexamples",
+          "derivation_proof_steps",
+          "evidence_classes",
+          "gaps",
+          "non_claims",
+          "question",
+          "route_availability",
+          "source_anchors"
+        ],
+        "source_anchor_count": 2,
+        "gap_count": 0,
+        "non_claim_count": 4
+      },
+      "result": {
+        "status": "proved",
+        "workflow": "prove_or_counterexample",
+        "question": "Can we prove joseph_scalar_expansion?",
+        "claim_class": "proof",
+        "answer": "The scoped claim was certified by the routed backend.",
+        "evidence": [
+          {
+            "id": "prove_or_counterexample:backend-certificate",
+            "class": "backend_certificate",
+            "source": "backend",
+            "summary": "SymPy simplified lhs - rhs to zero.",
+            "low_level": {
+              "status": "proved",
+              "reason": "The scoped claim was certified by the routed backend.",
+              "claim": "joseph_scalar_expansion",
+              "lhs": "(1-k*h)*p",
+              "rhs": "p-k*h*p",
+              "route_decision": {
+                "route": "symbolic",
+                "status": "proved",
+                "reason": "SymPy simplified lhs - rhs to zero.",
+                "backend_attempt": {
+                  "backend": "sympy",
+                  "status": "proved",
+                  "reason": "SymPy simplified lhs - rhs to zero.",
+                  "evidence": [
+                    {
+                      "kind": "backend_verified",
+                      "backend": "sympy",
+                      "backend_status": "proved",
+                      "reason": "SymPy simplified lhs - rhs to zero.",
+                      "normalized_lhs": "(1-k*h)*p",
+                      "normalized_rhs": "p-k*h*p",
+                      "readable_lhs": "(1-k*h)*p",
+                      "readable_rhs": "p-k*h*p",
+                      "assumptions": [],
+                      "severity": "certifying",
+                      "backend_expression": "0"
+                    }
+                  ],
+                  "severity": "certifying"
+                },
+                "obligation": {
+                  "id": "route-obligation-1",
+                  "lhs": "(1-k*h)*p",
+                  "rhs": "p-k*h*p",
+                  "assumptions": [],
+                  "status": "proved",
+                  "reason": "SymPy simplified lhs - rhs to zero.",
+                  "backend_attempts": [
+                    {
+                      "backend": "sympy",
+                      "status": "proved",
+                      "reason": "SymPy simplified lhs - rhs to zero.",
+                      "evidence": [
+                        {
+                          "kind": "backend_verified",
+                          "backend": "sympy",
+                          "backend_status": "proved",
+                          "reason": "SymPy simplified lhs - rhs to zero.",
+                          "normalized_lhs": "(1-k*h)*p",
+                          "normalized_rhs": "p-k*h*p",
+                          "readable_lhs": "(1-k*h)*p",
+                          "readable_rhs": "p-k*h*p",
+                          "assumptions": [],
+                          "severity": "certifying",
+                          "backend_expression": "0"
+                        }
+                      ],
+                      "severity": "certifying"
+                    }
+                  ],
+                  "counterexample": null,
+                  "missing_assumptions": [],
+                  "provenance": {}
+                },
+                "result": {
+                  "question": {
+                    "question_type": "route_obligation",
+                    "target": "(1-k*h)*p == p-k*h*p",
+                    "givens": [],
+                    "assumptions": [],
+                    "context": {
+                      "route": "symbolic"
+                    },
+                    "metadata": {
+                      "schema_version": "1.0",
+                      "contract": "math_debugging_question"
+                    }
+                  },
+                  "status": "proved",
+                  "reason": "SymPy simplified lhs - rhs to zero.",
+                  "obligations": [
+                    {
+                      "id": "route-obligation-1",
+                      "lhs": "(1-k*h)*p",
+                      "rhs": "p-k*h*p",
+                      "assumptions": [],
+                      "status": "proved",
+                      "reason": "SymPy simplified lhs - rhs to zero.",
+                      "backend_attempts": [
+                        {
+                          "backend": "sympy",
+                          "status": "proved",
+                          "reason": "SymPy simplified lhs - rhs to zero.",
+                          "evidence": [
+                            {
+                              "kind": "backend_verified",
+                              "backend": "sympy",
+                              "backend_status": "proved",
+                              "reason": "SymPy simplified lhs - rhs to zero.",
+                              "normalized_lhs": "(1-k*h)*p",
+                              "normalized_rhs": "p-k*h*p",
+                              "readable_lhs": "(1-k*h)*p",
+                              "readable_rhs": "p-k*h*p",
+                              "assumptions": [],
+                              "severity": "certifying",
+                              "backend_expression": "0"
+                            }
+                          ],
+                          "severity": "certifying"
+                        }
+                      ],
+                      "counterexample": null,
+                      "missing_assumptions": [],
+                      "provenance": {}
+                    }
+                  ],
+                  "assumptions": [],
+                  "backend_attempts": [
+                    {
+                      "backend": "sympy",
+                      "status": "proved",
+                      "reason": "SymPy simplified lhs - rhs to zero.",
+                      "evidence": [
+                        {
+                          "kind": "backend_verified",
+                          "backend": "sympy",
+                          "backend_status": "proved",
+                          "reason": "SymPy simplified lhs - rhs to zero.",
+                          "normalized_lhs": "(1-k*h)*p",
+                          "normalized_rhs": "p-k*h*p",
+                          "readable_lhs": "(1-k*h)*p",
+                          "readable_rhs": "p-k*h*p",
+                          "assumptions": [],
+                          "severity": "certifying",
+                          "backend_expression": "0"
+                        }
+                      ],
+                      "severity": "certifying"
+                    }
+                  ],
+                  "counterexamples": [],
+                  "actions": [],
+                  "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                  "metadata": {
+                    "schema_version": "1.0",
+                    "contract": "math_debugging_workbench_result"
+                  }
+                },
+                "metadata": {
+                  "schema_version": "1.0",
+                  "contract": "math_debugging_route_decision"
+                }
+              },
+              "counterexample_search": null,
+              "workbench_result": {
+                "question": {
+                  "question_type": "prove_or_refute",
+                  "target": "joseph_scalar_expansion",
+                  "givens": [],
+                  "assumptions": [],
+                  "context": {
+                    "backend": "auto"
+                  },
+                  "metadata": {
+                    "schema_version": "1.0",
+                    "contract": "math_debugging_question"
+                  }
+                },
+                "status": "proved",
+                "reason": "The scoped claim was certified by the routed backend.",
+                "obligations": [
+                  {
+                    "id": "prove-target-1",
+                    "lhs": "(1-k*h)*p",
+                    "rhs": "p-k*h*p",
+                    "assumptions": [],
+                    "status": "proved",
+                    "reason": "The scoped claim was certified by the routed backend.",
+                    "backend_attempts": [
+                      {
+                        "backend": "sympy",
+                        "status": "proved",
+                        "reason": "SymPy simplified lhs - rhs to zero.",
+                        "evidence": [
+                          {
+                            "kind": "backend_verified",
+                            "backend": "sympy",
+                            "backend_status": "proved",
+                            "reason": "SymPy simplified lhs - rhs to zero.",
+                            "normalized_lhs": "(1-k*h)*p",
+                            "normalized_rhs": "p-k*h*p",
+                            "readable_lhs": "(1-k*h)*p",
+                            "readable_rhs": "p-k*h*p",
+                            "assumptions": [],
+                            "severity": "certifying",
+                            "backend_expression": "0"
+                          }
+                        ],
+                        "severity": "certifying"
+                      }
+                    ],
+                    "counterexample": null,
+                    "missing_assumptions": [],
+                    "provenance": {}
+                  }
+                ],
+                "assumptions": [],
+                "backend_attempts": [
+                  {
+                    "backend": "sympy",
+                    "status": "proved",
+                    "reason": "SymPy simplified lhs - rhs to zero.",
+                    "evidence": [
+                      {
+                        "kind": "backend_verified",
+                        "backend": "sympy",
+                        "backend_status": "proved",
+                        "reason": "SymPy simplified lhs - rhs to zero.",
+                        "normalized_lhs": "(1-k*h)*p",
+                        "normalized_rhs": "p-k*h*p",
+                        "readable_lhs": "(1-k*h)*p",
+                        "readable_rhs": "p-k*h*p",
+                        "assumptions": [],
+                        "severity": "certifying",
+                        "backend_expression": "0"
+                      }
+                    ],
+                    "severity": "certifying"
+                  }
+                ],
+                "counterexamples": [],
+                "actions": [],
+                "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                "metadata": {
+                  "schema_version": "1.0",
+                  "contract": "math_debugging_workbench_result"
+                }
+              },
+              "metadata": {
+                "schema_version": "1.0",
+                "contract": "prove_or_refute_result"
+              }
+            }
+          }
+        ],
+        "evidence_classes": [
+          "backend_certificate"
+        ],
+        "certification_source": "backend",
+        "veto_reasons": [],
+        "assumptions": [],
+        "counterexamples": [],
+        "actions": [
+          {
+            "code": "human_review",
+            "description": "Review proof scope, assumptions, and backend route before reusing the result."
+          }
+        ],
+        "non_claims": [
+          {
+            "code": "general_theorem_proving_not_claimed",
+            "text": "This scoped workflow result does not claim general theorem-proving ability."
+          },
+          {
+            "code": "release_readiness_not_claimed",
+            "text": "This scoped workflow result does not claim release readiness."
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "high_level_workflow_result"
+        }
+      },
+      "forbidden_claims": [
+        "Floating-point compact update always stable",
+        "Backend implementation validated"
+      ]
+    },
+    {
+      "case_id": "RLHLB-04-affine-pricing-recursion",
+      "workflow": "derive_from",
+      "question": "Can we derive affine pricing recursion from Gaussian affine assumptions?",
+      "observed_status": "inconclusive",
+      "observed_evidence_classes": [
+        "human_review_required"
+      ],
+      "certification_source": "none",
+      "expected_status_family": "positive_or_abstain",
+      "expected_family_match": true,
+      "failure_class": "correct_abstention_or_route_gap",
+      "boundary_checks": {
+        "global_non_claims_present": true,
+        "backend_unavailable_not_refutation": true,
+        "not_encodable_not_false": true,
+        "structural_not_proof": true,
+        "review_packet_not_certificate": true,
+        "refutation_has_counterexample_or_gap": true,
+        "non_certifying_status_has_no_backend_certification": true,
+        "inconclusive_has_veto_or_action": true,
+        "certifying_evidence_not_silently_demoted": true
+      },
+      "route_reference": {
+        "source_adapter_state": "present",
+        "source_adapter_route": "affine_pricing_master_recursion",
+        "symbolic_backend_state": "available",
+        "formal_backend_state": "not_applicable",
+        "code_equation_route_state": "not_applicable",
+        "residual_unresolved": []
+      },
+      "packet_summary": {
+        "fields_present": [
+          "actions",
+          "assumptions",
+          "backend_checks",
+          "counterexamples",
+          "derivation_proof_steps",
+          "evidence_classes",
+          "gaps",
+          "non_claims",
+          "question",
+          "route_availability",
+          "source_anchors"
+        ],
+        "source_anchor_count": 1,
+        "gap_count": 0,
+        "non_claim_count": 4
+      },
+      "result": {
+        "status": "inconclusive",
+        "workflow": "derive_from",
+        "question": "Can I derive affine_collect from the supplied givens?",
+        "claim_class": "derivation",
+        "answer": "No bounded derivation or refutation was found.",
+        "evidence": [
+          {
+            "id": "derive_from:human-review-required",
+            "class": "human_review_required",
+            "source": "kernel",
+            "summary": "No bounded derivation or refutation was found.",
+            "low_level": {
+              "status": "unknown",
+              "reason": "No bounded derivation or refutation was found.",
+              "givens": [],
+              "target": "affine_collect",
+              "lhs": "A + B*x",
+              "rhs": "A + x*B",
+              "route_decision": {
+                "route": "human_review",
+                "status": "unknown",
+                "reason": "Expression appears to require matrix/domain review before scalar symbolic routing.",
+                "backend_attempt": {
+                  "backend": "router",
+                  "status": "unknown",
+                  "reason": "Expression appears to require matrix/domain review before scalar symbolic routing.",
+                  "evidence": [],
+                  "severity": "diagnostic"
+                },
+                "obligation": {
+                  "id": "route-obligation-1",
+                  "lhs": "A + B*x",
+                  "rhs": "A + x*B",
+                  "assumptions": [],
+                  "status": "unknown",
+                  "reason": "Expression appears to require matrix/domain review before scalar symbolic routing.",
+                  "backend_attempts": [
+                    {
+                      "backend": "router",
+                      "status": "unknown",
+                      "reason": "Expression appears to require matrix/domain review before scalar symbolic routing.",
+                      "evidence": [],
+                      "severity": "diagnostic"
+                    }
+                  ],
+                  "counterexample": null,
+                  "missing_assumptions": [],
+                  "provenance": {}
+                },
+                "result": {
+                  "question": {
+                    "question_type": "route_obligation",
+                    "target": "A + B*x == A + x*B",
+                    "givens": [],
+                    "assumptions": [],
+                    "context": {
+                      "route": "human_review"
+                    },
+                    "metadata": {
+                      "schema_version": "1.0",
+                      "contract": "math_debugging_question"
+                    }
+                  },
+                  "status": "unknown",
+                  "reason": "Expression appears to require matrix/domain review before scalar symbolic routing.",
+                  "obligations": [
+                    {
+                      "id": "route-obligation-1",
+                      "lhs": "A + B*x",
+                      "rhs": "A + x*B",
+                      "assumptions": [],
+                      "status": "unknown",
+                      "reason": "Expression appears to require matrix/domain review before scalar symbolic routing.",
+                      "backend_attempts": [
+                        {
+                          "backend": "router",
+                          "status": "unknown",
+                          "reason": "Expression appears to require matrix/domain review before scalar symbolic routing.",
+                          "evidence": [],
+                          "severity": "diagnostic"
+                        }
+                      ],
+                      "counterexample": null,
+                      "missing_assumptions": [],
+                      "provenance": {}
+                    }
+                  ],
+                  "assumptions": [],
+                  "backend_attempts": [
+                    {
+                      "backend": "router",
+                      "status": "unknown",
+                      "reason": "Expression appears to require matrix/domain review before scalar symbolic routing.",
+                      "evidence": [],
+                      "severity": "diagnostic"
+                    }
+                  ],
+                  "counterexamples": [],
+                  "actions": [
+                    {
+                      "kind": "review_or_reencode",
+                      "route": "human_review"
+                    }
+                  ],
+                  "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                  "metadata": {
+                    "schema_version": "1.0",
+                    "contract": "math_debugging_workbench_result"
+                  }
+                },
+                "metadata": {
+                  "schema_version": "1.0",
+                  "contract": "math_debugging_route_decision"
+                }
+              },
+              "assumption_diagnostic": {
+                "status": "unknown",
+                "reason": "No route-required assumptions were detected by the bounded rule set.",
+                "target": "affine_collect",
+                "provided_assumptions": [],
+                "assumptions": [],
+                "missing_assumptions": [],
+                "workbench_result": {
+                  "question": {
+                    "question_type": "assumptions_required",
+                    "target": "affine_collect",
+                    "givens": [],
+                    "assumptions": [],
+                    "context": {
+                      "necessity_boundary": "route-required or sufficient, not minimal necessity"
+                    },
+                    "metadata": {
+                      "schema_version": "1.0",
+                      "contract": "math_debugging_question"
+                    }
+                  },
+                  "status": "unknown",
+                  "reason": "No route-required assumptions were detected by the bounded rule set.",
+                  "obligations": [
+                    {
+                      "id": "assumption-obligation-1",
+                      "lhs": "affine_collect",
+                      "rhs": "well-posed under route assumptions",
+                      "assumptions": [],
+                      "status": "unknown",
+                      "reason": "No route-required assumptions were detected by the bounded rule set.",
+                      "backend_attempts": [],
+                      "counterexample": null,
+                      "missing_assumptions": [],
+                      "provenance": {}
+                    }
+                  ],
+                  "assumptions": [],
+                  "backend_attempts": [],
+                  "counterexamples": [],
+                  "actions": [],
+                  "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                  "metadata": {
+                    "schema_version": "1.0",
+                    "contract": "math_debugging_workbench_result"
+                  }
+                },
+                "metadata": {
+                  "schema_version": "1.0",
+                  "contract": "assumption_discovery_result"
+                }
+              },
+              "counterexample_search": {
+                "status": "unknown",
+                "reason": "No counterexample was found in the bounded finite search domain.",
+                "lhs": "A + B*x",
+                "rhs": "A + x*B",
+                "backend": "sympy_finite_domain",
+                "search_space": {
+                  "kind": "finite_integer_domain",
+                  "domain": [
+                    -2,
+                    -1,
+                    0,
+                    1,
+                    2
+                  ],
+                  "status": "searched",
+                  "points": 125,
+                  "symbols": [
+                    "A",
+                    "B",
+                    "x"
+                  ]
+                },
+                "counterexample": null,
+                "workbench_result": {
+                  "question": {
+                    "question_type": "find_counterexample",
+                    "target": "A + B*x == A + x*B",
+                    "givens": [],
+                    "assumptions": [],
+                    "context": {
+                      "domain": [
+                        -2,
+                        -1,
+                        0,
+                        1,
+                        2
+                      ]
+                    },
+                    "metadata": {
+                      "schema_version": "1.0",
+                      "contract": "math_debugging_question"
+                    }
+                  },
+                  "status": "unknown",
+                  "reason": "No counterexample was found in the bounded finite search domain.",
+                  "obligations": [
+                    {
+                      "id": "counterexample-obligation-1",
+                      "lhs": "A + B*x",
+                      "rhs": "A + x*B",
+                      "assumptions": [],
+                      "status": "unknown",
+                      "reason": "No counterexample was found in the bounded finite search domain.",
+                      "backend_attempts": [
+                        {
+                          "backend": "sympy_finite_domain",
+                          "status": "unknown",
+                          "reason": "No counterexample was found in the bounded finite search domain.",
+                          "evidence": [],
+                          "severity": "diagnostic"
+                        }
+                      ],
+                      "counterexample": null,
+                      "missing_assumptions": [],
+                      "provenance": {}
+                    }
+                  ],
+                  "assumptions": [],
+                  "backend_attempts": [
+                    {
+                      "backend": "sympy_finite_domain",
+                      "status": "unknown",
+                      "reason": "No counterexample was found in the bounded finite search domain.",
+                      "evidence": [],
+                      "severity": "diagnostic"
+                    }
+                  ],
+                  "counterexamples": [],
+                  "actions": [],
+                  "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                  "metadata": {
+                    "schema_version": "1.0",
+                    "contract": "math_debugging_workbench_result"
+                  }
+                },
+                "metadata": {
+                  "schema_version": "1.0",
+                  "contract": "counterexample_search_result"
+                }
+              },
+              "workbench_result": {
+                "question": {
+                  "question_type": "derive_or_refute",
+                  "target": "affine_collect",
+                  "givens": [],
+                  "assumptions": [],
+                  "context": {
+                    "backend": "auto"
+                  },
+                  "metadata": {
+                    "schema_version": "1.0",
+                    "contract": "math_debugging_question"
+                  }
+                },
+                "status": "unknown",
+                "reason": "No bounded derivation or refutation was found.",
+                "obligations": [
+                  {
+                    "id": "derive-target-1",
+                    "lhs": "A + B*x",
+                    "rhs": "A + x*B",
+                    "assumptions": [],
+                    "status": "unknown",
+                    "reason": "No bounded derivation or refutation was found.",
+                    "backend_attempts": [
+                      {
+                        "backend": "router",
+                        "status": "unknown",
+                        "reason": "Expression appears to require matrix/domain review before scalar symbolic routing.",
+                        "evidence": [],
+                        "severity": "diagnostic"
+                      }
+                    ],
+                    "counterexample": null,
+                    "missing_assumptions": [],
+                    "provenance": {}
+                  }
+                ],
+                "assumptions": [],
+                "backend_attempts": [
+                  {
+                    "backend": "router",
+                    "status": "unknown",
+                    "reason": "Expression appears to require matrix/domain review before scalar symbolic routing.",
+                    "evidence": [],
+                    "severity": "diagnostic"
+                  }
+                ],
+                "counterexamples": [],
+                "actions": [
+                  {
+                    "kind": "manual_derivation_or_stronger_backend",
+                    "reason": "No bounded route resolved the target."
+                  }
+                ],
+                "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                "metadata": {
+                  "schema_version": "1.0",
+                  "contract": "math_debugging_workbench_result"
+                }
+              },
+              "metadata": {
+                "schema_version": "1.0",
+                "contract": "derive_or_refute_result"
+              }
+            },
+            "givens": [],
+            "explicit_assumptions": []
+          }
+        ],
+        "evidence_classes": [
+          "human_review_required"
+        ],
+        "certification_source": "none",
+        "veto_reasons": [
+          {
+            "code": "unresolved_low_level_status",
+            "reason": "Unsupported or inconclusive low-level status: unknown"
+          }
+        ],
+        "assumptions": [],
+        "counterexamples": [],
+        "actions": [
+          {
+            "code": "human_review",
+            "description": "Review low-level evidence manually."
+          },
+          {
+            "code": "human_review",
+            "description": "Check whether the recorded givens should be promoted to explicit route assumptions.",
+            "givens": [],
+            "explicit_assumptions": []
+          }
+        ],
+        "non_claims": [
+          {
+            "code": "general_theorem_proving_not_claimed",
+            "text": "This scoped workflow result does not claim general theorem-proving ability."
+          },
+          {
+            "code": "givens_not_formal_assumptions",
+            "text": "givens not formal assumptions"
+          },
+          {
+            "code": "release_readiness_not_claimed",
+            "text": "This scoped workflow result does not claim release readiness."
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "high_level_workflow_result"
+        }
+      },
+      "forbidden_claims": [
+        "Empirical pricing validity",
+        "Nonlinear approximation exact"
+      ]
+    },
+    {
+      "case_id": "RLHLB-05-kalman-score-same-scalar",
+      "workflow": "assumptions_for",
+      "question": "What assumptions are needed for the Kalman score to match the same scalar likelihood?",
+      "observed_status": "missing_assumptions",
+      "observed_evidence_classes": [
+        "missing_assumption"
+      ],
+      "certification_source": "none",
+      "expected_status_family": "positive_or_abstain",
+      "expected_family_match": true,
+      "failure_class": "baseline_evaluable",
+      "boundary_checks": {
+        "global_non_claims_present": true,
+        "backend_unavailable_not_refutation": true,
+        "not_encodable_not_false": true,
+        "structural_not_proof": true,
+        "review_packet_not_certificate": true,
+        "refutation_has_counterexample_or_gap": true,
+        "non_certifying_status_has_no_backend_certification": true,
+        "inconclusive_has_veto_or_action": true,
+        "certifying_evidence_not_silently_demoted": true
+      },
+      "route_reference": {
+        "source_adapter_state": "present",
+        "source_adapter_route": "kalman_score_same_scalar",
+        "symbolic_backend_state": "not_applicable",
+        "formal_backend_state": "not_applicable",
+        "code_equation_route_state": "not_applicable",
+        "residual_unresolved": []
+      },
+      "packet_summary": {
+        "fields_present": [
+          "actions",
+          "assumptions",
+          "backend_checks",
+          "counterexamples",
+          "derivation_proof_steps",
+          "evidence_classes",
+          "gaps",
+          "non_claims",
+          "question",
+          "route_availability",
+          "source_anchors"
+        ],
+        "source_anchor_count": 2,
+        "gap_count": 0,
+        "non_claim_count": 5
+      },
+      "result": {
+        "status": "missing_assumptions",
+        "workflow": "assumptions_for",
+        "question": "What assumptions are required for grad(logdet(S) + v.T @ solve(S, v))?",
+        "claim_class": "assumption_discovery",
+        "answer": "At least one route-required assumption is missing.",
+        "evidence": [
+          {
+            "id": "assumptions_for:missing-assumption",
+            "class": "missing_assumption",
+            "source": "route",
+            "summary": "At least one route-required assumption is missing.",
+            "low_level": {
+              "status": "missing_assumptions",
+              "reason": "At least one route-required assumption is missing.",
+              "target": "grad(logdet(S) + v.T @ solve(S, v))",
+              "provided_assumptions": [],
+              "assumptions": [
+                {
+                  "text": "matrix operand is square and invertible",
+                  "status": "missing",
+                  "source": "inverse or solve",
+                  "necessity": "required_by_route",
+                  "used_by": [
+                    "inverse_invertible"
+                  ]
+                },
+                {
+                  "text": "matrix operand is square with valid determinant domain, usually positive definite for logdet",
+                  "status": "missing",
+                  "source": "determinant or logdet",
+                  "necessity": "required_by_route",
+                  "used_by": [
+                    "logdet_domain"
+                  ]
+                },
+                {
+                  "text": "target function is differentiable on the stated domain",
+                  "status": "missing",
+                  "source": "derivative",
+                  "necessity": "required_by_route",
+                  "used_by": [
+                    "differentiability"
+                  ]
+                },
+                {
+                  "text": "matrix dimensions are conformable for the operation",
+                  "status": "missing",
+                  "source": "matrix operation",
+                  "necessity": "required_by_route",
+                  "used_by": [
+                    "matrix_conformability"
+                  ]
+                }
+              ],
+              "missing_assumptions": [
+                {
+                  "text": "matrix operand is square and invertible",
+                  "status": "missing",
+                  "source": "inverse or solve",
+                  "necessity": "required_by_route",
+                  "used_by": [
+                    "inverse_invertible"
+                  ]
+                },
+                {
+                  "text": "matrix operand is square with valid determinant domain, usually positive definite for logdet",
+                  "status": "missing",
+                  "source": "determinant or logdet",
+                  "necessity": "required_by_route",
+                  "used_by": [
+                    "logdet_domain"
+                  ]
+                },
+                {
+                  "text": "target function is differentiable on the stated domain",
+                  "status": "missing",
+                  "source": "derivative",
+                  "necessity": "required_by_route",
+                  "used_by": [
+                    "differentiability"
+                  ]
+                },
+                {
+                  "text": "matrix dimensions are conformable for the operation",
+                  "status": "missing",
+                  "source": "matrix operation",
+                  "necessity": "required_by_route",
+                  "used_by": [
+                    "matrix_conformability"
+                  ]
+                }
+              ],
+              "workbench_result": {
+                "question": {
+                  "question_type": "assumptions_required",
+                  "target": "grad(logdet(S) + v.T @ solve(S, v))",
+                  "givens": [],
+                  "assumptions": [],
+                  "context": {
+                    "necessity_boundary": "route-required or sufficient, not minimal necessity"
+                  },
+                  "metadata": {
+                    "schema_version": "1.0",
+                    "contract": "math_debugging_question"
+                  }
+                },
+                "status": "missing_assumptions",
+                "reason": "At least one route-required assumption is missing.",
+                "obligations": [
+                  {
+                    "id": "assumption-obligation-1",
+                    "lhs": "grad(logdet(S) + v.T @ solve(S, v))",
+                    "rhs": "well-posed under route assumptions",
+                    "assumptions": [],
+                    "status": "missing_assumptions",
+                    "reason": "At least one route-required assumption is missing.",
+                    "backend_attempts": [],
+                    "counterexample": null,
+                    "missing_assumptions": [
+                      {
+                        "text": "matrix operand is square and invertible",
+                        "status": "missing",
+                        "source": "inverse or solve",
+                        "necessity": "required_by_route",
+                        "used_by": [
+                          "inverse_invertible"
+                        ]
+                      },
+                      {
+                        "text": "matrix operand is square with valid determinant domain, usually positive definite for logdet",
+                        "status": "missing",
+                        "source": "determinant or logdet",
+                        "necessity": "required_by_route",
+                        "used_by": [
+                          "logdet_domain"
+                        ]
+                      },
+                      {
+                        "text": "target function is differentiable on the stated domain",
+                        "status": "missing",
+                        "source": "derivative",
+                        "necessity": "required_by_route",
+                        "used_by": [
+                          "differentiability"
+                        ]
+                      },
+                      {
+                        "text": "matrix dimensions are conformable for the operation",
+                        "status": "missing",
+                        "source": "matrix operation",
+                        "necessity": "required_by_route",
+                        "used_by": [
+                          "matrix_conformability"
+                        ]
+                      }
+                    ],
+                    "provenance": {}
+                  }
+                ],
+                "assumptions": [
+                  {
+                    "text": "matrix operand is square and invertible",
+                    "status": "missing",
+                    "source": "inverse or solve",
+                    "necessity": "required_by_route",
+                    "used_by": [
+                      "inverse_invertible"
+                    ]
+                  },
+                  {
+                    "text": "matrix operand is square with valid determinant domain, usually positive definite for logdet",
+                    "status": "missing",
+                    "source": "determinant or logdet",
+                    "necessity": "required_by_route",
+                    "used_by": [
+                      "logdet_domain"
+                    ]
+                  },
+                  {
+                    "text": "target function is differentiable on the stated domain",
+                    "status": "missing",
+                    "source": "derivative",
+                    "necessity": "required_by_route",
+                    "used_by": [
+                      "differentiability"
+                    ]
+                  },
+                  {
+                    "text": "matrix dimensions are conformable for the operation",
+                    "status": "missing",
+                    "source": "matrix operation",
+                    "necessity": "required_by_route",
+                    "used_by": [
+                      "matrix_conformability"
+                    ]
+                  }
+                ],
+                "backend_attempts": [],
+                "counterexamples": [],
+                "actions": [
+                  {
+                    "kind": "state_or_verify_assumption",
+                    "assumption": "matrix operand is square and invertible",
+                    "source": "inverse or solve"
+                  },
+                  {
+                    "kind": "state_or_verify_assumption",
+                    "assumption": "matrix operand is square with valid determinant domain, usually positive definite for logdet",
+                    "source": "determinant or logdet"
+                  },
+                  {
+                    "kind": "state_or_verify_assumption",
+                    "assumption": "target function is differentiable on the stated domain",
+                    "source": "derivative"
+                  },
+                  {
+                    "kind": "state_or_verify_assumption",
+                    "assumption": "matrix dimensions are conformable for the operation",
+                    "source": "matrix operation"
+                  }
+                ],
+                "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                "metadata": {
+                  "schema_version": "1.0",
+                  "contract": "math_debugging_workbench_result"
+                }
+              },
+              "metadata": {
+                "schema_version": "1.0",
+                "contract": "assumption_discovery_result"
+              }
+            }
+          }
+        ],
+        "evidence_classes": [
+          "missing_assumption"
+        ],
+        "certification_source": "none",
+        "veto_reasons": [],
+        "assumptions": [
+          {
+            "text": "matrix operand is square and invertible",
+            "status": "missing",
+            "source": "inverse or solve",
+            "necessity": "required_by_route",
+            "used_by": [
+              "inverse_invertible"
+            ]
+          },
+          {
+            "text": "matrix operand is square with valid determinant domain, usually positive definite for logdet",
+            "status": "missing",
+            "source": "determinant or logdet",
+            "necessity": "required_by_route",
+            "used_by": [
+              "logdet_domain"
+            ]
+          },
+          {
+            "text": "target function is differentiable on the stated domain",
+            "status": "missing",
+            "source": "derivative",
+            "necessity": "required_by_route",
+            "used_by": [
+              "differentiability"
+            ]
+          },
+          {
+            "text": "matrix dimensions are conformable for the operation",
+            "status": "missing",
+            "source": "matrix operation",
+            "necessity": "required_by_route",
+            "used_by": [
+              "matrix_conformability"
+            ]
+          }
+        ],
+        "counterexamples": [],
+        "actions": [
+          {
+            "code": "human_review",
+            "description": "Review whether route-required assumptions are sufficient for the intended mathematical setting."
+          }
+        ],
+        "non_claims": [
+          {
+            "code": "general_theorem_proving_not_claimed",
+            "text": "This scoped workflow result does not claim general theorem-proving ability."
+          },
+          {
+            "code": "release_readiness_not_claimed",
+            "text": "This scoped workflow result does not claim release readiness."
+          },
+          {
+            "code": "route_assumptions_not_global_minimality",
+            "text": "Route-required assumptions are not claimed to be globally minimal."
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "high_level_workflow_result"
+        }
+      },
+      "forbidden_claims": [
+        "HMC validity",
+        "Posterior correctness",
+        "Hessian readiness"
+      ]
+    },
+    {
+      "case_id": "RLHLB-06-state-space-code-missing-solve",
+      "workflow": "audit_math_to_code",
+      "question": "Does code implement the documented Kalman likelihood solve/quadratic form?",
+      "observed_status": "structural_mismatch",
+      "observed_evidence_classes": [
+        "structural_mismatch"
+      ],
+      "certification_source": "none",
+      "expected_status_family": "routing_only",
+      "expected_family_match": true,
+      "failure_class": "baseline_evaluable",
+      "boundary_checks": {
+        "global_non_claims_present": true,
+        "backend_unavailable_not_refutation": true,
+        "not_encodable_not_false": true,
+        "structural_not_proof": true,
+        "review_packet_not_certificate": true,
+        "refutation_has_counterexample_or_gap": true,
+        "non_certifying_status_has_no_backend_certification": true,
+        "inconclusive_has_veto_or_action": true,
+        "certifying_evidence_not_silently_demoted": true
+      },
+      "route_reference": {
+        "source_adapter_state": "not_applicable",
+        "source_adapter_route": null,
+        "symbolic_backend_state": "not_applicable",
+        "formal_backend_state": "not_applicable",
+        "code_equation_route_state": "available",
+        "residual_unresolved": [
+          "negative_control_requires_boundary_preservation"
+        ]
+      },
+      "packet_summary": {
+        "fields_present": [
+          "actions",
+          "assumptions",
+          "backend_checks",
+          "counterexamples",
+          "derivation_proof_steps",
+          "evidence_classes",
+          "gaps",
+          "non_claims",
+          "question",
+          "route_availability",
+          "source_anchors"
+        ],
+        "source_anchor_count": 3,
+        "gap_count": 1,
+        "non_claim_count": 4
+      },
+      "result": {
+        "status": "structural_mismatch",
+        "workflow": "audit_math_to_code",
+        "question": "Does this code implement the supplied math?",
+        "claim_class": "math_to_code",
+        "answer": "Code is missing required equation terms or has structural conflicts.",
+        "evidence": [
+          {
+            "id": "audit_math_to_code:structural_mismatch",
+            "class": "structural_mismatch",
+            "source": "structural_matcher",
+            "summary": "Code is missing required equation terms or has structural conflicts.",
+            "low_level": {
+              "status": "mismatch",
+              "reason": "Code is missing required equation terms or has structural conflicts.",
+              "equation": "logdet(S) + solve(S, innovation)",
+              "matched_terms": [
+                "S",
+                "innovation",
+                "logdet"
+              ],
+              "missing_terms": [
+                "solve"
+              ],
+              "extra_code_terms": [
+                "F",
+                "H",
+                "K",
+                "P",
+                "P_filt",
+                "P_pred",
+                "Q",
+                "R",
+                "T",
+                "carry",
+                "initial_state",
+                "jnp",
+                "lax",
+                "linalg",
+                "ll_t",
+                "obs",
+                "params",
+                "scan",
+                "sign",
+                "slogdet",
+                "step",
+                "x",
+                "x_filt",
+                "x_pred",
+                "y"
+              ],
+              "conflicts": [],
+              "code_summary": {
+                "names": [
+                  "F",
+                  "H",
+                  "K",
+                  "P",
+                  "P_filt",
+                  "P_pred",
+                  "Q",
+                  "R",
+                  "S",
+                  "T",
+                  "carry",
+                  "initial_state",
+                  "innovation",
+                  "jnp",
+                  "lax",
+                  "linalg",
+                  "ll_t",
+                  "logdet",
+                  "obs",
+                  "params",
+                  "scan",
+                  "sign",
+                  "slogdet",
+                  "step",
+                  "x",
+                  "x_filt",
+                  "x_pred",
+                  "y"
+                ],
+                "calls": [
+                  "initial_state",
+                  "scan",
+                  "slogdet"
+                ],
+                "operators": [
+                  "Add",
+                  "MatMult",
+                  "Mult",
+                  "Sub"
+                ]
+              },
+              "workbench_result": {
+                "question": {
+                  "question_type": "code_implements_equation",
+                  "target": "logdet(S) + solve(S, innovation)",
+                  "givens": [],
+                  "assumptions": [],
+                  "context": {
+                    "aliases": {
+                      "InnovCov": "S",
+                      "Innov": "innovation"
+                    }
+                  },
+                  "metadata": {
+                    "schema_version": "1.0",
+                    "contract": "math_debugging_question"
+                  }
+                },
+                "status": "refuted",
+                "reason": "Code is missing required equation terms or has structural conflicts.",
+                "obligations": [],
+                "assumptions": [],
+                "backend_attempts": [],
+                "counterexamples": [],
+                "actions": [
+                  {
+                    "kind": "inspect_missing_or_conflicting_code_terms"
+                  }
+                ],
+                "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                "metadata": {
+                  "schema_version": "1.0",
+                  "contract": "math_debugging_workbench_result"
+                }
+              },
+              "metadata": {
+                "schema_version": "1.0",
+                "contract": "equation_code_match_result"
+              }
+            }
+          }
+        ],
+        "evidence_classes": [
+          "structural_mismatch"
+        ],
+        "certification_source": "none",
+        "veto_reasons": [],
+        "assumptions": [],
+        "counterexamples": [],
+        "actions": [
+          {
+            "code": "human_review",
+            "description": "Inspect structural mismatch."
+          },
+          {
+            "code": "human_review",
+            "description": "Review structural matches, missing terms, aliases, and audit-only extras before treating code as correct."
+          }
+        ],
+        "non_claims": [
+          {
+            "code": "general_theorem_proving_not_claimed",
+            "text": "This scoped workflow result does not claim general theorem-proving ability."
+          },
+          {
+            "code": "release_readiness_not_claimed",
+            "text": "This scoped workflow result does not claim release readiness."
+          },
+          {
+            "code": "structural_evidence_not_proof",
+            "text": "Structural evidence is not a semantic proof."
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "high_level_workflow_result"
+        }
+      },
+      "forbidden_claims": [
+        "Code is mathematically wrong",
+        "Absence of literal solve proves implementation invalid"
+      ]
+    },
+    {
+      "case_id": "RLHLB-07-proof-boundary-review-packet",
+      "workflow": "prepare_review_packet",
+      "question": "Can we produce a packet for a difficult Gaussian score derivation without overclaiming proof?",
+      "observed_status": "diagnostic_only",
+      "observed_evidence_classes": [
+        "review_packet"
+      ],
+      "certification_source": "none",
+      "expected_status_family": "insufficient_evidence",
+      "expected_family_match": true,
+      "failure_class": "baseline_evaluable",
+      "boundary_checks": {
+        "global_non_claims_present": true,
+        "backend_unavailable_not_refutation": true,
+        "not_encodable_not_false": true,
+        "structural_not_proof": true,
+        "review_packet_not_certificate": true,
+        "refutation_has_counterexample_or_gap": true,
+        "non_certifying_status_has_no_backend_certification": true,
+        "inconclusive_has_veto_or_action": true,
+        "certifying_evidence_not_silently_demoted": true
+      },
+      "route_reference": {
+        "source_adapter_state": "not_applicable",
+        "source_adapter_route": null,
+        "symbolic_backend_state": "not_applicable",
+        "formal_backend_state": "not_applicable",
+        "code_equation_route_state": "not_applicable",
+        "residual_unresolved": [
+          "negative_control_requires_boundary_preservation",
+          "diagnostic_packet_not_certificate"
+        ]
+      },
+      "packet_summary": {
+        "fields_present": [
+          "actions",
+          "assumptions",
+          "backend_checks",
+          "counterexamples",
+          "derivation_proof_steps",
+          "evidence_classes",
+          "gaps",
+          "non_claims",
+          "question",
+          "route_availability",
+          "source_anchors"
+        ],
+        "source_anchor_count": 1,
+        "gap_count": 2,
+        "non_claim_count": 4
+      },
+      "result": {
+        "status": "diagnostic_only",
+        "workflow": "prepare_review_packet",
+        "question": "Can we produce a packet for a difficult Gaussian score derivation without overclaiming proof?",
+        "claim_class": "review_packet",
+        "answer": "At least one nested evidence record is blocked, unavailable, not encodable, or mismatched.",
+        "evidence": [
+          {
+            "id": "prepare_review_packet:review-packet",
+            "class": "review_packet",
+            "source": "packet_builder",
+            "summary": "At least one nested evidence record is blocked, unavailable, not encodable, or mismatched.",
+            "low_level": {
+              "packet_id": "RLHLB-07-proof-boundary-review-packet",
+              "question": "Can we produce a packet for a difficult Gaussian score derivation without overclaiming proof?",
+              "status": "needs_human_review",
+              "reason": "At least one nested evidence record is blocked, unavailable, not encodable, or mismatched.",
+              "source": {
+                "kind": "phase4_baseline_stub",
+                "anchors_from_case": "RLHLB-07-proof-boundary-review-packet",
+                "anchors": [
+                  {
+                    "path": "docs/mathdevmcp-release-report.tex",
+                    "line_range": "1255-1361",
+                    "role": "Gaussian score derivation review context"
+                  }
+                ]
+              },
+              "obligations": [],
+              "assumptions": [],
+              "backend_attempts": [],
+              "counterexamples": [],
+              "code_links": [],
+              "notation_conflicts": [],
+              "generated_diagnostics": [],
+              "evidence": [
+                {
+                  "status": "missing_assumptions",
+                  "workflow": "assumptions_for",
+                  "question": "What assumptions are required for grad(logdet(S) + v.T @ solve(S, v))?",
+                  "claim_class": "assumption_discovery",
+                  "answer": "At least one route-required assumption is missing.",
+                  "evidence": [
+                    {
+                      "id": "assumptions_for:missing-assumption",
+                      "class": "missing_assumption",
+                      "source": "route",
+                      "summary": "At least one route-required assumption is missing.",
+                      "low_level": {
+                        "status": "missing_assumptions",
+                        "reason": "At least one route-required assumption is missing.",
+                        "target": "grad(logdet(S) + v.T @ solve(S, v))",
+                        "provided_assumptions": [],
+                        "assumptions": [
+                          {
+                            "text": "matrix operand is square and invertible",
+                            "status": "missing",
+                            "source": "inverse or solve",
+                            "necessity": "required_by_route",
+                            "used_by": [
+                              "inverse_invertible"
+                            ]
+                          },
+                          {
+                            "text": "matrix operand is square with valid determinant domain, usually positive definite for logdet",
+                            "status": "missing",
+                            "source": "determinant or logdet",
+                            "necessity": "required_by_route",
+                            "used_by": [
+                              "logdet_domain"
+                            ]
+                          },
+                          {
+                            "text": "target function is differentiable on the stated domain",
+                            "status": "missing",
+                            "source": "derivative",
+                            "necessity": "required_by_route",
+                            "used_by": [
+                              "differentiability"
+                            ]
+                          },
+                          {
+                            "text": "matrix dimensions are conformable for the operation",
+                            "status": "missing",
+                            "source": "matrix operation",
+                            "necessity": "required_by_route",
+                            "used_by": [
+                              "matrix_conformability"
+                            ]
+                          }
+                        ],
+                        "missing_assumptions": [
+                          {
+                            "text": "matrix operand is square and invertible",
+                            "status": "missing",
+                            "source": "inverse or solve",
+                            "necessity": "required_by_route",
+                            "used_by": [
+                              "inverse_invertible"
+                            ]
+                          },
+                          {
+                            "text": "matrix operand is square with valid determinant domain, usually positive definite for logdet",
+                            "status": "missing",
+                            "source": "determinant or logdet",
+                            "necessity": "required_by_route",
+                            "used_by": [
+                              "logdet_domain"
+                            ]
+                          },
+                          {
+                            "text": "target function is differentiable on the stated domain",
+                            "status": "missing",
+                            "source": "derivative",
+                            "necessity": "required_by_route",
+                            "used_by": [
+                              "differentiability"
+                            ]
+                          },
+                          {
+                            "text": "matrix dimensions are conformable for the operation",
+                            "status": "missing",
+                            "source": "matrix operation",
+                            "necessity": "required_by_route",
+                            "used_by": [
+                              "matrix_conformability"
+                            ]
+                          }
+                        ],
+                        "workbench_result": {
+                          "question": {
+                            "question_type": "assumptions_required",
+                            "target": "grad(logdet(S) + v.T @ solve(S, v))",
+                            "givens": [],
+                            "assumptions": [],
+                            "context": {
+                              "necessity_boundary": "route-required or sufficient, not minimal necessity"
+                            },
+                            "metadata": {
+                              "schema_version": "1.0",
+                              "contract": "math_debugging_question"
+                            }
+                          },
+                          "status": "missing_assumptions",
+                          "reason": "At least one route-required assumption is missing.",
+                          "obligations": [
+                            {
+                              "id": "assumption-obligation-1",
+                              "lhs": "grad(logdet(S) + v.T @ solve(S, v))",
+                              "rhs": "well-posed under route assumptions",
+                              "assumptions": [],
+                              "status": "missing_assumptions",
+                              "reason": "At least one route-required assumption is missing.",
+                              "backend_attempts": [],
+                              "counterexample": null,
+                              "missing_assumptions": [
+                                {
+                                  "text": "matrix operand is square and invertible",
+                                  "status": "missing",
+                                  "source": "inverse or solve",
+                                  "necessity": "required_by_route",
+                                  "used_by": [
+                                    "inverse_invertible"
+                                  ]
+                                },
+                                {
+                                  "text": "matrix operand is square with valid determinant domain, usually positive definite for logdet",
+                                  "status": "missing",
+                                  "source": "determinant or logdet",
+                                  "necessity": "required_by_route",
+                                  "used_by": [
+                                    "logdet_domain"
+                                  ]
+                                },
+                                {
+                                  "text": "target function is differentiable on the stated domain",
+                                  "status": "missing",
+                                  "source": "derivative",
+                                  "necessity": "required_by_route",
+                                  "used_by": [
+                                    "differentiability"
+                                  ]
+                                },
+                                {
+                                  "text": "matrix dimensions are conformable for the operation",
+                                  "status": "missing",
+                                  "source": "matrix operation",
+                                  "necessity": "required_by_route",
+                                  "used_by": [
+                                    "matrix_conformability"
+                                  ]
+                                }
+                              ],
+                              "provenance": {}
+                            }
+                          ],
+                          "assumptions": [
+                            {
+                              "text": "matrix operand is square and invertible",
+                              "status": "missing",
+                              "source": "inverse or solve",
+                              "necessity": "required_by_route",
+                              "used_by": [
+                                "inverse_invertible"
+                              ]
+                            },
+                            {
+                              "text": "matrix operand is square with valid determinant domain, usually positive definite for logdet",
+                              "status": "missing",
+                              "source": "determinant or logdet",
+                              "necessity": "required_by_route",
+                              "used_by": [
+                                "logdet_domain"
+                              ]
+                            },
+                            {
+                              "text": "target function is differentiable on the stated domain",
+                              "status": "missing",
+                              "source": "derivative",
+                              "necessity": "required_by_route",
+                              "used_by": [
+                                "differentiability"
+                              ]
+                            },
+                            {
+                              "text": "matrix dimensions are conformable for the operation",
+                              "status": "missing",
+                              "source": "matrix operation",
+                              "necessity": "required_by_route",
+                              "used_by": [
+                                "matrix_conformability"
+                              ]
+                            }
+                          ],
+                          "backend_attempts": [],
+                          "counterexamples": [],
+                          "actions": [
+                            {
+                              "kind": "state_or_verify_assumption",
+                              "assumption": "matrix operand is square and invertible",
+                              "source": "inverse or solve"
+                            },
+                            {
+                              "kind": "state_or_verify_assumption",
+                              "assumption": "matrix operand is square with valid determinant domain, usually positive definite for logdet",
+                              "source": "determinant or logdet"
+                            },
+                            {
+                              "kind": "state_or_verify_assumption",
+                              "assumption": "target function is differentiable on the stated domain",
+                              "source": "derivative"
+                            },
+                            {
+                              "kind": "state_or_verify_assumption",
+                              "assumption": "matrix dimensions are conformable for the operation",
+                              "source": "matrix operation"
+                            }
+                          ],
+                          "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                          "metadata": {
+                            "schema_version": "1.0",
+                            "contract": "math_debugging_workbench_result"
+                          }
+                        },
+                        "metadata": {
+                          "schema_version": "1.0",
+                          "contract": "assumption_discovery_result"
+                        }
+                      }
+                    }
+                  ],
+                  "evidence_classes": [
+                    "missing_assumption"
+                  ],
+                  "certification_source": "none",
+                  "veto_reasons": [],
+                  "assumptions": [
+                    {
+                      "text": "matrix operand is square and invertible",
+                      "status": "missing",
+                      "source": "inverse or solve",
+                      "necessity": "required_by_route",
+                      "used_by": [
+                        "inverse_invertible"
+                      ]
+                    },
+                    {
+                      "text": "matrix operand is square with valid determinant domain, usually positive definite for logdet",
+                      "status": "missing",
+                      "source": "determinant or logdet",
+                      "necessity": "required_by_route",
+                      "used_by": [
+                        "logdet_domain"
+                      ]
+                    },
+                    {
+                      "text": "target function is differentiable on the stated domain",
+                      "status": "missing",
+                      "source": "derivative",
+                      "necessity": "required_by_route",
+                      "used_by": [
+                        "differentiability"
+                      ]
+                    },
+                    {
+                      "text": "matrix dimensions are conformable for the operation",
+                      "status": "missing",
+                      "source": "matrix operation",
+                      "necessity": "required_by_route",
+                      "used_by": [
+                        "matrix_conformability"
+                      ]
+                    }
+                  ],
+                  "counterexamples": [],
+                  "actions": [
+                    {
+                      "code": "human_review",
+                      "description": "Review whether route-required assumptions are sufficient for the intended mathematical setting."
+                    }
+                  ],
+                  "non_claims": [
+                    {
+                      "code": "general_theorem_proving_not_claimed",
+                      "text": "This scoped workflow result does not claim general theorem-proving ability."
+                    },
+                    {
+                      "code": "release_readiness_not_claimed",
+                      "text": "This scoped workflow result does not claim release readiness."
+                    },
+                    {
+                      "code": "route_assumptions_not_global_minimality",
+                      "text": "Route-required assumptions are not claimed to be globally minimal."
+                    }
+                  ],
+                  "metadata": {
+                    "schema_version": "1.0",
+                    "contract": "high_level_workflow_result"
+                  }
+                }
+              ],
+              "actions": [
+                {
+                  "code": "human_review",
+                  "description": "Review whether route-required assumptions are sufficient for the intended mathematical setting."
+                }
+              ],
+              "certification_boundary": "This packet is an evidence bundle, not a proof certificate. Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+              "metadata": {
+                "schema_version": "1.0",
+                "contract": "math_review_packet"
+              }
+            }
+          }
+        ],
+        "evidence_classes": [
+          "review_packet"
+        ],
+        "certification_source": "none",
+        "veto_reasons": [],
+        "assumptions": [],
+        "counterexamples": [],
+        "actions": [
+          {
+            "code": "human_review",
+            "description": "Review the packet and nested evidence boundaries."
+          },
+          {
+            "code": "human_review",
+            "description": "Inspect nested evidence, non-claims, and action items."
+          }
+        ],
+        "non_claims": [
+          {
+            "code": "diagnostic_evidence_not_proof",
+            "text": "Diagnostic evidence is not a proof certificate."
+          },
+          {
+            "code": "general_theorem_proving_not_claimed",
+            "text": "This scoped workflow result does not claim general theorem-proving ability."
+          },
+          {
+            "code": "release_readiness_not_claimed",
+            "text": "This scoped workflow result does not claim release readiness."
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "high_level_workflow_result"
+        }
+      },
+      "forbidden_claims": [
+        "Review packet is a certificate",
+        "Full score derivation proved"
+      ]
+    },
+    {
+      "case_id": "RLHLB-08-hmc-value-only-boundary",
+      "workflow": "prove_or_counterexample",
+      "question": "Does a value-only filtering likelihood route prove HMC production readiness?",
+      "observed_status": "refuted",
+      "observed_evidence_classes": [
+        "backend_counterexample"
+      ],
+      "certification_source": "backend",
+      "expected_status_family": "insufficient_evidence",
+      "expected_family_match": false,
+      "failure_class": "unexpected_status_family",
+      "boundary_checks": {
+        "global_non_claims_present": true,
+        "backend_unavailable_not_refutation": true,
+        "not_encodable_not_false": true,
+        "structural_not_proof": true,
+        "review_packet_not_certificate": true,
+        "refutation_has_counterexample_or_gap": true,
+        "non_certifying_status_has_no_backend_certification": true,
+        "inconclusive_has_veto_or_action": true,
+        "certifying_evidence_not_silently_demoted": true
+      },
+      "route_reference": {
+        "source_adapter_state": "not_applicable",
+        "source_adapter_route": null,
+        "symbolic_backend_state": "available",
+        "formal_backend_state": "available_requires_explicit_source",
+        "code_equation_route_state": "not_applicable",
+        "residual_unresolved": [
+          "negative_control_requires_boundary_preservation"
+        ]
+      },
+      "packet_summary": {
+        "fields_present": [
+          "actions",
+          "assumptions",
+          "backend_checks",
+          "counterexamples",
+          "derivation_proof_steps",
+          "evidence_classes",
+          "gaps",
+          "non_claims",
+          "question",
+          "route_availability",
+          "source_anchors"
+        ],
+        "source_anchor_count": 1,
+        "gap_count": 1,
+        "non_claim_count": 5
+      },
+      "result": {
+        "status": "refuted",
+        "workflow": "prove_or_counterexample",
+        "question": "Can we prove value_only_filtering_likelihood_proves_hmc_readiness?",
+        "claim_class": "proof",
+        "answer": "A bounded counterexample refuted the scoped claim.",
+        "evidence": [
+          {
+            "id": "prove_or_counterexample:backend-counterexample",
+            "class": "backend_counterexample",
+            "source": "backend",
+            "summary": "SymPy could not certify or refute this obligation by simplification.",
+            "low_level": {
+              "status": "refuted",
+              "reason": "A bounded counterexample refuted the scoped claim.",
+              "claim": "value_only_filtering_likelihood_proves_hmc_readiness",
+              "lhs": "value_only_likelihood",
+              "rhs": "hmc_production_readiness",
+              "route_decision": {
+                "route": "symbolic",
+                "status": "unknown",
+                "reason": "SymPy could not certify or refute this obligation by simplification.",
+                "backend_attempt": {
+                  "backend": "sympy",
+                  "status": "unknown",
+                  "reason": "SymPy could not certify or refute this obligation by simplification.",
+                  "evidence": [
+                    {
+                      "kind": "backend_unknown",
+                      "backend": "sympy",
+                      "backend_status": "unknown",
+                      "reason": "SymPy could not certify or refute this obligation by simplification.",
+                      "normalized_lhs": "value_only_likelihood",
+                      "normalized_rhs": "hmc_production_readiness",
+                      "readable_lhs": "value_only_likelihood",
+                      "readable_rhs": "hmc_production_readiness",
+                      "assumptions": [],
+                      "severity": "diagnostic",
+                      "backend_expression": "-hmc_production_readiness + value_only_likelihood"
+                    }
+                  ],
+                  "severity": "diagnostic"
+                },
+                "obligation": {
+                  "id": "route-obligation-1",
+                  "lhs": "value_only_likelihood",
+                  "rhs": "hmc_production_readiness",
+                  "assumptions": [],
+                  "status": "unknown",
+                  "reason": "SymPy could not certify or refute this obligation by simplification.",
+                  "backend_attempts": [
+                    {
+                      "backend": "sympy",
+                      "status": "unknown",
+                      "reason": "SymPy could not certify or refute this obligation by simplification.",
+                      "evidence": [
+                        {
+                          "kind": "backend_unknown",
+                          "backend": "sympy",
+                          "backend_status": "unknown",
+                          "reason": "SymPy could not certify or refute this obligation by simplification.",
+                          "normalized_lhs": "value_only_likelihood",
+                          "normalized_rhs": "hmc_production_readiness",
+                          "readable_lhs": "value_only_likelihood",
+                          "readable_rhs": "hmc_production_readiness",
+                          "assumptions": [],
+                          "severity": "diagnostic",
+                          "backend_expression": "-hmc_production_readiness + value_only_likelihood"
+                        }
+                      ],
+                      "severity": "diagnostic"
+                    }
+                  ],
+                  "counterexample": null,
+                  "missing_assumptions": [],
+                  "provenance": {}
+                },
+                "result": {
+                  "question": {
+                    "question_type": "route_obligation",
+                    "target": "value_only_likelihood == hmc_production_readiness",
+                    "givens": [],
+                    "assumptions": [],
+                    "context": {
+                      "route": "symbolic"
+                    },
+                    "metadata": {
+                      "schema_version": "1.0",
+                      "contract": "math_debugging_question"
+                    }
+                  },
+                  "status": "unknown",
+                  "reason": "SymPy could not certify or refute this obligation by simplification.",
+                  "obligations": [
+                    {
+                      "id": "route-obligation-1",
+                      "lhs": "value_only_likelihood",
+                      "rhs": "hmc_production_readiness",
+                      "assumptions": [],
+                      "status": "unknown",
+                      "reason": "SymPy could not certify or refute this obligation by simplification.",
+                      "backend_attempts": [
+                        {
+                          "backend": "sympy",
+                          "status": "unknown",
+                          "reason": "SymPy could not certify or refute this obligation by simplification.",
+                          "evidence": [
+                            {
+                              "kind": "backend_unknown",
+                              "backend": "sympy",
+                              "backend_status": "unknown",
+                              "reason": "SymPy could not certify or refute this obligation by simplification.",
+                              "normalized_lhs": "value_only_likelihood",
+                              "normalized_rhs": "hmc_production_readiness",
+                              "readable_lhs": "value_only_likelihood",
+                              "readable_rhs": "hmc_production_readiness",
+                              "assumptions": [],
+                              "severity": "diagnostic",
+                              "backend_expression": "-hmc_production_readiness + value_only_likelihood"
+                            }
+                          ],
+                          "severity": "diagnostic"
+                        }
+                      ],
+                      "counterexample": null,
+                      "missing_assumptions": [],
+                      "provenance": {}
+                    }
+                  ],
+                  "assumptions": [],
+                  "backend_attempts": [
+                    {
+                      "backend": "sympy",
+                      "status": "unknown",
+                      "reason": "SymPy could not certify or refute this obligation by simplification.",
+                      "evidence": [
+                        {
+                          "kind": "backend_unknown",
+                          "backend": "sympy",
+                          "backend_status": "unknown",
+                          "reason": "SymPy could not certify or refute this obligation by simplification.",
+                          "normalized_lhs": "value_only_likelihood",
+                          "normalized_rhs": "hmc_production_readiness",
+                          "readable_lhs": "value_only_likelihood",
+                          "readable_rhs": "hmc_production_readiness",
+                          "assumptions": [],
+                          "severity": "diagnostic",
+                          "backend_expression": "-hmc_production_readiness + value_only_likelihood"
+                        }
+                      ],
+                      "severity": "diagnostic"
+                    }
+                  ],
+                  "counterexamples": [],
+                  "actions": [
+                    {
+                      "kind": "review_or_reencode",
+                      "route": "symbolic"
+                    }
+                  ],
+                  "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                  "metadata": {
+                    "schema_version": "1.0",
+                    "contract": "math_debugging_workbench_result"
+                  }
+                },
+                "metadata": {
+                  "schema_version": "1.0",
+                  "contract": "math_debugging_route_decision"
+                }
+              },
+              "counterexample_search": {
+                "status": "refuted",
+                "reason": "A finite-domain scalar counterexample was found.",
+                "lhs": "value_only_likelihood",
+                "rhs": "hmc_production_readiness",
+                "backend": "sympy_finite_domain",
+                "search_space": {
+                  "kind": "finite_integer_domain",
+                  "domain": [
+                    -2,
+                    -1,
+                    0,
+                    1,
+                    2
+                  ],
+                  "status": "searched",
+                  "points": 2,
+                  "symbols": [
+                    "hmc_production_readiness",
+                    "value_only_likelihood"
+                  ]
+                },
+                "counterexample": {
+                  "status": "found",
+                  "assignments": {
+                    "hmc_production_readiness": -2,
+                    "value_only_likelihood": -1
+                  },
+                  "lhs_value": "-1",
+                  "rhs_value": "-2",
+                  "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                  "backend": "sympy_finite_domain",
+                  "seed": null
+                },
+                "workbench_result": {
+                  "question": {
+                    "question_type": "find_counterexample",
+                    "target": "value_only_likelihood == hmc_production_readiness",
+                    "givens": [],
+                    "assumptions": [],
+                    "context": {
+                      "domain": [
+                        -2,
+                        -1,
+                        0,
+                        1,
+                        2
+                      ]
+                    },
+                    "metadata": {
+                      "schema_version": "1.0",
+                      "contract": "math_debugging_question"
+                    }
+                  },
+                  "status": "refuted",
+                  "reason": "A finite-domain scalar counterexample was found.",
+                  "obligations": [
+                    {
+                      "id": "counterexample-obligation-1",
+                      "lhs": "value_only_likelihood",
+                      "rhs": "hmc_production_readiness",
+                      "assumptions": [],
+                      "status": "refuted",
+                      "reason": "A finite-domain scalar counterexample was found.",
+                      "backend_attempts": [
+                        {
+                          "backend": "sympy_finite_domain",
+                          "status": "refuted",
+                          "reason": "A finite-domain scalar counterexample was found.",
+                          "evidence": [],
+                          "severity": "blocking"
+                        }
+                      ],
+                      "counterexample": {
+                        "status": "found",
+                        "assignments": {
+                          "hmc_production_readiness": -2,
+                          "value_only_likelihood": -1
+                        },
+                        "lhs_value": "-1",
+                        "rhs_value": "-2",
+                        "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                        "backend": "sympy_finite_domain",
+                        "seed": null
+                      },
+                      "missing_assumptions": [],
+                      "provenance": {}
+                    }
+                  ],
+                  "assumptions": [],
+                  "backend_attempts": [
+                    {
+                      "backend": "sympy_finite_domain",
+                      "status": "refuted",
+                      "reason": "A finite-domain scalar counterexample was found.",
+                      "evidence": [],
+                      "severity": "blocking"
+                    }
+                  ],
+                  "counterexamples": [
+                    {
+                      "status": "found",
+                      "assignments": {
+                        "hmc_production_readiness": -2,
+                        "value_only_likelihood": -1
+                      },
+                      "lhs_value": "-1",
+                      "rhs_value": "-2",
+                      "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                      "backend": "sympy_finite_domain",
+                      "seed": null
+                    }
+                  ],
+                  "actions": [],
+                  "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                  "metadata": {
+                    "schema_version": "1.0",
+                    "contract": "math_debugging_workbench_result"
+                  }
+                },
+                "metadata": {
+                  "schema_version": "1.0",
+                  "contract": "counterexample_search_result"
+                }
+              },
+              "workbench_result": {
+                "question": {
+                  "question_type": "prove_or_refute",
+                  "target": "value_only_filtering_likelihood_proves_hmc_readiness",
+                  "givens": [],
+                  "assumptions": [],
+                  "context": {
+                    "backend": "auto"
+                  },
+                  "metadata": {
+                    "schema_version": "1.0",
+                    "contract": "math_debugging_question"
+                  }
+                },
+                "status": "refuted",
+                "reason": "A bounded counterexample refuted the scoped claim.",
+                "obligations": [
+                  {
+                    "id": "prove-target-1",
+                    "lhs": "value_only_likelihood",
+                    "rhs": "hmc_production_readiness",
+                    "assumptions": [],
+                    "status": "refuted",
+                    "reason": "A bounded counterexample refuted the scoped claim.",
+                    "backend_attempts": [
+                      {
+                        "backend": "sympy",
+                        "status": "unknown",
+                        "reason": "SymPy could not certify or refute this obligation by simplification.",
+                        "evidence": [
+                          {
+                            "kind": "backend_unknown",
+                            "backend": "sympy",
+                            "backend_status": "unknown",
+                            "reason": "SymPy could not certify or refute this obligation by simplification.",
+                            "normalized_lhs": "value_only_likelihood",
+                            "normalized_rhs": "hmc_production_readiness",
+                            "readable_lhs": "value_only_likelihood",
+                            "readable_rhs": "hmc_production_readiness",
+                            "assumptions": [],
+                            "severity": "diagnostic",
+                            "backend_expression": "-hmc_production_readiness + value_only_likelihood"
+                          }
+                        ],
+                        "severity": "diagnostic"
+                      }
+                    ],
+                    "counterexample": {
+                      "status": "found",
+                      "assignments": {
+                        "hmc_production_readiness": -2,
+                        "value_only_likelihood": -1
+                      },
+                      "lhs_value": "-1",
+                      "rhs_value": "-2",
+                      "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                      "backend": "sympy_finite_domain",
+                      "seed": null
+                    },
+                    "missing_assumptions": [],
+                    "provenance": {}
+                  }
+                ],
+                "assumptions": [],
+                "backend_attempts": [
+                  {
+                    "backend": "sympy",
+                    "status": "unknown",
+                    "reason": "SymPy could not certify or refute this obligation by simplification.",
+                    "evidence": [
+                      {
+                        "kind": "backend_unknown",
+                        "backend": "sympy",
+                        "backend_status": "unknown",
+                        "reason": "SymPy could not certify or refute this obligation by simplification.",
+                        "normalized_lhs": "value_only_likelihood",
+                        "normalized_rhs": "hmc_production_readiness",
+                        "readable_lhs": "value_only_likelihood",
+                        "readable_rhs": "hmc_production_readiness",
+                        "assumptions": [],
+                        "severity": "diagnostic",
+                        "backend_expression": "-hmc_production_readiness + value_only_likelihood"
+                      }
+                    ],
+                    "severity": "diagnostic"
+                  }
+                ],
+                "counterexamples": [
+                  {
+                    "status": "found",
+                    "assignments": {
+                      "hmc_production_readiness": -2,
+                      "value_only_likelihood": -1
+                    },
+                    "lhs_value": "-1",
+                    "rhs_value": "-2",
+                    "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                    "backend": "sympy_finite_domain",
+                    "seed": null
+                  }
+                ],
+                "actions": [],
+                "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                "metadata": {
+                  "schema_version": "1.0",
+                  "contract": "math_debugging_workbench_result"
+                }
+              },
+              "metadata": {
+                "schema_version": "1.0",
+                "contract": "prove_or_refute_result"
+              }
+            }
+          }
+        ],
+        "evidence_classes": [
+          "backend_counterexample"
+        ],
+        "certification_source": "backend",
+        "veto_reasons": [],
+        "assumptions": [],
+        "counterexamples": [
+          {
+            "status": "found",
+            "assignments": {
+              "hmc_production_readiness": -2,
+              "value_only_likelihood": -1
+            },
+            "lhs_value": "-1",
+            "rhs_value": "-2",
+            "reason": "Finite-domain substitution produced different lhs/rhs values.",
+            "backend": "sympy_finite_domain",
+            "seed": null
+          }
+        ],
+        "actions": [
+          {
+            "code": "human_review",
+            "description": "Review proof scope, assumptions, and backend route before reusing the result."
+          }
+        ],
+        "non_claims": [
+          {
+            "code": "general_theorem_proving_not_claimed",
+            "text": "This scoped workflow result does not claim general theorem-proving ability."
+          },
+          {
+            "code": "release_readiness_not_claimed",
+            "text": "This scoped workflow result does not claim release readiness."
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "high_level_workflow_result"
+        }
+      },
+      "forbidden_claims": [
+        "HMC production readiness",
+        "TFP/NUTS mathematical criticism",
+        "Sampler correctness"
+      ]
+    },
+    {
+      "case_id": "RLHLB-09-affine-recovery-assumption-limit",
+      "workflow": "derive_from",
+      "question": "Can neural-solver approximation guarantees be derived from affine recovery text alone?",
+      "observed_status": "refuted",
+      "observed_evidence_classes": [
+        "backend_counterexample"
+      ],
+      "certification_source": "backend",
+      "expected_status_family": "missing_assumptions",
+      "expected_family_match": false,
+      "failure_class": "unexpected_status_family",
+      "boundary_checks": {
+        "global_non_claims_present": true,
+        "backend_unavailable_not_refutation": true,
+        "not_encodable_not_false": true,
+        "structural_not_proof": true,
+        "review_packet_not_certificate": true,
+        "refutation_has_counterexample_or_gap": true,
+        "non_certifying_status_has_no_backend_certification": true,
+        "inconclusive_has_veto_or_action": true,
+        "certifying_evidence_not_silently_demoted": true
+      },
+      "route_reference": {
+        "source_adapter_state": "not_applicable",
+        "source_adapter_route": null,
+        "symbolic_backend_state": "available",
+        "formal_backend_state": "not_applicable",
+        "code_equation_route_state": "not_applicable",
+        "residual_unresolved": [
+          "negative_control_requires_boundary_preservation"
+        ]
+      },
+      "packet_summary": {
+        "fields_present": [
+          "actions",
+          "assumptions",
+          "backend_checks",
+          "counterexamples",
+          "derivation_proof_steps",
+          "evidence_classes",
+          "gaps",
+          "non_claims",
+          "question",
+          "route_availability",
+          "source_anchors"
+        ],
+        "source_anchor_count": 1,
+        "gap_count": 1,
+        "non_claim_count": 5
+      },
+      "result": {
+        "status": "refuted",
+        "workflow": "derive_from",
+        "question": "Can I derive affine_recovery_text = uniform_neural_solver_bound from the supplied givens?",
+        "claim_class": "derivation",
+        "answer": "A bounded counterexample refuted the target obligation.",
+        "evidence": [
+          {
+            "id": "derive_from:backend-counterexample",
+            "class": "backend_counterexample",
+            "source": "backend",
+            "summary": "SymPy could not certify or refute this obligation by simplification.",
+            "low_level": {
+              "status": "refuted",
+              "reason": "A bounded counterexample refuted the target obligation.",
+              "givens": [
+                "affine recovery text"
+              ],
+              "target": "affine_recovery_text = uniform_neural_solver_bound",
+              "lhs": "affine_recovery_text",
+              "rhs": "uniform_neural_solver_bound",
+              "route_decision": {
+                "route": "symbolic",
+                "status": "unknown",
+                "reason": "SymPy could not certify or refute this obligation by simplification.",
+                "backend_attempt": {
+                  "backend": "sympy",
+                  "status": "unknown",
+                  "reason": "SymPy could not certify or refute this obligation by simplification.",
+                  "evidence": [
+                    {
+                      "kind": "backend_unknown",
+                      "backend": "sympy",
+                      "backend_status": "unknown",
+                      "reason": "SymPy could not certify or refute this obligation by simplification.",
+                      "normalized_lhs": "affine_recovery_text",
+                      "normalized_rhs": "uniform_neural_solver_bound",
+                      "readable_lhs": "affine_recovery_text",
+                      "readable_rhs": "uniform_neural_solver_bound",
+                      "assumptions": [],
+                      "severity": "diagnostic",
+                      "backend_expression": "affine_recovery_text - uniform_neural_solver_bound"
+                    }
+                  ],
+                  "severity": "diagnostic"
+                },
+                "obligation": {
+                  "id": "route-obligation-1",
+                  "lhs": "affine_recovery_text",
+                  "rhs": "uniform_neural_solver_bound",
+                  "assumptions": [],
+                  "status": "unknown",
+                  "reason": "SymPy could not certify or refute this obligation by simplification.",
+                  "backend_attempts": [
+                    {
+                      "backend": "sympy",
+                      "status": "unknown",
+                      "reason": "SymPy could not certify or refute this obligation by simplification.",
+                      "evidence": [
+                        {
+                          "kind": "backend_unknown",
+                          "backend": "sympy",
+                          "backend_status": "unknown",
+                          "reason": "SymPy could not certify or refute this obligation by simplification.",
+                          "normalized_lhs": "affine_recovery_text",
+                          "normalized_rhs": "uniform_neural_solver_bound",
+                          "readable_lhs": "affine_recovery_text",
+                          "readable_rhs": "uniform_neural_solver_bound",
+                          "assumptions": [],
+                          "severity": "diagnostic",
+                          "backend_expression": "affine_recovery_text - uniform_neural_solver_bound"
+                        }
+                      ],
+                      "severity": "diagnostic"
+                    }
+                  ],
+                  "counterexample": null,
+                  "missing_assumptions": [],
+                  "provenance": {}
+                },
+                "result": {
+                  "question": {
+                    "question_type": "route_obligation",
+                    "target": "affine_recovery_text == uniform_neural_solver_bound",
+                    "givens": [],
+                    "assumptions": [],
+                    "context": {
+                      "route": "symbolic"
+                    },
+                    "metadata": {
+                      "schema_version": "1.0",
+                      "contract": "math_debugging_question"
+                    }
+                  },
+                  "status": "unknown",
+                  "reason": "SymPy could not certify or refute this obligation by simplification.",
+                  "obligations": [
+                    {
+                      "id": "route-obligation-1",
+                      "lhs": "affine_recovery_text",
+                      "rhs": "uniform_neural_solver_bound",
+                      "assumptions": [],
+                      "status": "unknown",
+                      "reason": "SymPy could not certify or refute this obligation by simplification.",
+                      "backend_attempts": [
+                        {
+                          "backend": "sympy",
+                          "status": "unknown",
+                          "reason": "SymPy could not certify or refute this obligation by simplification.",
+                          "evidence": [
+                            {
+                              "kind": "backend_unknown",
+                              "backend": "sympy",
+                              "backend_status": "unknown",
+                              "reason": "SymPy could not certify or refute this obligation by simplification.",
+                              "normalized_lhs": "affine_recovery_text",
+                              "normalized_rhs": "uniform_neural_solver_bound",
+                              "readable_lhs": "affine_recovery_text",
+                              "readable_rhs": "uniform_neural_solver_bound",
+                              "assumptions": [],
+                              "severity": "diagnostic",
+                              "backend_expression": "affine_recovery_text - uniform_neural_solver_bound"
+                            }
+                          ],
+                          "severity": "diagnostic"
+                        }
+                      ],
+                      "counterexample": null,
+                      "missing_assumptions": [],
+                      "provenance": {}
+                    }
+                  ],
+                  "assumptions": [],
+                  "backend_attempts": [
+                    {
+                      "backend": "sympy",
+                      "status": "unknown",
+                      "reason": "SymPy could not certify or refute this obligation by simplification.",
+                      "evidence": [
+                        {
+                          "kind": "backend_unknown",
+                          "backend": "sympy",
+                          "backend_status": "unknown",
+                          "reason": "SymPy could not certify or refute this obligation by simplification.",
+                          "normalized_lhs": "affine_recovery_text",
+                          "normalized_rhs": "uniform_neural_solver_bound",
+                          "readable_lhs": "affine_recovery_text",
+                          "readable_rhs": "uniform_neural_solver_bound",
+                          "assumptions": [],
+                          "severity": "diagnostic",
+                          "backend_expression": "affine_recovery_text - uniform_neural_solver_bound"
+                        }
+                      ],
+                      "severity": "diagnostic"
+                    }
+                  ],
+                  "counterexamples": [],
+                  "actions": [
+                    {
+                      "kind": "review_or_reencode",
+                      "route": "symbolic"
+                    }
+                  ],
+                  "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                  "metadata": {
+                    "schema_version": "1.0",
+                    "contract": "math_debugging_workbench_result"
+                  }
+                },
+                "metadata": {
+                  "schema_version": "1.0",
+                  "contract": "math_debugging_route_decision"
+                }
+              },
+              "assumption_diagnostic": {
+                "status": "unknown",
+                "reason": "No route-required assumptions were detected by the bounded rule set.",
+                "target": "affine_recovery_text = uniform_neural_solver_bound",
+                "provided_assumptions": [],
+                "assumptions": [],
+                "missing_assumptions": [],
+                "workbench_result": {
+                  "question": {
+                    "question_type": "assumptions_required",
+                    "target": "affine_recovery_text = uniform_neural_solver_bound",
+                    "givens": [],
+                    "assumptions": [],
+                    "context": {
+                      "necessity_boundary": "route-required or sufficient, not minimal necessity"
+                    },
+                    "metadata": {
+                      "schema_version": "1.0",
+                      "contract": "math_debugging_question"
+                    }
+                  },
+                  "status": "unknown",
+                  "reason": "No route-required assumptions were detected by the bounded rule set.",
+                  "obligations": [
+                    {
+                      "id": "assumption-obligation-1",
+                      "lhs": "affine_recovery_text = uniform_neural_solver_bound",
+                      "rhs": "well-posed under route assumptions",
+                      "assumptions": [],
+                      "status": "unknown",
+                      "reason": "No route-required assumptions were detected by the bounded rule set.",
+                      "backend_attempts": [],
+                      "counterexample": null,
+                      "missing_assumptions": [],
+                      "provenance": {}
+                    }
+                  ],
+                  "assumptions": [],
+                  "backend_attempts": [],
+                  "counterexamples": [],
+                  "actions": [],
+                  "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                  "metadata": {
+                    "schema_version": "1.0",
+                    "contract": "math_debugging_workbench_result"
+                  }
+                },
+                "metadata": {
+                  "schema_version": "1.0",
+                  "contract": "assumption_discovery_result"
+                }
+              },
+              "counterexample_search": {
+                "status": "refuted",
+                "reason": "A finite-domain scalar counterexample was found.",
+                "lhs": "affine_recovery_text",
+                "rhs": "uniform_neural_solver_bound",
+                "backend": "sympy_finite_domain",
+                "search_space": {
+                  "kind": "finite_integer_domain",
+                  "domain": [
+                    -2,
+                    -1,
+                    0,
+                    1,
+                    2
+                  ],
+                  "status": "searched",
+                  "points": 2,
+                  "symbols": [
+                    "affine_recovery_text",
+                    "uniform_neural_solver_bound"
+                  ]
+                },
+                "counterexample": {
+                  "status": "found",
+                  "assignments": {
+                    "affine_recovery_text": -2,
+                    "uniform_neural_solver_bound": -1
+                  },
+                  "lhs_value": "-2",
+                  "rhs_value": "-1",
+                  "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                  "backend": "sympy_finite_domain",
+                  "seed": null
+                },
+                "workbench_result": {
+                  "question": {
+                    "question_type": "find_counterexample",
+                    "target": "affine_recovery_text == uniform_neural_solver_bound",
+                    "givens": [],
+                    "assumptions": [],
+                    "context": {
+                      "domain": [
+                        -2,
+                        -1,
+                        0,
+                        1,
+                        2
+                      ]
+                    },
+                    "metadata": {
+                      "schema_version": "1.0",
+                      "contract": "math_debugging_question"
+                    }
+                  },
+                  "status": "refuted",
+                  "reason": "A finite-domain scalar counterexample was found.",
+                  "obligations": [
+                    {
+                      "id": "counterexample-obligation-1",
+                      "lhs": "affine_recovery_text",
+                      "rhs": "uniform_neural_solver_bound",
+                      "assumptions": [],
+                      "status": "refuted",
+                      "reason": "A finite-domain scalar counterexample was found.",
+                      "backend_attempts": [
+                        {
+                          "backend": "sympy_finite_domain",
+                          "status": "refuted",
+                          "reason": "A finite-domain scalar counterexample was found.",
+                          "evidence": [],
+                          "severity": "blocking"
+                        }
+                      ],
+                      "counterexample": {
+                        "status": "found",
+                        "assignments": {
+                          "affine_recovery_text": -2,
+                          "uniform_neural_solver_bound": -1
+                        },
+                        "lhs_value": "-2",
+                        "rhs_value": "-1",
+                        "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                        "backend": "sympy_finite_domain",
+                        "seed": null
+                      },
+                      "missing_assumptions": [],
+                      "provenance": {}
+                    }
+                  ],
+                  "assumptions": [],
+                  "backend_attempts": [
+                    {
+                      "backend": "sympy_finite_domain",
+                      "status": "refuted",
+                      "reason": "A finite-domain scalar counterexample was found.",
+                      "evidence": [],
+                      "severity": "blocking"
+                    }
+                  ],
+                  "counterexamples": [
+                    {
+                      "status": "found",
+                      "assignments": {
+                        "affine_recovery_text": -2,
+                        "uniform_neural_solver_bound": -1
+                      },
+                      "lhs_value": "-2",
+                      "rhs_value": "-1",
+                      "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                      "backend": "sympy_finite_domain",
+                      "seed": null
+                    }
+                  ],
+                  "actions": [],
+                  "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                  "metadata": {
+                    "schema_version": "1.0",
+                    "contract": "math_debugging_workbench_result"
+                  }
+                },
+                "metadata": {
+                  "schema_version": "1.0",
+                  "contract": "counterexample_search_result"
+                }
+              },
+              "workbench_result": {
+                "question": {
+                  "question_type": "derive_or_refute",
+                  "target": "affine_recovery_text = uniform_neural_solver_bound",
+                  "givens": [
+                    "affine recovery text"
+                  ],
+                  "assumptions": [],
+                  "context": {
+                    "backend": "auto"
+                  },
+                  "metadata": {
+                    "schema_version": "1.0",
+                    "contract": "math_debugging_question"
+                  }
+                },
+                "status": "refuted",
+                "reason": "A bounded counterexample refuted the target obligation.",
+                "obligations": [
+                  {
+                    "id": "derive-target-1",
+                    "lhs": "affine_recovery_text",
+                    "rhs": "uniform_neural_solver_bound",
+                    "assumptions": [],
+                    "status": "refuted",
+                    "reason": "A bounded counterexample refuted the target obligation.",
+                    "backend_attempts": [
+                      {
+                        "backend": "sympy",
+                        "status": "unknown",
+                        "reason": "SymPy could not certify or refute this obligation by simplification.",
+                        "evidence": [
+                          {
+                            "kind": "backend_unknown",
+                            "backend": "sympy",
+                            "backend_status": "unknown",
+                            "reason": "SymPy could not certify or refute this obligation by simplification.",
+                            "normalized_lhs": "affine_recovery_text",
+                            "normalized_rhs": "uniform_neural_solver_bound",
+                            "readable_lhs": "affine_recovery_text",
+                            "readable_rhs": "uniform_neural_solver_bound",
+                            "assumptions": [],
+                            "severity": "diagnostic",
+                            "backend_expression": "affine_recovery_text - uniform_neural_solver_bound"
+                          }
+                        ],
+                        "severity": "diagnostic"
+                      }
+                    ],
+                    "counterexample": {
+                      "status": "found",
+                      "assignments": {
+                        "affine_recovery_text": -2,
+                        "uniform_neural_solver_bound": -1
+                      },
+                      "lhs_value": "-2",
+                      "rhs_value": "-1",
+                      "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                      "backend": "sympy_finite_domain",
+                      "seed": null
+                    },
+                    "missing_assumptions": [],
+                    "provenance": {}
+                  }
+                ],
+                "assumptions": [],
+                "backend_attempts": [
+                  {
+                    "backend": "sympy",
+                    "status": "unknown",
+                    "reason": "SymPy could not certify or refute this obligation by simplification.",
+                    "evidence": [
+                      {
+                        "kind": "backend_unknown",
+                        "backend": "sympy",
+                        "backend_status": "unknown",
+                        "reason": "SymPy could not certify or refute this obligation by simplification.",
+                        "normalized_lhs": "affine_recovery_text",
+                        "normalized_rhs": "uniform_neural_solver_bound",
+                        "readable_lhs": "affine_recovery_text",
+                        "readable_rhs": "uniform_neural_solver_bound",
+                        "assumptions": [],
+                        "severity": "diagnostic",
+                        "backend_expression": "affine_recovery_text - uniform_neural_solver_bound"
+                      }
+                    ],
+                    "severity": "diagnostic"
+                  }
+                ],
+                "counterexamples": [
+                  {
+                    "status": "found",
+                    "assignments": {
+                      "affine_recovery_text": -2,
+                      "uniform_neural_solver_bound": -1
+                    },
+                    "lhs_value": "-2",
+                    "rhs_value": "-1",
+                    "reason": "Finite-domain substitution produced different lhs/rhs values.",
+                    "backend": "sympy_finite_domain",
+                    "seed": null
+                  }
+                ],
+                "actions": [],
+                "certification_boundary": "Only deterministic backend certificates for scoped obligations can certify mathematical claims. Supporting, diagnostic, and numeric evidence must not be promoted to proof.",
+                "metadata": {
+                  "schema_version": "1.0",
+                  "contract": "math_debugging_workbench_result"
+                }
+              },
+              "metadata": {
+                "schema_version": "1.0",
+                "contract": "derive_or_refute_result"
+              }
+            },
+            "givens": [
+              "affine recovery text"
+            ],
+            "explicit_assumptions": []
+          }
+        ],
+        "evidence_classes": [
+          "backend_counterexample"
+        ],
+        "certification_source": "backend",
+        "veto_reasons": [],
+        "assumptions": [],
+        "counterexamples": [
+          {
+            "status": "found",
+            "assignments": {
+              "affine_recovery_text": -2,
+              "uniform_neural_solver_bound": -1
+            },
+            "lhs_value": "-2",
+            "rhs_value": "-1",
+            "reason": "Finite-domain substitution produced different lhs/rhs values.",
+            "backend": "sympy_finite_domain",
+            "seed": null
+          }
+        ],
+        "actions": [
+          {
+            "code": "human_review",
+            "description": "Check whether the recorded givens should be promoted to explicit route assumptions.",
+            "givens": [
+              "affine recovery text"
+            ],
+            "explicit_assumptions": []
+          }
+        ],
+        "non_claims": [
+          {
+            "code": "general_theorem_proving_not_claimed",
+            "text": "This scoped workflow result does not claim general theorem-proving ability."
+          },
+          {
+            "code": "givens_not_formal_assumptions",
+            "text": "givens not formal assumptions"
+          },
+          {
+            "code": "release_readiness_not_claimed",
+            "text": "This scoped workflow result does not claim release readiness."
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "high_level_workflow_result"
+        }
+      },
+      "forbidden_claims": [
+        "Rigorous uniform approximation bound",
+        "Neural solver correctness",
+        "Pricing validity"
+      ]
+    }
+  ],
+  "findings": [],
+  "summary": {
+    "case_total": 9,
+    "boundary_violations": 0,
+    "unexpected_status_family": 2,
+    "baseline_evaluable": 6,
+    "correct_abstention_or_route_gap": 1,
+    "by_failure_class": {
+      "baseline_evaluable": 6,
+      "correct_abstention_or_route_gap": 1,
+      "unexpected_status_family": 2
+    },
+    "by_status": {
+      "diagnostic_only": 1,
+      "inconclusive": 1,
+      "missing_assumptions": 2,
+      "proved": 1,
+      "refuted": 3,
+      "structural_mismatch": 1
+    },
+    "aggregate_accuracy": null
+  },
+  "policy_boundary": [
+    "This is the pre-repair current-workflow baseline over the local frozen benchmark.",
+    "Aggregate rates are diagnostic only and are not promotion criteria.",
+    "Baseline results are not release-readiness, public benchmark validity, scientific validation, production correctness, or broad theorem-proving evidence.",
+    "Phase 2 manifest and Phase 3 route ledger must remain frozen while this baseline is interpreted."
+  ],
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "real_local_high_level_workflow_baseline_report"
+  }
+}

@@ -1,0 +1,29 @@
+# Downstream-Agent Usefulness V2 Candidate Prompt
+
+Condition B: compact machine evidence only. Human framing, recommended next actions, and narrative answer scaffolding are intentionally absent.
+
+Case: V2-DD-01-first-gap-product-rule - First derivation gap in product-rule trace
+Workflow: debug_derivation
+
+Task
+Where does the derivation first fail? State the missing condition or invalid transformation and avoid judging later dependent steps as the first failure.
+
+Bounded Context
+Localize the first failing step in a derivation where later steps also look suspicious but depend on the earlier invalid move.
+
+Compact Machine Evidence
+- trace_step_1: h(theta) = a(theta) b(theta)
+- trace_step_2: derivative written as a_prime(theta) b(theta)
+- trace_step_3: stationarity condition is introduced after Step 2
+- trace_step_4: sign changes after substitution using the stationarity condition
+
+Response Fields
+- local_answer
+- evidence_used
+- assumptions_or_gaps
+- boundary_notes
+
+Non-Claims
+- Use only the information in this prompt.
+- Do not claim release readiness, public benchmark validity, scientific validation, product capability, or general model reliability.
+- Do not treat diagnostic checks as proof beyond their stated scope.

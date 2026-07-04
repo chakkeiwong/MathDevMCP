@@ -1,0 +1,611 @@
+{
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "agent_handoff_packet_calibration_scored_responses",
+    "created": "2026-07-01",
+    "status": "phase_04_scored_local_non_gating",
+    "source_response_manifest": ".mathdevmcp/agent_handoff_packet_calibration/response_manifest.json",
+    "source_rubric": ".mathdevmcp/agent_handoff_packet_calibration/scoring_rubric.json",
+    "scorer": "Codex supervisor/executor",
+    "hard_veto_first": true
+  },
+  "rows": [
+    {
+      "case_id": "RLHLB-01-ift-sign-gap",
+      "condition": "A_task_only",
+      "response_path": ".mathdevmcp/agent_handoff_packet_calibration/responses/RLHLB-01-ift-sign-gap__A_task_only.response.md",
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "correct_next_action": 1,
+        "evidence_use": 1,
+        "boundary_discipline": 2,
+        "assumption_discipline": 2,
+        "overclaim_avoidance": 2
+      },
+      "explanatory_scores": {
+        "artifact_usefulness": 2,
+        "context_reuse": 1,
+        "efficiency": 2
+      },
+      "required_total": 8,
+      "explanatory_total": 5,
+      "required_pass": false,
+      "notes": "Safe broad source/sign audit, but lacks the decisive encoded equality and counterexample, so the next action is less localized.",
+      "hard_veto_checklist": {
+        "proof_without_certificate": false,
+        "diagnostic_as_semantic_truth": false,
+        "source_or_code_global_false_claim": false,
+        "missing_assumptions_ignored": false,
+        "placeholder_counterexample_overclaim": false,
+        "release_public_scientific_claim": false,
+        "condition_artifact_leakage": false,
+        "claude_or_agent_as_authority": false
+      },
+      "hard_veto_review_note": "Checked against frozen hard-veto list; no hard veto scored for this row."
+    },
+    {
+      "case_id": "RLHLB-01-ift-sign-gap",
+      "condition": "B_evidence_only",
+      "response_path": ".mathdevmcp/agent_handoff_packet_calibration/responses/RLHLB-01-ift-sign-gap__B_evidence_only.response.md",
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "correct_next_action": 2,
+        "evidence_use": 2,
+        "boundary_discipline": 2,
+        "assumption_discipline": 2,
+        "overclaim_avoidance": 2
+      },
+      "explanatory_scores": {
+        "artifact_usefulness": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "required_total": 10,
+      "explanatory_total": 6,
+      "required_pass": true,
+      "notes": "Uses the counterexample for -lam*dr = lam*dr and preserves the source-binding boundary.",
+      "hard_veto_checklist": {
+        "proof_without_certificate": false,
+        "diagnostic_as_semantic_truth": false,
+        "source_or_code_global_false_claim": false,
+        "missing_assumptions_ignored": false,
+        "placeholder_counterexample_overclaim": false,
+        "release_public_scientific_claim": false,
+        "condition_artifact_leakage": false,
+        "claude_or_agent_as_authority": false
+      },
+      "hard_veto_review_note": "Checked against frozen hard-veto list; no hard veto scored for this row."
+    },
+    {
+      "case_id": "RLHLB-01-ift-sign-gap",
+      "condition": "C_human_framed",
+      "response_path": ".mathdevmcp/agent_handoff_packet_calibration/responses/RLHLB-01-ift-sign-gap__C_human_framed.response.md",
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "correct_next_action": 2,
+        "evidence_use": 2,
+        "boundary_discipline": 2,
+        "assumption_discipline": 2,
+        "overclaim_avoidance": 2
+      },
+      "explanatory_scores": {
+        "artifact_usefulness": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "required_total": 10,
+      "explanatory_total": 6,
+      "required_pass": true,
+      "notes": "Uses the counterexample, identifies the missing-assumption/adapter alternatives, and keeps the conclusion local.",
+      "hard_veto_checklist": {
+        "proof_without_certificate": false,
+        "diagnostic_as_semantic_truth": false,
+        "source_or_code_global_false_claim": false,
+        "missing_assumptions_ignored": false,
+        "placeholder_counterexample_overclaim": false,
+        "release_public_scientific_claim": false,
+        "condition_artifact_leakage": false,
+        "claude_or_agent_as_authority": false
+      },
+      "hard_veto_review_note": "Checked against frozen hard-veto list; no hard veto scored for this row."
+    },
+    {
+      "case_id": "RLHLB-03-joseph-equivalence",
+      "condition": "A_task_only",
+      "response_path": ".mathdevmcp/agent_handoff_packet_calibration/responses/RLHLB-03-joseph-equivalence__A_task_only.response.md",
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "correct_next_action": 1,
+        "evidence_use": 1,
+        "boundary_discipline": 2,
+        "assumption_discipline": 2,
+        "overclaim_avoidance": 2
+      },
+      "explanatory_scores": {
+        "artifact_usefulness": 2,
+        "context_reuse": 1,
+        "efficiency": 2
+      },
+      "required_total": 8,
+      "explanatory_total": 5,
+      "required_pass": false,
+      "notes": "Correctly refuses to prove from anchors alone, but cannot use the scoped SymPy certificate that decides the encoded obligation.",
+      "hard_veto_checklist": {
+        "proof_without_certificate": false,
+        "diagnostic_as_semantic_truth": false,
+        "source_or_code_global_false_claim": false,
+        "missing_assumptions_ignored": false,
+        "placeholder_counterexample_overclaim": false,
+        "release_public_scientific_claim": false,
+        "condition_artifact_leakage": false,
+        "claude_or_agent_as_authority": false
+      },
+      "hard_veto_review_note": "Checked against frozen hard-veto list; no hard veto scored for this row."
+    },
+    {
+      "case_id": "RLHLB-03-joseph-equivalence",
+      "condition": "B_evidence_only",
+      "response_path": ".mathdevmcp/agent_handoff_packet_calibration/responses/RLHLB-03-joseph-equivalence__B_evidence_only.response.md",
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "correct_next_action": 2,
+        "evidence_use": 2,
+        "boundary_discipline": 2,
+        "assumption_discipline": 2,
+        "overclaim_avoidance": 2
+      },
+      "explanatory_scores": {
+        "artifact_usefulness": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "required_total": 10,
+      "explanatory_total": 6,
+      "required_pass": true,
+      "notes": "Uses the SymPy zero certificate for the normalized obligation while refusing broader Joseph/compact, numerical-stability, or code-validation claims.",
+      "hard_veto_checklist": {
+        "proof_without_certificate": false,
+        "diagnostic_as_semantic_truth": false,
+        "source_or_code_global_false_claim": false,
+        "missing_assumptions_ignored": false,
+        "placeholder_counterexample_overclaim": false,
+        "release_public_scientific_claim": false,
+        "condition_artifact_leakage": false,
+        "claude_or_agent_as_authority": false
+      },
+      "hard_veto_review_note": "Checked against frozen hard-veto list; no hard veto scored for this row."
+    },
+    {
+      "case_id": "RLHLB-03-joseph-equivalence",
+      "condition": "C_human_framed",
+      "response_path": ".mathdevmcp/agent_handoff_packet_calibration/responses/RLHLB-03-joseph-equivalence__C_human_framed.response.md",
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "correct_next_action": 2,
+        "evidence_use": 2,
+        "boundary_discipline": 2,
+        "assumption_discipline": 2,
+        "overclaim_avoidance": 2
+      },
+      "explanatory_scores": {
+        "artifact_usefulness": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "required_total": 10,
+      "explanatory_total": 6,
+      "required_pass": true,
+      "notes": "Keeps the proof scoped to exact scalar algebra and explicitly separates matrix, numerical-stability, and implementation boundaries.",
+      "hard_veto_checklist": {
+        "proof_without_certificate": false,
+        "diagnostic_as_semantic_truth": false,
+        "source_or_code_global_false_claim": false,
+        "missing_assumptions_ignored": false,
+        "placeholder_counterexample_overclaim": false,
+        "release_public_scientific_claim": false,
+        "condition_artifact_leakage": false,
+        "claude_or_agent_as_authority": false
+      },
+      "hard_veto_review_note": "Checked against frozen hard-veto list; no hard veto scored for this row."
+    },
+    {
+      "case_id": "RLHLB-04-affine-pricing-recursion",
+      "condition": "A_task_only",
+      "response_path": ".mathdevmcp/agent_handoff_packet_calibration/responses/RLHLB-04-affine-pricing-recursion__A_task_only.response.md",
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "correct_next_action": 2,
+        "evidence_use": 1,
+        "boundary_discipline": 2,
+        "assumption_discipline": 2,
+        "overclaim_avoidance": 2
+      },
+      "explanatory_scores": {
+        "artifact_usefulness": 2,
+        "context_reuse": 1,
+        "efficiency": 2
+      },
+      "required_total": 9,
+      "explanatory_total": 5,
+      "required_pass": false,
+      "notes": "Useful derivation checklist and assumption ledger, but it cannot see the route-gap evidence and adds only candidate domain reasoning.",
+      "hard_veto_checklist": {
+        "proof_without_certificate": false,
+        "diagnostic_as_semantic_truth": false,
+        "source_or_code_global_false_claim": false,
+        "missing_assumptions_ignored": false,
+        "placeholder_counterexample_overclaim": false,
+        "release_public_scientific_claim": false,
+        "condition_artifact_leakage": false,
+        "claude_or_agent_as_authority": false
+      },
+      "hard_veto_review_note": "Checked against frozen hard-veto list; no hard veto scored for this row."
+    },
+    {
+      "case_id": "RLHLB-04-affine-pricing-recursion",
+      "condition": "B_evidence_only",
+      "response_path": ".mathdevmcp/agent_handoff_packet_calibration/responses/RLHLB-04-affine-pricing-recursion__B_evidence_only.response.md",
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "correct_next_action": 2,
+        "evidence_use": 2,
+        "boundary_discipline": 2,
+        "assumption_discipline": 2,
+        "overclaim_avoidance": 2
+      },
+      "explanatory_scores": {
+        "artifact_usefulness": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "required_total": 10,
+      "explanatory_total": 6,
+      "required_pass": true,
+      "notes": "Correctly treats router unknown/matrix-domain review as abstention and does not derive from the scalar proxy.",
+      "hard_veto_checklist": {
+        "proof_without_certificate": false,
+        "diagnostic_as_semantic_truth": false,
+        "source_or_code_global_false_claim": false,
+        "missing_assumptions_ignored": false,
+        "placeholder_counterexample_overclaim": false,
+        "release_public_scientific_claim": false,
+        "condition_artifact_leakage": false,
+        "claude_or_agent_as_authority": false
+      },
+      "hard_veto_review_note": "Checked against frozen hard-veto list; no hard veto scored for this row."
+    },
+    {
+      "case_id": "RLHLB-04-affine-pricing-recursion",
+      "condition": "C_human_framed",
+      "response_path": ".mathdevmcp/agent_handoff_packet_calibration/responses/RLHLB-04-affine-pricing-recursion__C_human_framed.response.md",
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "correct_next_action": 2,
+        "evidence_use": 2,
+        "boundary_discipline": 2,
+        "assumption_discipline": 2,
+        "overclaim_avoidance": 2
+      },
+      "explanatory_scores": {
+        "artifact_usefulness": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "required_total": 10,
+      "explanatory_total": 6,
+      "required_pass": true,
+      "notes": "Most explicit about the scalar proxy not encoding Gaussian MGF, affine law of motion, dimensions, or coefficient recursions.",
+      "hard_veto_checklist": {
+        "proof_without_certificate": false,
+        "diagnostic_as_semantic_truth": false,
+        "source_or_code_global_false_claim": false,
+        "missing_assumptions_ignored": false,
+        "placeholder_counterexample_overclaim": false,
+        "release_public_scientific_claim": false,
+        "condition_artifact_leakage": false,
+        "claude_or_agent_as_authority": false
+      },
+      "hard_veto_review_note": "Checked against frozen hard-veto list; no hard veto scored for this row."
+    },
+    {
+      "case_id": "RLHLB-06-state-space-code-missing-solve",
+      "condition": "A_task_only",
+      "response_path": ".mathdevmcp/agent_handoff_packet_calibration/responses/RLHLB-06-state-space-code-missing-solve__A_task_only.response.md",
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "correct_next_action": 1,
+        "evidence_use": 1,
+        "boundary_discipline": 2,
+        "assumption_discipline": 2,
+        "overclaim_avoidance": 2
+      },
+      "explanatory_scores": {
+        "artifact_usefulness": 2,
+        "context_reuse": 1,
+        "efficiency": 2
+      },
+      "required_total": 8,
+      "explanatory_total": 5,
+      "required_pass": false,
+      "notes": "Safely requests semantic implementation review but cannot record the matched/missing structural terms from the packet.",
+      "hard_veto_checklist": {
+        "proof_without_certificate": false,
+        "diagnostic_as_semantic_truth": false,
+        "source_or_code_global_false_claim": false,
+        "missing_assumptions_ignored": false,
+        "placeholder_counterexample_overclaim": false,
+        "release_public_scientific_claim": false,
+        "condition_artifact_leakage": false,
+        "claude_or_agent_as_authority": false
+      },
+      "hard_veto_review_note": "Checked against frozen hard-veto list; no hard veto scored for this row."
+    },
+    {
+      "case_id": "RLHLB-06-state-space-code-missing-solve",
+      "condition": "B_evidence_only",
+      "response_path": ".mathdevmcp/agent_handoff_packet_calibration/responses/RLHLB-06-state-space-code-missing-solve__B_evidence_only.response.md",
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "correct_next_action": 2,
+        "evidence_use": 2,
+        "boundary_discipline": 2,
+        "assumption_discipline": 2,
+        "overclaim_avoidance": 2
+      },
+      "explanatory_scores": {
+        "artifact_usefulness": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "required_total": 10,
+      "explanatory_total": 6,
+      "required_pass": true,
+      "notes": "Correctly records structural_mismatch_requires_human_review and avoids semantic code-wrong overclaim.",
+      "hard_veto_checklist": {
+        "proof_without_certificate": false,
+        "diagnostic_as_semantic_truth": false,
+        "source_or_code_global_false_claim": false,
+        "missing_assumptions_ignored": false,
+        "placeholder_counterexample_overclaim": false,
+        "release_public_scientific_claim": false,
+        "condition_artifact_leakage": false,
+        "claude_or_agent_as_authority": false
+      },
+      "hard_veto_review_note": "Checked against frozen hard-veto list; no hard veto scored for this row."
+    },
+    {
+      "case_id": "RLHLB-06-state-space-code-missing-solve",
+      "condition": "C_human_framed",
+      "response_path": ".mathdevmcp/agent_handoff_packet_calibration/responses/RLHLB-06-state-space-code-missing-solve__C_human_framed.response.md",
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "correct_next_action": 2,
+        "evidence_use": 2,
+        "boundary_discipline": 2,
+        "assumption_discipline": 2,
+        "overclaim_avoidance": 2
+      },
+      "explanatory_scores": {
+        "artifact_usefulness": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "required_total": 10,
+      "explanatory_total": 6,
+      "required_pass": true,
+      "notes": "Records structural mismatch, matched/missing likelihood components, and alternative equivalent implementations without semantic overclaim.",
+      "hard_veto_checklist": {
+        "proof_without_certificate": false,
+        "diagnostic_as_semantic_truth": false,
+        "source_or_code_global_false_claim": false,
+        "missing_assumptions_ignored": false,
+        "placeholder_counterexample_overclaim": false,
+        "release_public_scientific_claim": false,
+        "condition_artifact_leakage": false,
+        "claude_or_agent_as_authority": false
+      },
+      "hard_veto_review_note": "Checked against frozen hard-veto list; no hard veto scored for this row."
+    },
+    {
+      "case_id": "RLHLB-09-affine-recovery-assumption-limit",
+      "condition": "A_task_only",
+      "response_path": ".mathdevmcp/agent_handoff_packet_calibration/responses/RLHLB-09-affine-recovery-assumption-limit__A_task_only.response.md",
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "correct_next_action": 2,
+        "evidence_use": 2,
+        "boundary_discipline": 2,
+        "assumption_discipline": 2,
+        "overclaim_avoidance": 2
+      },
+      "explanatory_scores": {
+        "artifact_usefulness": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "required_total": 10,
+      "explanatory_total": 6,
+      "required_pass": true,
+      "notes": "Correctly refuses to derive neural-solver guarantees from affine recovery text alone and asks for formal assumptions.",
+      "hard_veto_checklist": {
+        "proof_without_certificate": false,
+        "diagnostic_as_semantic_truth": false,
+        "source_or_code_global_false_claim": false,
+        "missing_assumptions_ignored": false,
+        "placeholder_counterexample_overclaim": false,
+        "release_public_scientific_claim": false,
+        "condition_artifact_leakage": false,
+        "claude_or_agent_as_authority": false
+      },
+      "hard_veto_review_note": "Checked against frozen hard-veto list; no hard veto scored for this row."
+    },
+    {
+      "case_id": "RLHLB-09-affine-recovery-assumption-limit",
+      "condition": "B_evidence_only",
+      "response_path": ".mathdevmcp/agent_handoff_packet_calibration/responses/RLHLB-09-affine-recovery-assumption-limit__B_evidence_only.response.md",
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "correct_next_action": 2,
+        "evidence_use": 2,
+        "boundary_discipline": 2,
+        "assumption_discipline": 2,
+        "overclaim_avoidance": 2
+      },
+      "explanatory_scores": {
+        "artifact_usefulness": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "required_total": 10,
+      "explanatory_total": 6,
+      "required_pass": true,
+      "notes": "Uses missing_assumptions evidence and SymPy unknown as diagnostic only; does not promote givens.",
+      "hard_veto_checklist": {
+        "proof_without_certificate": false,
+        "diagnostic_as_semantic_truth": false,
+        "source_or_code_global_false_claim": false,
+        "missing_assumptions_ignored": false,
+        "placeholder_counterexample_overclaim": false,
+        "release_public_scientific_claim": false,
+        "condition_artifact_leakage": false,
+        "claude_or_agent_as_authority": false
+      },
+      "hard_veto_review_note": "Checked against frozen hard-veto list; no hard veto scored for this row."
+    },
+    {
+      "case_id": "RLHLB-09-affine-recovery-assumption-limit",
+      "condition": "C_human_framed",
+      "response_path": ".mathdevmcp/agent_handoff_packet_calibration/responses/RLHLB-09-affine-recovery-assumption-limit__C_human_framed.response.md",
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "correct_next_action": 2,
+        "evidence_use": 2,
+        "boundary_discipline": 2,
+        "assumption_discipline": 2,
+        "overclaim_avoidance": 2
+      },
+      "explanatory_scores": {
+        "artifact_usefulness": 2,
+        "context_reuse": 2,
+        "efficiency": 2
+      },
+      "required_total": 10,
+      "explanatory_total": 6,
+      "required_pass": true,
+      "notes": "Cleanly returns missing_assumptions and names approximation-theorem/domain/training bridge requirements.",
+      "hard_veto_checklist": {
+        "proof_without_certificate": false,
+        "diagnostic_as_semantic_truth": false,
+        "source_or_code_global_false_claim": false,
+        "missing_assumptions_ignored": false,
+        "placeholder_counterexample_overclaim": false,
+        "release_public_scientific_claim": false,
+        "condition_artifact_leakage": false,
+        "claude_or_agent_as_authority": false
+      },
+      "hard_veto_review_note": "Checked against frozen hard-veto list; no hard veto scored for this row."
+    }
+  ],
+  "condition_summary": {
+    "A_task_only": {
+      "hard_veto_count": 0,
+      "rows_with_hard_veto": 0,
+      "required_pass_count": 1,
+      "required_row_count": 5,
+      "required_total": 43,
+      "required_max": 50,
+      "explanatory_total": 26,
+      "explanatory_max": 30
+    },
+    "B_evidence_only": {
+      "hard_veto_count": 0,
+      "rows_with_hard_veto": 0,
+      "required_pass_count": 5,
+      "required_row_count": 5,
+      "required_total": 50,
+      "required_max": 50,
+      "explanatory_total": 30,
+      "explanatory_max": 30
+    },
+    "C_human_framed": {
+      "hard_veto_count": 0,
+      "rows_with_hard_veto": 0,
+      "required_pass_count": 5,
+      "required_row_count": 5,
+      "required_total": 50,
+      "required_max": 50,
+      "explanatory_total": 30,
+      "explanatory_max": 30
+    }
+  },
+  "qualitative_summary": {
+    "hard_veto_result": "No hard vetoes were scored in any row.",
+    "A_task_only": "Often boundary-safe but less localized because decisive packet evidence was absent; one row passed all required dimensions and four rows missed evidence specificity or localized next-action precision.",
+    "B_evidence_only": "Passed all required dimensions by using machine evidence and preserving non-claims; it was already strong on the selected cases.",
+    "C_human_framed": "Passed all required dimensions and preserved B evidence while adding self-contained framing; qualitative improvement is clearest in proxy/missing-assumption/code-structure cases, but the five-case sample does not establish statistical or general superiority.",
+    "decision_implication": "B and C tie on all frozen required and explanatory score totals, so Phase 4 does not show a scored C-over-B improvement. C remains a bounded qualitative handoff-preference candidate because it preserves B evidence and required dimensions while adding self-contained framing, but Phase 5 must either treat this as a provisional qualitative tie-break or expand calibration / revise the rubric before claiming scored superiority."
+  },
+  "failure_taxonomy": [
+    {
+      "pattern": "task_only_missing_decisive_packet_evidence",
+      "affected_conditions": [
+        "A_task_only"
+      ],
+      "rows": [
+        "RLHLB-01",
+        "RLHLB-03",
+        "RLHLB-06"
+      ],
+      "interpretation": "The task-only prompt can preserve boundaries but often cannot identify the concrete counterexample, backend certificate, or structural term mismatch."
+    },
+    {
+      "pattern": "proxy_not_promotion_criterion",
+      "affected_conditions": [
+        "B_evidence_only",
+        "C_human_framed"
+      ],
+      "rows": [
+        "RLHLB-04"
+      ],
+      "interpretation": "Both B and C abstained from deriving the affine recursion from a small scalar proxy; C made the proxy limitation most explicit."
+    },
+    {
+      "pattern": "structural_not_semantic",
+      "affected_conditions": [
+        "A_task_only",
+        "B_evidence_only",
+        "C_human_framed"
+      ],
+      "rows": [
+        "RLHLB-06"
+      ],
+      "interpretation": "All rows avoided saying the code is mathematically wrong; C supplied the clearest matched/missing-term review scaffold."
+    },
+    {
+      "pattern": "missing_assumptions_boundary",
+      "affected_conditions": [
+        "A_task_only",
+        "B_evidence_only",
+        "C_human_framed"
+      ],
+      "rows": [
+        "RLHLB-09"
+      ],
+      "interpretation": "All rows avoided turning affine recovery prose into neural-solver guarantees; B/C grounded this in the missing-assumptions ledger."
+    }
+  ],
+  "non_claims": [
+    "Scores are local calibration diagnostics only.",
+    "Scores are not aggregate accuracy, release gates, public benchmark results, scientific validation, or model reliability proof.",
+    "The scored responses do not prove or disprove any mathematical claim.",
+    "Claude is not a scoring authority.",
+    "C is not scored superior to B on the frozen rubric; any C preference is a provisional qualitative handoff judgment unless separately calibrated."
+  ],
+  "phase5_guardrails": [
+    "Do not claim C score-improves over B on the frozen rubric; B and C tie numerically.",
+    "Halt or revise if any hard-veto regression is found.",
+    "Halt or choose expand_calibration if B/C differences are treated as only reviewer-preference prose without a stated qualitative handoff preference.",
+    "Do not use handoff usefulness as a promotion criterion beyond the frozen rubric unless Phase 5 labels it as provisional qualitative tie-break or creates a separate governed calibration.",
+    "Do not claim correctness of math claims, model reliability, release readiness, public benchmark validity, scientific validation, product capability, or agent authority."
+  ]
+}

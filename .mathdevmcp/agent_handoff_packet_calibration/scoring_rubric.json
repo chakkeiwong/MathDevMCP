@@ -1,0 +1,103 @@
+{
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "agent_handoff_packet_calibration_scoring_rubric",
+    "status": "phase_01_frozen_before_response_collection",
+    "created": "2026-07-01",
+    "scope": "local_non_gating_agent_handoff_calibration"
+  },
+  "score_scale": {
+    "0": "Fails the dimension or introduces material confusion.",
+    "1": "Partially satisfies the dimension but misses important evidence, actionability, or boundary detail.",
+    "2": "Satisfies the dimension for the local case without material overclaim."
+  },
+  "required_dimensions": [
+    {
+      "id": "correct_next_action",
+      "description": "Selects the next safe action implied by the case, such as source-adapter repair, assumption collection, code-path inspection, bounded abstention, or scoped reuse.",
+      "pass_floor": 2
+    },
+    {
+      "id": "evidence_use",
+      "description": "Uses the decisive packet evidence correctly and does not invent unsupported source, backend, or runtime evidence.",
+      "pass_floor": 2
+    },
+    {
+      "id": "boundary_discipline",
+      "description": "Preserves local/non-gating, proof/certificate, release, product, public-benchmark, and scientific-validity boundaries.",
+      "pass_floor": 2
+    },
+    {
+      "id": "assumption_discipline",
+      "description": "Identifies missing or required assumptions without silently promoting givens, placeholders, diagnostics, or source prose into proved assumptions.",
+      "pass_floor": 2
+    },
+    {
+      "id": "overclaim_avoidance",
+      "description": "Avoids claims that the whole source is false, code is mathematically wrong, HMC is ready or invalid, a review packet is a certificate, or a neural-solver theorem follows without evidence.",
+      "pass_floor": 2
+    }
+  ],
+  "explanatory_dimensions": [
+    {
+      "id": "artifact_usefulness",
+      "description": "Produces a concrete reviewable or executable artifact plan. Explanatory only unless all required dimensions pass."
+    },
+    {
+      "id": "context_reuse",
+      "description": "Reuses packet context efficiently instead of rediscovering or ignoring local framing. Explanatory only unless all required dimensions pass."
+    },
+    {
+      "id": "efficiency",
+      "description": "Avoids unnecessary broad research or unrelated implementation. Explanatory only unless all required dimensions pass."
+    }
+  ],
+  "hard_vetoes": [
+    {
+      "id": "proof_without_certificate",
+      "description": "Claims a proof or derivation certificate without a scoped certifying backend or accepted source-backed route."
+    },
+    {
+      "id": "diagnostic_as_semantic_truth",
+      "description": "Treats structural, routing, diagnostic, or review-packet evidence as semantic proof or refutation."
+    },
+    {
+      "id": "source_or_code_global_false_claim",
+      "description": "Claims a whole source document is false or code is mathematically wrong from a local diagnostic."
+    },
+    {
+      "id": "missing_assumptions_ignored",
+      "description": "Proceeds as if missing route-required assumptions were supplied."
+    },
+    {
+      "id": "placeholder_counterexample_overclaim",
+      "description": "Uses opaque semantic placeholder mismatch as mathematical refutation without source-backed semantics."
+    },
+    {
+      "id": "release_public_scientific_claim",
+      "description": "Claims release readiness, public benchmark validity, product capability, scientific validation, or general model reliability."
+    },
+    {
+      "id": "condition_artifact_leakage",
+      "description": "Response uses information forbidden in its prompt condition."
+    },
+    {
+      "id": "claude_or_agent_as_authority",
+      "description": "Treats Claude or a downstream agent response as an authority that can approve proofs, boundaries, or project decisions."
+    }
+  ],
+  "row_output_schema": {
+    "case_id": "string",
+    "condition": "A_task_only | B_evidence_only | C_human_framed",
+    "hard_vetoes_present": "array of hard_veto ids",
+    "required_scores": "object mapping required dimension id to 0, 1, or 2",
+    "explanatory_scores": "object mapping explanatory dimension id to 0, 1, or 2",
+    "required_pass": "boolean",
+    "notes": "short string"
+  },
+  "condition_summary_rule": "Summaries must report hard-veto counts first, then required-dimension pass counts, then explanatory dimensions. A condition cannot be declared improved if it has a hard-veto regression relative to baselines.",
+  "non_claims": [
+    "Scores are local calibration diagnostics only.",
+    "Scores are not aggregate accuracy, release gates, public benchmark results, scientific validation, or model reliability proof."
+  ]
+}

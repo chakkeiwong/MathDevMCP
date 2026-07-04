@@ -1,0 +1,215 @@
+{
+  "status": "quality_thresholds_passed",
+  "total_cases": 14,
+  "total_results": 14,
+  "workflow_count": 6,
+  "workflows": [
+    "assumptions_for",
+    "audit_math_to_code",
+    "debug_derivation",
+    "derive_from",
+    "prepare_review_packet",
+    "prove_or_counterexample"
+  ],
+  "negative_control_count": 12,
+  "negative_control_rate": 0.8571428571428571,
+  "seeded_gate_thresholds": {
+    "at_least_two_cases_per_workflow": true,
+    "negative_control_rate_at_least_40_percent": true,
+    "all_cases_pass": true,
+    "boundary_checks_all_preserved": true,
+    "deterministic_rerun_stable": true,
+    "mutation_family_detected": true
+  },
+  "determinism": {
+    "stable": true,
+    "first_signature": [
+      {
+        "id": "hlf_derive_backend_certificate",
+        "observed_status": "proved",
+        "passed": true,
+        "expected_abstention": false
+      },
+      {
+        "id": "hlf_derive_counterexample_refutation",
+        "observed_status": "refuted",
+        "passed": true,
+        "expected_abstention": false
+      },
+      {
+        "id": "hlf_derive_no_counterexample_nonpromotion",
+        "observed_status": "inconclusive",
+        "passed": true,
+        "expected_abstention": true
+      },
+      {
+        "id": "hlf_prove_backend_certificate",
+        "observed_status": "proved",
+        "passed": true,
+        "expected_abstention": false
+      },
+      {
+        "id": "hlf_prove_counterexample_refutation",
+        "observed_status": "refuted",
+        "passed": true,
+        "expected_abstention": false
+      },
+      {
+        "id": "hlf_prove_not_encodable_nonclaim",
+        "observed_status": "not_encodable",
+        "passed": true,
+        "expected_abstention": true
+      },
+      {
+        "id": "hlf_assumptions_logdet",
+        "observed_status": "missing_assumptions",
+        "passed": true,
+        "expected_abstention": true
+      },
+      {
+        "id": "hlf_assumptions_unknown_route",
+        "observed_status": "inconclusive",
+        "passed": true,
+        "expected_abstention": true
+      },
+      {
+        "id": "hlf_debug_first_gap",
+        "observed_status": "gap_found",
+        "passed": true,
+        "expected_abstention": true
+      },
+      {
+        "id": "hlf_debug_counterexample_refutation",
+        "observed_status": "refuted",
+        "passed": true,
+        "expected_abstention": false
+      },
+      {
+        "id": "hlf_code_structural_match",
+        "observed_status": "structural_match",
+        "passed": true,
+        "expected_abstention": true
+      },
+      {
+        "id": "hlf_code_structural_mismatch",
+        "observed_status": "structural_mismatch",
+        "passed": true,
+        "expected_abstention": true
+      },
+      {
+        "id": "hlf_packet_diagnostic_only",
+        "observed_status": "diagnostic_only",
+        "passed": true,
+        "expected_abstention": true
+      },
+      {
+        "id": "hlf_packet_preserves_refutation",
+        "observed_status": "diagnostic_only",
+        "passed": true,
+        "expected_abstention": true
+      }
+    ],
+    "second_signature": [
+      {
+        "id": "hlf_derive_backend_certificate",
+        "observed_status": "proved",
+        "passed": true,
+        "expected_abstention": false
+      },
+      {
+        "id": "hlf_derive_counterexample_refutation",
+        "observed_status": "refuted",
+        "passed": true,
+        "expected_abstention": false
+      },
+      {
+        "id": "hlf_derive_no_counterexample_nonpromotion",
+        "observed_status": "inconclusive",
+        "passed": true,
+        "expected_abstention": true
+      },
+      {
+        "id": "hlf_prove_backend_certificate",
+        "observed_status": "proved",
+        "passed": true,
+        "expected_abstention": false
+      },
+      {
+        "id": "hlf_prove_counterexample_refutation",
+        "observed_status": "refuted",
+        "passed": true,
+        "expected_abstention": false
+      },
+      {
+        "id": "hlf_prove_not_encodable_nonclaim",
+        "observed_status": "not_encodable",
+        "passed": true,
+        "expected_abstention": true
+      },
+      {
+        "id": "hlf_assumptions_logdet",
+        "observed_status": "missing_assumptions",
+        "passed": true,
+        "expected_abstention": true
+      },
+      {
+        "id": "hlf_assumptions_unknown_route",
+        "observed_status": "inconclusive",
+        "passed": true,
+        "expected_abstention": true
+      },
+      {
+        "id": "hlf_debug_first_gap",
+        "observed_status": "gap_found",
+        "passed": true,
+        "expected_abstention": true
+      },
+      {
+        "id": "hlf_debug_counterexample_refutation",
+        "observed_status": "refuted",
+        "passed": true,
+        "expected_abstention": false
+      },
+      {
+        "id": "hlf_code_structural_match",
+        "observed_status": "structural_match",
+        "passed": true,
+        "expected_abstention": true
+      },
+      {
+        "id": "hlf_code_structural_mismatch",
+        "observed_status": "structural_mismatch",
+        "passed": true,
+        "expected_abstention": true
+      },
+      {
+        "id": "hlf_packet_diagnostic_only",
+        "observed_status": "diagnostic_only",
+        "passed": true,
+        "expected_abstention": true
+      },
+      {
+        "id": "hlf_packet_preserves_refutation",
+        "observed_status": "diagnostic_only",
+        "passed": true,
+        "expected_abstention": true
+      }
+    ]
+  },
+  "mutation_results": {
+    "not_encodable_to_refuted": true,
+    "structural_match_to_proved": true,
+    "review_packet_to_proved": true,
+    "missing_assumptions_to_proved": true,
+    "no_counterexample_to_refuted": true
+  },
+  "boundary": "High-level benchmark quality is not established by pass rate alone; boundary and mutation checks are required.",
+  "non_claims": [
+    "Seeded high-level workflow cases do not establish external benchmark validity.",
+    "This report does not claim broad theorem-proving capability or release readiness."
+  ],
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "high_level_workflow_quality_report"
+  }
+}

@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from mathdevmcp.derive_from import derive_from
 from mathdevmcp.mcp_facade import call_mcp_tool, list_mcp_tools
 from test_context_and_fixtures import EXPECTED_BENCHMARK_SUMMARY, EXPECTED_BENCHMARK_TOTAL
 
@@ -19,12 +20,20 @@ def test_list_mcp_tools_includes_implementation_brief():
     assert "audit_implementation_label" in names
     assert "compare_label_code" in names
     assert "benchmark_gate" in names
+    assert "workbench_benchmark_quality" in names
     assert "audit_kalman_recursion" in names
     assert "typed_obligation_label" in names
     assert "release_corpus_manifest" in names
     assert "validate_release_corpus" in names
     assert "governance_policy" in names
     assert "release_readiness" in names
+    assert "derive_from" in names
+    assert "prove_or_counterexample" in names
+    assert "assumptions_for" in names
+    assert "debug_derivation" in names
+    assert "audit_math_to_code" in names
+    assert "prepare_review_packet" in names
+    assert "high_level_workflow_quality" in names
     assert tools["compare_label_code"]["deprecated"] is True
     assert tools["compare_label_code"]["replacement"] == "audit_implementation_label"
     assert tools["check_proof_obligation"]["deprecated"] is True
@@ -33,6 +42,190 @@ def test_list_mcp_tools_includes_implementation_brief():
     assert "filesystem paths" in compare_doc_code["description"]
     assert "not raw text" in compare_doc_code["description"]
     assert "document text against code text" not in compare_doc_code["description"]
+    assert tools["derive_from"]["output_contract"] == "high_level_workflow_result"
+    assert tools["derive_from"]["certifying_capable"] is True
+    assert tools["audit_math_to_code"]["certifying_capable"] is False
+    assert tools["prepare_review_packet"]["certifying_capable"] is False
+
+
+def test_call_mcp_tool_high_level_derive_from_preserves_library_contract():
+    library_result = derive_from("a + b = b + a", givens=["a,b are scalars"])
+    mcp_result = call_mcp_tool(
+        "derive_from",
+        {"target": "a + b = b + a", "givens": ["a,b are scalars"]},
+    )
+
+    assert mcp_result["ok"] is True
+    assert {key: value for key, value in mcp_result.items() if key != "ok"} == library_result
+    assert mcp_result["metadata"] == {"schema_version": "1.0", "contract": "high_level_workflow_result"}
+    assert "givens_not_formal_assumptions" in {item["code"] for item in mcp_result["non_claims"]}
+
+
+def test_call_mcp_tool_high_level_surfaces_preserve_boundaries():
+    proof = call_mcp_tool("prove_or_counterexample", {"claim": "A*B = B*A"})
+    assumptions = call_mcp_tool("assumptions_for", {"target": "logdet(A)"})
+    debug = call_mcp_tool("debug_derivation", {"steps": ["logdet(A)", "trace(A)", "trace(A)"]})
+    code = call_mcp_tool("audit_math_to_code", {"math": "logdet(S)", "code": "def f(S):\n    return logdet(S)\n"})
+    packet = call_mcp_tool("prepare_review_packet", {"question": "Review", "evidence": [proof]})
+
+    assert proof["metadata"]["contract"] == "high_level_workflow_result"
+    assert proof["status"] == "refuted"
+    assert proof["counterexamples"]
+    assert assumptions["status"] == "missing_assumptions"
+    assert "route_assumptions_not_global_minimality" in {item["code"] for item in assumptions["non_claims"]}
+    assert debug["status"] == "gap_found"
+    assert "gap_localization_not_global_failure" in {item["code"] for item in debug["non_claims"]}
+    assert code["status"] == "structural_match"
+    assert code["certification_source"] == "none"
+    assert "structural_evidence_not_proof" in {item["code"] for item in code["non_claims"]}
+    assert packet["status"] == "diagnostic_only"
+    assert packet["certification_source"] == "none"
+    assert "diagnostic_evidence_not_proof" in {item["code"] for item in packet["non_claims"]}
+
+
+def test_call_mcp_tool_prepare_review_packet_preserves_phase6_packet_fields():
+    derived = call_mcp_tool(
+        "derive_from",
+        {"target": "a + b = b + a", "givens": ["a,b are scalars"]},
+    )
+    code = call_mcp_tool(
+        "audit_math_to_code",
+        {
+            "math": "logdet(Sigma) + trace(Cov)",
+            "code": "def f(S):\n    return logdet(S) + trace(S)\n",
+            "aliases": {"Sigma": "S", "Cov": "S"},
+        },
+    )
+    packet = call_mcp_tool(
+        "prepare_review_packet",
+        {
+            "question": "Review derivation and implementation context",
+            "evidence": [derived, code],
+            "source": {"context_summary": "MCP surface preservation fixture."},
+        },
+    )
+    low_level = packet["evidence"][0]["low_level"]
+    non_claim_codes = {item["code"] for item in low_level["non_claims"]}
+
+    assert packet["ok"] is True
+    assert packet["status"] == "diagnostic_only"
+    assert packet["certification_source"] == "none"
+    assert low_level["backend_checks"]
+    assert low_level["nested_evidence_summary"]
+    assert low_level["route_plans"]
+    assert low_level["trace_maps"]
+    assert low_level["residual_gaps"]
+    assert low_level["decision_criteria"]
+    assert low_level["risk_register"]
+    assert low_level["agent_handoff"]["scoped_question"] == "Review derivation and implementation context"
+    assert low_level["agent_handoff"]["evidence_ledger"]
+    assert low_level["agent_handoff"]["veto_risks"]
+    assert packet["agent_handoff"] == low_level["agent_handoff"]
+    assert "diagnostic_route_and_trace_context_not_proof" in non_claim_codes
+    assert "not recertified" in low_level["backend_checks"][0]["boundary"]
+    assert "not semantic proof" in low_level["trace_maps"][0]["boundary"]
+
+
+def test_call_mcp_tool_prepare_review_packet_can_return_compact_handoff():
+    derived = call_mcp_tool(
+        "derive_from",
+        {"target": "a + b = b + a", "givens": ["a,b are scalars"]},
+    )
+    handoff = call_mcp_tool(
+        "prepare_review_packet",
+        {
+            "question": "Review compact MCP handoff",
+            "evidence": [derived],
+            "handoff": True,
+        },
+    )
+
+    assert handoff["scoped_question"] == "Review compact MCP handoff"
+    assert {
+        "status",
+        "reason",
+        "evidence_ledger",
+        "assumption_gap_ledger",
+        "veto_risks",
+        "non_claim_boundary",
+        "next_actions",
+        "next_artifact",
+        "certification_boundary",
+    }.issubset(handoff)
+    assert handoff["evidence_ledger"]
+    assert handoff["non_claim_boundary"]
+    assert "not a proof certificate" in handoff["certification_boundary"]
+    assert "metadata" not in handoff
+    assert "workflow" not in handoff
+
+
+def test_call_mcp_tool_end_to_end_review_handoff_preserves_evidence_risks_and_boundaries():
+    derived = call_mcp_tool(
+        "derive_from",
+        {"target": "a + b = b + a", "givens": ["a,b are scalars"]},
+    )
+    code = call_mcp_tool(
+        "audit_math_to_code",
+        {
+            "math": "logdet(Sigma) + trace(Cov)",
+            "code": "def f(S):\n    return logdet(S) + trace(S)\n",
+            "aliases": {"Sigma": "S", "Cov": "S"},
+        },
+    )
+
+    full_packet = call_mcp_tool(
+        "prepare_review_packet",
+        {
+            "question": "Review transport derivation and code handoff",
+            "evidence": [derived, code],
+            "source": {
+                "context_summary": "End-to-end fixture: backend derivation evidence plus structural code audit."
+            },
+        },
+    )
+    compact = call_mcp_tool(
+        "prepare_review_packet",
+        {
+            "question": "Review transport derivation and code handoff",
+            "evidence": [derived, code],
+            "source": {
+                "context_summary": "End-to-end fixture: backend derivation evidence plus structural code audit."
+            },
+            "handoff": True,
+        },
+    )
+
+    low_level = full_packet["evidence"][0]["low_level"]
+    compact_without_wrapper = {key: value for key, value in compact.items() if key != "ok"}
+    risk_codes = {item["code"] for item in compact["veto_risks"]}
+    non_claim_codes = {item["code"] for item in compact["non_claim_boundary"]}
+
+    assert full_packet["status"] == "diagnostic_only"
+    assert full_packet["certification_source"] == "none"
+    assert compact["ok"] is True
+    assert compact_without_wrapper == full_packet["agent_handoff"]
+    assert compact["scoped_question"] == "Review transport derivation and code handoff"
+    assert compact["source_context"] == "End-to-end fixture: backend derivation evidence plus structural code audit."
+    assert compact["evidence_ledger"]
+    assert compact["assumption_gap_ledger"]
+    assert {"route_plans_are_diagnostic", "trace_maps_are_structural"}.issubset(risk_codes)
+    assert "review_packet_not_proof_certificate" in non_claim_codes
+    assert "not a proof certificate" in compact["certification_boundary"]
+    assert compact["next_actions"]
+    assert low_level["route_plans"]
+    assert low_level["trace_maps"]
+    assert low_level["backend_checks"]
+
+
+def test_call_mcp_tool_high_level_workflow_quality_returns_threshold_report():
+    result = call_mcp_tool("high_level_workflow_quality", {"root": str(ROOT)})
+
+    assert result["metadata"] == {"schema_version": "1.0", "contract": "high_level_workflow_quality_report"}
+    assert result["status"] == "quality_thresholds_passed"
+    assert result["total_cases"] == 14
+    assert result["workflow_count"] == 6
+    assert all(result["seeded_gate_thresholds"].values())
+    assert all(result["mutation_results"].values())
 
 
 
@@ -184,6 +377,7 @@ def test_call_mcp_tool_run_benchmarks_aggregates_results():
     assert result["metadata"] == {"schema_version": "1.0", "contract": "benchmark_results"}
     assert all("details" in item for item in result["results"])
     assert result["summary"] == EXPECTED_BENCHMARK_SUMMARY
+    assert result["workbench_quality"]["status"] == "quality_thresholds_passed"
     assert result["ok"] is True
 
 
@@ -206,6 +400,16 @@ def test_call_mcp_tool_benchmark_gate_returns_ci_shape():
         },
         "metadata": {"schema_version": "1.0", "contract": "benchmark_gate"},
     }
+
+
+def test_call_mcp_tool_workbench_benchmark_quality_returns_threshold_report():
+    result = call_mcp_tool("workbench_benchmark_quality", {"root": str(ROOT)})
+
+    assert result["metadata"] == {"schema_version": "1.0", "contract": "workbench_benchmark_quality_report"}
+    assert result["status"] == "quality_thresholds_passed"
+    assert result["total_cases"] == 15
+    assert all(result["seeded_gate_thresholds"].values())
+    assert all(result["mutation_results"].values())
 
 
 def test_call_mcp_tool_release_surfaces_return_contracts():

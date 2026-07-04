@@ -1,0 +1,32 @@
+{
+  "allowed_response_subjects": [
+    "Codex subagent or another explicitly approved non-Claude model/agent surface"
+  ],
+  "approval_required_before_collection": true,
+  "approval_scope_needed": {
+    "artifact_paths": [
+      ".mathdevmcp/downstream_agent_usefulness/response_manifest.json",
+      ".mathdevmcp/downstream_agent_usefulness/responses",
+      ".mathdevmcp/downstream_agent_usefulness/scored_responses.json",
+      ".mathdevmcp/downstream_agent_usefulness/scored_responses.md"
+    ],
+    "prompt_count": 27,
+    "response_subject_surface": "Codex subagent or another explicitly approved non-Claude model/agent surface",
+    "retry_policy": "one response per prompt; no hidden retries; transport failures recorded separately"
+  },
+  "claude_role": "read_only_reviewer_only_not_response_worker",
+  "forbidden_response_subjects": [
+    "Claude as response worker",
+    "human expert panel as required gate",
+    "unrecorded retries or replacement responses"
+  ],
+  "malformed_output_policy": "Record malformed or incomplete outputs in the response manifest; do not replace them.",
+  "metadata": {
+    "contract": "downstream_agent_usefulness_response_subject_policy",
+    "created": "2026-07-01",
+    "schema_version": "1.0",
+    "status": "phase_03_collection_blocked_pending_human_approval"
+  },
+  "planned_prompt_count": 27,
+  "retry_policy": "One response per prompt unless a predeclared transport failure produces no model output. No hidden retries. Malformed or incomplete outputs are recorded."
+}

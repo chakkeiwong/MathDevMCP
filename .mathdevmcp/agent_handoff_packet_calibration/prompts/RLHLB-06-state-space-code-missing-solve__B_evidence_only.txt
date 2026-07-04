@@ -1,0 +1,105 @@
+You are a downstream AI agent receiving a local/non-gating MathDevMCP handoff task.
+
+Condition: B_evidence_only
+Case: RLHLB-06-state-space-code-missing-solve
+Workflow: audit_math_to_code
+Question: Does code implement the documented Kalman likelihood solve/quadratic form?
+
+Your job is to produce the next safe action artifact, not to prove the claim. Keep boundaries explicit.
+
+Required output sections, in this order:
+- next_safe_action
+- reasoning
+- artifact_plan
+- forbidden_claims_avoided
+- what_would_change_conclusion
+- residual_risks
+
+Response length band: 300-700 words unless the subject model uses structured bullets that are equivalent in content.
+Forbidden claims/actions:
+- This scoped workflow result does not claim general theorem-proving ability.
+- This scoped workflow result does not claim release readiness.
+- Structural evidence is not a semantic proof.
+- Forbidden claim not made: Code is mathematically wrong.
+- Forbidden claim not made: Absence of literal solve proves implementation invalid.
+- Durable packets are review artifacts, not proof certificates by themselves.
+- Packet contents preserve source, backend, counterexample, gap, action, and non-claim ledgers separately.
+- A packet may summarize backend evidence only within the scoped high-level workflow result that produced it.
+
+Machine evidence ledger, without human framing:
+{
+  "actions": [
+    {
+      "code": "human_review",
+      "description": "Inspect structural mismatch."
+    },
+    {
+      "code": "human_review",
+      "description": "Review structural matches, missing terms, aliases, and audit-only extras before treating code as correct."
+    }
+  ],
+  "assumptions": [],
+  "backend_checks": [
+    {
+      "backend": "sympy",
+      "source": "route_reference",
+      "state": "not_applicable"
+    },
+    {
+      "backend": "lean",
+      "source": "route_reference",
+      "state": "not_applicable"
+    }
+  ],
+  "counterexamples": [],
+  "derivation_proof_steps": [
+    {
+      "reason": "Code is missing required equation terms or has structural conflicts.",
+      "status": "structural_mismatch"
+    }
+  ],
+  "evidence_classes": [
+    "structural_mismatch"
+  ],
+  "expected_status_family": "routing_only",
+  "failure_class": "baseline_evaluable",
+  "gaps": [
+    {
+      "kind": "negative_control_requires_boundary_preservation",
+      "source": "route_reference",
+      "status": "unresolved"
+    }
+  ],
+  "non_claims": [
+    "This scoped workflow result does not claim general theorem-proving ability.",
+    "This scoped workflow result does not claim release readiness.",
+    "Structural evidence is not a semantic proof.",
+    "Forbidden claim not made: Code is mathematically wrong.",
+    "Forbidden claim not made: Absence of literal solve proves implementation invalid.",
+    "Durable packets are review artifacts, not proof certificates by themselves.",
+    "Packet contents preserve source, backend, counterexample, gap, action, and non-claim ledgers separately.",
+    "A packet may summarize backend evidence only within the scoped high-level workflow result that produced it.",
+    "Packet reports are local/non-gating and do not establish release readiness, public benchmark validity, scientific validation, or broad theorem proving.",
+    "Aggregate accuracy remains unavailable for this local benchmark report."
+  ],
+  "observed_status": "structural_mismatch",
+  "source_anchors": [
+    {
+      "line_range": "7-23",
+      "path": "benchmarks/fixtures/doc_department_state_space.tex",
+      "role": "documented Kalman likelihood solve/quadratic form"
+    },
+    {
+      "line_range": "1-17",
+      "path": "benchmarks/fixtures/doc_department_state_space_missing_solve.py",
+      "role": "candidate implementation missing explicit solve/quadratic form"
+    },
+    {
+      "line_range": "1099-1123",
+      "path": "docs/mathdevmcp-release-report.tex",
+      "role": "release-report fixture context"
+    }
+  ]
+}
+
+Use only the ledger above. Do not infer source context that is not present. If the ledger is insufficient, state the smallest next evidence action.

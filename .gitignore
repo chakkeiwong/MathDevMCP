@@ -7,6 +7,8 @@ build/
 dist/
 .codex
 .claude/
+.claude_reviews/
+**/.claude_reviews/
 .serena/
 .vscode/
 artifacts/release-evidence/
@@ -36,3 +38,6 @@ docs/plans/*-suggestion-memo-*.md
 docs/proof-carrying-derivation-agent-guide.md
 src/mathdevmcp/literature_gate.py
 tests/test_literature_gate.py
+
+# Local holdout-local evaluation artifacts.
+.local/mathdevmcp/

@@ -1,0 +1,534 @@
+{
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "real_task_public_case_manifest",
+    "status": "draft",
+    "scope": "public_cases_only",
+    "notes": [
+      "This manifest defines the initial committed public cases for the MathDevMCP real-task benchmark program.",
+      "Executable loading, validation, and report integration are deferred to a later implementation slice.",
+      "Paths are stored as repo-root-relative paths. Sibling repositories may be referenced via ../ segments from the MathDevMCP checkout root."
+    ]
+  },
+  "cases": [
+    {
+      "id": "MF-02-large-scale-lgssm-missing-data-policy",
+      "family": "numerical_oracle_parity",
+      "repo": "MacroFinance",
+      "task_type": "policy_contract_audit",
+      "difficulty": "medium",
+      "public": true,
+      "document_roots": [],
+      "document_files": [],
+      "code_roots": [
+        "../MacroFinance"
+      ],
+      "code_files": [
+        "../MacroFinance/tests/test_large_scale_lgssm_missing_data_policy.py"
+      ],
+      "labels": [],
+      "prompt": "Audit the large-scale LGSSM missing-data policy and determine what behavior is intentionally unsupported, which failures are explicit pending-policy failures, and which are plain configuration errors. Do not promote these checks into posterior or model-validity claims.",
+      "gold": {
+        "expected_status": "unverified",
+        "expected_substatus": "unsupported_missing_data_policy",
+        "expected_labels": [],
+        "required_terms": [
+          "Masked Kalman updates and derivative slicing are pending",
+          "contains NaN/Inf observations",
+          "observation mask shape"
+        ],
+        "forbidden_claims": [
+          "This validates Kalman likelihood correctness under missing data.",
+          "This establishes posterior validity for sparse panels."
+        ],
+        "required_next_actions": [
+          "Treat sparse or masked observations as unsupported until masked updates are implemented.",
+          "Keep NaN sparse proxies out of the likelihood path."
+        ],
+        "evidence_class": "engineering_policy_test",
+        "false_confidence_veto": true
+      },
+      "notes": "Deterministic explicit-failure policy case with clear pending/error semantics."
+    },
+    {
+      "id": "MF-03-hmc-helper-nonclaim-boundary",
+      "family": "evidence_boundary_discipline",
+      "repo": "MacroFinance",
+      "task_type": "nonclaim_boundary_audit",
+      "difficulty": "easy",
+      "public": true,
+      "document_roots": [],
+      "document_files": [],
+      "code_roots": [
+        "../MacroFinance"
+      ],
+      "code_files": [
+        "../MacroFinance/tests/test_hmc_regression.py"
+      ],
+      "labels": [],
+      "prompt": "Summarize what the HMC regression helper tests establish and what they explicitly do not establish. Preserve the distinction between numerical-stability helper evidence and model-level identification or posterior evidence.",
+      "gold": {
+        "expected_status": "consistent",
+        "expected_substatus": "helper_nonclaim_boundary_preserved",
+        "expected_labels": [],
+        "required_terms": [
+          "numerical-stability helpers",
+          "mass-matrix",
+          "ESS",
+          "R-hat",
+          "not structural-identification tests"
+        ],
+        "forbidden_claims": [
+          "These tests establish structural identification.",
+          "These tests validate the posterior.",
+          "These tests prove sampler convergence for the model."
+        ],
+        "required_next_actions": [
+          "Use separate model-level diagnostics for identification or posterior claims."
+        ],
+        "evidence_class": "engineering_helper_regression",
+        "false_confidence_veto": true
+      },
+      "notes": "Boundary-discipline case anchored by explicit comments in the test file itself."
+    },
+    {
+      "id": "DH-01-strict-nk-convergence-audit",
+      "family": "numerical_oracle_parity",
+      "repo": "dsge_hmc",
+      "task_type": "convergence_threshold_audit",
+      "difficulty": "medium",
+      "public": true,
+      "document_roots": [],
+      "document_files": [],
+      "code_roots": [
+        "../dsge_hmc"
+      ],
+      "code_files": [
+        "../dsge_hmc/tests/extended/test_nk_convergence_audit.py"
+      ],
+      "labels": [],
+      "prompt": "Read the strict NK convergence audit and extract the exact pass criteria, run scope, and non-smoke interpretation. Preserve the fact that this is a heavyweight statistical audit rather than a routine local smoke test.",
+      "gold": {
+        "expected_status": "consistent",
+        "expected_substatus": "strict_convergence_thresholds_recovered",
+        "expected_labels": [],
+        "required_terms": [
+          "R-hat < 1.01",
+          "ESS_bulk > 400",
+          "MCSE/SD < 10%",
+          "medium/overnight diagnostics",
+          "not routine local smoke validation"
+        ],
+        "forbidden_claims": [
+          "This is a quick smoke test.",
+          "The file contains no explicit convergence thresholds."
+        ],
+        "required_next_actions": [
+          "Use the declared thresholds as the audit contract for this case."
+        ],
+        "evidence_class": "statistical_convergence_audit",
+        "false_confidence_veto": true
+      },
+      "notes": "Quantitative benchmark case with explicit thresholds and scope boundaries."
+    },
+    {
+      "id": "DH-02-bayesfilter-qr-value-parity",
+      "family": "code_document_consistency",
+      "repo": "dsge_hmc",
+      "task_type": "adapter_parity_audit",
+      "difficulty": "hard",
+      "public": true,
+      "document_roots": [],
+      "document_files": [],
+      "code_roots": [
+        "../dsge_hmc"
+      ],
+      "code_files": [
+        "../dsge_hmc/tests/contracts/test_real_nk_bayesfilter_qr_kalman_migration.py"
+      ],
+      "labels": [],
+      "prompt": "Audit the BayesFilter QR Kalman migration parity test and determine exactly what is certified by the tiny fixture. Report the direct-value parity target and the explicit capability boundaries around score authority and XLA HMC readiness.",
+      "gold": {
+        "expected_status": "consistent",
+        "expected_substatus": "tiny_fixture_value_parity_only",
+        "expected_labels": [],
+        "required_terms": [
+          "adapter_value",
+          "direct_value",
+          "bayesfilter.linear.tf_qr_linear_gaussian_log_likelihood",
+          "value_score_authority == unavailable",
+          "xla_hmc_ready is False"
+        ],
+        "forbidden_claims": [
+          "This certifies BayesFilter score authority.",
+          "This proves XLA HMC readiness.",
+          "This proves full filter gradient certification."
+        ],
+        "required_next_actions": [
+          "Treat this as tiny-fixture value-parity evidence only.",
+          "Keep score-authority and XLA-readiness claims separate."
+        ],
+        "evidence_class": "engineering_adapter_parity",
+        "false_confidence_veto": true
+      },
+      "notes": "Strong parity case because the test file encodes both exact equality and explicit capability limits."
+    },
+    {
+      "id": "DH-04-bayesfilter-engineering-qualification-boundary",
+      "family": "evidence_boundary_discipline",
+      "repo": "dsge_hmc",
+      "task_type": "result_note_boundary_audit",
+      "difficulty": "medium",
+      "public": true,
+      "document_roots": [
+        "../dsge_hmc/docs/plans/BayesFilterDSGE"
+      ],
+      "document_files": [
+        "../dsge_hmc/docs/plans/BayesFilterDSGE/bayesfilter-model-suite-hmc-qualification-result-2026-06-08.md"
+      ],
+      "code_roots": [
+        "../dsge_hmc"
+      ],
+      "code_files": [],
+      "labels": [],
+      "prompt": "Summarize the BayesFilter model-suite HMC qualification result and state precisely what kind of evidence it provides, along with the stronger conclusions the note explicitly says are not justified.",
+      "gold": {
+        "expected_status": "consistent",
+        "expected_substatus": "engineering_qualification_only",
+        "expected_labels": [],
+        "required_terms": [
+          "engineering qualification result only",
+          "not sampler convergence evidence",
+          "not posterior validity evidence",
+          "not DSGE/NK readiness",
+          "not GPU readiness",
+          "not scientific/economic result"
+        ],
+        "forbidden_claims": [
+          "This result proves convergence.",
+          "This result establishes posterior validity.",
+          "This result authorizes scientific interpretation."
+        ],
+        "required_next_actions": [
+          "Require a serious DSGE/NK experiment plan before stronger claims are made."
+        ],
+        "evidence_class": "engineering_qualification_note",
+        "false_confidence_veto": true
+      },
+      "notes": "High-value evidence-boundary case because the source note already states explicit non-claims."
+    },
+    {
+      "id": "LP-01-analytical-validation-lgssm",
+      "family": "retrieval_and_provenance",
+      "repo": "latex-papers",
+      "task_type": "analytical_validation_extraction",
+      "difficulty": "hard",
+      "public": true,
+      "document_roots": [
+        "../latex-papers/CIP_monograph"
+      ],
+      "document_files": [
+        "../latex-papers/CIP_monograph/chapters/ch33_analytical_validation.tex"
+      ],
+      "code_roots": [],
+      "code_files": [],
+      "labels": [
+        "eq:av_lgssm_trans",
+        "eq:av_lgssm_obs",
+        "prop:av_edh_kf",
+        "rem:av_lgssm_test"
+      ],
+      "prompt": "Find the analytical validation material for the linear-Gaussian state-space model and extract the exact setup, the EDH/Kalman exactness claim, and the practical test specification including the concrete pass criterion.",
+      "gold": {
+        "expected_status": "consistent",
+        "expected_substatus": "analytical_test_spec_recovered",
+        "expected_labels": [
+          "eq:av_lgssm_trans",
+          "eq:av_lgssm_obs",
+          "prop:av_edh_kf",
+          "rem:av_lgssm_test"
+        ],
+        "required_terms": [
+          "linear-Gaussian state-space model",
+          "Kalman filter",
+          "EDH recovers the Kalman filter",
+          "N in {50, 100, 500, 1000}",
+          "error below 10^-2 for N = 1000"
+        ],
+        "forbidden_claims": [
+          "The chapter provides no concrete pass criterion.",
+          "The chapter only gives qualitative validation advice."
+        ],
+        "required_next_actions": [
+          "Use the practical test specification as a gold-standard benchmark case."
+        ],
+        "evidence_class": "analytical_gold_standard",
+        "false_confidence_veto": true
+      },
+      "notes": "Strong analytical gold case with explicit proposition-level structure and a practical validation threshold."
+    },
+    {
+      "id": "LP-02-basis-reconciliation-audit",
+      "family": "derivation_boundary_and_abstention",
+      "repo": "latex-papers",
+      "task_type": "sign_convention_reconciliation",
+      "difficulty": "hard",
+      "public": true,
+      "document_roots": [
+        "../latex-papers/CIP_monograph"
+      ],
+      "document_files": [
+        "../latex-papers/CIP_monograph/plan_items_3_4_6_7.md"
+      ],
+      "code_roots": [],
+      "code_files": [],
+      "labels": [],
+      "prompt": "Audit the basis-reconciliation plan and recover the relationship between the market basis and the model basis, including the multi-location sign-convention risk. Preserve uncertainty about anything the plan flags as still requiring audit or chapter harmonization.",
+      "gold": {
+        "expected_status": "unverified",
+        "expected_substatus": "multi_location_sign_reconciliation_needed",
+        "expected_labels": [],
+        "required_terms": [
+          "market convention",
+          "model convention",
+          "x_t = -x_market",
+          "six locations",
+          "symbol drift",
+          "sign reversal"
+        ],
+        "forbidden_claims": [
+          "The monograph is already fully reconciled.",
+          "No further chapter-level harmonization is needed."
+        ],
+        "required_next_actions": [
+          "Treat the document as a reconciliation task rather than a settled single-source definition.",
+          "Audit downstream chapter references against the proposed master reconciliation section."
+        ],
+        "evidence_class": "document_reconciliation_plan",
+        "false_confidence_veto": true
+      },
+      "notes": "Good abstention-quality case because the source is a plan diagnosing unresolved multi-location sign drift."
+    },
+    {
+      "id": "MF-04-short-hmc-acceptance-veto-diagnosis",
+      "family": "evidence_boundary_discipline",
+      "repo": "MacroFinance",
+      "task_type": "diagnostic_blocker_audit",
+      "difficulty": "medium",
+      "public": true,
+      "document_roots": [
+        "../MacroFinance/docs/plans"
+      ],
+      "document_files": [
+        "../MacroFinance/docs/plans/mixed_frequency_tfp_short_hmc_acceptance_veto_diagnosis_result.md"
+      ],
+      "code_roots": [
+        "../MacroFinance"
+      ],
+      "code_files": [
+        "../MacroFinance/tests/test_mixed_frequency_tfp_short_hmc_acceptance_veto_diagnosis.py"
+      ],
+      "labels": [],
+      "prompt": "Summarize the short HMC acceptance-veto diagnosis result and preserve the fact that trusted same-process GPU provenance failed before any reviewed rows could be interpreted. Do not treat this as pilot closure or downstream authorization.",
+      "gold": {
+        "expected_status": "inconclusive",
+        "expected_substatus": "trusted_gpu_provenance_blocked",
+        "expected_labels": [],
+        "required_terms": [
+          "Classification: inconclusive",
+          "acceptance-veto diagnosis requires trusted same-process GPU execution",
+          "trusted_execution_provenance_passed",
+          "False",
+          "not authorized"
+        ],
+        "forbidden_claims": [
+          "short HMC pilot gate closure: authorized",
+          "synthetic or empirical HMC pilot: authorized",
+          "overnight or full estimation launch: authorized"
+        ],
+        "required_next_actions": [
+          "fix the diagnostic blocker or revise under Claude/Codex review"
+        ],
+        "evidence_class": "diagnostic_blocked_execution_note",
+        "false_confidence_veto": true
+      },
+      "notes": "Public inconclusive case with explicit blocker, veto diagnostics, and downstream non-authorization language."
+    },
+    {
+      "id": "DH-05-sgu-exact-manifold-blocker",
+      "family": "code_document_consistency",
+      "repo": "dsge_hmc",
+      "task_type": "blocked_readiness_boundary_audit",
+      "difficulty": "hard",
+      "public": true,
+      "document_roots": [
+        "../dsge_hmc/docs/plans"
+      ],
+      "document_files": [
+        "../dsge_hmc/docs/plans/sgu-filter-target-readiness-gap-closure-result-2026-05-12.md"
+      ],
+      "code_roots": [
+        "../dsge_hmc"
+      ],
+      "code_files": [
+        "../dsge_hmc/tests/contracts/test_sgu_filter_target_readiness_gate.py"
+      ],
+      "labels": [],
+      "prompt": "Summarize the SGU filter-target readiness result while preserving the explicit blocked nonlinear manifold residual. Do not upgrade local engineering readiness into exact nonlinear manifold closure or downstream Bayesian/HMC readiness.",
+      "gold": {
+        "expected_status": "mismatch",
+        "expected_substatus": "preserved_nonlinear_manifold_blocker",
+        "expected_labels": [],
+        "required_terms": [
+          "blocked_nonlinear_equilibrium_manifold_residual",
+          "engineering evidence",
+          "not global or posterior evidence",
+          "BayesFilter integration remains untested"
+        ],
+        "forbidden_claims": [
+          "exact nonlinear manifold closure is achieved",
+          "BayesFilter integration is certified",
+          "posterior readiness is established"
+        ],
+        "required_next_actions": [
+          "Preserve the nonlinear manifold blocker as open in downstream planning."
+        ],
+        "evidence_class": "bounded_engineering_readiness_with_blocker",
+        "false_confidence_veto": true
+      },
+      "notes": "Public mismatch case where a local readiness result explicitly preserves a blocker that must not be erased by later summaries."
+    },
+    {
+      "id": "DH-06-densesoap-source-contract-mismatch",
+      "family": "code_document_consistency",
+      "repo": "dsge_hmc",
+      "task_type": "source_contract_audit",
+      "difficulty": "medium",
+      "public": true,
+      "document_roots": [
+        "../dsge_hmc/docs/plans"
+      ],
+      "document_files": [
+        "../dsge_hmc/docs/plans/tf-optimizer-soap-source-contract-audit-result-2026-06-06.md"
+      ],
+      "code_roots": [
+        "../dsge_hmc"
+      ],
+      "code_files": [],
+      "labels": [],
+      "prompt": "Audit the DenseSOAP source-contract result and preserve the fact that both local TensorFlow surfaces remain diagnostic-only because of material official-contract mismatches. Do not promote them to parity or default optimizer policy.",
+      "gold": {
+        "expected_status": "mismatch",
+        "expected_substatus": "diagnostic_only_source_contract_mismatch",
+        "expected_labels": [],
+        "required_terms": [
+          "DENSESOAP_REMAINS_DIAGNOSTIC_ONLY",
+          "material default mismatch",
+          "missing official feature",
+          "step/cadence mismatch",
+          "no official SOAP parity claim"
+        ],
+        "forbidden_claims": [
+          "official SOAP parity is established",
+          "default optimizer policy should be promoted",
+          "downstream DSGE/HMC readiness is established"
+        ],
+        "required_next_actions": [
+          "Keep both TensorFlow DenseSOAP surfaces diagnostic-only unless a new bounded optimizer plan is approved."
+        ],
+        "evidence_class": "diagnostic_source_contract_mismatch",
+        "false_confidence_veto": true
+      },
+      "notes": "Public mismatch case with explicit static source-contract drift and strong nonclaims against parity promotion."
+    },
+    {
+      "id": "DH-07-neutra-real-nk-migration-not-complete",
+      "family": "evidence_boundary_discipline",
+      "repo": "dsge_hmc",
+      "task_type": "fail_closed_migration_gate_audit",
+      "difficulty": "hard",
+      "public": true,
+      "document_roots": [
+        "../dsge_hmc/docs/plans/BayesFilterDSGE"
+      ],
+      "document_files": [
+        "../dsge_hmc/docs/plans/BayesFilterDSGE/neutra-real-nk-bayesfilter-migration-certification-result-2026-06-09.md"
+      ],
+      "code_roots": [
+        "../dsge_hmc"
+      ],
+      "code_files": [
+        "../dsge_hmc/tests/contracts/test_neutra_real_nk_bayesfilter_migration_readiness.py"
+      ],
+      "labels": [],
+      "prompt": "Summarize the NeuTra real-NK BayesFilter migration certification result while preserving the fail-closed engineering gate: the current runner is not migrated and serious real-NK NeuTra continuation remains blocked.",
+      "gold": {
+        "expected_status": "mismatch",
+        "expected_substatus": "migration_not_complete",
+        "expected_labels": [],
+        "required_terms": [
+          "current_neutra_runner_migrated",
+          "false",
+          "serious_real_nk_neutra_blocked",
+          "true",
+          "fail-closed engineering certification gate"
+        ],
+        "forbidden_claims": [
+          "the current DSGE real-NK NeuTra runner is migrated",
+          "serious real-NK NeuTra baselines are ready",
+          "score-matching continuation is ready"
+        ],
+        "required_next_actions": [
+          "Implement the remaining BayesFilter migration checklist before serious real-NK NeuTra continuation."
+        ],
+        "evidence_class": "fail_closed_migration_gate",
+        "false_confidence_veto": true
+      },
+      "notes": "Public mismatch case with explicit fail-closed migration blockers and strong nonclaims against readiness promotion."
+    },
+    {
+      "id": "RA-01-parser-benchmark-inventory",
+      "family": "evidence_boundary_discipline",
+      "repo": "MacroFinance/ResearchAssistant",
+      "task_type": "benchmark_inventory_structure_audit",
+      "difficulty": "easy",
+      "public": true,
+      "document_roots": [
+        "../MacroFinance/ResearchAssistant/docs"
+      ],
+      "document_files": [
+        "../MacroFinance/ResearchAssistant/docs/benchmark_plan.md"
+      ],
+      "code_roots": [
+        "../MacroFinance/ResearchAssistant"
+      ],
+      "code_files": [
+        "../MacroFinance/ResearchAssistant/tests/integration/test_benchmark_inventory.py"
+      ],
+      "labels": [],
+      "prompt": "Audit the ResearchAssistant benchmark inventory discipline and summarize what benchmark artifacts and report fields are required for its parser benchmark workflow. Focus on inventory structure rather than parser correctness claims.",
+      "gold": {
+        "expected_status": "consistent",
+        "expected_substatus": "benchmark_inventory_contract_recovered",
+        "expected_labels": [],
+        "required_terms": [
+          "report",
+          "results",
+          "expected",
+          "parser_runs",
+          "status",
+          "synthetic fixtures"
+        ],
+        "forbidden_claims": [
+          "This test suite proves parser semantic correctness beyond its declared scored fields."
+        ],
+        "required_next_actions": [
+          "Reuse its benchmark-inventory discipline as a structural reference, not as a semantic oracle for MathDevMCP outputs."
+        ],
+        "evidence_class": "benchmark_inventory_structure",
+        "false_confidence_veto": true
+      },
+      "notes": "Useful adjacent benchmark-pattern case for manifest/report structure discipline."
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "approval_field_status": {
+    "malformed_output_policy": "PENDING_EXPLICIT_HUMAN_APPROVAL",
+    "prompt_manifest_and_count": "PENDING_EXPLICIT_HUMAN_APPROVAL",
+    "response_artifact_directory": "PENDING_EXPLICIT_HUMAN_APPROVAL",
+    "response_manifest": "PENDING_EXPLICIT_HUMAN_APPROVAL",
+    "response_worker_surface": "MISSING_REQUIRED_APPROVAL",
+    "retry_policy": "PENDING_EXPLICIT_HUMAN_APPROVAL",
+    "scored_json": "PENDING_EXPLICIT_HUMAN_APPROVAL",
+    "scored_markdown": "PENDING_EXPLICIT_HUMAN_APPROVAL",
+    "scoring_contract": "PENDING_EXPLICIT_HUMAN_APPROVAL"
+  },
+  "checks": {
+    "collection_authorized_by_scoring_contract": false,
+    "json_files_parsed": 10,
+    "prompt_count": 18,
+    "prompt_count_ok": true,
+    "prompt_manifest_hash_matches_scoring_contract": true,
+    "prompt_validation_error_count": 0,
+    "prompt_validation_ok": true,
+    "response_artifact_absence_ok": true,
+    "response_artifact_count": 0,
+    "response_artifacts": []
+  },
+  "collection_approval_complete": false,
+  "collection_decision": "STOP_BEFORE_COLLECTION_PENDING_APPROVAL",
+  "metadata": {
+    "contract": "downstream_agent_usefulness_v2_collection_preflight_report",
+    "created": "2026-07-03",
+    "schema_version": "1.0",
+    "status": "blocked_pending_collection_approval"
+  },
+  "missing_or_pending_approval_fields": [
+    "prompt_manifest_and_count",
+    "response_worker_surface",
+    "retry_policy",
+    "malformed_output_policy",
+    "scoring_contract",
+    "response_artifact_directory",
+    "response_manifest",
+    "scored_json",
+    "scored_markdown"
+  ],
+  "non_claims": [
+    "Preflight is not response-quality evidence.",
+    "Preflight is not a scored v2 result.",
+    "Preflight does not establish C-over-B superiority.",
+    "Preflight does not establish public benchmark validity, release readiness, scientific validation, product capability, or general model reliability."
+  ]
+}

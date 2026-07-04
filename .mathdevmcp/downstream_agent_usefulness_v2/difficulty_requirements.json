@@ -1,0 +1,106 @@
+{
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "downstream_agent_usefulness_v2_difficulty_requirements",
+    "created": "2026-07-02",
+    "status": "phase_01_requirements_only_no_prompt_fixtures",
+    "source_analysis": ".mathdevmcp/downstream_agent_usefulness_v2/ceiling_effect_analysis.json"
+  },
+  "case_design_requirements": [
+    {
+      "id": "V2-REQ-01",
+      "workflow_family": "derive_from",
+      "requirement": "Include a route from assumptions to target where the compact evidence contains a plausible scalar or local check but omits at least one decisive matrix, dimension, domain, or theorem obligation.",
+      "why_c_should_help": "C can frame the route boundary, required obligations, and abstention condition without giving an evaluator-only label.",
+      "leakage_guard": "Do not put expected_output_family or evidence_class labels in prompt text; describe obligations as task context only."
+    },
+    {
+      "id": "V2-REQ-02",
+      "workflow_family": "prove_or_counterexample",
+      "requirement": "Include a symbolic claim where a backend certificate or concrete witness is decisive only after notation aliases, domain restrictions, or scope boundaries are reconciled.",
+      "why_c_should_help": "C can provide a notation map and decision criteria; B remains a compact witness/certificate packet that is easy to misread.",
+      "leakage_guard": "A must not include the decisive witness or certificate; C must not say the evaluator outcome as an authority label."
+    },
+    {
+      "id": "V2-REQ-03",
+      "workflow_family": "assumptions_for",
+      "requirement": "Include a likelihood, score, optimization, or route-validity claim where several assumptions are route-required and one missing assumption changes whether the conclusion is well posed.",
+      "why_c_should_help": "C can organize the assumption ledger and non-claims; B supplies compact equations or observations without prioritizing route obligations.",
+      "leakage_guard": "Scoring labels remain manifest-only; prompt text may ask for assumptions but must not include evaluator-only expected-family fields."
+    },
+    {
+      "id": "V2-REQ-04",
+      "workflow_family": "audit_math_to_code",
+      "requirement": "Include a formula-to-code trace with one missing implementation term or ambiguous alias, where prose-only completion is insufficient without a matched/missing-term ledger.",
+      "why_c_should_help": "C can frame the audit artifact and local/global claim boundary; B lists compact AST or token evidence.",
+      "leakage_guard": "The prompt may show formula/code summaries but must not assert global code correctness or incorrectness."
+    },
+    {
+      "id": "V2-REQ-05",
+      "workflow_family": "debug_derivation",
+      "requirement": "Include a local derivation with multiple plausible gaps where the correct output must localize the first failing step and state the missing condition or invalid transformation.",
+      "why_c_should_help": "C can frame the first-failing-step discipline and downstream handoff; B provides a terse derivation trace.",
+      "leakage_guard": "C may include the trace and checking protocol, but not an evaluator-only 'first failing step' label."
+    },
+    {
+      "id": "V2-REQ-06",
+      "workflow_family": "prepare_review_packet",
+      "requirement": "Include a difficult derivation where the correct output is a diagnostic review packet with assumptions, known checks, gaps, and next artifacts, not proof or final derivation.",
+      "why_c_should_help": "C can specify packet sections and boundary policy; B gives scattered compact evidence that may invite a prose proof overclaim.",
+      "leakage_guard": "Prompt text must not claim packet completeness as proof."
+    }
+  ],
+  "cross_cutting_requirements": [
+    {
+      "id": "V2-XREQ-01",
+      "requirement": "Every case must identify which artifact type is required for a full score: backend certificate, concrete witness, equation-to-code trace, assumption ledger, first-gap localization, or diagnostic packet."
+    },
+    {
+      "id": "V2-XREQ-02",
+      "requirement": "At least three cases must be predeclared as high C-sensitivity because the C prompt should help with routing, assumptions, boundary discipline, or next-artifact actionability."
+    },
+    {
+      "id": "V2-XREQ-03",
+      "requirement": "A prompts must remain insufficient for full-score cases that require decisive executable/source evidence."
+    },
+    {
+      "id": "V2-XREQ-04",
+      "requirement": "B prompts must include compact evidence but omit human-framed packet fields, route-prioritization prose, recommended next action, and narrative answer."
+    },
+    {
+      "id": "V2-XREQ-05",
+      "requirement": "C prompts may include background, decision criteria, assumptions, route gaps, and requested artifact structure, but must not include hidden scoring labels as authority."
+    },
+    {
+      "id": "V2-XREQ-06",
+      "requirement": "No case may require substantial private source excerpts when a synthetic fixture or bounded local summary is enough."
+    },
+    {
+      "id": "V2-XREQ-07",
+      "requirement": "Future collection must use no hidden retries and must preserve malformed outputs rather than replacing them."
+    }
+  ],
+  "target_workflow_coverage": {
+    "derive_from": "required",
+    "prove_or_counterexample": "required",
+    "assumptions_for": "required",
+    "audit_math_to_code": "required",
+    "debug_derivation": "required",
+    "prepare_review_packet": "required"
+  },
+  "candidate_only_scoring_stressors": [
+    "alias_reconciliation",
+    "domain_obligation_tracking",
+    "first_failing_step_localization",
+    "matched_missing_artifact_ledger",
+    "non_claim_boundary_preservation",
+    "next_artifact_specificity",
+    "abstention_when_route_insufficient"
+  ],
+  "non_claims": [
+    "Difficulty requirements are not scored benchmark results.",
+    "Difficulty requirements do not prove v2 will separate B and C.",
+    "Difficulty requirements do not authorize response collection.",
+    "Difficulty requirements do not establish tool improvement, model reliability, release readiness, public benchmark validity, scientific validation, or product capability."
+  ]
+}

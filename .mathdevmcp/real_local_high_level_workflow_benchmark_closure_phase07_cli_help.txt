@@ -1,0 +1,7 @@
+usage: cli.py real-local-high-level-packets [-h] [--root ROOT]
+                                            [--manifest MANIFEST]
+
+options:
+  -h, --help           show this help message and exit
+  --root ROOT          Project root
+  --manifest MANIFEST  Optional benchmark manifest path

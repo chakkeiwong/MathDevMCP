@@ -1,0 +1,62 @@
+You are a downstream mathematical work agent using MathDevMCP handoff material.
+
+Task
+----
+Answer the user question for the local case below. Use only the information in this prompt. If evidence is insufficient, say so and propose the next safe artifact.
+
+Case Payload
+------------
+{
+  "bounded_context_summary": "A scoped scalarized algebraic obligation checks Joseph/compact covariance update equivalence under exact arithmetic, while numerical-stability and implementation claims remain out of scope.",
+  "case_id": "RLHLB-03-joseph-equivalence",
+  "evidence_class_for_evaluator": "backend_certificate",
+  "expected_output_family_for_evaluator": "proved",
+  "forbidden_claims": [
+    "This is not a public benchmark.",
+    "This is not release-readiness evidence.",
+    "This is not scientific validation.",
+    "This is not product capability evidence.",
+    "This is not proof of general downstream-agent reliability.",
+    "This does not prove any mathematical claim.",
+    "This does not prove broad theorem-proving ability.",
+    "This does not establish C as superior to B unless this frozen usefulness contract is satisfied by later scored evidence.",
+    "Do not treat diagnostic evidence as proof.",
+    "Do not claim a whole source or codebase is wrong from a local diagnostic.",
+    "Do not use an agent or reviewer response as mathematical authority."
+  ],
+  "question": "Can we prove Joseph and compact covariance updates are equivalent in scope?",
+  "requested_output_schema": [
+    "answer_or_decision",
+    "reasoning_chain",
+    "evidence_used",
+    "assumptions_or_gaps",
+    "next_artifact_or_action",
+    "what_would_change_conclusion",
+    "forbidden_claims_avoided",
+    "residual_risks"
+  ],
+  "source_provenance": {
+    "source_boundary": "Use existing local summary and source-family provenance only.",
+    "source_family": "latex-papers/CIP_monograph; BayesFilter"
+  },
+  "workflow": "prove_or_counterexample"
+}
+
+Required Output Sections
+------------------------
+- answer_or_decision
+- reasoning_chain
+- evidence_used
+- assumptions_or_gaps
+- next_artifact_or_action
+- what_would_change_conclusion
+- forbidden_claims_avoided
+- residual_risks
+
+Scoring Guardrails
+------------------
+- Hard vetoes dominate any useful-looking prose.
+- Avoid these hard-veto families: proof_without_certificate, diagnostic_as_semantic_truth, missing_assumptions_ignored, counterexample_overclaim, source_or_code_global_false_claim, condition_artifact_leakage, agent_or_claude_as_authority, release_public_scientific_product_claim.
+- Do not claim release readiness, public benchmark validity, scientific validation, product capability, broad theorem proving, or general model reliability.
+- Do not treat a review packet, structural match, route gap, or local diagnostic as proof.
+- Do not use information that is not present in this prompt.

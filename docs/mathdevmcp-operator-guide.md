@@ -14,6 +14,197 @@ MathDevMCP is designed for five recurring tasks:
 
 It is intentionally conservative. It helps surface support and mismatches, but it does **not** prove arbitrary algebraic equivalence.
 
+## High-level math workflows
+
+Use the high-level workflow layer when the user asks for an answer-shaped
+mathematical workflow rather than a primitive diagnostic:
+
+- "Can I derive X from Y?"
+- "Can we prove X, or show a counterexample?"
+- "What assumptions are required for X?"
+- "Where does this derivation first fail?"
+- "Does this code implement this math?"
+- "Can we prepare a review packet?"
+
+Useful CLI entry points:
+
+```bash
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
+  derive-from "a + b = b + a" --given "a,b are scalars"
+
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
+  prove-or-counterexample "A*B = B*A"
+
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
+  assumptions-for "logdet(A)"
+
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
+  debug-derivation --step "logdet(A)" --step "trace(A)" --step "trace(A)"
+
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
+  audit-math-to-code "logdet(S)" "def f(S): return logdet(S)"
+
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
+  prepare-review-packet "Review derivation" --evidence '[{"status":"diagnostic_only"}]'
+
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
+  high-level-workflow-quality --root /path/to/MathDevMCP
+```
+
+Each high-level command returns a `high_level_workflow_result` envelope. Preserve
+the envelope fields in downstream prompts or reports:
+`evidence_classes`, `certification_source`, `veto_reasons`, `assumptions`,
+`counterexamples`, `actions`, and `non_claims`.
+
+Interpretation boundary:
+
+- `proved` requires backend certificate evidence.
+- `refuted` requires a backend counterexample or scoped contradiction evidence.
+- `structural_match`, `diagnostic_only`, `gap_found`, `backend_unavailable`,
+  and `not_encodable` are not proofs or refutations.
+- `derive-from --given` records context. It does not silently turn givens into
+  formal assumptions; use `--assumption` for route assumptions.
+- `assumptions-for` reports route-required assumptions and does not claim global
+  minimality.
+- The high-level quality report is seeded local evidence about boundary
+  preservation. It is not an external benchmark score, release-readiness
+  claim, scientific-validity claim, or general theorem-proving claim.
+
+### Real-local high-level benchmark closure artifacts
+
+The real-local high-level workflow benchmark is a local/non-gating regression
+surface built from locally available repo/document cases. Use it when checking
+whether the high-level workflows preserve source, backend, counterexample,
+assumption, gap, action, and non-claim boundaries on real local material.
+
+Useful CLI entry points:
+
+```bash
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
+  real-local-high-level-benchmark-schema --root /path/to/MathDevMCP
+
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
+  real-local-high-level-routes --root /path/to/MathDevMCP
+
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
+  real-local-high-level-baseline --root /path/to/MathDevMCP
+
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
+  real-local-high-level-packets --root /path/to/MathDevMCP
+
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
+  real-local-high-level-final-matrix --root /path/to/MathDevMCP
+```
+
+Interpretation boundary:
+
+- The schema command checks the frozen local manifest and expected evidence
+  contracts; it does not run workflows.
+- The route command reports source/backend/review-packet route availability;
+  route availability is not proof or refutation.
+- The baseline command runs current workflows and reports per-case status,
+  boundary checks, and failure class. It intentionally emits
+  `aggregate_accuracy: null`.
+- The packet command builds durable review packets for all frozen cases. A
+  packet is a review artifact, not a proof certificate unless its nested scoped
+  result includes backend certification for that exact obligation.
+- The final-matrix command summarizes the final per-case local closure state,
+  repair round, residual limitation, and non-promotion status.
+- Opaque semantic placeholder equalities require explicit source-backed or
+  formal evidence before proof or refutation. A finite-domain assignment over
+  placeholder names is not treated as a semantic counterexample.
+- These artifacts are local regression evidence only. They are not benchmark
+  gate evidence, public benchmark validity evidence, release-readiness
+  evidence, scientific validation, external reproducibility evidence, full
+  LaTeX proof checking, or broad theorem-proving evidence.
+
+### Agent-handoff packet standard
+
+The durable packet report validates each packet against the local
+`agent_handoff_packet` standard. Use this standard when handing a difficult
+derivation, proof, code/math audit, missing-assumption question, or abstention
+case to another agent or reviewer.
+
+An agent-handoff packet must preserve both ledgers:
+
+- machine/source evidence: `source_anchors`, `route_availability`,
+  `derivation_proof_steps`, `backend_checks`, `assumptions`,
+  `counterexamples`, `gaps`, and `evidence_classes`;
+- human/agent framing: `human_framing`, `reasoning`, `actions`, and
+  `non_claims`.
+
+The `human_framing` section should give local background, a minimal formula
+scaffold, source context summary, the decision target, decision criteria,
+alternative explanations, and what evidence would change the conclusion. The
+`reasoning` section should make the bounded conclusion self-contained: source
+context, encoded obligation or diagnostic artifact, decisive evidence, why the
+conclusion follows, remaining gaps or assumptions, next actions, and limits.
+
+If `real-local-high-level-packets` returns a high-severity
+`agent_handoff_packet_contract_failed` finding, do not use that packet as an
+agent handoff until the missing field or boundary is repaired. A valid packet
+is still a review artifact, not a proof certificate. It does not establish
+release readiness, public benchmark validity, scientific validation, broad
+theorem proving, or downstream-agent reliability.
+
+## Mathematical debugging workbench
+
+For question-centered work, use the debugging workflows when the operator asks:
+
+- "Can I derive X from Y?"
+- "Can we prove X, or find a counterexample?"
+- "What assumptions are required for X?"
+- "Where does this derivation stop being justified?"
+- "Does this code implement this equation?"
+- "What changes downstream if this equation changes?"
+
+Useful CLI entry points:
+
+```bash
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
+  derive-or-refute "a + b = b + a"
+
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
+  prove-or-refute "(a+b)*(a-b) = a*a - b*b"
+
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
+  localize-proof-gap --step "a + b = b + a" --step "b + a = a - b"
+
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
+  generate-math-tests "a + b = b + a" --kinds '["symbolic_identity"]'
+```
+
+Benchmark and quality checks for these workflows:
+
+```bash
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
+  benchmark-gate --root /path/to/MathDevMCP
+
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
+  workbench-benchmark-quality --root /path/to/MathDevMCP
+```
+
+The formal benchmark gate includes the seeded local workbench category. The
+quality report is separate evidence: it checks seeded tool/oracle coverage,
+negative controls, deterministic rerun stability, boundary preservation, run
+manifest fields, and a fixed diagnostic mutation panel for proof-promotion
+mistakes.
+
+Interpretation boundary:
+
+- `derive-or-refute` and `prove-or-refute` can report scoped backend proof or
+  refutation when a deterministic backend certifies that obligation.
+- `code-implements-equation`, `reconcile-notation`, `generate-math-tests`,
+  `math-review-packet`, `math-change-impact`, and `literature-local-audit` are
+  diagnostic or review workflows unless their nested evidence includes a
+  certifying backend result.
+- Missing or unavailable backends are not refutations.
+- Passing generated tests and numeric checks are not mathematical proofs.
+- Seeded benchmark success and quality thresholds do not establish external
+  benchmark validity, release readiness, or broad theorem-proving ability.
+- Licensed external benchmark adaptations must remain local/provenance-recorded
+  and diagnostic-only unless a later reviewed gate promotes them.
+
 ## Installation Modes
 
 The base package is intentionally small. Heavy mathematical tools are optional and detected at runtime.

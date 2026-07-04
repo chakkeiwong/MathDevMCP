@@ -1,0 +1,28 @@
+# Downstream-Agent Usefulness V2 Candidate Prompt
+
+Condition B: compact machine evidence only. Human framing, recommended next actions, and narrative answer scaffolding are intentionally absent.
+
+Case: V2-PRP-01-gaussian-score-review-packet - Gaussian score diagnostic review packet
+Workflow: prepare_review_packet
+
+Task
+Prepare the review packet a downstream mathematical reviewer needs next. Do not present the packet as proof.
+
+Bounded Context
+Prepare a diagnostic packet for a difficult Gaussian score derivation where available checks are incomplete and proof is not authorized.
+
+Compact Machine Evidence
+- known_check: value-route smoke check passed for a small scalar observation case
+- partial_symbolic_fact: scalar derivative route has a local expression
+- open_obligation: full covariance matrix calculus step remains unresolved
+
+Response Fields
+- local_answer
+- evidence_used
+- assumptions_or_gaps
+- boundary_notes
+
+Non-Claims
+- Use only the information in this prompt.
+- Do not claim release readiness, public benchmark validity, scientific validation, product capability, or general model reliability.
+- Do not treat diagnostic checks as proof beyond their stated scope.

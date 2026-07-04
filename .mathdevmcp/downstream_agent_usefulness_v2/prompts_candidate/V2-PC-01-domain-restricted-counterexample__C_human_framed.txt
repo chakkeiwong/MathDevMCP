@@ -1,0 +1,34 @@
+# Downstream-Agent Usefulness V2 Candidate Prompt
+
+Condition C: self-contained agent handoff packet. Use the framing to decide, derive, refute, or abstain while preserving non-claim boundaries.
+
+Case: V2-PC-01-domain-restricted-counterexample - Domain-restricted symbolic counterexample
+Workflow: prove_or_counterexample
+
+Background
+The claim states f(x) = g(x) for all real x. Compact backend evidence gives x = 0 as a witness for the unrestricted expression after clearing denominators. A side note says the source route only intended x > 0 and denominators nonzero.
+
+Task
+Can the symbolic claim be proved or refuted in the stated scope? Use only scoped evidence and preserve domain boundaries.
+
+Compact Evidence To Use Carefully
+- machine_witness: x = 0 refutes the unrestricted all-real identity after denominator clearing
+- scope_note: source route states intended domain x > 0 with denominators nonzero
+- obligation_marker: unrestricted witness and intended restricted route are different scopes
+
+Handoff Framing
+- Decision criteria: distinguish unrestricted all-real scope from the intended restricted domain.
+- Use the witness only for the scope it actually tests.
+- Requested artifact: scoped certificate or counterexample map with domain notes.
+
+Required Response Sections
+- answer_or_abstention
+- evidence_route
+- assumptions_gaps_or_domain_obligations
+- boundary_and_nonclaim_notes
+- next_artifact
+
+Non-Claims
+- Use only the information in this prompt.
+- Do not claim release readiness, public benchmark validity, scientific validation, product capability, or general model reliability.
+- Do not treat diagnostic checks as proof beyond their stated scope.

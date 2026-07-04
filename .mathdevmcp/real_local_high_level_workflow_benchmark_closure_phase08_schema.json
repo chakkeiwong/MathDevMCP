@@ -1,0 +1,644 @@
+{
+  "status": "consistent",
+  "path": "/home/chakwong/python/MathDevMCP/benchmarks/real_tasks/holdout_local/real_local_high_level_workflow_benchmark_cases.json",
+  "cases": [
+    {
+      "id": "RLHLB-01-ift-sign-gap",
+      "title": "IFT gradient-bias sign gap",
+      "workflow": "debug_derivation",
+      "tier": "holdout_local",
+      "question": "Where does this sign derivation first fail?",
+      "source_snapshot": {
+        "source_family": "dsge_hmc",
+        "source_files": [
+          {
+            "path": "../dsge_hmc/docs/gradient_accuracy_analysis.tex",
+            "line_range": "536-589",
+            "role": "theorem statement and proof algebra"
+          },
+          {
+            "path": "../dsge_hmc/docs/gradient_accuracy_analysis.tex",
+            "line_range": "883-893",
+            "role": "summary repeat of sign convention"
+          }
+        ]
+      },
+      "expected_route": "source-adapter plus proof-gap localization",
+      "expected_outcome_type": "source-mismatch / gap-found",
+      "expected_evidence_classes": [
+        "source_adapter",
+        "proof_gap",
+        "backend_counterexample",
+        "non_claim",
+        "action"
+      ],
+      "scoring_rubric": {
+        "dimensions": [
+          "source_grounding",
+          "assumption_correctness",
+          "derivation_proof_validity",
+          "counterexample_quality",
+          "backend_evidence",
+          "abstention_quality",
+          "boundary_discipline"
+        ],
+        "aggregate_accuracy": null,
+        "primary_pass_semantics": "Localize the first sign inconsistency or explicitly preserve unresolved source-adapter gaps without global document claims."
+      },
+      "negative_control": {
+        "is_negative_control": true,
+        "expected_status": "refuted",
+        "scoring_semantics": "A bounded sign-flip refutation may score only with a concrete counterexample or source-adapter contradiction and local-gap non-claims."
+      },
+      "good_abstention": "If the source adapter cannot bind notation, return gap_found or insufficient evidence with line anchors and human-review action.",
+      "minimal_packet_schema": {
+        "required_fields": [
+          "question",
+          "source_anchors",
+          "assumptions",
+          "route_availability",
+          "derivation_proof_steps",
+          "backend_checks",
+          "counterexamples",
+          "gaps",
+          "actions",
+          "evidence_classes",
+          "non_claims"
+        ]
+      },
+      "forbidden_claims": [
+        "Whole DSGE note false",
+        "HMC conclusion invalid",
+        "Probe proves theorem"
+      ]
+    },
+    {
+      "id": "RLHLB-02-kalman-loglik-assumptions",
+      "title": "Kalman prediction-error log-likelihood assumptions",
+      "workflow": "assumptions_for",
+      "tier": "holdout_local",
+      "question": "What assumptions are required to derive Kalman prediction-error log-likelihood?",
+      "source_snapshot": {
+        "source_family": "latex-papers/CIP_monograph; BayesFilter",
+        "source_files": [
+          {
+            "path": "../latex-papers/CIP_monograph/chapters/ch16_kalman_filter.tex",
+            "line_range": "197-223",
+            "role": "CIP monograph prediction-error decomposition"
+          },
+          {
+            "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+            "line_range": "32-39",
+            "role": "innovation regularity assumption"
+          },
+          {
+            "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+            "line_range": "76-105",
+            "role": "BayesFilter likelihood spine"
+          }
+        ]
+      },
+      "expected_route": "source-adapter plus assumption extraction",
+      "expected_outcome_type": "success with source-stated assumptions",
+      "expected_evidence_classes": [
+        "source_adapter",
+        "missing_assumption",
+        "route_availability",
+        "non_claim",
+        "action"
+      ],
+      "scoring_rubric": {
+        "dimensions": [
+          "source_grounding",
+          "assumption_correctness",
+          "derivation_proof_validity",
+          "counterexample_quality",
+          "backend_evidence",
+          "abstention_quality",
+          "boundary_discipline"
+        ],
+        "aggregate_accuracy": null,
+        "primary_pass_semantics": "Identify linear-Gaussian, innovation covariance, observed-component/mask, logdet, solve, and conformability assumptions without claiming implementation proof."
+      },
+      "negative_control": {
+        "is_negative_control": false
+      },
+      "good_abstention": "If assumptions are incomplete, return missing_assumptions with source anchors and no likelihood-proof claim.",
+      "minimal_packet_schema": {
+        "required_fields": [
+          "question",
+          "source_anchors",
+          "assumptions",
+          "route_availability",
+          "derivation_proof_steps",
+          "backend_checks",
+          "counterexamples",
+          "gaps",
+          "actions",
+          "evidence_classes",
+          "non_claims"
+        ]
+      },
+      "forbidden_claims": [
+        "Nonlinear filters exact",
+        "Score/Hessian validated",
+        "Source likelihood is implementation proof"
+      ]
+    },
+    {
+      "id": "RLHLB-03-joseph-equivalence",
+      "title": "Joseph covariance update equivalence",
+      "workflow": "prove_or_counterexample",
+      "tier": "holdout_local",
+      "question": "Can we prove Joseph and compact covariance updates are equivalent in scope?",
+      "source_snapshot": {
+        "source_family": "latex-papers/CIP_monograph; BayesFilter",
+        "source_files": [
+          {
+            "path": "../latex-papers/CIP_monograph/chapters/ch16_kalman_filter.tex",
+            "line_range": "123-133",
+            "role": "Joseph-form equivalence and numerical caveat"
+          },
+          {
+            "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+            "line_range": "59-74",
+            "role": "compact and Joseph covariance update forms"
+          }
+        ]
+      },
+      "expected_route": "source-adapter local schema; exact-arithmetic boundary",
+      "expected_outcome_type": "source-supported scoped proof",
+      "expected_evidence_classes": [
+        "source_adapter",
+        "backend_certificate",
+        "route_availability",
+        "non_claim",
+        "action"
+      ],
+      "scoring_rubric": {
+        "dimensions": [
+          "source_grounding",
+          "assumption_correctness",
+          "derivation_proof_validity",
+          "counterexample_quality",
+          "backend_evidence",
+          "abstention_quality",
+          "boundary_discipline"
+        ],
+        "aggregate_accuracy": null,
+        "primary_pass_semantics": "Support only exact-arithmetic algebraic equivalence with Kalman-gain assumptions and numerical caveat."
+      },
+      "negative_control": {
+        "is_negative_control": false
+      },
+      "good_abstention": "If matrix assumptions are unavailable, state insufficient evidence instead of proving floating-point stability.",
+      "minimal_packet_schema": {
+        "required_fields": [
+          "question",
+          "source_anchors",
+          "assumptions",
+          "route_availability",
+          "derivation_proof_steps",
+          "backend_checks",
+          "counterexamples",
+          "gaps",
+          "actions",
+          "evidence_classes",
+          "non_claims"
+        ]
+      },
+      "forbidden_claims": [
+        "Floating-point compact update always stable",
+        "Backend implementation validated"
+      ]
+    },
+    {
+      "id": "RLHLB-04-affine-pricing-recursion",
+      "title": "Affine pricing recursion",
+      "workflow": "derive_from",
+      "tier": "holdout_local",
+      "question": "Can we derive affine pricing recursion from Gaussian affine assumptions?",
+      "source_snapshot": {
+        "source_family": "latex-papers/CIP_monograph",
+        "source_files": [
+          {
+            "path": "../latex-papers/CIP_monograph/chapters/ch11_state_space_recursions.tex",
+            "line_range": "242-322",
+            "role": "general discrete-time affine pricing recursion"
+          }
+        ]
+      },
+      "expected_route": "source-adapter plus symbolic derivation-route diagnostics",
+      "expected_outcome_type": "success with assumptions",
+      "expected_evidence_classes": [
+        "source_adapter",
+        "backend_certificate",
+        "route_availability",
+        "missing_assumption",
+        "non_claim",
+        "action"
+      ],
+      "scoring_rubric": {
+        "dimensions": [
+          "source_grounding",
+          "assumption_correctness",
+          "derivation_proof_validity",
+          "counterexample_quality",
+          "backend_evidence",
+          "abstention_quality",
+          "boundary_discipline"
+        ],
+        "aggregate_accuracy": null,
+        "primary_pass_semantics": "Derive or route the exponential-affine ansatz, Gaussian MGF, coefficient collection, and recurrence assumptions without empirical-pricing claims."
+      },
+      "negative_control": {
+        "is_negative_control": false
+      },
+      "good_abstention": "If Gaussian MGF or vector/matrix collection is not available, return insufficient evidence with exact missing route.",
+      "minimal_packet_schema": {
+        "required_fields": [
+          "question",
+          "source_anchors",
+          "assumptions",
+          "route_availability",
+          "derivation_proof_steps",
+          "backend_checks",
+          "counterexamples",
+          "gaps",
+          "actions",
+          "evidence_classes",
+          "non_claims"
+        ]
+      },
+      "forbidden_claims": [
+        "Empirical pricing validity",
+        "Nonlinear approximation exact"
+      ]
+    },
+    {
+      "id": "RLHLB-05-kalman-score-same-scalar",
+      "title": "Kalman score same-scalar assumptions",
+      "workflow": "assumptions_for",
+      "tier": "holdout_local",
+      "question": "What assumptions are needed for the Kalman score to match the same scalar likelihood?",
+      "source_snapshot": {
+        "source_family": "BayesFilter",
+        "source_files": [
+          {
+            "path": "../BayesFilter/docs/chapters/ch09_kalman_score.tex",
+            "line_range": "20-103",
+            "role": "first-order Kalman score and solve-form score"
+          },
+          {
+            "path": "../BayesFilter/docs/chapters/ch05_prediction_error_decomposition.tex",
+            "line_range": "120-130",
+            "role": "same scalar likelihood contract"
+          }
+        ]
+      },
+      "expected_route": "source-adapter plus assumption extraction",
+      "expected_outcome_type": "success with source-stated assumptions",
+      "expected_evidence_classes": [
+        "source_adapter",
+        "missing_assumption",
+        "route_availability",
+        "non_claim",
+        "action"
+      ],
+      "scoring_rubric": {
+        "dimensions": [
+          "source_grounding",
+          "assumption_correctness",
+          "derivation_proof_validity",
+          "counterexample_quality",
+          "backend_evidence",
+          "abstention_quality",
+          "boundary_discipline"
+        ],
+        "aggregate_accuracy": null,
+        "primary_pass_semantics": "Identify differentiability, solve/invertibility, conformability, and same-scalar assumptions without HMC validity claims."
+      },
+      "negative_control": {
+        "is_negative_control": false
+      },
+      "good_abstention": "Return missing_assumptions for absent same-scalar, differentiability, or solve conditions rather than proving sampler validity.",
+      "minimal_packet_schema": {
+        "required_fields": [
+          "question",
+          "source_anchors",
+          "assumptions",
+          "route_availability",
+          "derivation_proof_steps",
+          "backend_checks",
+          "counterexamples",
+          "gaps",
+          "actions",
+          "evidence_classes",
+          "non_claims"
+        ]
+      },
+      "forbidden_claims": [
+        "HMC validity",
+        "Posterior correctness",
+        "Hessian readiness"
+      ]
+    },
+    {
+      "id": "RLHLB-06-state-space-code-missing-solve",
+      "title": "State-space code missing solve",
+      "workflow": "audit_math_to_code",
+      "tier": "holdout_local",
+      "question": "Does code implement the documented Kalman likelihood solve/quadratic form?",
+      "source_snapshot": {
+        "source_family": "MathDevMCP fixtures and docs",
+        "source_files": [
+          {
+            "path": "benchmarks/fixtures/doc_department_state_space.tex",
+            "line_range": "7-23",
+            "role": "documented Kalman likelihood solve/quadratic form"
+          },
+          {
+            "path": "benchmarks/fixtures/doc_department_state_space_missing_solve.py",
+            "line_range": "1-17",
+            "role": "candidate implementation missing explicit solve/quadratic form"
+          },
+          {
+            "path": "docs/mathdevmcp-release-report.tex",
+            "line_range": "1099-1123",
+            "role": "release-report fixture context"
+          }
+        ]
+      },
+      "expected_route": "structural code/equation audit",
+      "expected_outcome_type": "structural_mismatch / source-mismatch",
+      "expected_evidence_classes": [
+        "source_anchor",
+        "structural_mismatch",
+        "route_availability",
+        "non_claim",
+        "action"
+      ],
+      "scoring_rubric": {
+        "dimensions": [
+          "source_grounding",
+          "assumption_correctness",
+          "derivation_proof_validity",
+          "counterexample_quality",
+          "backend_evidence",
+          "abstention_quality",
+          "boundary_discipline"
+        ],
+        "aggregate_accuracy": null,
+        "primary_pass_semantics": "Report structural missing solve/quadratic evidence without claiming full mathematical invalidity."
+      },
+      "negative_control": {
+        "is_negative_control": true,
+        "expected_status": "routing_only",
+        "scoring_semantics": "Structural mismatch is diagnostic only and cannot certify semantic incorrectness."
+      },
+      "good_abstention": "If aliases or implementation details obscure the route, return structural_mismatch or human review with semantic-proof non-claims.",
+      "minimal_packet_schema": {
+        "required_fields": [
+          "question",
+          "source_anchors",
+          "assumptions",
+          "route_availability",
+          "derivation_proof_steps",
+          "backend_checks",
+          "counterexamples",
+          "gaps",
+          "actions",
+          "evidence_classes",
+          "non_claims"
+        ]
+      },
+      "forbidden_claims": [
+        "Code is mathematically wrong",
+        "Absence of literal solve proves implementation invalid"
+      ]
+    },
+    {
+      "id": "RLHLB-07-proof-boundary-review-packet",
+      "title": "Proof-boundary review packet",
+      "workflow": "prepare_review_packet",
+      "tier": "holdout_local",
+      "question": "Can we produce a packet for a difficult Gaussian score derivation without overclaiming proof?",
+      "source_snapshot": {
+        "source_family": "MathDevMCP docs",
+        "source_files": [
+          {
+            "path": "docs/mathdevmcp-release-report.tex",
+            "line_range": "1255-1361",
+            "role": "Gaussian score derivation review context"
+          }
+        ]
+      },
+      "expected_route": "review-packet route with backend-attempt summary",
+      "expected_outcome_type": "diagnostic_only / justified abstention",
+      "expected_evidence_classes": [
+        "review_packet",
+        "human_review_required",
+        "route_availability",
+        "non_claim",
+        "action"
+      ],
+      "scoring_rubric": {
+        "dimensions": [
+          "source_grounding",
+          "assumption_correctness",
+          "derivation_proof_validity",
+          "counterexample_quality",
+          "backend_evidence",
+          "abstention_quality",
+          "boundary_discipline"
+        ],
+        "aggregate_accuracy": null,
+        "primary_pass_semantics": "Create a diagnostic packet that preserves nested evidence meanings and states it is not a certificate."
+      },
+      "negative_control": {
+        "is_negative_control": true,
+        "expected_status": "insufficient_evidence",
+        "scoring_semantics": "A good answer is diagnostic-only with explicit non-claims and next evidence actions."
+      },
+      "good_abstention": "Return diagnostic_only or insufficient evidence with unresolved backend/source routes and no proof-certificate claim.",
+      "minimal_packet_schema": {
+        "required_fields": [
+          "question",
+          "source_anchors",
+          "assumptions",
+          "route_availability",
+          "derivation_proof_steps",
+          "backend_checks",
+          "counterexamples",
+          "gaps",
+          "actions",
+          "evidence_classes",
+          "non_claims"
+        ]
+      },
+      "forbidden_claims": [
+        "Review packet is a certificate",
+        "Full score derivation proved"
+      ]
+    },
+    {
+      "id": "RLHLB-08-hmc-value-only-boundary",
+      "title": "HMC value-only boundary",
+      "workflow": "prove_or_counterexample",
+      "tier": "holdout_local",
+      "question": "Does a value-only filtering likelihood route prove HMC production readiness?",
+      "source_snapshot": {
+        "source_family": "BayesFilter",
+        "source_files": [
+          {
+            "path": "../BayesFilter/docs/chapters/ch21_hmc_for_state_space.tex",
+            "line_range": "6-52",
+            "role": "HMC state-space likelihood route and value/gradient boundary"
+          }
+        ]
+      },
+      "expected_route": "source boundary plus backend-unavailable/value-only route",
+      "expected_outcome_type": "insufficient_evidence / justified abstention",
+      "expected_evidence_classes": [
+        "source_anchor",
+        "backend_unavailable",
+        "human_review_required",
+        "route_availability",
+        "non_claim",
+        "action"
+      ],
+      "scoring_rubric": {
+        "dimensions": [
+          "source_grounding",
+          "assumption_correctness",
+          "derivation_proof_validity",
+          "counterexample_quality",
+          "backend_evidence",
+          "abstention_quality",
+          "boundary_discipline"
+        ],
+        "aggregate_accuracy": null,
+        "primary_pass_semantics": "Reject production-readiness proof from value-only likelihood evidence and preserve backend-unavailable/insufficient-evidence boundary."
+      },
+      "negative_control": {
+        "is_negative_control": true,
+        "expected_status": "insufficient_evidence",
+        "scoring_semantics": "Good outcome is justified abstention; it must not refute HMC or certify readiness."
+      },
+      "good_abstention": "State value-only evidence is insufficient for HMC readiness and name gradient/sampler/backend evidence needed.",
+      "minimal_packet_schema": {
+        "required_fields": [
+          "question",
+          "source_anchors",
+          "assumptions",
+          "route_availability",
+          "derivation_proof_steps",
+          "backend_checks",
+          "counterexamples",
+          "gaps",
+          "actions",
+          "evidence_classes",
+          "non_claims"
+        ]
+      },
+      "forbidden_claims": [
+        "HMC production readiness",
+        "TFP/NUTS mathematical criticism",
+        "Sampler correctness"
+      ]
+    },
+    {
+      "id": "RLHLB-09-affine-recovery-assumption-limit",
+      "title": "Affine recovery assumption limit",
+      "workflow": "derive_from",
+      "tier": "holdout_local",
+      "question": "Can neural-solver approximation guarantees be derived from affine recovery text alone?",
+      "source_snapshot": {
+        "source_family": "latex-papers/CIP_monograph",
+        "source_files": [
+          {
+            "path": "../latex-papers/CIP_monograph/chapters/ch15_nonlinear_pricing.tex",
+            "line_range": "267-302",
+            "role": "affine recovery and nonlinear-pricing approximation text"
+          }
+        ]
+      },
+      "expected_route": "source assumptions plus negative overclaim check",
+      "expected_outcome_type": "missing_assumptions / justified abstention for uniform bound",
+      "expected_evidence_classes": [
+        "source_anchor",
+        "missing_assumption",
+        "human_review_required",
+        "route_availability",
+        "non_claim",
+        "action"
+      ],
+      "scoring_rubric": {
+        "dimensions": [
+          "source_grounding",
+          "assumption_correctness",
+          "derivation_proof_validity",
+          "counterexample_quality",
+          "backend_evidence",
+          "abstention_quality",
+          "boundary_discipline"
+        ],
+        "aggregate_accuracy": null,
+        "primary_pass_semantics": "Identify that affine recovery text alone does not establish a neural-solver uniform approximation theorem."
+      },
+      "negative_control": {
+        "is_negative_control": true,
+        "expected_status": "missing_assumptions",
+        "scoring_semantics": "Good outcome is missing_assumptions or insufficient evidence with no rigorous uniform-bound claim."
+      },
+      "good_abstention": "Name the absent approximation theorem, training/error assumptions, and backend/source evidence required for a uniform bound.",
+      "minimal_packet_schema": {
+        "required_fields": [
+          "question",
+          "source_anchors",
+          "assumptions",
+          "route_availability",
+          "derivation_proof_steps",
+          "backend_checks",
+          "counterexamples",
+          "gaps",
+          "actions",
+          "evidence_classes",
+          "non_claims"
+        ]
+      },
+      "forbidden_claims": [
+        "Rigorous uniform approximation bound",
+        "Neural solver correctness",
+        "Pricing validity"
+      ]
+    }
+  ],
+  "findings": [],
+  "summary": {
+    "case_total": 9,
+    "workflow_total": 6,
+    "negative_control_total": 5,
+    "aggregate_accuracy": null,
+    "workflow_coverage": [
+      "assumptions_for",
+      "audit_math_to_code",
+      "debug_derivation",
+      "derive_from",
+      "prepare_review_packet",
+      "prove_or_counterexample"
+    ]
+  },
+  "policy_boundary": [
+    "This benchmark manifest is local/non-gating only.",
+    "It is not public benchmark evidence.",
+    "It is not release-readiness evidence.",
+    "It is not scientific validation.",
+    "It is not a broad theorem-proving claim.",
+    "Source, backend, probe, abstention, and residual ledgers must remain separate."
+  ],
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "real_local_high_level_workflow_benchmark_manifest"
+  }
+}

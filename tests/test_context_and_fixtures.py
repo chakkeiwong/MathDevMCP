@@ -3,12 +3,16 @@ from pathlib import Path
 from mathdevmcp.benchmarks import (
     benchmark_gate_report,
     benchmark_cases,
+    build_workbench_benchmark_quality_report,
     build_benchmark_report,
+    build_high_level_workflow_quality_report,
     run_derivation_benchmark,
     run_ast_corpus_benchmark,
     run_industrial_review_benchmark,
     run_kalman_recursion_benchmark,
     run_label_consistency_benchmark,
+    run_high_level_math_workflow_benchmark,
+    run_math_debugging_workbench_benchmark,
     run_parser_corpus_benchmark,
     run_proof_audit_benchmark,
     run_proof_audit_v2_benchmark,
@@ -40,6 +44,8 @@ EXPECTED_BENCHMARK_SUMMARY = {
         "industrial_review": {"total": 1, "passed": 1, "expected_abstentions": 1},
         "release_corpus": {"total": 1, "passed": 1, "expected_abstentions": 0},
         "release_policy": {"total": 1, "passed": 1, "expected_abstentions": 0},
+        "math_debugging_workbench": {"total": 15, "passed": 15, "expected_abstentions": 11},
+        "high_level_math_workflows": {"total": 14, "passed": 14, "expected_abstentions": 9},
     },
     "by_focus": {
         "status_regression": {"total": 2, "passed": 2, "expected_abstentions": 0},
@@ -67,11 +73,29 @@ EXPECTED_BENCHMARK_SUMMARY = {
         "agent_review_packet": {"total": 1, "passed": 1, "expected_abstentions": 1},
         "release_corpus_manifest": {"total": 1, "passed": 1, "expected_abstentions": 0},
         "release_readiness_contract": {"total": 1, "passed": 1, "expected_abstentions": 0},
+        "workbench_proof_refutation": {"total": 1, "passed": 1, "expected_abstentions": 0},
+        "workbench_false_confidence_control": {"total": 3, "passed": 3, "expected_abstentions": 1},
+        "workbench_backend_boundary": {"total": 2, "passed": 2, "expected_abstentions": 2},
+        "workbench_gap_localization": {"total": 1, "passed": 1, "expected_abstentions": 0},
+        "workbench_missing_assumptions": {"total": 1, "passed": 1, "expected_abstentions": 1},
+        "workbench_structural_boundary": {"total": 1, "passed": 1, "expected_abstentions": 1},
+        "workbench_notation_conflict": {"total": 1, "passed": 1, "expected_abstentions": 1},
+        "workbench_diagnostic_generation": {"total": 1, "passed": 1, "expected_abstentions": 1},
+        "workbench_packet_boundary": {"total": 1, "passed": 1, "expected_abstentions": 1},
+        "workbench_impact_boundary": {"total": 1, "passed": 1, "expected_abstentions": 1},
+        "workbench_applicability_boundary": {"total": 2, "passed": 2, "expected_abstentions": 2},
+        "hlf_backend_certificate": {"total": 2, "passed": 2, "expected_abstentions": 0},
+        "hlf_false_confidence_control": {"total": 3, "passed": 3, "expected_abstentions": 1},
+        "hlf_backend_boundary": {"total": 1, "passed": 1, "expected_abstentions": 1},
+        "hlf_missing_assumptions": {"total": 2, "passed": 2, "expected_abstentions": 2},
+        "hlf_gap_localization": {"total": 2, "passed": 2, "expected_abstentions": 1},
+        "hlf_structural_boundary": {"total": 2, "passed": 2, "expected_abstentions": 2},
+        "hlf_packet_boundary": {"total": 2, "passed": 2, "expected_abstentions": 2},
     },
-    "expected_abstentions": 12,
+    "expected_abstentions": 32,
 }
 
-EXPECTED_BENCHMARK_TOTAL = 41
+EXPECTED_BENCHMARK_TOTAL = 70
 
 
 def test_extract_context_for_label_returns_local_excerpt():
@@ -327,7 +351,7 @@ def test_benchmark_cases_cover_consistency_derivation_workflow_and_proof_audit_c
     cases = benchmark_cases(root)
 
     assert len(cases) == EXPECTED_BENCHMARK_TOTAL
-    assert {case["category"] for case in cases} == {"consistency", "derivation", "workflow", "proof_audit", "proof_audit_v2", "kalman_recursion", "parser_corpus", "ast_corpus", "typed_ir", "industrial_review", "release_corpus", "release_policy"}
+    assert {case["category"] for case in cases} == {"consistency", "derivation", "workflow", "proof_audit", "proof_audit_v2", "kalman_recursion", "parser_corpus", "ast_corpus", "typed_ir", "industrial_review", "release_corpus", "release_policy", "math_debugging_workbench", "high_level_math_workflows"}
 
 
 
@@ -464,6 +488,66 @@ def test_industrial_review_benchmark_runner_reports_agent_packet_actions():
     assert all(result["passed"] for result in results)
 
 
+def test_math_debugging_workbench_benchmark_runner_reports_boundary_checks():
+    root = FIXTURES.parent.parent
+
+    results = run_math_debugging_workbench_benchmark(root)
+
+    assert len(results) == 15
+    assert all(result["category"] == "math_debugging_workbench" for result in results)
+    assert all(result["quality_checks"]["oracle_class_supported"] for result in results)
+    assert all(result["quality_checks"]["boundary_preserved"] for result in results)
+    assert all(result["passed"] for result in results)
+    assert sum(1 for result in results if result["quality_checks"]["negative_control"]) >= 6
+
+
+def test_high_level_math_workflow_benchmark_runner_reports_boundary_checks():
+    root = FIXTURES.parent.parent
+
+    results = run_high_level_math_workflow_benchmark(root)
+
+    assert len(results) == 14
+    assert all(result["category"] == "high_level_math_workflows" for result in results)
+    assert all(result["quality_checks"]["contract_match"] for result in results)
+    assert all(result["quality_checks"]["boundary_preserved"] for result in results)
+    assert all(result["passed"] for result in results)
+    assert sum(1 for result in results if result["quality_checks"]["negative_control"]) >= 6
+
+
+def test_workbench_benchmark_quality_report_uses_actual_seeded_results():
+    root = FIXTURES.parent.parent
+
+    report = build_workbench_benchmark_quality_report(root)
+
+    assert report["metadata"] == {"schema_version": "1.0", "contract": "workbench_benchmark_quality_report"}
+    assert report["status"] == "quality_thresholds_passed"
+    assert report["total_cases"] == 15
+    assert report["total_results"] == 15
+    assert report["negative_control_rate"] >= 0.40
+    assert all(report["seeded_gate_thresholds"].values())
+    assert all(report["mutation_results"].values())
+    assert report["determinism"]["stable"] is True
+    assert report["missing_tools"] == []
+    assert report["missing_oracle_classes"] == []
+    assert "complete adversarial benchmark" in report["non_claims"][0]
+
+
+def test_high_level_workflow_quality_report_uses_actual_seeded_results():
+    root = FIXTURES.parent.parent
+
+    report = build_high_level_workflow_quality_report(root)
+
+    assert report["metadata"] == {"schema_version": "1.0", "contract": "high_level_workflow_quality_report"}
+    assert report["status"] == "quality_thresholds_passed"
+    assert report["total_cases"] == 14
+    assert report["total_results"] == 14
+    assert report["negative_control_rate"] >= 0.40
+    assert all(report["seeded_gate_thresholds"].values())
+    assert all(report["mutation_results"].values())
+    assert report["determinism"]["stable"] is True
+    assert "not established by pass rate alone" in report["boundary"]
+
+
 def test_release_corpus_benchmark_runner_reports_privacy_gate():
     root = FIXTURES.parent.parent
 
@@ -498,6 +582,10 @@ def test_build_benchmark_report_returns_contract_and_typed_results():
     assert report["total"] == EXPECTED_BENCHMARK_TOTAL
     assert report["passed"] == EXPECTED_BENCHMARK_TOTAL
     assert all("details" in result for result in report["results"])
+    assert report["workbench_quality"]["status"] == "quality_thresholds_passed"
+    assert report["high_level_quality"]["status"] == "quality_thresholds_passed"
+    assert all(report["workbench_quality"]["seeded_gate_thresholds"].values())
+    assert all(report["high_level_quality"]["seeded_gate_thresholds"].values())
 
 
 def test_release_readiness_uses_non_recursive_gate():
@@ -521,6 +609,7 @@ def test_write_benchmark_report_writes_json(tmp_path):
 
     assert result["ok"] is True
     assert result["metadata"] == {"schema_version": "1.0", "contract": "benchmark_report"}
+    assert result["report"]["workbench_quality"]["status"] == "quality_thresholds_passed"
     assert output.exists()
 
 
@@ -564,6 +653,8 @@ def test_summarize_benchmark_results_groups_by_category_and_focus():
         + run_typed_ir_benchmark(root)
         + run_industrial_review_benchmark(root)
         + run_release_corpus_benchmark(root)
+        + run_math_debugging_workbench_benchmark(root)
+        + run_high_level_math_workflow_benchmark(root)
         + run_release_policy_benchmark(root)
     )
     summary = summarize_benchmark_results(results)

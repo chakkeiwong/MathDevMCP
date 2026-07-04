@@ -26,8 +26,44 @@ Facade registry: `src/mathdevmcp/mcp_facade.py`
 
 - `audit_implementation_label` - audit a labeled document block against a code
   implementation. This is the preferred name for code/document drift review.
+- `code_implements_equation` - experimentally compare equation terms against
+  Python code structure without executing code.
+- `classify_math_claim` - experimentally classify a math claim by supplied
+  evidence without promoting diagnostics to proof.
+- `reconcile_notation` - experimentally compare explicit notation convention
+  records and report conflicts or unresolved aliases.
+- `generate_math_tests` - experimentally generate diagnostic pytest snippets
+  or plan-only tests from a math obligation.
+- `math_review_packet` - experimentally build a compact human-review packet
+  from math debugging evidence.
+- `math_change_impact` - experimentally trace likely downstream impact of a
+  changed math artifact without claiming exhaustive coverage.
+- `literature_local_audit` - experimentally compare supplied theorem
+  assumptions to local assumptions without fetching papers.
+- `derive_from` - experimentally answer "can I derive this target from these
+  givens?" with a high-level workflow envelope. Free-form givens are context;
+  formal route assumptions must be supplied separately.
+- `prove_or_counterexample` - experimentally answer "can we prove this, or is
+  there a counterexample?" with backend certificates or counterexample objects
+  only when available.
+- `assumptions_for` - experimentally list route-required assumptions for a
+  target without claiming global minimality.
+- `debug_derivation` - experimentally localize the first unsupported or
+  refuted step in a bounded derivation chain.
+- `audit_math_to_code` - experimentally run a structural math-to-code audit.
+  Structural matches are not proofs.
+- `prepare_review_packet` - experimentally aggregate high-level workflow
+  evidence for human review. Review packets are diagnostic only.
 - `derive_label_step` - check a concrete expression-to-expression claim against
   labeled document context.
+- `derive_or_refute` - experimentally try a bounded derivation or refutation
+  for a target equality using routed backend evidence, counterexample search,
+  assumption diagnostics, and explicit abstention boundaries.
+- `prove_or_refute` - experimentally try a bounded proof or refutation for a
+  target equality. Lean routes require explicit source, and unavailable
+  backends remain diagnostic.
+- `localize_proof_gap` - experimentally find the first unsupported, refuted, or
+  missing-assumption step in a bounded derivation chain.
 - `implementation_brief` - build a compact document-grounded handoff report.
 - `audit_derivation_label` - audit obligations extracted from a labeled block.
 - `audit_derivation_v2_label` - run the primary release-spine proof audit with
@@ -43,6 +79,10 @@ Facade registry: `src/mathdevmcp/mcp_facade.py`
 
 - `run_benchmarks` - return the full seeded benchmark report.
 - `benchmark_gate` - return the CI-friendly benchmark gate result.
+- `workbench_benchmark_quality` - return seeded mathematical workbench
+  quality thresholds.
+- `high_level_workflow_quality` - return seeded high-level workflow quality
+  thresholds.
 - `doctor` - report environment and optional backend capabilities.
 - `release_corpus_manifest` - return public/private release corpus metadata.
 - `validate_release_corpus` - validate corpus privacy and release-gate fields.
@@ -116,3 +156,10 @@ Claude Code MCP config from a checkout:
 The MCP server is intentionally thin: substantive logic remains in tested
 library modules under `src/mathdevmcp/`. The facade registry is the source of
 truth for tool metadata and is checked against this README during tests.
+
+High-level workflow tools return `high_level_workflow_result` plus the normal
+MCP `ok` field. Clients should preserve the envelope fields, especially
+`evidence_classes`, `certification_source`, `veto_reasons`, `assumptions`,
+`counterexamples`, `actions`, and `non_claims`. Do not collapse a
+`structural_match`, `diagnostic_only`, `backend_unavailable`, `not_encodable`,
+or `gap_found` result into a proof or refutation.

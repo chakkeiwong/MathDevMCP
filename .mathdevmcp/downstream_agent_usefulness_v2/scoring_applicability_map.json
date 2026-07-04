@@ -1,0 +1,147 @@
+{
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "downstream_agent_usefulness_v2_scoring_applicability_map",
+    "created": "2026-07-02",
+    "status": "phase_02_candidate_map_no_scored_responses",
+    "case_manifest": ".mathdevmcp/downstream_agent_usefulness_v2/case_manifest_candidate.json",
+    "baseline_rubric": ".mathdevmcp/downstream_agent_usefulness/scoring_rubric.json"
+  },
+  "baseline_required_dimensions": [
+    "task_outcome_correctness",
+    "decisive_evidence_use",
+    "self_contained_reasoning",
+    "assumption_and_gap_handling",
+    "boundary_and_nonclaim_discipline",
+    "actionability_for_next_agent"
+  ],
+  "candidate_only_stressors": [
+    "alias_reconciliation",
+    "domain_obligation_tracking",
+    "first_failing_step_localization",
+    "matched_missing_artifact_ledger",
+    "non_claim_boundary_preservation",
+    "next_artifact_specificity",
+    "abstention_when_route_insufficient"
+  ],
+  "applicability_by_case": [
+    {
+      "case_id": "V2-DF-01-affine-matrix-domain-obligation",
+      "required_artifact_type": "route_obligation_ledger",
+      "baseline_required_dimensions": [
+        "task_outcome_correctness",
+        "decisive_evidence_use",
+        "self_contained_reasoning",
+        "assumption_and_gap_handling",
+        "boundary_and_nonclaim_discipline",
+        "actionability_for_next_agent"
+      ],
+      "candidate_only_stressors": [
+        "domain_obligation_tracking",
+        "abstention_when_route_insufficient",
+        "next_artifact_specificity"
+      ],
+      "c_sensitivity": "high"
+    },
+    {
+      "case_id": "V2-PC-01-domain-restricted-counterexample",
+      "required_artifact_type": "backend_certificate_with_domain_map",
+      "baseline_required_dimensions": [
+        "task_outcome_correctness",
+        "decisive_evidence_use",
+        "self_contained_reasoning",
+        "assumption_and_gap_handling",
+        "boundary_and_nonclaim_discipline",
+        "actionability_for_next_agent"
+      ],
+      "candidate_only_stressors": [
+        "alias_reconciliation",
+        "domain_obligation_tracking",
+        "non_claim_boundary_preservation"
+      ],
+      "c_sensitivity": "high"
+    },
+    {
+      "case_id": "V2-AF-01-masked-likelihood-score-assumptions",
+      "required_artifact_type": "assumption_ledger",
+      "baseline_required_dimensions": [
+        "task_outcome_correctness",
+        "decisive_evidence_use",
+        "self_contained_reasoning",
+        "assumption_and_gap_handling",
+        "boundary_and_nonclaim_discipline",
+        "actionability_for_next_agent"
+      ],
+      "candidate_only_stressors": [
+        "alias_reconciliation",
+        "domain_obligation_tracking",
+        "next_artifact_specificity"
+      ],
+      "c_sensitivity": "high"
+    },
+    {
+      "case_id": "V2-AMC-01-logdet-quadratic-code-trace",
+      "required_artifact_type": "equation_to_code_trace",
+      "baseline_required_dimensions": [
+        "task_outcome_correctness",
+        "decisive_evidence_use",
+        "self_contained_reasoning",
+        "assumption_and_gap_handling",
+        "boundary_and_nonclaim_discipline",
+        "actionability_for_next_agent"
+      ],
+      "candidate_only_stressors": [
+        "matched_missing_artifact_ledger",
+        "alias_reconciliation",
+        "non_claim_boundary_preservation"
+      ],
+      "c_sensitivity": "high"
+    },
+    {
+      "case_id": "V2-DD-01-first-gap-product-rule",
+      "required_artifact_type": "first_gap_localization",
+      "baseline_required_dimensions": [
+        "task_outcome_correctness",
+        "decisive_evidence_use",
+        "self_contained_reasoning",
+        "assumption_and_gap_handling",
+        "boundary_and_nonclaim_discipline",
+        "actionability_for_next_agent"
+      ],
+      "candidate_only_stressors": [
+        "first_failing_step_localization",
+        "next_artifact_specificity"
+      ],
+      "c_sensitivity": "medium"
+    },
+    {
+      "case_id": "V2-PRP-01-gaussian-score-review-packet",
+      "required_artifact_type": "diagnostic_review_packet",
+      "baseline_required_dimensions": [
+        "task_outcome_correctness",
+        "decisive_evidence_use",
+        "self_contained_reasoning",
+        "assumption_and_gap_handling",
+        "boundary_and_nonclaim_discipline",
+        "actionability_for_next_agent"
+      ],
+      "candidate_only_stressors": [
+        "non_claim_boundary_preservation",
+        "next_artifact_specificity"
+      ],
+      "c_sensitivity": "medium"
+    }
+  ],
+  "scoring_boundary": {
+    "baseline_required_dimensions_remain_primary": true,
+    "candidate_only_stressors_are_predeclared_explanatory_until_a_v2_rubric_is_explicitly_approved": true,
+    "prompt_polish_is_not_task_success": true,
+    "hard_veto_first_scoring_required_for_future_collection": true
+  },
+  "non_claims": [
+    "This map is not a scored response artifact.",
+    "This map does not change the frozen repaired scores.",
+    "This map does not authorize response collection.",
+    "This map does not establish C-over-B superiority."
+  ]
+}

@@ -1,0 +1,595 @@
+{
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "downstream_agent_usefulness_v2_scored_responses_candidate",
+    "created": "2026-07-03",
+    "status": "v2_candidate_scored_local_diagnostic_single_response_per_prompt",
+    "prompt_manifest": ".mathdevmcp/downstream_agent_usefulness_v2/prompt_manifest_candidate.json",
+    "response_manifest": ".mathdevmcp/downstream_agent_usefulness_v2/response_manifest_candidate.json",
+    "scoring_contract": ".mathdevmcp/downstream_agent_usefulness_v2/scoring_contract_v2_collection.json",
+    "rubric_source": ".mathdevmcp/downstream_agent_usefulness/scoring_rubric.json",
+    "scoring_interpretation": "local non-gating diagnostic; hard-veto-first; no release/public/scientific/product/general-reliability claim"
+  },
+  "hard_veto_summary": {
+    "A_task_only": 0,
+    "B_evidence_only": 0,
+    "C_human_framed": 0,
+    "total": 0
+  },
+  "condition_summary": {
+    "A_task_only": {
+      "rows": 6,
+      "hard_vetoes": 0,
+      "malformed": 0,
+      "required_passes": 6,
+      "required_total": "72/72"
+    },
+    "B_evidence_only": {
+      "rows": 6,
+      "hard_vetoes": 0,
+      "malformed": 0,
+      "required_passes": 5,
+      "required_total": "69/72"
+    },
+    "C_human_framed": {
+      "rows": 6,
+      "hard_vetoes": 0,
+      "malformed": 0,
+      "required_passes": 6,
+      "required_total": "72/72"
+    }
+  },
+  "minimum_candidate_rule": {
+    "primary_comparator": "B_evidence_only",
+    "candidate": "C_human_framed",
+    "aggregate_only_forbidden": true,
+    "c_no_hard_veto_regression_vs_b": true,
+    "c_no_malformed_regression_vs_b": true,
+    "c_required_pass_at_least_b": true,
+    "c_no_primary_dimension_regression_vs_b": true,
+    "c_better_than_b_on_predeclared_usefulness_axis": true,
+    "improved_cases": [
+      "V2-PRP-01-gaussian-score-review-packet"
+    ],
+    "improved_axes": [
+      "task_outcome_correctness",
+      "self_contained_reasoning",
+      "actionability_for_next_agent"
+    ],
+    "candidate_rule_pass": true,
+    "interpretation": "Under the frozen local diagnostic contract, C ties B on five cases and improves on the Gaussian-score review-packet case without hard-veto, malformed-output, or primary-dimension regression. This supports only a bounded local C-over-B diagnostic for this single-response run."
+  },
+  "rows": [
+    {
+      "case_id": "V2-DF-01-affine-matrix-domain-obligation",
+      "condition": "A_task_only",
+      "workflow": "derive_from",
+      "prompt_id": "V2-DF-01-affine-matrix-domain-obligation__A_task_only",
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness_v2/responses_candidate/V2-DF-01-affine-matrix-domain-obligation__A_task_only.response.md",
+      "malformed_output": false,
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "task_outcome_correctness": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "actionability_for_next_agent": 2
+      },
+      "explanatory_scores": {
+        "efficiency": 2,
+        "context_reuse": 2,
+        "artifact_specificity": 2
+      },
+      "candidate_stressor_notes": {
+        "domain_obligation_tracking": "Names domain, shape, mapping, and base-case obligations.",
+        "abstention_when_route_insufficient": "Correctly abstains from deriving the route.",
+        "next_artifact_specificity": "Asks for an explicit route-obligation certificate."
+      },
+      "required_pass": true,
+      "usefulness_delta_vs_b": "tied",
+      "notes": "Correct local abstention with concrete route-obligation gaps."
+    },
+    {
+      "case_id": "V2-DF-01-affine-matrix-domain-obligation",
+      "condition": "B_evidence_only",
+      "workflow": "derive_from",
+      "prompt_id": "V2-DF-01-affine-matrix-domain-obligation__B_evidence_only",
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness_v2/responses_candidate/V2-DF-01-affine-matrix-domain-obligation__B_evidence_only.response.md",
+      "malformed_output": false,
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "task_outcome_correctness": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "actionability_for_next_agent": 2
+      },
+      "explanatory_scores": {
+        "efficiency": 2,
+        "context_reuse": 2,
+        "artifact_specificity": 2
+      },
+      "candidate_stressor_notes": {
+        "domain_obligation_tracking": "Separates scalar sanity evidence from matrix-domain obligations.",
+        "abstention_when_route_insufficient": "Does not overclaim a matrix derivation."
+      },
+      "required_pass": true,
+      "usefulness_delta_vs_b": "not_applicable",
+      "notes": "Uses compact evidence correctly and preserves the scalar-vs-matrix boundary."
+    },
+    {
+      "case_id": "V2-DF-01-affine-matrix-domain-obligation",
+      "condition": "C_human_framed",
+      "workflow": "derive_from",
+      "prompt_id": "V2-DF-01-affine-matrix-domain-obligation__C_human_framed",
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness_v2/responses_candidate/V2-DF-01-affine-matrix-domain-obligation__C_human_framed.response.md",
+      "malformed_output": false,
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "task_outcome_correctness": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "actionability_for_next_agent": 2
+      },
+      "explanatory_scores": {
+        "efficiency": 2,
+        "context_reuse": 2,
+        "artifact_specificity": 2
+      },
+      "candidate_stressor_notes": {
+        "domain_obligation_tracking": "Provides a route-obligation ledger with matrix, MGF, and covariance-domain gaps.",
+        "next_artifact_specificity": "Names shape annotation, MGF substitution, covariance verification, and final algebra checks."
+      },
+      "required_pass": true,
+      "usefulness_delta_vs_b": "tied",
+      "notes": "More detailed than B, but B already passes all primary dimensions for this case."
+    },
+    {
+      "case_id": "V2-PC-01-domain-restricted-counterexample",
+      "condition": "A_task_only",
+      "workflow": "prove_or_counterexample",
+      "prompt_id": "V2-PC-01-domain-restricted-counterexample__A_task_only",
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness_v2/responses_candidate/V2-PC-01-domain-restricted-counterexample__A_task_only.response.md",
+      "malformed_output": false,
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "task_outcome_correctness": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "actionability_for_next_agent": 2
+      },
+      "explanatory_scores": {
+        "efficiency": 2,
+        "context_reuse": 2,
+        "artifact_specificity": 2
+      },
+      "candidate_stressor_notes": {
+        "domain_obligation_tracking": "Refuses to prove or refute without exact identity and domains.",
+        "non_claim_boundary_preservation": "Avoids global false/proved claims."
+      },
+      "required_pass": true,
+      "usefulness_delta_vs_b": "tied",
+      "notes": "Correctly abstains from the under-specified symbolic claim."
+    },
+    {
+      "case_id": "V2-PC-01-domain-restricted-counterexample",
+      "condition": "B_evidence_only",
+      "workflow": "prove_or_counterexample",
+      "prompt_id": "V2-PC-01-domain-restricted-counterexample__B_evidence_only",
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness_v2/responses_candidate/V2-PC-01-domain-restricted-counterexample__B_evidence_only.response.md",
+      "malformed_output": false,
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "task_outcome_correctness": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "actionability_for_next_agent": 2
+      },
+      "explanatory_scores": {
+        "efficiency": 2,
+        "context_reuse": 2,
+        "artifact_specificity": 2
+      },
+      "candidate_stressor_notes": {
+        "domain_obligation_tracking": "Keeps the x = 0 witness outside the restricted domain.",
+        "non_claim_boundary_preservation": "Does not transfer unrestricted refutation to x > 0."
+      },
+      "required_pass": true,
+      "usefulness_delta_vs_b": "not_applicable",
+      "notes": "Correctly distinguishes unrestricted refutation from restricted-domain abstention."
+    },
+    {
+      "case_id": "V2-PC-01-domain-restricted-counterexample",
+      "condition": "C_human_framed",
+      "workflow": "prove_or_counterexample",
+      "prompt_id": "V2-PC-01-domain-restricted-counterexample__C_human_framed",
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness_v2/responses_candidate/V2-PC-01-domain-restricted-counterexample__C_human_framed.response.md",
+      "malformed_output": false,
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "task_outcome_correctness": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "actionability_for_next_agent": 2
+      },
+      "explanatory_scores": {
+        "efficiency": 2,
+        "context_reuse": 2,
+        "artifact_specificity": 2
+      },
+      "candidate_stressor_notes": {
+        "domain_obligation_tracking": "Gives a scoped certificate map for unrestricted and restricted branches.",
+        "next_artifact_specificity": "Names the restricted-domain proof or admissible counterexample branch."
+      },
+      "required_pass": true,
+      "usefulness_delta_vs_b": "tied",
+      "notes": "More explicit certificate map than B, but no primary-dimension improvement over B."
+    },
+    {
+      "case_id": "V2-AF-01-masked-likelihood-score-assumptions",
+      "condition": "A_task_only",
+      "workflow": "assumptions_for",
+      "prompt_id": "V2-AF-01-masked-likelihood-score-assumptions__A_task_only",
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness_v2/responses_candidate/V2-AF-01-masked-likelihood-score-assumptions__A_task_only.response.md",
+      "malformed_output": false,
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "task_outcome_correctness": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "actionability_for_next_agent": 2
+      },
+      "explanatory_scores": {
+        "efficiency": 2,
+        "context_reuse": 2,
+        "artifact_specificity": 2
+      },
+      "candidate_stressor_notes": {
+        "domain_obligation_tracking": "Lists scalar-objective, mask, differentiability, constants, and surrogate-route assumptions.",
+        "next_artifact_specificity": "Requests a masked-route equivalence note with finite-difference or symbolic check."
+      },
+      "required_pass": true,
+      "usefulness_delta_vs_b": "tied",
+      "notes": "Strong assumption ledger despite the task-only condition."
+    },
+    {
+      "case_id": "V2-AF-01-masked-likelihood-score-assumptions",
+      "condition": "B_evidence_only",
+      "workflow": "assumptions_for",
+      "prompt_id": "V2-AF-01-masked-likelihood-score-assumptions__B_evidence_only",
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness_v2/responses_candidate/V2-AF-01-masked-likelihood-score-assumptions__B_evidence_only.response.md",
+      "malformed_output": false,
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "task_outcome_correctness": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "actionability_for_next_agent": 2
+      },
+      "explanatory_scores": {
+        "efficiency": 2,
+        "context_reuse": 2,
+        "artifact_specificity": 2
+      },
+      "candidate_stressor_notes": {
+        "alias_reconciliation": "Requires full covariance route to reduce to the selected observed covariance.",
+        "domain_obligation_tracking": "Names mask independence, unobserved-block exclusion, differentiability, and nonsingularity."
+      },
+      "required_pass": true,
+      "usefulness_delta_vs_b": "not_applicable",
+      "notes": "Correctly refuses to link full-covariance score to masked value likelihood without route-link assumptions."
+    },
+    {
+      "case_id": "V2-AF-01-masked-likelihood-score-assumptions",
+      "condition": "C_human_framed",
+      "workflow": "assumptions_for",
+      "prompt_id": "V2-AF-01-masked-likelihood-score-assumptions__C_human_framed",
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness_v2/responses_candidate/V2-AF-01-masked-likelihood-score-assumptions__C_human_framed.response.md",
+      "malformed_output": false,
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "task_outcome_correctness": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "actionability_for_next_agent": 2
+      },
+      "explanatory_scores": {
+        "efficiency": 2,
+        "context_reuse": 2,
+        "artifact_specificity": 2
+      },
+      "candidate_stressor_notes": {
+        "alias_reconciliation": "Gives an explicit S-selection notation for masked covariance and innovations.",
+        "domain_obligation_tracking": "Structured obligation table covers scalar target, leakage, domain, differentiability, mask independence, and innovation consistency.",
+        "next_artifact_specificity": "Names the value route, score route, selection operator, covariance domain, and proof or diagnostic."
+      },
+      "required_pass": true,
+      "usefulness_delta_vs_b": "tied",
+      "notes": "C is more structured than B, but B already passes all primary dimensions."
+    },
+    {
+      "case_id": "V2-AMC-01-logdet-quadratic-code-trace",
+      "condition": "A_task_only",
+      "workflow": "audit_math_to_code",
+      "prompt_id": "V2-AMC-01-logdet-quadratic-code-trace__A_task_only",
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness_v2/responses_candidate/V2-AMC-01-logdet-quadratic-code-trace__A_task_only.response.md",
+      "malformed_output": false,
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "task_outcome_correctness": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "actionability_for_next_agent": 2
+      },
+      "explanatory_scores": {
+        "efficiency": 2,
+        "context_reuse": 2,
+        "artifact_specificity": 2
+      },
+      "candidate_stressor_notes": {
+        "matched_missing_artifact_ledger": "Correctly refuses a structural audit without exact formula, pseudocode, and alias map.",
+        "next_artifact_specificity": "Requests a side-by-side formula-to-pseudocode audit table."
+      },
+      "required_pass": true,
+      "usefulness_delta_vs_b": "tied",
+      "notes": "Correct local abstention from under-specified formula/code evidence."
+    },
+    {
+      "case_id": "V2-AMC-01-logdet-quadratic-code-trace",
+      "condition": "B_evidence_only",
+      "workflow": "audit_math_to_code",
+      "prompt_id": "V2-AMC-01-logdet-quadratic-code-trace__B_evidence_only",
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness_v2/responses_candidate/V2-AMC-01-logdet-quadratic-code-trace__B_evidence_only.response.md",
+      "malformed_output": false,
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "task_outcome_correctness": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "actionability_for_next_agent": 2
+      },
+      "explanatory_scores": {
+        "efficiency": 2,
+        "context_reuse": 2,
+        "artifact_specificity": 2
+      },
+      "candidate_stressor_notes": {
+        "matched_missing_artifact_ledger": "Matches Cholesky/logdet partially and flags the solve/quadratic term as missing or unproven.",
+        "alias_reconciliation": "Treats residual and Cholesky aliases as assumptions, not proofs."
+      },
+      "required_pass": true,
+      "usefulness_delta_vs_b": "not_applicable",
+      "notes": "Correct local structural mismatch ledger with no code-global claim."
+    },
+    {
+      "case_id": "V2-AMC-01-logdet-quadratic-code-trace",
+      "condition": "C_human_framed",
+      "workflow": "audit_math_to_code",
+      "prompt_id": "V2-AMC-01-logdet-quadratic-code-trace__C_human_framed",
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness_v2/responses_candidate/V2-AMC-01-logdet-quadratic-code-trace__C_human_framed.response.md",
+      "malformed_output": false,
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "task_outcome_correctness": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "actionability_for_next_agent": 2
+      },
+      "explanatory_scores": {
+        "efficiency": 2,
+        "context_reuse": 2,
+        "artifact_specificity": 2
+      },
+      "candidate_stressor_notes": {
+        "matched_missing_artifact_ledger": "Gives a clear term-by-term ledger for logdet and quadratic solve.",
+        "alias_reconciliation": "Treats q as unresolved unless a later assignment is shown.",
+        "next_artifact_specificity": "Names the focused q-assignment and logdet scaling code check."
+      },
+      "required_pass": true,
+      "usefulness_delta_vs_b": "tied",
+      "notes": "C is more actionable than B in explanatory detail, but B already passes primary dimensions."
+    },
+    {
+      "case_id": "V2-DD-01-first-gap-product-rule",
+      "condition": "A_task_only",
+      "workflow": "debug_derivation",
+      "prompt_id": "V2-DD-01-first-gap-product-rule__A_task_only",
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness_v2/responses_candidate/V2-DD-01-first-gap-product-rule__A_task_only.response.md",
+      "malformed_output": false,
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "task_outcome_correctness": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "actionability_for_next_agent": 2
+      },
+      "explanatory_scores": {
+        "efficiency": 2,
+        "context_reuse": 2,
+        "artifact_specificity": 2
+      },
+      "candidate_stressor_notes": {
+        "first_failing_step_localization": "Correctly abstains because no ordered trace is supplied.",
+        "next_artifact_specificity": "Requests a numbered derivation trace with dependency edges."
+      },
+      "required_pass": true,
+      "usefulness_delta_vs_b": "tied",
+      "notes": "Correctly refuses to invent a first failing step from a trace-free prompt."
+    },
+    {
+      "case_id": "V2-DD-01-first-gap-product-rule",
+      "condition": "B_evidence_only",
+      "workflow": "debug_derivation",
+      "prompt_id": "V2-DD-01-first-gap-product-rule__B_evidence_only",
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness_v2/responses_candidate/V2-DD-01-first-gap-product-rule__B_evidence_only.response.md",
+      "malformed_output": false,
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "task_outcome_correctness": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "actionability_for_next_agent": 2
+      },
+      "explanatory_scores": {
+        "efficiency": 2,
+        "context_reuse": 2,
+        "artifact_specificity": 2
+      },
+      "candidate_stressor_notes": {
+        "first_failing_step_localization": "Identifies Step 2 as the first product-rule failure.",
+        "next_artifact_specificity": "Names the missing condition b_prime(theta)=0 or b independent of theta."
+      },
+      "required_pass": true,
+      "usefulness_delta_vs_b": "not_applicable",
+      "notes": "Correctly avoids treating later sign changes as the first failure."
+    },
+    {
+      "case_id": "V2-DD-01-first-gap-product-rule",
+      "condition": "C_human_framed",
+      "workflow": "debug_derivation",
+      "prompt_id": "V2-DD-01-first-gap-product-rule__C_human_framed",
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness_v2/responses_candidate/V2-DD-01-first-gap-product-rule__C_human_framed.response.md",
+      "malformed_output": false,
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "task_outcome_correctness": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "actionability_for_next_agent": 2
+      },
+      "explanatory_scores": {
+        "efficiency": 2,
+        "context_reuse": 2,
+        "artifact_specificity": 2
+      },
+      "candidate_stressor_notes": {
+        "first_failing_step_localization": "Identifies Step 2 and explains dependency order.",
+        "next_artifact_specificity": "Adds a simple product-rule counterexample check."
+      },
+      "required_pass": true,
+      "usefulness_delta_vs_b": "tied",
+      "notes": "C adds a concrete check, but B already satisfies all primary dimensions."
+    },
+    {
+      "case_id": "V2-PRP-01-gaussian-score-review-packet",
+      "condition": "A_task_only",
+      "workflow": "prepare_review_packet",
+      "prompt_id": "V2-PRP-01-gaussian-score-review-packet__A_task_only",
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness_v2/responses_candidate/V2-PRP-01-gaussian-score-review-packet__A_task_only.response.md",
+      "malformed_output": false,
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "task_outcome_correctness": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "actionability_for_next_agent": 2
+      },
+      "explanatory_scores": {
+        "efficiency": 2,
+        "context_reuse": 2,
+        "artifact_specificity": 2
+      },
+      "candidate_stressor_notes": {
+        "non_claim_boundary_preservation": "Explicitly says this is not proof or validation.",
+        "next_artifact_specificity": "Requests a line-indexed derivation obligation ledger."
+      },
+      "required_pass": true,
+      "usefulness_delta_vs_b": "better",
+      "notes": "Produces a usable review-packet structure despite limited condition-A context."
+    },
+    {
+      "case_id": "V2-PRP-01-gaussian-score-review-packet",
+      "condition": "B_evidence_only",
+      "workflow": "prepare_review_packet",
+      "prompt_id": "V2-PRP-01-gaussian-score-review-packet__B_evidence_only",
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness_v2/responses_candidate/V2-PRP-01-gaussian-score-review-packet__B_evidence_only.response.md",
+      "malformed_output": false,
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "task_outcome_correctness": 1,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 1,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "actionability_for_next_agent": 1
+      },
+      "explanatory_scores": {
+        "efficiency": 2,
+        "context_reuse": 2,
+        "artifact_specificity": 1
+      },
+      "candidate_stressor_notes": {
+        "non_claim_boundary_preservation": "Correctly marks the packet as diagnostic only.",
+        "next_artifact_specificity": "Too sparse: no concrete next review artifact beyond listing unresolved scope."
+      },
+      "required_pass": false,
+      "usefulness_delta_vs_b": "not_applicable",
+      "notes": "Uses the compact evidence and preserves boundaries, but the review packet is too sparse to be fully actionable or self-contained."
+    },
+    {
+      "case_id": "V2-PRP-01-gaussian-score-review-packet",
+      "condition": "C_human_framed",
+      "workflow": "prepare_review_packet",
+      "prompt_id": "V2-PRP-01-gaussian-score-review-packet__C_human_framed",
+      "response_artifact": ".mathdevmcp/downstream_agent_usefulness_v2/responses_candidate/V2-PRP-01-gaussian-score-review-packet__C_human_framed.response.md",
+      "malformed_output": false,
+      "hard_vetoes_present": [],
+      "required_scores": {
+        "task_outcome_correctness": 2,
+        "decisive_evidence_use": 2,
+        "self_contained_reasoning": 2,
+        "assumption_and_gap_handling": 2,
+        "boundary_and_nonclaim_discipline": 2,
+        "actionability_for_next_agent": 2
+      },
+      "explanatory_scores": {
+        "efficiency": 2,
+        "context_reuse": 2,
+        "artifact_specificity": 2
+      },
+      "candidate_stressor_notes": {
+        "non_claim_boundary_preservation": "Keeps smoke check, scalar symbolic fact, and unresolved matrix obligation separate.",
+        "next_artifact_specificity": "Requests a focused full-covariance score derivation note with dimensions, assumptions, reduction check, and pass/fail verdict."
+      },
+      "required_pass": true,
+      "usefulness_delta_vs_b": "better",
+      "notes": "C improves over B on task outcome, self-contained reasoning, and actionability without overclaiming proof."
+    }
+  ],
+  "limitations": [
+    "Single response per prompt; no replication or uncertainty interval.",
+    "Manual local scoring under the frozen contract; Claude is not a scoring authority.",
+    "Candidate-only stressors are explanatory only and are not promoted to primary dimensions.",
+    "The local C-over-B diagnostic is not a public benchmark, release gate, scientific validation, product capability claim, broad theorem-proving claim, proof-correctness claim beyond scoped obligations, or general model-reliability claim."
+  ]
+}

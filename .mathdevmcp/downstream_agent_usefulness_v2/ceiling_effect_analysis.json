@@ -1,0 +1,132 @@
+{
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "downstream_agent_usefulness_v2_ceiling_effect_analysis",
+    "created": "2026-07-02",
+    "status": "phase_01_analysis_only_no_case_selection_after_new_responses",
+    "baseline_scored_responses": ".mathdevmcp/downstream_agent_usefulness/scored_responses_repaired_candidate.json",
+    "baseline_prompt_validation": ".mathdevmcp/downstream_agent_usefulness/repaired_prompt_contract_validation.json"
+  },
+  "baseline_summary": {
+    "row_count": 27,
+    "case_count": 9,
+    "condition_summary": {
+      "A_task_only": {
+        "hard_veto_count": 0,
+        "required_pass_count": 8,
+        "required_dimension_total": 106
+      },
+      "B_evidence_only": {
+        "hard_veto_count": 0,
+        "required_pass_count": 9,
+        "required_dimension_total": 108
+      },
+      "C_human_framed": {
+        "hard_veto_count": 0,
+        "required_pass_count": 9,
+        "required_dimension_total": 108
+      }
+    },
+    "minimum_candidate_rule_pass": false,
+    "c_better_than_b_on_predeclared_usefulness_axis": false,
+    "repaired_prompt_contract_errors": 0
+  },
+  "global_ceiling_causes": [
+    {
+      "id": "bounded_summary_answer_route",
+      "description": "Several prompts gave enough bounded route context that a downstream agent could infer the safe local answer without needing C-specific handoff framing.",
+      "v2_design_response": "A prompts should omit decisive executable/source evidence. B prompts may include compact evidence but should not include route framing, assumption ledgers, or next-artifact policy."
+    },
+    {
+      "id": "compact_evidence_already_decisive",
+      "description": "For certificate, counterexample, missing-assumption, and structural-mismatch rows, B evidence was often already sufficient for a full required-dimension pass.",
+      "v2_design_response": "Include cases where the evidence is necessary but requires routing through aliases, domain obligations, first-failing-step localization, or non-claim boundaries."
+    },
+    {
+      "id": "rubric_all_or_nothing_ceiling",
+      "description": "The frozen required dimensions measured task correctness, evidence use, reasoning, assumptions, boundaries, and actionability, but did not expose subtler C-vs-B differences after both conditions passed.",
+      "v2_design_response": "Keep frozen dimensions as baseline, but add a scoring applicability map that identifies candidate-only explanatory stressors before collection."
+    },
+    {
+      "id": "single_response_variance",
+      "description": "One response per prompt was a valid local diagnostic but cannot establish general model reliability or stable C-vs-B superiority.",
+      "v2_design_response": "Future collection runbook should preserve no-hidden-retry discipline while asking for explicit approval if replication or counterbalancing is desired."
+    },
+    {
+      "id": "strong_a_baseline",
+      "description": "Repaired A prompts included bounded summaries and guardrails, so A was valid but not minimal; this narrowed the measured contrast.",
+      "v2_design_response": "A should contain task and bounded context only, without decisive backend evidence or route-specific scaffolding."
+    }
+  ],
+  "per_case_ceiling_inventory": [
+    {
+      "case_id": "RLHLB-01-ift-sign-gap",
+      "workflow": "debug_derivation",
+      "b_c_outcome": "tied_required_pass",
+      "tie_reason": "Both B and C localized the sign gap and avoided source-wide overclaim once the decisive sign evidence was available.",
+      "v2_requirement_hint": "Use a derivation trace where the compact evidence contains multiple plausible failing steps and C framing must identify the first failing step and the permitted non-claims."
+    },
+    {
+      "case_id": "RLHLB-02-kalman-loglik-assumptions",
+      "workflow": "assumptions_for",
+      "b_c_outcome": "tied_required_pass",
+      "tie_reason": "The bounded summary and evidence made the route-required Gaussian and covariance-domain assumptions easy to enumerate.",
+      "v2_requirement_hint": "Use a likelihood route with masking, selected covariance, and same-scalar obligations where B lists facts tersely and C frames the assumption ledger."
+    },
+    {
+      "case_id": "RLHLB-03-joseph-equivalence",
+      "workflow": "prove_or_counterexample",
+      "b_c_outcome": "tied_required_pass",
+      "tie_reason": "B already supplied the scoped certificate evidence needed for proof-level success.",
+      "v2_requirement_hint": "Use a proof/refutation case where compact backend evidence is decisive only after notation aliases or domain restrictions are reconciled."
+    },
+    {
+      "case_id": "RLHLB-04-affine-pricing-recursion",
+      "workflow": "derive_from",
+      "b_c_outcome": "tied_required_pass",
+      "tie_reason": "Both B and C recognized the scalar proxy as insufficient for the matrix/domain affine recursion.",
+      "v2_requirement_hint": "Use a derive_from route where the missing matrix/domain obligation is embedded among superficially plausible scalar checks."
+    },
+    {
+      "case_id": "RLHLB-05-kalman-score-same-scalar",
+      "workflow": "assumptions_for",
+      "b_c_outcome": "tied_required_pass",
+      "tie_reason": "The same-scalar, differentiability, covariance-domain, masking, and route-link assumptions were directly visible.",
+      "v2_requirement_hint": "Separate value-route and score-route facts so compact B evidence can be misread unless the handoff frames same-target and differentiability obligations."
+    },
+    {
+      "case_id": "RLHLB-06-state-space-code-missing-solve",
+      "workflow": "audit_math_to_code",
+      "b_c_outcome": "tied_required_pass",
+      "tie_reason": "The structural mismatch was simple enough for both B and C to report.",
+      "v2_requirement_hint": "Use a formula-to-code trace with an ambiguous alias or missing term where local structural mismatch must not become a global code-false claim."
+    },
+    {
+      "case_id": "RLHLB-07-proof-boundary-review-packet",
+      "workflow": "prepare_review_packet",
+      "b_c_outcome": "tied_required_pass",
+      "tie_reason": "Both B and C treated the packet as diagnostic organization rather than proof.",
+      "v2_requirement_hint": "Use a review-packet task that requires producing a specific diagnostic packet, not prose-only completion."
+    },
+    {
+      "case_id": "RLHLB-08-hmc-value-only-boundary",
+      "workflow": "prove_or_counterexample",
+      "b_c_outcome": "tied_required_pass",
+      "tie_reason": "The value-only boundary was explicit enough that both conditions refused production-readiness overclaim.",
+      "v2_requirement_hint": "Use a boundary case where B has a passing local check but C must preserve sampler, gradient, and external-validity non-claims."
+    },
+    {
+      "case_id": "RLHLB-09-affine-recovery-assumption-limit",
+      "workflow": "derive_from",
+      "b_c_outcome": "tied_required_pass",
+      "tie_reason": "Both conditions returned missing-assumption status for neural-solver guarantees.",
+      "v2_requirement_hint": "Use a route with tempting approximation language and require an assumption ledger that distinguishes source prose from theorem obligations."
+    }
+  ],
+  "non_claims": [
+    "This analysis does not show C is better than B.",
+    "This analysis does not show B is generally sufficient.",
+    "This analysis does not establish v2 validity before candidate artifacts and future scored responses.",
+    "This analysis is not release, public benchmark, scientific, product, or general model reliability evidence."
+  ]
+}

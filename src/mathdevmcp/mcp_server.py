@@ -17,9 +17,25 @@ MCP_SERVER_EXPOSED_TOOLS = {
     "extract_latex_neighborhood",
     "search_code_docs",
     "compare_doc_code",
+    "code_implements_equation",
+    "classify_math_claim",
+    "reconcile_notation",
+    "generate_math_tests",
+    "math_review_packet",
+    "math_change_impact",
+    "literature_local_audit",
+    "derive_from",
+    "prove_or_counterexample",
+    "assumptions_for",
+    "debug_derivation",
+    "audit_math_to_code",
+    "prepare_review_packet",
     "audit_implementation_label",
     "compare_label_code",
     "derive_label_step",
+    "derive_or_refute",
+    "prove_or_refute",
+    "localize_proof_gap",
     "implementation_brief",
     "check_equality",
     "check_proof_obligation",
@@ -31,6 +47,8 @@ MCP_SERVER_EXPOSED_TOOLS = {
     "audit_temporal_contract",
     "run_benchmarks",
     "benchmark_gate",
+    "workbench_benchmark_quality",
+    "high_level_workflow_quality",
     "get_tool_matrix",
     "status_taxonomy",
     "doctor",
@@ -88,6 +106,227 @@ def compare_doc_code(doc: str, code: str, required_terms: Sequence[str] | None =
     return call_mcp_tool(
         "compare_doc_code",
         {"doc": doc, "code": code, "required_terms": list(required_terms) if required_terms is not None else None},
+    )
+
+
+@mcp.tool(description="Compare equation terms against Python code structure without executing code.", structured_output=False)
+def code_implements_equation(equation: str, code: str, aliases: dict | None = None) -> dict:
+    return call_mcp_tool(
+        "code_implements_equation",
+        {"equation": equation, "code": code, "aliases": aliases},
+    )
+
+
+@mcp.tool(description="Classify a math claim by supplied evidence without promoting diagnostics to proof.", structured_output=False)
+def classify_math_claim(claim: str, evidence: Sequence[dict] | None = None) -> dict:
+    return call_mcp_tool(
+        "classify_math_claim",
+        {"claim": claim, "evidence": list(evidence) if evidence is not None else None},
+    )
+
+
+@mcp.tool(description="Compare explicit notation convention records and report conflicts or unresolved aliases.", structured_output=False)
+def reconcile_notation(
+    left_records: Sequence[dict],
+    right_records: Sequence[dict],
+    left_context: str = "left",
+    right_context: str = "right",
+) -> dict:
+    return call_mcp_tool(
+        "reconcile_notation",
+        {
+            "left_records": list(left_records),
+            "right_records": list(right_records),
+            "left_context": left_context,
+            "right_context": right_context,
+        },
+    )
+
+
+@mcp.tool(description="Generate diagnostic pytest snippets or plan-only tests from a math obligation.", structured_output=False)
+def generate_math_tests(
+    target: str,
+    assumptions: Sequence[str] | None = None,
+    notation: Sequence[dict] | None = None,
+    kinds: Sequence[str] | None = None,
+    numeric_fixtures: dict | None = None,
+    expected_failure_mode: str = "mismatch_or_unverified",
+) -> dict:
+    return call_mcp_tool(
+        "generate_math_tests",
+        {
+            "target": target,
+            "assumptions": list(assumptions) if assumptions is not None else None,
+            "notation": list(notation) if notation is not None else None,
+            "kinds": list(kinds) if kinds is not None else None,
+            "numeric_fixtures": numeric_fixtures,
+            "expected_failure_mode": expected_failure_mode,
+        },
+    )
+
+
+@mcp.tool(description="Build a compact human-review packet from math debugging evidence.", structured_output=False)
+def math_review_packet(
+    question: str,
+    source: dict | None = None,
+    evidence: Sequence[dict] | None = None,
+    packet_id: str | None = None,
+) -> dict:
+    return call_mcp_tool(
+        "math_review_packet",
+        {
+            "question": question,
+            "source": source,
+            "evidence": list(evidence) if evidence is not None else None,
+            "packet_id": packet_id,
+        },
+    )
+
+
+@mcp.tool(description="Trace likely downstream impact of a changed math artifact without claiming exhaustive coverage.", structured_output=False)
+def math_change_impact(
+    changed_id: str,
+    changed_kind: str = "label",
+    graph: dict | None = None,
+    packets: Sequence[dict] | None = None,
+    code_links: Sequence[dict] | None = None,
+    generated_tests: Sequence[dict] | None = None,
+    claims: Sequence[dict] | None = None,
+    assumptions: Sequence[dict] | None = None,
+) -> dict:
+    return call_mcp_tool(
+        "math_change_impact",
+        {
+            "changed_id": changed_id,
+            "changed_kind": changed_kind,
+            "graph": graph,
+            "packets": list(packets) if packets is not None else None,
+            "code_links": list(code_links) if code_links is not None else None,
+            "generated_tests": list(generated_tests) if generated_tests is not None else None,
+            "claims": list(claims) if claims is not None else None,
+            "assumptions": list(assumptions) if assumptions is not None else None,
+        },
+    )
+
+
+@mcp.tool(description="Compare supplied theorem assumptions to local assumptions without fetching papers.", structured_output=False)
+def literature_local_audit(
+    theorem_id: str,
+    theorem_assumptions: Sequence[dict],
+    local_assumptions: Sequence[dict],
+    local_context: str = "local",
+    notation_audit: dict | None = None,
+    human_waivers: Sequence[str] | None = None,
+) -> dict:
+    return call_mcp_tool(
+        "literature_local_audit",
+        {
+            "theorem_id": theorem_id,
+            "theorem_assumptions": list(theorem_assumptions),
+            "local_assumptions": list(local_assumptions),
+            "local_context": local_context,
+            "notation_audit": notation_audit,
+            "human_waivers": list(human_waivers) if human_waivers is not None else None,
+        },
+    )
+
+
+@mcp.tool(description="Answer a scoped high-level derivability question with explicit evidence boundaries.", structured_output=False)
+def derive_from(
+    target: str,
+    givens: Sequence[str] | None = None,
+    assumptions: Sequence[str] | None = None,
+    lhs: str | None = None,
+    rhs: str | None = None,
+    backend: str = "auto",
+) -> dict:
+    return call_mcp_tool(
+        "derive_from",
+        {
+            "target": target,
+            "givens": list(givens) if givens is not None else None,
+            "assumptions": list(assumptions) if assumptions is not None else None,
+            "lhs": lhs,
+            "rhs": rhs,
+            "backend": backend,
+        },
+    )
+
+
+@mcp.tool(description="Answer a scoped high-level proof/counterexample question with explicit evidence boundaries.", structured_output=False)
+def prove_or_counterexample(
+    claim: str,
+    assumptions: Sequence[str] | None = None,
+    lhs: str | None = None,
+    rhs: str | None = None,
+    backend: str = "auto",
+    lean_source: str | None = None,
+) -> dict:
+    return call_mcp_tool(
+        "prove_or_counterexample",
+        {
+            "claim": claim,
+            "assumptions": list(assumptions) if assumptions is not None else None,
+            "lhs": lhs,
+            "rhs": rhs,
+            "backend": backend,
+            "lean_source": lean_source,
+        },
+    )
+
+
+@mcp.tool(description="Find route-required assumptions for a scoped target without claiming global minimality.", structured_output=False)
+def assumptions_for(target: str, provided_assumptions: Sequence[str] | None = None) -> dict:
+    return call_mcp_tool(
+        "assumptions_for",
+        {
+            "target": target,
+            "provided_assumptions": list(provided_assumptions) if provided_assumptions is not None else None,
+        },
+    )
+
+
+@mcp.tool(description="Localize a scoped derivation gap while preserving non-claim boundaries.", structured_output=False)
+def debug_derivation(steps: Sequence[str], assumptions: Sequence[str] | None = None, backend: str = "auto") -> dict:
+    return call_mcp_tool(
+        "debug_derivation",
+        {
+            "steps": list(steps),
+            "assumptions": list(assumptions) if assumptions is not None else None,
+            "backend": backend,
+        },
+    )
+
+
+@mcp.tool(description="Run a structural math-to-code audit without treating structural evidence as proof.", structured_output=False)
+def audit_math_to_code(math: str, code: str, aliases: dict | None = None) -> dict:
+    return call_mcp_tool(
+        "audit_math_to_code",
+        {
+            "math": math,
+            "code": code,
+            "aliases": aliases,
+        },
+    )
+
+
+@mcp.tool(description="Prepare a high-level human-review packet; diagnostic only, not a certificate.", structured_output=False)
+def prepare_review_packet(
+    question: str,
+    evidence: Sequence[dict] | None = None,
+    source: dict | None = None,
+    packet_id: str | None = None,
+    handoff: bool = False,
+) -> dict:
+    return call_mcp_tool(
+        "prepare_review_packet",
+        {
+            "question": question,
+            "evidence": list(evidence) if evidence is not None else None,
+            "source": source,
+            "packet_id": packet_id,
+            "handoff": handoff,
+        },
     )
 
 
@@ -169,6 +408,66 @@ def derive_label_step(
             "after": after,
             "paragraph_context": paragraph_context,
             "cache": cache,
+        },
+    )
+
+
+@mcp.tool(description="Try a bounded derivation or refutation for a target equality.", structured_output=False)
+def derive_or_refute(
+    target: str,
+    givens: Sequence[str] | None = None,
+    assumptions: Sequence[str] | None = None,
+    lhs: str | None = None,
+    rhs: str | None = None,
+    backend: str = "auto",
+) -> dict:
+    return call_mcp_tool(
+        "derive_or_refute",
+        {
+            "target": target,
+            "givens": list(givens) if givens is not None else None,
+            "assumptions": list(assumptions) if assumptions is not None else None,
+            "lhs": lhs,
+            "rhs": rhs,
+            "backend": backend,
+        },
+    )
+
+
+@mcp.tool(description="Try a bounded proof or refutation for a target equality.", structured_output=False)
+def prove_or_refute(
+    claim: str,
+    assumptions: Sequence[str] | None = None,
+    lhs: str | None = None,
+    rhs: str | None = None,
+    backend: str = "auto",
+    lean_source: str | None = None,
+) -> dict:
+    return call_mcp_tool(
+        "prove_or_refute",
+        {
+            "claim": claim,
+            "assumptions": list(assumptions) if assumptions is not None else None,
+            "lhs": lhs,
+            "rhs": rhs,
+            "backend": backend,
+            "lean_source": lean_source,
+        },
+    )
+
+
+@mcp.tool(description="Find the first unsupported step in a bounded derivation chain.", structured_output=False)
+def localize_proof_gap(
+    steps: Sequence[str],
+    assumptions: Sequence[str] | None = None,
+    backend: str = "auto",
+) -> dict:
+    return call_mcp_tool(
+        "localize_proof_gap",
+        {
+            "steps": list(steps),
+            "assumptions": list(assumptions) if assumptions is not None else None,
+            "backend": backend,
         },
     )
 
@@ -336,6 +635,16 @@ def run_benchmarks(root: str) -> dict:
 @mcp.tool(description="Return CI-friendly benchmark gate results.", structured_output=False)
 def benchmark_gate(root: str) -> dict:
     return call_mcp_tool("benchmark_gate", {"root": root})
+
+
+@mcp.tool(description="Return seeded workbench benchmark quality thresholds.", structured_output=False)
+def workbench_benchmark_quality(root: str) -> dict:
+    return call_mcp_tool("workbench_benchmark_quality", {"root": root})
+
+
+@mcp.tool(description="Return seeded high-level workflow benchmark quality thresholds.", structured_output=False)
+def high_level_workflow_quality(root: str) -> dict:
+    return call_mcp_tool("high_level_workflow_quality", {"root": root})
 
 
 @mcp.tool(description="Return the current MathDevMCP tool matrix.", structured_output=False)

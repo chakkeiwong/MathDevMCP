@@ -1,0 +1,155 @@
+You are a downstream AI agent receiving a local/non-gating MathDevMCP handoff task.
+
+Condition: C_human_framed
+Case: RLHLB-04-affine-pricing-recursion
+Workflow: derive_from
+Question: Can we derive affine pricing recursion from Gaussian affine assumptions?
+
+Your job is to produce the next safe action artifact, not to prove the claim. Keep boundaries explicit.
+
+Required output sections, in this order:
+- next_safe_action
+- reasoning
+- artifact_plan
+- forbidden_claims_avoided
+- what_would_change_conclusion
+- residual_risks
+
+Response length band: 300-700 words unless the subject model uses structured bullets that are equivalent in content.
+Forbidden claims/actions:
+- This scoped workflow result does not claim general theorem-proving ability.
+- givens not formal assumptions
+- This scoped workflow result does not claim release readiness.
+- Forbidden claim not made: Empirical pricing validity.
+- Forbidden claim not made: Nonlinear approximation exact.
+- Durable packets are review artifacts, not proof certificates by themselves.
+- Packet contents preserve source, backend, counterexample, gap, action, and non-claim ledgers separately.
+- A packet may summarize backend evidence only within the scoped high-level workflow result that produced it.
+
+Human-framed packet plus the same machine evidence ledger available in condition B:
+{
+  "human_framing": {
+    "alternative_explanations": [
+      "The recursion may be valid in the source but not encoded richly enough here.",
+      "Matrix dimensions or noncommutativity may matter for coefficient collection.",
+      "A source adapter may need to expose the Gaussian MGF step before backend checking is meaningful."
+    ],
+    "case_purpose": "Test whether the workflow can route an affine pricing-recursion derivation and abstain when the current scalar symbolic route is too weak for matrix/domain reasoning.",
+    "decision_criteria": [
+      "Prove or derive only if the route has the required Gaussian MGF, affine-state, and coefficient-collection assumptions.",
+      "Abstain if matrix/domain review is required before scalar symbolic routing.",
+      "Do not use a small algebraic proxy as evidence for the full pricing recursion."
+    ],
+    "decision_target": "Decide whether the current encoded route can derive the affine recursion from the supplied givens and assumptions.",
+    "local_background": "Affine pricing recursions typically use an exponential-affine ansatz and Gaussian conditional moments to collect constant and state-linear coefficients. The useful review question is whether the route has enough assumptions and algebraic structure to derive those recursions.",
+    "minimal_formula_scaffold": "A full recursion usually needs an affine law of motion, a Gaussian moment-generating step, and coefficient collection. The current baseline obligation A + B*x = A + x*B is only a small commutation/collection proxy.",
+    "source_context_summary": "The cited source region contains the general discrete-time affine pricing recursion. The packet checks whether the current route can support a scoped derivation without claiming empirical pricing validity.",
+    "what_would_change_conclusion": [
+      "A source-backed affine-state and Gaussian-MGF adapter.",
+      "Explicit matrix/vector dimension and commutation assumptions.",
+      "A backend route that can certify the actual coefficient recursions rather than a scalar proxy."
+    ]
+  },
+  "machine_evidence_ledger": {
+    "actions": [
+      {
+        "code": "human_review",
+        "description": "Review low-level evidence manually."
+      },
+      {
+        "code": "human_review",
+        "description": "Check whether the recorded givens should be promoted to explicit route assumptions.",
+        "explicit_assumptions": [],
+        "givens": []
+      }
+    ],
+    "assumptions": [],
+    "backend_checks": [
+      {
+        "backend": "sympy",
+        "source": "route_reference",
+        "state": "available"
+      },
+      {
+        "backend": "lean",
+        "source": "route_reference",
+        "state": "not_applicable"
+      },
+      {
+        "backend": "router",
+        "evidence": [],
+        "reason": "Expression appears to require matrix/domain review before scalar symbolic routing.",
+        "severity": "diagnostic",
+        "source": "workflow_result",
+        "status": "unknown"
+      },
+      {
+        "backend": "router",
+        "evidence": [],
+        "reason": "Expression appears to require matrix/domain review before scalar symbolic routing.",
+        "severity": "diagnostic",
+        "source": "workflow_result",
+        "status": "unknown"
+      }
+    ],
+    "counterexamples": [],
+    "derivation_proof_steps": [
+      {
+        "assumptions": [],
+        "backend_attempts": [
+          {
+            "backend": "router",
+            "evidence": [],
+            "reason": "Expression appears to require matrix/domain review before scalar symbolic routing.",
+            "severity": "diagnostic",
+            "status": "unknown"
+          }
+        ],
+        "counterexample": null,
+        "id": "derive-target-1",
+        "kind": "obligation",
+        "lhs": "A + B*x",
+        "missing_assumptions": [],
+        "provenance": {},
+        "reason": "No bounded derivation or refutation was found.",
+        "rhs": "A + x*B",
+        "status": "unknown"
+      }
+    ],
+    "evidence_classes": [
+      "human_review_required"
+    ],
+    "expected_status_family": "positive_or_abstain",
+    "failure_class": "correct_abstention_or_route_gap",
+    "gaps": [
+      {
+        "code": "unresolved_low_level_status",
+        "reason": "Unsupported or inconclusive low-level status: unknown",
+        "source": "veto_reason"
+      }
+    ],
+    "non_claims": [
+      "This scoped workflow result does not claim general theorem-proving ability.",
+      "givens not formal assumptions",
+      "This scoped workflow result does not claim release readiness.",
+      "Forbidden claim not made: Empirical pricing validity.",
+      "Forbidden claim not made: Nonlinear approximation exact.",
+      "Durable packets are review artifacts, not proof certificates by themselves.",
+      "Packet contents preserve source, backend, counterexample, gap, action, and non-claim ledgers separately.",
+      "A packet may summarize backend evidence only within the scoped high-level workflow result that produced it.",
+      "Packet reports are local/non-gating and do not establish release readiness, public benchmark validity, scientific validation, or broad theorem proving.",
+      "Aggregate accuracy remains unavailable for this local benchmark report."
+    ],
+    "observed_status": "inconclusive",
+    "source_anchors": [
+      {
+        "line_range": "242-322",
+        "path": "../latex-papers/CIP_monograph/chapters/ch11_state_space_recursions.tex",
+        "role": "general discrete-time affine pricing recursion"
+      }
+    ]
+  },
+  "reasoning_answer_text": "Conclusion: The workflow did not find a certifying derivation, proof, or counterexample under the current encoding.\n\nQuestion: Can we derive affine pricing recursion from Gaussian affine assumptions?\n\nHuman framing:\nCase purpose: Test whether the workflow can route an affine pricing-recursion derivation and abstain when the current scalar symbolic route is too weak for matrix/domain reasoning.\n\nLocal background refresher: Affine pricing recursions typically use an exponential-affine ansatz and Gaussian conditional moments to collect constant and state-linear coefficients. The useful review question is whether the route has enough assumptions and algebraic structure to derive those recursions.\n\nMinimal formula scaffold: A full recursion usually needs an affine law of motion, a Gaussian moment-generating step, and coefficient collection. The current baseline obligation A + B*x = A + x*B is only a small commutation/collection proxy.\n\nSource context summary: The cited source region contains the general discrete-time affine pricing recursion. The packet checks whether the current route can support a scoped derivation without claiming empirical pricing validity.\n\nDecision target: Decide whether the current encoded route can derive the affine recursion from the supplied givens and assumptions.\n\nDecision criteria:\n- Prove or derive only if the route has the required Gaussian MGF, affine-state, and coefficient-collection assumptions.\n- Abstain if matrix/domain review is required before scalar symbolic routing.\n- Do not use a small algebraic proxy as evidence for the full pricing recursion.\n\nAlternative explanations:\n- The recursion may be valid in the source but not encoded richly enough here.\n- Matrix dimensions or noncommutativity may matter for coefficient collection.\n- A source adapter may need to expose the Gaussian MGF step before backend checking is meaningful.\n\nWhat would change the conclusion:\n- A source-backed affine-state and Gaussian-MGF adapter.\n- Explicit matrix/vector dimension and commutation assumptions.\n- A backend route that can certify the actual coefficient recursions rather than a scalar proxy.\n\nSource context:\n1. `../latex-papers/CIP_monograph/chapters/ch11_state_space_recursions.tex:242-322` supplies general discrete-time affine pricing recursion.\n\nEncoded obligation or artifact:\n1. Encoded obligation: `A + B*x` should equal `A + x*B`; observed status `unknown` because No bounded derivation or refutation was found.\n\nDecisive evidence:\nrouter: unknown. Expression appears to require matrix/domain review before scalar symbolic routing.\nveto_reason: Unsupported or inconclusive low-level status: unknown\n\nWhy the conclusion follows:\nThe run produced neither a backend certificate nor a bounded counterexample for the encoded obligation.\nThe blocking gap is: veto_reason: Unsupported or inconclusive low-level status: unknown.\nThe correct human-facing answer is therefore abstention with the remaining gap made explicit.\n\nRoute context:\nSource adapter route: present / affine_pricing_master_recursion.\nSymbolic backend route: available.\nFormal backend route: not_applicable.\nCode-equation route: not_applicable.\n\nRemaining gaps:\nveto_reason: Unsupported or inconclusive low-level status: unknown\n\nSuggested next action:\nhuman_review: Review low-level evidence manually.\nhuman_review: Check whether the recorded givens should be promoted to explicit route assumptions.\n\nBoundary: this packet is self-contained local review evidence; it is not a release, public benchmark, scientific-validity, or broad theorem-proving claim."
+}
+
+Use the framing to orient the next safe action, but do not treat the packet or your own response as proof.

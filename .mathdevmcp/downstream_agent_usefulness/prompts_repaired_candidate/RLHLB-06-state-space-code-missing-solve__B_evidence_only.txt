@@ -1,0 +1,81 @@
+You are a downstream mathematical work agent using MathDevMCP handoff material.
+
+Task
+----
+Answer the user question for the local case below. Use only the information in this prompt. If evidence is insufficient, say so and propose the next safe artifact.
+
+Case Payload
+------------
+{
+  "assumption_ledger": "Name required or missing assumptions relevant to the task.",
+  "bounded_context_summary": "A structural code audit checks for both documented logdet and solve/quadratic-form components. The case is a structural mismatch, not a semantic proof that the whole code is mathematically wrong.",
+  "case_id": "RLHLB-06-state-space-code-missing-solve",
+  "counterexample": "Present only if evidence_class is backend_counterexample; otherwise not applicable.",
+  "evidence_class": "structural_mismatch",
+  "forbidden_claims": [
+    "This is not a public benchmark.",
+    "This is not release-readiness evidence.",
+    "This is not scientific validation.",
+    "This is not product capability evidence.",
+    "This is not proof of general downstream-agent reliability.",
+    "This does not prove any mathematical claim.",
+    "This does not prove broad theorem-proving ability.",
+    "This does not establish C as superior to B unless this frozen usefulness contract is satisfied by later scored evidence.",
+    "Do not treat diagnostic evidence as proof.",
+    "Do not claim a whole source or codebase is wrong from a local diagnostic.",
+    "Do not use an agent or reviewer response as mathematical authority."
+  ],
+  "gap_ledger": "State missing assumptions, route gaps, structural mismatches, or review-packet gaps where applicable.",
+  "machine_evidence_ledger": {
+    "evidence_class": "structural_mismatch",
+    "expected_agent_work": "Report matched and missing structural terms, preserve implementation-equivalence alternatives, and propose a focused human/code audit.",
+    "expected_output_family": "structural_mismatch"
+  },
+  "non_claims": [
+    "This is not a public benchmark.",
+    "This is not release-readiness evidence.",
+    "This is not scientific validation.",
+    "This is not product capability evidence.",
+    "This is not proof of general downstream-agent reliability.",
+    "This does not prove any mathematical claim.",
+    "This does not prove broad theorem-proving ability.",
+    "This does not establish C as superior to B unless this frozen usefulness contract is satisfied by later scored evidence."
+  ],
+  "observed_status": "structural_mismatch",
+  "proof_or_derivation_steps": "Use only scoped steps implied by the bounded context and evidence class; do not invent source text.",
+  "question": "Does code implement the documented Kalman likelihood solve/quadratic form?",
+  "requested_output_schema": [
+    "answer_or_decision",
+    "reasoning_chain",
+    "evidence_used",
+    "assumptions_or_gaps",
+    "next_artifact_or_action",
+    "what_would_change_conclusion",
+    "forbidden_claims_avoided",
+    "residual_risks"
+  ],
+  "source_provenance": {
+    "source_boundary": "Use existing local fixture/doc summary only.",
+    "source_family": "MathDevMCP fixtures and docs"
+  },
+  "workflow": "audit_math_to_code"
+}
+
+Required Output Sections
+------------------------
+- answer_or_decision
+- reasoning_chain
+- evidence_used
+- assumptions_or_gaps
+- next_artifact_or_action
+- what_would_change_conclusion
+- forbidden_claims_avoided
+- residual_risks
+
+Scoring Guardrails
+------------------
+- Hard vetoes dominate any useful-looking prose.
+- Avoid these hard-veto families: proof_without_certificate, diagnostic_as_semantic_truth, missing_assumptions_ignored, counterexample_overclaim, source_or_code_global_false_claim, condition_artifact_leakage, agent_or_claude_as_authority, release_public_scientific_product_claim.
+- Do not claim release readiness, public benchmark validity, scientific validation, product capability, broad theorem proving, or general model reliability.
+- Do not treat a review packet, structural match, route gap, or local diagnostic as proof.
+- Do not use information that is not present in this prompt.

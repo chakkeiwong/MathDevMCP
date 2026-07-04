@@ -1,0 +1,101 @@
+{
+  "metadata": {
+    "schema_version": "1.0",
+    "contract": "downstream_agent_usefulness_v2_collection_candidate_freeze_manifest",
+    "created": "2026-07-03T20:27:53+08:00",
+    "status": "phase_00_candidate_frozen_collection_not_authorized",
+    "git_commit": "fbc1b87e4a23e9c811ef613deba0d24962feb87e",
+    "v2_root": ".mathdevmcp/downstream_agent_usefulness_v2",
+    "purpose": "Freeze the v2 candidate artifact identity before approval-packet, scoring-contract, preflight, collection, or scoring work."
+  },
+  "candidate_summary": {
+    "case_count": 6,
+    "prompt_count": 18,
+    "conditions": {
+      "A_task_only": 6,
+      "B_evidence_only": 6,
+      "C_human_framed": 6
+    },
+    "prompt_validation_errors": 0,
+    "v2_response_artifact_count": 0,
+    "response_collection_authorized": false,
+    "claude_role": "read_only_reviewer_only"
+  },
+  "artifact_hashes": [
+    {
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/baseline_hash_manifest.json",
+      "sha256": "a631d8562f791d22fd232f5b0e6898f3929fa409027b09a441aa1cf622df005d"
+    },
+    {
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/case_manifest_candidate.json",
+      "sha256": "769a5911e4c5ebce1b46403ba4f2b6785421275e9c534f1ddfeed97d08471be5"
+    },
+    {
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/prompt_manifest_candidate.json",
+      "sha256": "340ec24f062dc614d6e03a7d279a74539c8e033fef499ef3fc127e2722736bfe"
+    },
+    {
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/prompt_contract_validation.json",
+      "sha256": "17ef6e802137856acbdd155779c32a3148d75546d108444046a0e660a92fce70"
+    },
+    {
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/scoring_applicability_map.json",
+      "sha256": "4dc0e144c4d31d4f6f631b847c904b0dc834337dbe1a2389022f5ea7b7e1417b"
+    },
+    {
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/future_collection_runbook.md",
+      "sha256": "e21fc13a704274ec21a4f130e412334c6b896708eb47961b30b59dc329079232"
+    },
+    {
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/result_note_candidate.md",
+      "sha256": "82efb68185f1a9cf00e761fa9087aa2dd8873b2e007763a736c437f996bd3653"
+    },
+    {
+      "path": "docs/plans/mathdevmcp-downstream-agent-usefulness-benchmark-v2-phase-05-final-handoff-result-2026-07-02.md",
+      "sha256": "c43d33e14f64d5b6cfbbb80e03dddbe9722da33e6c582feaabd2af3ba84deb63"
+    }
+  ],
+  "directory_aggregates": [
+    {
+      "path": ".mathdevmcp/downstream_agent_usefulness_v2/prompts_candidate",
+      "file_count": 18,
+      "aggregate_sha256": "8a4b488bbcbd730276e7bbb5834a7a426ebe6f97819281cb42ba0b637a7084d1",
+      "method": "sha256sum of sorted per-file sha256sum listing"
+    }
+  ],
+  "phase_00_local_checks": {
+    "json_parse": "pass",
+    "prompt_count_check": "pass",
+    "prompt_validation_error_count": "pass",
+    "v2_response_artifact_count_check": "pass",
+    "repaired_baseline_primary_hash_check": "pass_11_of_11",
+    "focused_pytest": "pass_3_tests",
+    "diff_whitespace_check": "pass"
+  },
+  "previous_candidate_review_gate": {
+    "review_name": "mathdevmcp-v2-benchmark-candidate-review",
+    "review_status": "agreed",
+    "verdict": "AGREE",
+    "run_dir": ".claude_reviews/20260703-050839-mathdevmcp-v2-benchmark-candidate-review",
+    "scope": "v2 candidate construction handoff, not collection authorization"
+  },
+  "approval_boundary": {
+    "collection_authorized_by_this_manifest": false,
+    "collection_requires_explicit_human_approval_of": [
+      "prompt manifest and prompt count",
+      "response-worker surface",
+      "retry policy",
+      "malformed-output policy",
+      "scoring contract",
+      "artifact paths for responses, response manifest, and scored responses"
+    ],
+    "forbidden_response_worker": "Claude"
+  },
+  "non_claims": [
+    "This freeze manifest is not response-quality evidence.",
+    "This freeze manifest is not a scored v2 result.",
+    "This freeze manifest does not authorize response collection.",
+    "This freeze manifest does not establish C-over-B superiority.",
+    "This freeze manifest is not release, public benchmark, scientific, product, funding, or general model-reliability evidence."
+  ]
+}

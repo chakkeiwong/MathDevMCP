@@ -54,6 +54,11 @@ Facade registry: `src/mathdevmcp/mcp_facade.py`
   Structural matches are not proofs.
 - `prepare_review_packet` - experimentally aggregate high-level workflow
   evidence for human review. Review packets are diagnostic only.
+- `propose_fix` - experimentally propose conservative repair steps from
+  existing evidence. Proposed fixes are diagnostic guidance only.
+- `audit_and_propose_fix` - experimentally audit labels, propose repair steps,
+  and optionally write a Markdown report. The report is diagnostic guidance
+  only.
 - `derive_label_step` - check a concrete expression-to-expression claim against
   labeled document context.
 - `derive_or_refute` - experimentally try a bounded derivation or refutation

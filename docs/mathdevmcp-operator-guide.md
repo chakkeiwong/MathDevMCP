@@ -25,6 +25,7 @@ mathematical workflow rather than a primitive diagnostic:
 - "Where does this derivation first fail?"
 - "Does this code implement this math?"
 - "Can we prepare a review packet?"
+- "Can you propose a fix?"
 
 Useful CLI entry points:
 
@@ -46,6 +47,9 @@ PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
 
 PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
   prepare-review-packet "Review derivation" --evidence '[{"status":"diagnostic_only"}]'
+
+PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
+  propose-fix "Propose a repair plan" --evidence '[{"status":"diagnostic_only"}]'
 
 PYTHONPATH=/path/to/MathDevMCP/src python -m mathdevmcp.cli \
   high-level-workflow-quality --root /path/to/MathDevMCP
@@ -532,6 +536,8 @@ The MCP server exposes these tools:
 - `audit_kalman_recursion`
 - `typed_obligation_label`
 - `implementation_brief`
+- `propose_fix`
+- `audit_and_propose_fix`
 - `run_benchmarks`
 - `benchmark_gate`
 - `get_tool_matrix`

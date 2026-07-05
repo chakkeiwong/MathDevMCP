@@ -14,6 +14,7 @@ import re
 from typing import Any
 
 from .assumptions_for import assumptions_for as high_level_assumptions_for
+from .audit_and_propose_fix import audit_and_propose_fix as high_level_audit_and_propose_fix
 from .audit_math_to_code import audit_math_to_code as high_level_audit_math_to_code
 from .benchmarks import benchmark_gate_report, build_benchmark_report, build_high_level_workflow_quality_report, build_workbench_benchmark_quality_report, run_derivation_benchmark, run_label_consistency_benchmark, run_seeded_mismatch_benchmark, run_workflow_benchmark, summarize_benchmark_results
 from .code_search import search_files
@@ -40,6 +41,7 @@ from .math_to_tests import generate_math_tests
 from .notation_reconciliation import reconcile_notation
 from .proof_obligations import check_proof_obligation
 from .prepare_review_packet import prepare_review_packet as high_level_prepare_review_packet, review_packet_agent_handoff
+from .propose_fix import propose_fix as high_level_propose_fix, proposal_agent_handoff
 from .prove_or_counterexample import prove_or_counterexample as high_level_prove_or_counterexample
 from .prove_or_refute import prove_or_refute
 from .proof_gap import localize_proof_gap
@@ -424,6 +426,63 @@ def _tool_high_level_prepare_review_packet(args: dict[str, Any]) -> dict[str, An
     if bool(args.get("handoff")):
         return review_packet_agent_handoff(result)
     return result
+
+
+def _tool_high_level_propose_fix(args: dict[str, Any]) -> dict[str, Any]:
+    evidence = args.get("evidence") or []
+    if not isinstance(evidence, list) or not all(isinstance(item, dict) for item in evidence):
+        raise ValueError("evidence must be a list of objects")
+    source = args.get("source")
+    if source is not None and not isinstance(source, dict):
+        raise ValueError("source must be an object")
+    result = high_level_propose_fix(
+        _required_string(args, "question"),
+        evidence=evidence,
+        source=source,
+        doc_root=args.get("root") or args.get("doc_root") or None,
+        query=args.get("query") or None,
+        code_path=args.get("code") or args.get("code_path") or None,
+        label=args.get("label") or None,
+        required_terms=_optional_terms(args),
+        lhs=args.get("lhs") or None,
+        rhs=args.get("rhs") or None,
+        limit=int(args.get("limit", 3)),
+        cache_path=args.get("cache") or None,
+    )
+    if bool(args.get("handoff")):
+        return proposal_agent_handoff(result)
+    return result
+
+
+def _tool_high_level_audit_and_propose_fix(args: dict[str, Any]) -> dict[str, Any]:
+    evidence = args.get("evidence")
+    if evidence is not None and (not isinstance(evidence, list) or not all(isinstance(item, dict) for item in evidence)):
+        raise ValueError("evidence must be a list of objects")
+    labels = args.get("labels")
+    if labels is None:
+        labels = args.get("label")
+    if isinstance(labels, str):
+        labels = [labels]
+    if labels is not None and (not isinstance(labels, list) or not all(isinstance(item, str) for item in labels)):
+        raise ValueError("labels must be a string or list of strings")
+    source = args.get("source")
+    if source is not None and not isinstance(source, dict):
+        raise ValueError("source must be an object")
+    return high_level_audit_and_propose_fix(
+        _required_string(args, "question"),
+        root=args.get("root") or None,
+        labels=labels,
+        whole_document=bool(args.get("whole_document", args.get("document", False))),
+        target_file=args.get("file") or args.get("target_file") or None,
+        label_limit=int(args["label_limit"]) if args.get("label_limit") is not None else None,
+        label_kinds=args.get("label_kinds") if isinstance(args.get("label_kinds"), list) else None,
+        evidence=evidence,
+        source=source,
+        paragraph_context=bool(args.get("paragraph_context", True)),
+        summary_only=bool(args.get("summary_only", True)),
+        backend=str(args.get("backend", "sympy")),
+        output_path=args.get("output") or args.get("output_path") or None,
+    )
 
 
 def _tool_audit_implementation_label(args: dict[str, Any]) -> dict[str, Any]:
@@ -818,6 +877,22 @@ MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
         "prepare_review_packet",
         _tool_high_level_prepare_review_packet,
         "Prepare a high-level human-review packet; diagnostic only, not a certificate.",
+        "high_level_workflow_result",
+        "workflow",
+        stability="experimental",
+    ),
+    MCPToolSpec(
+        "propose_fix",
+        _tool_high_level_propose_fix,
+        "Propose diagnostic repair steps from existing evidence; not an applied edit, proof, or certificate.",
+        "high_level_workflow_result",
+        "workflow",
+        stability="experimental",
+    ),
+    MCPToolSpec(
+        "audit_and_propose_fix",
+        _tool_high_level_audit_and_propose_fix,
+        "Audit explicit or discovered document labels, propose conservative repair steps, and optionally write a Markdown report with coverage.",
         "high_level_workflow_result",
         "workflow",
         stability="experimental",

@@ -76,7 +76,8 @@ deterministic primitives, tested workflow tools, and operational release tools:
   `audit_derivation_label`, `audit_derivation_v2_label`,
   `audit_kalman_recursion`, `typed_obligation_label`,
   `derive_from`, `prove_or_counterexample`, `assumptions_for`,
-  `debug_derivation`, `audit_math_to_code`, `prepare_review_packet`;
+  `debug_derivation`, `audit_math_to_code`, `prepare_review_packet`,
+  `propose_fix`, `audit_and_propose_fix`;
 - operations: `doctor`, `benchmark_gate`, `run_benchmarks`,
   `high_level_workflow_quality`, `workbench_benchmark_quality`,
   `release_corpus_manifest`, `validate_release_corpus`, `release_readiness`,

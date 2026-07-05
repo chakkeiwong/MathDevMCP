@@ -32,6 +32,8 @@ def workflow_claim_class(workflow: str) -> str:
         "debug_derivation": "derivation_debugging",
         "audit_math_to_code": "math_to_code",
         "prepare_review_packet": "review_packet",
+        "propose_fix": "fix_proposal",
+        "audit_and_propose_fix": "fix_report",
     }
     return mapping[workflow]
 

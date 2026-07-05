@@ -30,6 +30,8 @@ MCP_SERVER_EXPOSED_TOOLS = {
     "debug_derivation",
     "audit_math_to_code",
     "prepare_review_packet",
+    "propose_fix",
+    "audit_and_propose_fix",
     "audit_implementation_label",
     "compare_label_code",
     "derive_label_step",
@@ -326,6 +328,78 @@ def prepare_review_packet(
             "source": source,
             "packet_id": packet_id,
             "handoff": handoff,
+        },
+    )
+
+
+@mcp.tool(description="Propose diagnostic repair steps from existing evidence; not an applied edit, proof, or certificate.", structured_output=False)
+def propose_fix(
+    question: str,
+    evidence: Sequence[dict] | None = None,
+    source: dict | None = None,
+    root: str | None = None,
+    query: str | None = None,
+    code: str | None = None,
+    label: str | None = None,
+    required_terms: Sequence[str] | None = None,
+    lhs: str | None = None,
+    rhs: str | None = None,
+    limit: int = 3,
+    cache: str | None = None,
+    handoff: bool = False,
+) -> dict:
+    return call_mcp_tool(
+        "propose_fix",
+        {
+            "question": question,
+            "evidence": list(evidence) if evidence is not None else None,
+            "source": source,
+            "root": root,
+            "query": query,
+            "code": code,
+            "label": label,
+            "required_terms": list(required_terms) if required_terms is not None else None,
+            "lhs": lhs,
+            "rhs": rhs,
+            "limit": limit,
+            "cache": cache,
+            "handoff": handoff,
+        },
+    )
+
+
+@mcp.tool(description="Audit document labels, propose conservative repair steps, and optionally write a Markdown report.", structured_output=False)
+def audit_and_propose_fix(
+    question: str,
+    root: str | None = None,
+    labels: Sequence[str] | None = None,
+    whole_document: bool = False,
+    target_file: str | None = None,
+    label_limit: int | None = None,
+    label_kinds: Sequence[str] | None = None,
+    evidence: Sequence[dict] | None = None,
+    source: dict | None = None,
+    paragraph_context: bool = True,
+    summary_only: bool = True,
+    backend: str = "sympy",
+    output: str | None = None,
+) -> dict:
+    return call_mcp_tool(
+        "audit_and_propose_fix",
+        {
+            "question": question,
+            "root": root,
+            "labels": list(labels) if labels is not None else None,
+            "whole_document": whole_document,
+            "target_file": target_file,
+            "label_limit": label_limit,
+            "label_kinds": list(label_kinds) if label_kinds is not None else None,
+            "evidence": list(evidence) if evidence is not None else None,
+            "source": source,
+            "paragraph_context": paragraph_context,
+            "summary_only": summary_only,
+            "backend": backend,
+            "output": output,
         },
     )
 

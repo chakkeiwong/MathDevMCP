@@ -33,7 +33,7 @@ TOOL_MATRIX: tuple[ToolRecommendation, ...] = (
     ToolRecommendation(
         problem="document_grounded_implementation",
         v1_tools=["extract_spec_from_doc", "acceptance_test_template"],
-        later_tools=["code_generation_guard", "code_spec_consistency"],
+        later_tools=["code_generation_guard", "code_spec_consistency", "propose_fix", "audit_and_propose_fix"],
         success_metric="generated code passes math acceptance tests and preserves cited formulas",
     ),
 )

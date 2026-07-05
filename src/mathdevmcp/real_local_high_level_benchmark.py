@@ -18,6 +18,7 @@ from .high_level_contracts import HIGH_LEVEL_WORKFLOWS
 from .prepare_review_packet import prepare_review_packet
 from .prove_or_counterexample import prove_or_counterexample
 
+BENCHMARK_HIGH_LEVEL_WORKFLOWS: set[str] = HIGH_LEVEL_WORKFLOWS - {"propose_fix", "audit_and_propose_fix"}
 
 BENCHMARK_CONTRACT = "real_local_high_level_workflow_benchmark_manifest"
 ROUTE_AVAILABILITY_CONTRACT = "real_local_high_level_workflow_route_availability_report"
@@ -354,11 +355,11 @@ def _validate_metadata(payload: dict[str, Any], findings: list[dict[str, Any]]) 
     if not isinstance(workflow_contracts, dict):
         _add(findings, severity="high", kind="workflow_evidence_contracts_missing")
     else:
-        missing_workflows = sorted(HIGH_LEVEL_WORKFLOWS - set(workflow_contracts))
+        missing_workflows = sorted(BENCHMARK_HIGH_LEVEL_WORKFLOWS - set(workflow_contracts))
         if missing_workflows:
             _add(findings, severity="high", kind="workflow_evidence_contracts_incomplete", missing=missing_workflows)
         for workflow, contract in workflow_contracts.items():
-            if workflow not in HIGH_LEVEL_WORKFLOWS:
+            if workflow not in BENCHMARK_HIGH_LEVEL_WORKFLOWS:
                 _add(findings, severity="medium", kind="workflow_evidence_contract_unknown", workflow=workflow)
             if not isinstance(contract, dict):
                 _add(findings, severity="high", kind="workflow_evidence_contract_invalid", workflow=workflow)
@@ -441,7 +442,7 @@ def _validate_case(case: dict[str, Any], findings: list[dict[str, Any]], *, root
         return
     if not str(case_id).startswith("RLHLB-"):
         _add(findings, severity="high", kind="case_id_prefix_mismatch", case_id=case_id)
-    if case.get("workflow") not in HIGH_LEVEL_WORKFLOWS:
+    if case.get("workflow") not in BENCHMARK_HIGH_LEVEL_WORKFLOWS:
         _add(findings, severity="high", kind="case_workflow_unknown", case_id=case_id, workflow=case.get("workflow"))
     if case.get("tier") != "holdout_local":
         _add(findings, severity="high", kind="case_tier_mismatch", case_id=case_id, tier=case.get("tier"))
@@ -603,7 +604,7 @@ def load_real_local_high_level_benchmark_manifest(
         _validate_case(case, findings, root_path=root_path)
 
     workflows = {case.get("workflow") for case in cases if isinstance(case.get("workflow"), str)}
-    missing_workflows = sorted(HIGH_LEVEL_WORKFLOWS - workflows)
+    missing_workflows = sorted(BENCHMARK_HIGH_LEVEL_WORKFLOWS - workflows)
     if missing_workflows:
         _add(findings, severity="high", kind="workflow_coverage_incomplete", missing=missing_workflows)
     if not (5 <= len(cases) <= 10):

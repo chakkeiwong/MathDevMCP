@@ -43,6 +43,8 @@ from .performance import index_performance_smoke
 from .parser_benchmark import compare_parser_backends
 from .proof_obligations import check_proof_obligation
 from .prepare_review_packet import prepare_review_packet as high_level_prepare_review_packet, review_packet_agent_handoff
+from .propose_fix import propose_fix as high_level_propose_fix, proposal_agent_handoff
+from .audit_and_propose_fix import audit_and_propose_fix as high_level_audit_and_propose_fix
 from .prove_or_counterexample import prove_or_counterexample as high_level_prove_or_counterexample
 from .prove_or_refute import prove_or_refute
 from .proof_audit import audit_derivation_for_label
@@ -313,6 +315,53 @@ def _cmd_high_level_prepare_review_packet(args: argparse.Namespace) -> int:
     if args.handoff:
         print(json.dumps(review_packet_agent_handoff(result), indent=2))
         return 0
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_high_level_propose_fix(args: argparse.Namespace) -> int:
+    source = _load_json_argument_or_file(args.source) if args.source else None
+    evidence = _load_json_argument_or_file(args.evidence) if args.evidence else None
+    required_terms = [term.strip() for term in args.required_terms.split(",") if term.strip()]
+    result = high_level_propose_fix(
+        args.question,
+        evidence=evidence,
+        source=source,
+        doc_root=args.root or None,
+        query=args.query or None,
+        code_path=args.code or None,
+        label=args.label or None,
+        required_terms=required_terms or None,
+        lhs=args.lhs or None,
+        rhs=args.rhs or None,
+        limit=args.limit,
+        cache_path=Path(args.cache) if args.cache else None,
+    )
+    if args.handoff:
+        print(json.dumps(proposal_agent_handoff(result), indent=2))
+        return 0
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_high_level_audit_and_propose_fix(args: argparse.Namespace) -> int:
+    source = _load_json_argument_or_file(args.source) if args.source else None
+    evidence = _load_json_argument_or_file(args.evidence) if args.evidence else None
+    result = high_level_audit_and_propose_fix(
+        args.question,
+        root=args.root or None,
+        labels=args.label or None,
+        whole_document=args.whole_document,
+        target_file=args.file or None,
+        label_limit=args.label_limit,
+        label_kinds=args.label_kind or None,
+        evidence=evidence,
+        source=source,
+        paragraph_context=args.paragraph_context,
+        summary_only=not args.full_audit,
+        backend=args.backend,
+        output_path=Path(args.output) if args.output else None,
+    )
     print(json.dumps(result, indent=2))
     return 0
 
@@ -855,6 +904,38 @@ def make_parser() -> argparse.ArgumentParser:
     p_high_packet.add_argument("--packet-id", default="", help="Optional stable packet id")
     p_high_packet.add_argument("--handoff", action="store_true", help="Print only the compact diagnostic agent handoff")
     p_high_packet.set_defaults(func=_cmd_high_level_prepare_review_packet)
+
+    p_high_fix = sub.add_parser("propose-fix", help="Propose diagnostic repair steps from existing evidence")
+    p_high_fix.add_argument("question", help="Repair question")
+    p_high_fix.add_argument("--source", default="", help="Optional JSON source object or JSON file path")
+    p_high_fix.add_argument("--evidence", default="", help="Optional JSON evidence list or JSON file path")
+    p_high_fix.add_argument("--root", default="", help="Optional document root for implementation briefing")
+    p_high_fix.add_argument("--query", default="", help="Optional document search query for implementation briefing")
+    p_high_fix.add_argument("--code", default="", help="Optional code file path for implementation briefing")
+    p_high_fix.add_argument("--label", default="", help="Optional label for implementation briefing")
+    p_high_fix.add_argument("--required-terms", default="", help="Optional comma-separated required terms")
+    p_high_fix.add_argument("--lhs", default="", help="Optional left-hand side for implementation briefing")
+    p_high_fix.add_argument("--rhs", default="", help="Optional right-hand side for implementation briefing")
+    p_high_fix.add_argument("--limit", type=int, default=3, help="Maximum search results for implementation briefing")
+    p_high_fix.add_argument("--cache", default="", help="Optional index cache path")
+    p_high_fix.add_argument("--handoff", action="store_true", help="Print only the compact diagnostic agent handoff")
+    p_high_fix.set_defaults(func=_cmd_high_level_propose_fix)
+
+    p_high_audit_fix = sub.add_parser("audit-and-propose-fix", help="Audit labels, propose repairs, and optionally write a Markdown report")
+    p_high_audit_fix.add_argument("question", help="Repair/audit question")
+    p_high_audit_fix.add_argument("--root", default="", help="Document root containing LaTeX files")
+    p_high_audit_fix.add_argument("--label", action="append", default=[], help="LaTeX label to audit; can be repeated")
+    p_high_audit_fix.add_argument("--whole-document", action="store_true", help="Discover and audit document labels with explicit coverage metadata")
+    p_high_audit_fix.add_argument("--file", default="", help="Restrict whole-document discovery to one TeX file under --root")
+    p_high_audit_fix.add_argument("--label-limit", type=int, default=None, help="Maximum discovered labels to audit in whole-document mode; <=0 means no limit")
+    p_high_audit_fix.add_argument("--label-kind", action="append", default=[], help="Block kind to include in whole-document discovery; can be repeated")
+    p_high_audit_fix.add_argument("--source", default="", help="Optional JSON source object or JSON file path")
+    p_high_audit_fix.add_argument("--evidence", default="", help="Optional JSON evidence list or JSON file path")
+    p_high_audit_fix.add_argument("--backend", choices=["auto", "sympy", "sage", "z3"], default="sympy", help="Backend preference for label audits")
+    p_high_audit_fix.add_argument("--no-paragraph-context", dest="paragraph_context", action="store_false", help="Disable paragraph context in generated audits")
+    p_high_audit_fix.add_argument("--full-audit", action="store_true", help="Keep full audit output instead of summary-only label audits")
+    p_high_audit_fix.add_argument("--output", default="", help="Optional Markdown report output path")
+    p_high_audit_fix.set_defaults(func=_cmd_high_level_audit_and_propose_fix, paragraph_context=True)
 
     p_matrix = sub.add_parser("tool-matrix", help="Print the current tool matrix")
     p_matrix.set_defaults(func=_cmd_tool_matrix)

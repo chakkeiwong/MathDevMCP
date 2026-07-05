@@ -92,9 +92,9 @@ _UNRESOLVED_PATTERNS = {
     "derivative": r"\\partial|\\nabla|Derivative",
     "matrix_inverse": r"\^-1|\^{-1}|inverse",
     "trace": r"\\operatorname\{tr\}|\\tr|trace",
-    "determinant": r"\\det|logdet|det",
+    "determinant": r"\\log\s*\\det\b|\\det\b|\blogdet\b|\bdet\s*\(",
     "expectation": r"\\mathbb\{E\}|E\[|expectation",
-    "transpose": r"'|\\top|transpose",
+    "transpose": r"\\top\b|transpose",
     "posterior": r"posterior|logpost|log_post|\\pi",
     "hamiltonian": r"Hamiltonian|H\(",
     "conditional": r"\\mid|\|",
@@ -251,8 +251,20 @@ def _route_hints(suitability: Suitability, unresolved_constructs: list[str], con
     return [asdict(item) for item in hints]
 
 
+def _has_apostrophe_transpose(text: str) -> bool:
+    """Detect matrix/vector transpose primes without treating scalar time primes as transpose."""
+    return bool(
+        re.search(r"\\[A-Za-z][A-Za-z0-9]*'", text)
+        or re.search(r"\b[A-Z][A-Za-z0-9]*(?:_\{?[A-Za-z0-9|+\-]+\}?)?'", text)
+        or re.search(r"\b[a-z][A-Za-z0-9]*_\{?[A-Za-z0-9|+\-]+\}?'", text)
+    )
+
+
 def _unresolved(text: str) -> list[str]:
-    return [name for name, pattern in _UNRESOLVED_PATTERNS.items() if re.search(pattern, text)]
+    unresolved = [name for name, pattern in _UNRESOLVED_PATTERNS.items() if re.search(pattern, text)]
+    if "transpose" not in unresolved and _has_apostrophe_transpose(text):
+        unresolved.append("transpose")
+    return unresolved
 
 
 def _kind(lhs: str, rhs: str) -> ObligationKind:

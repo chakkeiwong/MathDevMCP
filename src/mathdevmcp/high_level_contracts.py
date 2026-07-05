@@ -16,6 +16,8 @@ HIGH_LEVEL_WORKFLOWS: set[str] = {
     "debug_derivation",
     "audit_math_to_code",
     "prepare_review_packet",
+    "propose_fix",
+    "audit_and_propose_fix",
 }
 
 CLAIM_CLASSES: set[str] = {
@@ -25,6 +27,8 @@ CLAIM_CLASSES: set[str] = {
     "derivation_debugging",
     "math_to_code",
     "review_packet",
+    "fix_proposal",
+    "fix_report",
 }
 
 WORKFLOW_CLAIM_CLASS: dict[str, str] = {
@@ -34,6 +38,8 @@ WORKFLOW_CLAIM_CLASS: dict[str, str] = {
     "debug_derivation": "derivation_debugging",
     "audit_math_to_code": "math_to_code",
     "prepare_review_packet": "review_packet",
+    "propose_fix": "fix_proposal",
+    "audit_and_propose_fix": "fix_report",
 }
 
 HIGH_LEVEL_STATUSES: set[str] = {
@@ -61,6 +67,8 @@ EVIDENCE_CLASSES: set[str] = {
     "numeric_diagnostic",
     "generated_test",
     "review_packet",
+    "fix_proposal",
+    "fix_report",
     "proof_gap",
     "human_review_required",
 }
@@ -542,7 +550,7 @@ def validate_high_level_result(result: dict[str, Any]) -> list[str]:
         if certification_source != "none":
             errors.append("structural_mismatch requires certification_source none")
     elif status == "diagnostic_only":
-        if not _has_any_evidence(raw_classes, {"numeric_diagnostic", "generated_test", "review_packet", "human_review_required"}):
+        if not _has_any_evidence(raw_classes, {"numeric_diagnostic", "generated_test", "review_packet", "fix_proposal", "fix_report", "human_review_required"}):
             errors.append("diagnostic_only requires diagnostic or review evidence")
         if certification_source != "none":
             errors.append("diagnostic_only requires certification_source none")

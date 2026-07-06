@@ -20,11 +20,13 @@ from .code_search import search_files
 from .claim_support import build_claim_support_packet
 from .consistency import compare_files, compare_label_to_code
 from .derivation import derive_step_for_label, derive_step_from_files
+from .derivation_audit_report import audit_and_propose_derivations as high_level_audit_and_propose_derivations
 from .derive_from import derive_from as high_level_derive_from
 from .derive_or_refute import derive_or_refute
 from .doctor import doctor_report
 from .domain_templates import generate_obligations_from_template, list_domain_templates, suggest_domain_templates
 from .equation_code_match import code_implements_equation
+from .assumptions_for import audit_and_propose_assumptions as high_level_audit_and_propose_assumptions
 from .assumptions_for import assumptions_for as high_level_assumptions_for
 from .audit_math_to_code import audit_math_to_code as high_level_audit_math_to_code
 from .debug_derivation import debug_derivation as high_level_debug_derivation
@@ -282,6 +284,34 @@ def _cmd_high_level_assumptions_for(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_high_level_audit_and_propose_assumptions(args: argparse.Namespace) -> int:
+    result = high_level_audit_and_propose_assumptions(
+        args.question,
+        target=args.target or None,
+        root=args.root or None,
+        labels=args.label or None,
+        provided_assumptions=args.provided_assumption,
+        output_path=Path(args.output) if args.output else None,
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_high_level_audit_and_propose_derivations(args: argparse.Namespace) -> int:
+    result = high_level_audit_and_propose_derivations(
+        args.question,
+        target=args.target or None,
+        root=args.root or None,
+        labels=args.label or None,
+        givens=args.given,
+        assumptions=args.assumption,
+        backend=args.backend,
+        output_path=Path(args.output) if args.output else None,
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
 def _cmd_high_level_debug_derivation(args: argparse.Namespace) -> int:
     result = high_level_debug_derivation(
         args.step,
@@ -360,6 +390,10 @@ def _cmd_high_level_audit_and_propose_fix(args: argparse.Namespace) -> int:
         paragraph_context=args.paragraph_context,
         summary_only=not args.full_audit,
         backend=args.backend,
+        validate_proposed_fixes=args.validate_proposed_fixes,
+        certifier_policy=args.certifier_policy,
+        backend_order=args.validation_backend or None,
+        workers=args.workers,
         output_path=Path(args.output) if args.output else None,
     )
     print(json.dumps(result, indent=2))
@@ -885,6 +919,26 @@ def make_parser() -> argparse.ArgumentParser:
     p_high_assumptions.add_argument("--provided-assumption", action="append", default=[], help="Assumption already supplied; can be repeated")
     p_high_assumptions.set_defaults(func=_cmd_high_level_assumptions_for)
 
+    p_high_audit_assumptions = sub.add_parser("audit-and-propose-assumptions", help="Audit targets or labels and propose concrete assumption repairs")
+    p_high_audit_assumptions.add_argument("question", help="Assumption audit question")
+    p_high_audit_assumptions.add_argument("--target", default="", help="Direct target expression or equality")
+    p_high_audit_assumptions.add_argument("--root", default="", help="Document root containing LaTeX files")
+    p_high_audit_assumptions.add_argument("--label", action="append", default=[], help="LaTeX label to audit; can be repeated")
+    p_high_audit_assumptions.add_argument("--provided-assumption", action="append", default=[], help="Assumption already supplied; can be repeated")
+    p_high_audit_assumptions.add_argument("--output", default="", help="Optional Markdown report output path")
+    p_high_audit_assumptions.set_defaults(func=_cmd_high_level_audit_and_propose_assumptions)
+
+    p_high_audit_derivations = sub.add_parser("audit-and-propose-derivations", help="Audit targets or labels and propose concrete derivation repairs")
+    p_high_audit_derivations.add_argument("question", help="Derivation audit question")
+    p_high_audit_derivations.add_argument("--target", default="", help="Direct target expression or equality")
+    p_high_audit_derivations.add_argument("--root", default="", help="Document root containing LaTeX files")
+    p_high_audit_derivations.add_argument("--label", action="append", default=[], help="LaTeX label to audit; can be repeated")
+    p_high_audit_derivations.add_argument("--given", action="append", default=[], help="Context/given statement; can be repeated")
+    p_high_audit_derivations.add_argument("--assumption", action="append", default=[], help="Formal route assumption; can be repeated")
+    p_high_audit_derivations.add_argument("--backend", choices=["auto", "sympy", "sage", "z3"], default="auto", help="Backend preference")
+    p_high_audit_derivations.add_argument("--output", default="", help="Optional Markdown report output path")
+    p_high_audit_derivations.set_defaults(func=_cmd_high_level_audit_and_propose_derivations)
+
     p_high_debug = sub.add_parser("debug-derivation", help="Localize a scoped derivation gap")
     p_high_debug.add_argument("--step", action="append", required=True, help="Derivation expression; repeat in order")
     p_high_debug.add_argument("--assumption", action="append", default=[], help="Formal route assumption; can be repeated")
@@ -932,6 +986,10 @@ def make_parser() -> argparse.ArgumentParser:
     p_high_audit_fix.add_argument("--source", default="", help="Optional JSON source object or JSON file path")
     p_high_audit_fix.add_argument("--evidence", default="", help="Optional JSON evidence list or JSON file path")
     p_high_audit_fix.add_argument("--backend", choices=["auto", "sympy", "sage", "z3"], default="sympy", help="Backend preference for label audits")
+    p_high_audit_fix.add_argument("--validate-proposed-fixes", action="store_true", help="Attach backend-attempt validation metadata to concrete proposed fixes")
+    p_high_audit_fix.add_argument("--certifier-policy", default="require_attempt_when_encodable", help="Validation policy name recorded in the report")
+    p_high_audit_fix.add_argument("--validation-backend", action="append", choices=["lean", "sage", "sympy"], default=[], help="Backend validation order; can be repeated")
+    p_high_audit_fix.add_argument("--workers", type=int, default=1, help="Parallel label audit workers; 1 preserves sequential behavior")
     p_high_audit_fix.add_argument("--no-paragraph-context", dest="paragraph_context", action="store_false", help="Disable paragraph context in generated audits")
     p_high_audit_fix.add_argument("--full-audit", action="store_true", help="Keep full audit output instead of summary-only label audits")
     p_high_audit_fix.add_argument("--output", default="", help="Optional Markdown report output path")

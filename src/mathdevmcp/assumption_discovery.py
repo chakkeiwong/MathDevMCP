@@ -12,6 +12,16 @@ from .math_debugging import assumption_record, math_question, workbench_obligati
 
 _ASSUMPTION_RULES = [
     {
+        "kind": "jacobian_logdet_domain",
+        "patterns": [
+            re.compile(r"\\log\s*\|?\\det\s+J", re.IGNORECASE),
+            re.compile(r"jacobian[^.\n]*\\det", re.IGNORECASE),
+        ],
+        "text": "Jacobian matrix is square and nonsingular with valid log-absolute-determinant domain",
+        "source": "Jacobian log-determinant",
+        "route_categories": ["domain_condition", "shape_condition", "smoothness_condition"],
+    },
+    {
         "kind": "division_nonzero",
         "patterns": [re.compile(r"/"), re.compile(r"\*\*-1\b"), re.compile(r"\^-1\b")],
         "text": "denominator is nonzero",
@@ -27,10 +37,44 @@ _ASSUMPTION_RULES = [
     },
     {
         "kind": "logdet_domain",
-        "patterns": [re.compile(r"\blogdet\s*\("), re.compile(r"\bdet\s*\(")],
+        "patterns": [re.compile(r"\blogdet\s*\("), re.compile(r"\bdet\s*\("), re.compile(r"\\det\b")],
         "text": "matrix operand is square with valid determinant domain, usually positive definite for logdet",
         "source": "determinant or logdet",
         "route_categories": ["covariance_condition", "domain_condition"],
+    },
+    {
+        "kind": "conditional_expectation_integrability",
+        "patterns": [
+            re.compile(r"\\E\b"),
+            re.compile(r"\\mathbb\{E\}"),
+            re.compile(r"conditional expectation", re.IGNORECASE),
+        ],
+        "text": "conditional expectation law is defined and the random payoff terms are integrable",
+        "source": "conditional expectation",
+        "route_categories": ["probability_condition", "integrability_condition", "domain_condition"],
+    },
+    {
+        "kind": "zero_profit_pricing_convention",
+        "patterns": [
+            re.compile(r"zero-profit", re.IGNORECASE),
+            re.compile(r"risk-free return", re.IGNORECASE),
+            re.compile(r"lender prices debt", re.IGNORECASE),
+            re.compile(r"risky debt rate", re.IGNORECASE),
+        ],
+        "text": "lender pricing uses the stated zero-profit risk-free discounting convention",
+        "source": "zero-profit risky-debt pricing",
+        "route_categories": ["pricing_condition", "economic_condition", "domain_condition"],
+    },
+    {
+        "kind": "foc_expectation_differentiation",
+        "patterns": [
+            re.compile(r"first-order conditions", re.IGNORECASE),
+            re.compile(r"\\label\{prop:interior-foc\}"),
+            re.compile(r"\\E\s*\[V\^\\star_[kb]", re.DOTALL),
+        ],
+        "text": "differentiation under the conditional expectation is justified and no omitted transition-derivative terms are present",
+        "source": "interior FOC expectation derivative",
+        "route_categories": ["smoothness_condition", "integrability_condition", "probability_condition"],
     },
     {
         "kind": "sqrt_domain",
@@ -41,7 +85,14 @@ _ASSUMPTION_RULES = [
     },
     {
         "kind": "differentiability",
-        "patterns": [re.compile(r"\\partial"), re.compile(r"\bd/d"), re.compile(r"\bgrad\s*\("), re.compile(r"\bderivative\s*\(")],
+        "patterns": [
+            re.compile(r"\\partial"),
+            re.compile(r"\\frac\s*\{d[^{}]*\}\s*\{d"),
+            re.compile(r"\bd/d"),
+            re.compile(r"\bgrad\s*\("),
+            re.compile(r"\bderivative\s*\("),
+        ],
+        "explicit_patterns": [re.compile(r"\bdifferentiable\b", re.IGNORECASE)],
         "text": "target function is differentiable on the stated domain",
         "source": "derivative",
         "route_categories": ["smoothness_condition"],
@@ -80,13 +131,20 @@ def _provided(text: str, provided_assumptions: list[str]) -> bool:
     return any(normalized_text in item or item in normalized_text for item in normalized_provided)
 
 
+def _explicit_in_target(rule: dict[str, Any], target: str) -> bool:
+    patterns = rule.get("explicit_patterns")
+    if not isinstance(patterns, list):
+        return False
+    return any(pattern.search(target) for pattern in patterns)
+
+
 def assumptions_required(target: str, *, provided_assumptions: list[str] | None = None) -> dict:
     provided = provided_assumptions or []
     assumptions: list[dict[str, Any]] = []
     for rule in _ASSUMPTION_RULES:
         if not any(pattern.search(target) for pattern in rule["patterns"]):
             continue
-        status = "provided" if _provided(rule["text"], provided) else "missing"
+        status = "provided" if _provided(rule["text"], provided) or _explicit_in_target(rule, target) else "missing"
         assumptions.append(
             assumption_record(
                 rule["text"],

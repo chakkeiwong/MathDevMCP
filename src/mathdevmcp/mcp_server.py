@@ -27,6 +27,8 @@ MCP_SERVER_EXPOSED_TOOLS = {
     "derive_from",
     "prove_or_counterexample",
     "assumptions_for",
+    "audit_and_propose_assumptions",
+    "audit_and_propose_derivations",
     "debug_derivation",
     "audit_math_to_code",
     "prepare_review_packet",
@@ -288,6 +290,54 @@ def assumptions_for(target: str, provided_assumptions: Sequence[str] | None = No
     )
 
 
+@mcp.tool(description="Audit targets or labels and propose concrete assumption repairs; diagnostic only, not proof closure.", structured_output=False)
+def audit_and_propose_assumptions(
+    question: str,
+    target: str | None = None,
+    root: str | None = None,
+    labels: Sequence[str] | None = None,
+    provided_assumptions: Sequence[str] | None = None,
+    output: str | None = None,
+) -> dict:
+    return call_mcp_tool(
+        "audit_and_propose_assumptions",
+        {
+            "question": question,
+            "target": target,
+            "root": root,
+            "labels": list(labels) if labels is not None else None,
+            "provided_assumptions": list(provided_assumptions) if provided_assumptions is not None else None,
+            "output": output,
+        },
+    )
+
+
+@mcp.tool(description="Audit targets or labels and propose concrete derivation repairs; diagnostic only, not proof closure.", structured_output=False)
+def audit_and_propose_derivations(
+    question: str,
+    target: str | None = None,
+    root: str | None = None,
+    labels: Sequence[str] | None = None,
+    givens: Sequence[str] | None = None,
+    assumptions: Sequence[str] | None = None,
+    backend: str = "auto",
+    output: str | None = None,
+) -> dict:
+    return call_mcp_tool(
+        "audit_and_propose_derivations",
+        {
+            "question": question,
+            "target": target,
+            "root": root,
+            "labels": list(labels) if labels is not None else None,
+            "givens": list(givens) if givens is not None else None,
+            "assumptions": list(assumptions) if assumptions is not None else None,
+            "backend": backend,
+            "output": output,
+        },
+    )
+
+
 @mcp.tool(description="Localize a scoped derivation gap while preserving non-claim boundaries.", structured_output=False)
 def debug_derivation(steps: Sequence[str], assumptions: Sequence[str] | None = None, backend: str = "auto") -> dict:
     return call_mcp_tool(
@@ -382,6 +432,10 @@ def audit_and_propose_fix(
     paragraph_context: bool = True,
     summary_only: bool = True,
     backend: str = "sympy",
+    validate_proposed_fixes: bool = False,
+    certifier_policy: str = "require_attempt_when_encodable",
+    backend_order: Sequence[str] | None = None,
+    workers: int = 1,
     output: str | None = None,
 ) -> dict:
     return call_mcp_tool(
@@ -399,6 +453,10 @@ def audit_and_propose_fix(
             "paragraph_context": paragraph_context,
             "summary_only": summary_only,
             "backend": backend,
+            "validate_proposed_fixes": validate_proposed_fixes,
+            "certifier_policy": certifier_policy,
+            "backend_order": list(backend_order) if backend_order is not None else None,
+            "workers": workers,
             "output": output,
         },
     )

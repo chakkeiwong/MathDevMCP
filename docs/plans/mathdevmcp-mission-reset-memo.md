@@ -19,6 +19,7 @@ Before starting any substantial lane, read:
 - `docs/plans/mathdevmcp-mission-charter.md`
 - `docs/plans/mathdevmcp-anti-drift-gate.md`
 - `docs/plans/mathdevmcp-evidence-to-implementation-ledger.md`
+- `docs/plans/mathdevmcp-agent-consumable-gap-proposal-mission-control-2026-07-06.md`
 
 Sonnet max read-only review agreed with this mission spine:
 `REVIEW_STATUS=agreed`, `VERDICT=AGREE`,
@@ -32,6 +33,8 @@ diagnostic with final Sonnet review agreement.
 Do not default to building another benchmark. The current evidence points to
 implementation work:
 
+- use the agent-consumable gap/proposal mission-control template for high-level
+  tool modifications;
 - improve review-packet/handoff-packet generation;
 - make generated packets compact, actionable, provenance-aware, and explicit
   about assumptions, route gaps, veto risks, non-claims, and next artifacts;
@@ -91,3 +94,40 @@ Likely scope:
 
 Stop if the plan turns back into "make v3 benchmark" without a concrete
 product workflow change.
+
+## 2026-07-06 Derivation Target Extraction/Routing Handoff
+
+The derivation audit lane now has a completed target-extraction/routing slice:
+
+- master program:
+  `docs/plans/mathdevmcp-derivation-target-extraction-routing-master-program-2026-07-06.md`;
+- final ledger:
+  `docs/plans/mathdevmcp-derivation-target-extraction-routing-visible-execution-ledger-2026-07-06.md`;
+- v2 risky-debt report:
+  `docs/reviews/risky-debt-derivation-gap-proposals-v2.md`;
+- final fallback review:
+  `docs/reviews/mathdevmcp-derivation-target-extraction-routing-final-codex-fallback-review.md`.
+
+New behavior:
+
+- label reports extract source-local equation/align-row targets with lhs/rhs,
+  parent label, equation label, file/line provenance, source text, stable ids,
+  and explicit full-block fallback;
+- route plans name deterministic candidate tools, expected evidence contracts,
+  backend/formalization status, and non-certifying boundaries;
+- `audit_and_propose_derivations` now reports extracted targets, route plans,
+  target-level gaps/proposals, and linked assumption repairs;
+- public CLI/MCP contract remains `derivation_audit_report_result` with
+  additive fields.
+
+Final focused checks passed:
+
+- 38 derivation/extraction tests;
+- 43 MCP public-surface tests;
+- `git diff --check`.
+
+Important limitation:
+
+- This slice improves agent-consumable diagnostics. It does not prove the
+  risky-debt note or apply edits. LaTeX-heavy obligations still require
+  formalization before Lean/Sage/counterexample tools can certify them.

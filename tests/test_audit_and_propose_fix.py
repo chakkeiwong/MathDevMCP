@@ -79,6 +79,9 @@ def test_audit_and_propose_fix_mcp_facade_and_server_surface_is_listed(tmp_path:
             "question": "Audit the risky-debt lecture note and propose repairs",
             "root": str(DOC_ROOT),
             "labels": _audit_labels(),
+            "validate_proposed_fixes": True,
+            "backend_order": ["lean", "sage", "sympy"],
+            "workers": 1,
             "output": str(output),
         },
     )
@@ -87,11 +90,14 @@ def test_audit_and_propose_fix_mcp_facade_and_server_surface_is_listed(tmp_path:
     assert tools["audit_and_propose_fix"]["output_contract"] == "high_level_workflow_result"
     assert result["ok"] is True
     assert result["workflow"] == "audit_and_propose_fix"
+    assert result["agent_handoff"]["validation"]["enabled"] is True
     assert output.exists()
     assert mcp_server_audit_and_propose_fix(
         "Audit the risky-debt lecture note and propose repairs",
         root=str(DOC_ROOT),
         labels=_audit_labels(),
+        validate_proposed_fixes=True,
+        backend_order=["lean", "sage", "sympy"],
     )["workflow"] == "audit_and_propose_fix"
 
 
@@ -162,6 +168,15 @@ def test_audit_and_propose_fix_cli_writes_markdown_report(tmp_path: Path) -> Non
             RISKY_DEBT_DOC.name,
             "--label-limit",
             "1",
+            "--validate-proposed-fixes",
+            "--validation-backend",
+            "lean",
+            "--validation-backend",
+            "sage",
+            "--validation-backend",
+            "sympy",
+            "--workers",
+            "2",
             "--output",
             str(output),
         ],
@@ -175,10 +190,12 @@ def test_audit_and_propose_fix_cli_writes_markdown_report(tmp_path: Path) -> Non
     payload = json.loads(result.stdout)
     assert payload["workflow"] == "audit_and_propose_fix"
     assert payload["agent_handoff"]["coverage"]["mode"] == "whole_document_plus_explicit_labels"
+    assert payload["agent_handoff"]["validation"]["enabled"] is True
     assert output.exists()
     markdown = output.read_text(encoding="utf-8")
     assert "MathDevMCP Audit And Fix Proposal" in markdown
     assert "## Audit Coverage" in markdown
+    assert "## Proposed Fix Validation" in markdown
 
 
 def test_render_audit_fix_markdown_contains_tool_use_table() -> None:
@@ -230,6 +247,63 @@ def test_audit_and_propose_fix_replaces_generic_evidence_gap_with_concrete_oblig
     assert any("zero-profit condition" in item["derivation_plan"] for item in gaps)
     assert any("\\partial J/\\partial b'=0" in item["derivation_plan"] for item in gaps)
     assert all(item["evidence_ref"].startswith("proof_audit_v2:") for item in gaps)
+
+
+def test_audit_and_propose_fix_validates_concrete_fixes_with_backend_attempts() -> None:
+    result = audit_and_propose_fix(
+        "Audit the risky-debt lecture note and propose repairs",
+        root=str(DOC_ROOT),
+        labels=_audit_labels(),
+        validate_proposed_fixes=True,
+        backend_order=["lean", "sage", "sympy"],
+    )
+    low_level = result["evidence"][0]["low_level"]
+    concrete = [item for item in result["agent_handoff"]["proposal_details"] if not item.get("evidence_only") and item.get("math_fix")]
+
+    assert low_level["validation"]["enabled"] is True
+    assert low_level["validation"]["validated_detail_count"] >= len(concrete)
+    assert "## Proposed Fix Validation" in low_level["markdown"]
+    assert concrete
+    for item in concrete:
+        validation = item["validation"]
+        assert validation["policy"] == "require_attempt_when_encodable"
+        assert validation["backend_order"] == ["lean", "sage", "sympy"]
+        assert validation["status"] in {"attempted_not_certified", "not_encodable", "verified", "refuted"}
+        assert validation["reason"]
+        attempts = validation["backend_attempts"]
+        assert [attempt["backend"] for attempt in attempts] == ["lean", "sage", "sympy"]
+        lean_attempt = attempts[0]
+        sage_attempt = attempts[1]
+        assert lean_attempt["status"] == "not_encodable"
+        assert "does not synthesize Lean proof scripts" in lean_attempt["reason"]
+        assert sage_attempt["severity"] == "diagnostic"
+        assert "attempted only" in sage_attempt["reason"]
+    assert "Validation:" in low_level["markdown"]
+    assert "Backend attempts:" in low_level["markdown"]
+
+
+def test_audit_and_propose_fix_parallel_workers_preserve_label_order() -> None:
+    sequential = audit_and_propose_fix(
+        "Audit the risky-debt lecture note and propose repairs",
+        root=str(DOC_ROOT),
+        labels=_audit_labels(),
+        validate_proposed_fixes=True,
+        workers=1,
+    )
+    parallel = audit_and_propose_fix(
+        "Audit the risky-debt lecture note and propose repairs",
+        root=str(DOC_ROOT),
+        labels=_audit_labels(),
+        validate_proposed_fixes=True,
+        workers=2,
+    )
+
+    seq_low = sequential["evidence"][0]["low_level"]
+    par_low = parallel["evidence"][0]["low_level"]
+    assert [item["label"] for item in seq_low["coverage"]["audited_labels"]] == [item["label"] for item in par_low["coverage"]["audited_labels"]]
+    assert [item["label"] for item in seq_low["audited_evidence"]] == [item["label"] for item in par_low["audited_evidence"]]
+    assert [item["tool"] for item in seq_low["tool_uses"]] == [item["tool"] for item in par_low["tool_uses"]]
+    assert [item["target"] for item in sequential["agent_handoff"]["proposal_details"]] == [item["target"] for item in parallel["agent_handoff"]["proposal_details"]]
 
 
 def test_write_audit_fix_report_markdown_returns_written_path(tmp_path: Path) -> None:

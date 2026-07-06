@@ -30,6 +30,8 @@ def test_list_mcp_tools_includes_implementation_brief():
     assert "derive_from" in names
     assert "prove_or_counterexample" in names
     assert "assumptions_for" in names
+    assert "audit_and_propose_assumptions" in names
+    assert "audit_and_propose_derivations" in names
     assert "debug_derivation" in names
     assert "audit_math_to_code" in names
     assert "prepare_review_packet" in names
@@ -44,6 +46,8 @@ def test_list_mcp_tools_includes_implementation_brief():
     assert "document text against code text" not in compare_doc_code["description"]
     assert tools["derive_from"]["output_contract"] == "high_level_workflow_result"
     assert tools["derive_from"]["certifying_capable"] is True
+    assert tools["audit_and_propose_assumptions"]["output_contract"] == "audit_assumption_report_result"
+    assert tools["audit_and_propose_derivations"]["output_contract"] == "derivation_audit_report_result"
     assert tools["audit_math_to_code"]["certifying_capable"] is False
     assert tools["prepare_review_packet"]["certifying_capable"] is False
 
@@ -64,6 +68,14 @@ def test_call_mcp_tool_high_level_derive_from_preserves_library_contract():
 def test_call_mcp_tool_high_level_surfaces_preserve_boundaries():
     proof = call_mcp_tool("prove_or_counterexample", {"claim": "A*B = B*A"})
     assumptions = call_mcp_tool("assumptions_for", {"target": "logdet(A)"})
+    assumption_report = call_mcp_tool(
+        "audit_and_propose_assumptions",
+        {"question": "Audit assumptions", "target": "logdet(A)"},
+    )
+    derivation_report = call_mcp_tool(
+        "audit_and_propose_derivations",
+        {"question": "Audit derivations", "target": "logdet(A) = trace(A)"},
+    )
     debug = call_mcp_tool("debug_derivation", {"steps": ["logdet(A)", "trace(A)", "trace(A)"]})
     code = call_mcp_tool("audit_math_to_code", {"math": "logdet(S)", "code": "def f(S):\n    return logdet(S)\n"})
     packet = call_mcp_tool("prepare_review_packet", {"question": "Review", "evidence": [proof]})
@@ -73,6 +85,12 @@ def test_call_mcp_tool_high_level_surfaces_preserve_boundaries():
     assert proof["counterexamples"]
     assert assumptions["status"] == "missing_assumptions"
     assert "route_assumptions_not_global_minimality" in {item["code"] for item in assumptions["non_claims"]}
+    assert assumption_report["metadata"]["contract"] == "audit_assumption_report_result"
+    assert assumption_report["proposals"][0]["validation"]["status"] == "validated_by_rule"
+    assert derivation_report["metadata"]["contract"] == "derivation_audit_report_result"
+    assert derivation_report["proposals"][0]["validation"]["status"] == "blocked_by_missing_assumptions"
+    assert derivation_report["tool_uses"][0]["tool"] == "plan_backend_routes"
+    assert derivation_report["route_plans"][0]["metadata"]["contract"] == "backend_route_plan_result"
     assert debug["status"] == "gap_found"
     assert "gap_localization_not_global_failure" in {item["code"] for item in debug["non_claims"]}
     assert code["status"] == "structural_match"
@@ -81,6 +99,25 @@ def test_call_mcp_tool_high_level_surfaces_preserve_boundaries():
     assert packet["status"] == "diagnostic_only"
     assert packet["certification_source"] == "none"
     assert "diagnostic_evidence_not_proof" in {item["code"] for item in packet["non_claims"]}
+
+
+def test_call_mcp_tool_derivation_report_preserves_extracted_targets() -> None:
+    result = call_mcp_tool(
+        "audit_and_propose_derivations",
+        {
+            "question": "Audit extracted risky-debt target",
+            "root": str(ROOT / "docs"),
+            "labels": ["prop:risky-pricing"],
+        },
+    )
+
+    assert result["metadata"]["contract"] == "derivation_audit_report_result"
+    assert result["coverage"]["extracted_target_count"] == 1
+    assert result["coverage"]["fallback_target_count"] == 0
+    assert result["target_extraction"]["label_results"][0]["targets"][0]["label"] == "eq:risky-pricing"
+    assert result["route_plans"][0]["source"]["label"] == "eq:risky-pricing"
+    assert result["route_plans"][0]["metadata"]["contract"] == "backend_route_plan_result"
+    assert "Route planning is diagnostic only" in result["route_plans"][0]["boundary"]
 
 
 def test_call_mcp_tool_prepare_review_packet_preserves_phase6_packet_fields():

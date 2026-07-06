@@ -13,6 +13,7 @@ from pathlib import Path
 import re
 from typing import Any
 
+from .assumptions_for import audit_and_propose_assumptions as high_level_audit_and_propose_assumptions
 from .assumptions_for import assumptions_for as high_level_assumptions_for
 from .audit_and_propose_fix import audit_and_propose_fix as high_level_audit_and_propose_fix
 from .audit_math_to_code import audit_math_to_code as high_level_audit_math_to_code
@@ -21,6 +22,7 @@ from .code_search import search_files
 from .consistency import compare_files, compare_label_to_code
 from .contracts import attach_contract, error_result, success_result
 from .derivation import derive_step_for_label
+from .derivation_audit_report import audit_and_propose_derivations as high_level_audit_and_propose_derivations
 from .debug_derivation import debug_derivation as high_level_debug_derivation
 from .derive_from import derive_from as high_level_derive_from
 from .derive_or_refute import derive_or_refute
@@ -388,6 +390,50 @@ def _tool_high_level_assumptions_for(args: dict[str, Any]) -> dict[str, Any]:
     )
 
 
+def _tool_high_level_audit_and_propose_assumptions(args: dict[str, Any]) -> dict[str, Any]:
+    labels = args.get("labels")
+    if labels is None:
+        labels = args.get("label")
+    if isinstance(labels, str):
+        labels = [labels]
+    if labels is not None and (not isinstance(labels, list) or not all(isinstance(item, str) for item in labels)):
+        raise ValueError("labels must be a string or list of strings")
+    output = args.get("output")
+    if output is None:
+        output = args.get("output_path")
+    return high_level_audit_and_propose_assumptions(
+        _required_string(args, "question"),
+        target=args.get("target") if isinstance(args.get("target"), str) and args.get("target") else None,
+        root=args.get("root") if isinstance(args.get("root"), str) and args.get("root") else None,
+        labels=labels,
+        provided_assumptions=_optional_string_list_arg(args, "provided_assumptions", "provided_assumption"),
+        output_path=output if isinstance(output, str) and output else None,
+    )
+
+
+def _tool_high_level_audit_and_propose_derivations(args: dict[str, Any]) -> dict[str, Any]:
+    labels = args.get("labels")
+    if labels is None:
+        labels = args.get("label")
+    if isinstance(labels, str):
+        labels = [labels]
+    if labels is not None and (not isinstance(labels, list) or not all(isinstance(item, str) for item in labels)):
+        raise ValueError("labels must be a string or list of strings")
+    output = args.get("output")
+    if output is None:
+        output = args.get("output_path")
+    return high_level_audit_and_propose_derivations(
+        _required_string(args, "question"),
+        target=args.get("target") if isinstance(args.get("target"), str) and args.get("target") else None,
+        root=args.get("root") if isinstance(args.get("root"), str) and args.get("root") else None,
+        labels=labels,
+        givens=_optional_string_list_arg(args, "givens", "given"),
+        assumptions=_optional_string_list_arg(args, "assumptions", "assumption"),
+        backend=str(args.get("backend", "auto")),
+        output_path=output if isinstance(output, str) and output else None,
+    )
+
+
 def _tool_high_level_debug_derivation(args: dict[str, Any]) -> dict[str, Any]:
     steps = _optional_string_list_arg(args, "steps", "step")
     if not steps:
@@ -468,6 +514,13 @@ def _tool_high_level_audit_and_propose_fix(args: dict[str, Any]) -> dict[str, An
     source = args.get("source")
     if source is not None and not isinstance(source, dict):
         raise ValueError("source must be an object")
+    backend_order = args.get("backend_order", args.get("validation_backend_order"))
+    if backend_order is None:
+        backend_order = args.get("validation_backends")
+    if isinstance(backend_order, str):
+        backend_order = [backend_order]
+    if backend_order is not None and (not isinstance(backend_order, list) or not all(isinstance(item, str) for item in backend_order)):
+        raise ValueError("backend_order must be a string or list of strings")
     return high_level_audit_and_propose_fix(
         _required_string(args, "question"),
         root=args.get("root") or None,
@@ -481,6 +534,10 @@ def _tool_high_level_audit_and_propose_fix(args: dict[str, Any]) -> dict[str, An
         paragraph_context=bool(args.get("paragraph_context", True)),
         summary_only=bool(args.get("summary_only", True)),
         backend=str(args.get("backend", "sympy")),
+        validate_proposed_fixes=bool(args.get("validate_proposed_fixes", False)),
+        certifier_policy=str(args.get("certifier_policy", "require_attempt_when_encodable")),
+        backend_order=backend_order,
+        workers=int(args.get("workers", 1)),
         output_path=args.get("output") or args.get("output_path") or None,
     )
 
@@ -854,6 +911,24 @@ MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
         "high_level_workflow_result",
         "workflow",
         stability="experimental",
+    ),
+    MCPToolSpec(
+        "audit_and_propose_assumptions",
+        _tool_high_level_audit_and_propose_assumptions,
+        "Audit targets or labels and propose concrete assumption repairs without claiming proof closure.",
+        "audit_assumption_report_result",
+        "workflow",
+        stability="experimental",
+    ),
+    MCPToolSpec(
+        "audit_and_propose_derivations",
+        _tool_high_level_audit_and_propose_derivations,
+        "Audit targets or labels and propose concrete derivation repairs without applying edits or claiming proof closure.",
+        "derivation_audit_report_result",
+        "workflow",
+        certifying_capable=True,
+        stability="experimental",
+        optional_capability="symbolic_backend",
     ),
     MCPToolSpec(
         "debug_derivation",

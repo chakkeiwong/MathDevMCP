@@ -4,6 +4,13 @@ from __future__ import annotations
 
 from typing import Any
 
+from .derivation_gap_proposals import (
+    DERIVATION_VALIDATION_BOUNDARY,
+    build_derivation_gaps,
+    build_derivation_proposals,
+    build_derivation_tool_uses,
+    summarize_derivation_validation,
+)
 from .derive_or_refute import derive_or_refute
 from .high_level_contracts import action, default_non_claims, evidence_entry, high_level_result, refresh_evidence_ledger, validate_high_level_result, veto_reason
 from .high_level_workflows import package_low_level_math_result
@@ -66,11 +73,145 @@ def _derive_route_plan(
     }
 
 
+def _source_summary(source: dict[str, Any] | None) -> str:
+    if not isinstance(source, dict):
+        return ""
+    for key in ("context_summary", "summary", "label", "file", "path"):
+        value = source.get(key)
+        if isinstance(value, str) and value:
+            return value
+    return ""
+
+
+def _attach_derivation_gap_packet(
+    result: dict[str, Any],
+    low_level: dict[str, Any],
+    *,
+    target: str,
+    givens: list[str],
+    assumptions: list[str],
+    backend: str,
+    source: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    gaps = build_derivation_gaps(low_level, source=source)
+    proposals = build_derivation_proposals(gaps)
+    result["source"] = dict(source or {"target": target})
+    result["coverage"] = {
+        "target": target,
+        "gap_count": len(gaps),
+        "proposal_count": len(proposals),
+        "backend_attempt_count": sum(
+            len(gap.get("backend_attempts", []))
+            for gap in gaps
+            if isinstance(gap.get("backend_attempts"), list)
+        ),
+        "counterexample_count": sum(
+            len(gap.get("counterexamples", []))
+            for gap in gaps
+            if isinstance(gap.get("counterexamples"), list)
+        ),
+        "inspected": ["direct_target"],
+        "not_inspected": [
+            "document-wide derivation context",
+            "global theorem applicability",
+            "free-form givens as formal assumptions",
+        ],
+    }
+    result["tool_uses"] = build_derivation_tool_uses(
+        target,
+        givens=givens,
+        assumptions=assumptions,
+        backend=backend,
+    )
+    result["gaps"] = gaps
+    result["proposals"] = proposals
+    result["validation"] = summarize_derivation_validation(proposals)
+    if proposals:
+        result["actions"].append(
+            action(
+                "review_derivation_proposals",
+                "Inspect gap-linked derivation proposals before editing text or retrying proof.",
+            )
+        )
+    result["agent_handoff"] = {
+        "scoped_question": result.get("question", ""),
+        "status": result.get("status", ""),
+        "reason": result.get("answer", ""),
+        "source_context": _source_summary(result.get("source")),
+        "gap_count": len(gaps),
+        "proposal_count": len(proposals),
+        "derivation_gap_ledger": gaps,
+        "proposals": proposals,
+        "validation": result["validation"],
+        "non_claim_boundary": result.get("non_claims", []),
+        "next_actions": result.get("actions", []),
+        "next_artifact": "Use the derivation proposals and linked assumption repairs before applying source edits.",
+        "certification_boundary": DERIVATION_VALIDATION_BOUNDARY,
+    }
+    return result
+
+
+def _not_encodable_low_level(
+    target: str,
+    *,
+    reason: str,
+    givens: list[str],
+    assumptions: list[str],
+) -> dict[str, Any]:
+    return {
+        "status": "not_encodable",
+        "reason": reason,
+        "givens": list(givens),
+        "target": target,
+        "lhs": "",
+        "rhs": "",
+        "route_decision": {
+            "route": "router",
+            "status": "not_encodable",
+            "reason": reason,
+            "backend_attempt": {
+                "backend": "router",
+                "status": "not_encodable",
+                "reason": reason,
+                "evidence": [],
+                "severity": "diagnostic",
+            },
+        },
+        "assumption_diagnostic": {
+            "status": "unknown",
+            "reason": "No route-required assumptions were checked because the target was not encodable.",
+            "target": target,
+            "provided_assumptions": list(assumptions),
+            "assumptions": [],
+            "missing_assumptions": [],
+        },
+        "counterexample_search": None,
+        "workbench_result": {
+            "status": "not_encodable",
+            "reason": reason,
+            "obligations": [],
+            "assumptions": [],
+            "backend_attempts": [
+                {
+                    "backend": "router",
+                    "status": "not_encodable",
+                    "reason": reason,
+                    "evidence": [],
+                    "severity": "diagnostic",
+                }
+            ],
+            "counterexamples": [],
+            "actions": [],
+        },
+    }
+
+
 def derive_from(
     target: str,
     *,
     givens: list[str] | None = None,
     assumptions: list[str] | None = None,
+    source: dict[str, Any] | None = None,
     lhs: str | None = None,
     rhs: str | None = None,
     backend: str = "auto",
@@ -120,6 +261,25 @@ def derive_from(
         errors = validate_high_level_result(result)
         if errors:
             raise ValueError(f"invalid derive_from not-encodable result: {errors}") from exc
+        low_level = _not_encodable_low_level(
+            target,
+            reason=str(exc),
+            givens=given_list,
+            assumptions=assumption_list,
+        )
+        _attach_derivation_gap_packet(
+            result,
+            low_level,
+            target=target,
+            givens=given_list,
+            assumptions=assumption_list,
+            backend=backend,
+            source=source,
+        )
+        refresh_evidence_ledger(result)
+        errors = validate_high_level_result(result)
+        if errors:
+            raise ValueError(f"invalid derive_from not-encodable rich result: {errors}") from exc
         return result
     result = package_low_level_math_result(
         low_level,
@@ -155,6 +315,15 @@ def derive_from(
                 ),
             },
         )
+    )
+    _attach_derivation_gap_packet(
+        result,
+        low_level,
+        target=target,
+        givens=given_list,
+        assumptions=assumption_list,
+        backend=backend,
+        source=source,
     )
     refresh_evidence_ledger(result)
     errors = validate_high_level_result(result)

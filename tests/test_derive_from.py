@@ -19,6 +19,12 @@ def test_derive_from_proves_scoped_identity_with_backend_certificate() -> None:
     assert route_evidence["route_plan"]["givens"] == ["a,b are scalars"]
     assert route_evidence["route_plan"]["backend_route"]["status"] == "proved"
     assert route_evidence["route_plan"]["obligations"][0]["status"] == "proved"
+    assert result["gaps"][0]["status"] == "proved"
+    assert result["proposals"][0]["type"] == "accept_backend_certificate"
+    assert result["proposals"][0]["validation"]["status"] == "certified_by_backend"
+    assert result["validation"]["certifying_proposal_count"] == 1
+    assert result["tool_uses"][0]["tool"] == "derive_or_refute"
+    assert result["agent_handoff"]["derivation_gap_ledger"] == result["gaps"]
     assert "givens_not_formal_assumptions" in {item["code"] for item in result["non_claims"]}
     assert validate_high_level_result(result) == []
 
@@ -29,6 +35,9 @@ def test_derive_from_refutes_only_when_counterexample_artifact_exists() -> None:
     assert result["status"] == "refuted"
     assert result["evidence_classes"] == ["backend_counterexample", "review_packet"]
     assert result["counterexamples"]
+    assert result["gaps"][0]["status"] == "refuted"
+    assert result["proposals"][0]["type"] == "accept_counterexample"
+    assert result["proposals"][0]["validation"]["status"] == "refuted_by_counterexample"
     assert validate_high_level_result(result) == []
 
 
@@ -37,6 +46,9 @@ def test_derive_from_does_not_promote_refutation_without_counterexample() -> Non
 
     assert result["status"] == "inconclusive"
     assert "certifying_evidence_not_promoted" in {item["code"] for item in result["veto_reasons"]}
+    assert result["gaps"][0]["status"] == "refuted"
+    assert result["proposals"][0]["type"] == "manual_review_with_named_gap"
+    assert result["proposals"][0]["validation"]["status"] == "abstained_no_certifying_route"
     assert validate_high_level_result(result) == []
 
 
@@ -48,6 +60,10 @@ def test_derive_from_reports_missing_assumptions_without_inserting_them() -> Non
     route_evidence = next(item for item in result["evidence"] if item["id"] == "derive_from:route-plan")
     assert route_evidence["route_plan"]["route_gaps"][0]["kind"] == "missing_assumptions"
     assert route_evidence["route_plan"]["obligations"][0]["missing_assumptions"]
+    assert result["gaps"][0]["status"] == "missing_assumptions"
+    assert result["gaps"][0]["assumption_gaps"]
+    assert result["proposals"][0]["type"] == "add_assumptions"
+    assert result["proposals"][0]["assumption_repairs"]
     assert "route_assumptions_not_global_minimality" in {item["code"] for item in result["non_claims"]}
     assert validate_high_level_result(result) == []
 
@@ -57,6 +73,9 @@ def test_derive_from_preserves_not_encodable_boundary() -> None:
 
     assert result["status"] == "not_encodable"
     assert result["certification_source"] == "none"
+    assert result["gaps"][0]["status"] == "not_encodable"
+    assert result["proposals"][0]["type"] == "formalize_target"
+    assert result["proposals"][0]["validation"]["status"] == "blocked_by_not_encodable"
     assert "not_encodable_not_false" in {item["code"] for item in result["non_claims"]}
     assert validate_high_level_result(result) == []
 
@@ -74,6 +93,19 @@ def test_derive_from_records_explicit_assumptions_separately_from_givens() -> No
     route_plan = route_evidence["route_plan"]
     assert route_plan["givens"] == ["we usually divide by nonzero denominators"]
     assert route_plan["explicit_assumptions"] == ["denominator is nonzero"]
+    assert result["tool_uses"][0]["arguments"]["givens"] == ["we usually divide by nonzero denominators"]
+    assert result["tool_uses"][0]["arguments"]["assumptions"] == ["denominator is nonzero"]
     assert "not an unchecked derivation chain" in route_plan["boundary"]
     assert "givens_not_formal_assumptions" in {item["code"] for item in result["non_claims"]}
+    assert validate_high_level_result(result) == []
+
+
+def test_derive_from_unknown_returns_formalization_proposal() -> None:
+    result = derive_from("A = A")
+
+    assert result["status"] == "inconclusive"
+    assert result["gaps"][0]["status"] == "unknown"
+    assert result["proposals"][0]["type"] == "formalize_target"
+    assert result["proposals"][0]["validation"]["status"] == "abstained_no_certifying_route"
+    assert result["agent_handoff"]["proposal_count"] == len(result["proposals"])
     assert validate_high_level_result(result) == []

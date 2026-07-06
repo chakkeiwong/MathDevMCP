@@ -2,6 +2,7 @@ from __future__ import annotations
 
 """Audit a document target and write a conservative fix-proposal report."""
 
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import asdict, dataclass
 from pathlib import Path
 import re
@@ -18,6 +19,8 @@ from .high_level_contracts import (
     veto_reason,
 )
 from .latex_index import build_index
+from .math_debugging import backend_attempt_record
+from .math_debugging_router import route_math_obligation
 from .proof_audit_v2 import audit_derivation_v2_for_label
 from .propose_fix import REPAIR_NON_CLAIM_CODE, REPAIR_NON_CLAIM_TEXT, proposal_agent_handoff, propose_fix
 
@@ -39,6 +42,9 @@ DEFAULT_DISCOVERY_LABEL_KINDS = (
     "gather",
     "multline",
 )
+DEFAULT_VALIDATION_BACKEND_ORDER = ("lean", "sage", "sympy")
+VALIDATION_BACKENDS = {"lean", "sage", "sympy"}
+VALIDATION_POLICY_REQUIRE_ATTEMPT = "require_attempt_when_encodable"
 
 
 @dataclass(frozen=True)
@@ -60,6 +66,7 @@ class AuditFixReport:
     audited_evidence: list[dict[str, Any]]
     proposal_changes: list[dict[str, Any]]
     proposal_details: list[dict[str, Any]]
+    validation: dict[str, Any]
     proposal: dict[str, Any]
     markdown: str
     output_path: str | None
@@ -68,6 +75,113 @@ class AuditFixReport:
     agent_handoff: dict[str, Any]
     certification_boundary: str
     metadata: dict[str, str]
+
+
+def _label_audit_failure(root: str, label: str, reason: str) -> dict[str, Any]:
+    return attach_contract(
+        {
+            "label": label,
+            "doc_root": str(Path(root).resolve()),
+            "status": "inconclusive",
+            "reason": reason,
+            "counts": {"total": 0, "verified": 0, "mismatch": 0, "unverified": 0, "inconclusive": 0},
+            "substatus_counts": {},
+            "high_priority_actions": [],
+            "obligations": [],
+            "parser_policy": {},
+            "base_audit_status": "inconclusive",
+            "doc_context": {},
+        },
+        "proof_audit_v2_result",
+    )
+
+
+def _audit_label_task(task: tuple[int, str, str, bool, bool, str]) -> dict[str, Any]:
+    index, root, label, paragraph_context, summary_only, backend = task
+    args = {
+        "root": root,
+        "label": label,
+        "paragraph_context": paragraph_context,
+        "summary_only": summary_only,
+        "backend": backend,
+    }
+    try:
+        audit = audit_derivation_v2_for_label(
+            root,
+            label,
+            paragraph_context=paragraph_context,
+            summary_only=summary_only,
+            backend=backend,
+        )
+    except Exception as exc:  # pragma: no cover - exercised through structured failure contract.
+        audit = _label_audit_failure(root, label, f"audit_derivation_v2_label failed: {exc}")
+    return {
+        "index": index,
+        "audit": audit,
+        "tool_use": asdict(
+            ToolUseRecord(
+                tool="audit_derivation_v2_label",
+                arguments=args,
+                purpose=f"Generate local derivation audit evidence for `{label}`.",
+                status=str(audit.get("status", "unknown")),
+                output_contract=_metadata_contract(audit),
+            )
+        ),
+    }
+
+
+def _ordered_label_audits(
+    root: str,
+    labels: list[str],
+    *,
+    paragraph_context: bool,
+    summary_only: bool,
+    backend: str,
+    workers: int,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    if not labels:
+        return [], []
+    normalized_workers = max(1, int(workers or 1))
+    tasks = [
+        (index, root, label, paragraph_context, summary_only, backend)
+        for index, label in enumerate(labels)
+    ]
+    if normalized_workers == 1 or len(tasks) == 1:
+        results = [_audit_label_task(task) for task in tasks]
+    else:
+        results = []
+        with ProcessPoolExecutor(max_workers=min(normalized_workers, len(tasks))) as executor:
+            future_to_task = {executor.submit(_audit_label_task, task): task for task in tasks}
+            for future in as_completed(future_to_task):
+                index, task_root, label, _, _, _ = future_to_task[future]
+                try:
+                    results.append(future.result())
+                except Exception as exc:  # pragma: no cover - protects deterministic parent behavior.
+                    audit = _label_audit_failure(task_root, label, f"audit worker failed: {exc}")
+                    args = {
+                        "root": task_root,
+                        "label": label,
+                        "paragraph_context": paragraph_context,
+                        "summary_only": summary_only,
+                        "backend": backend,
+                    }
+                    results.append(
+                        {
+                            "index": index,
+                            "audit": audit,
+                            "tool_use": asdict(
+                                ToolUseRecord(
+                                    tool="audit_derivation_v2_label",
+                                    arguments=args,
+                                    purpose=f"Generate local derivation audit evidence for `{label}`.",
+                                    status=str(audit.get("status", "unknown")),
+                                    output_contract=_metadata_contract(audit),
+                                )
+                            ),
+                        }
+                    )
+    ordered = sorted(results, key=lambda item: int(item.get("index", 0)))
+    return [item["audit"] for item in ordered], [item["tool_use"] for item in ordered]
 
 
 def _metadata_contract(payload: dict[str, Any]) -> str | None:
@@ -485,6 +599,178 @@ def _detail_has_concrete_fix(detail: dict[str, Any]) -> bool:
     return False
 
 
+def _normalize_backend_order(backend_order: list[str] | tuple[str, ...] | None) -> tuple[str, ...]:
+    if backend_order is None:
+        return DEFAULT_VALIDATION_BACKEND_ORDER
+    normalized: list[str] = []
+    for item in backend_order:
+        backend = str(item).strip().lower()
+        if backend in VALIDATION_BACKENDS and backend not in normalized:
+            normalized.append(backend)
+    return tuple(normalized or DEFAULT_VALIDATION_BACKEND_ORDER)
+
+
+def _validation_target_from_detail(detail: dict[str, Any]) -> dict[str, Any]:
+    math_fix = detail.get("math_fix") if isinstance(detail.get("math_fix"), dict) else {}
+    lhs = str(math_fix.get("lhs") or "").strip()
+    rhs = str(math_fix.get("rhs") or "").strip()
+    proof_target = str(detail.get("proof_target") or math_fix.get("equation") or "").strip()
+    if lhs and rhs:
+        return {"status": "target_ready", "source": "math_fix", "lhs": lhs, "rhs": rhs, "proof_target": proof_target or f"{lhs} = {rhs}"}
+    if proof_target and "=" in proof_target:
+        left, right = proof_target.split("=", 1)
+        lhs = left.strip()
+        rhs = right.strip()
+        if lhs and rhs:
+            return {"status": "target_ready", "source": "proof_target", "lhs": lhs, "rhs": rhs, "proof_target": proof_target}
+    return {
+        "status": "not_encodable",
+        "source": "none",
+        "lhs": "",
+        "rhs": "",
+        "proof_target": proof_target,
+        "reason": "No structured lhs/rhs proof target was available for backend validation.",
+    }
+
+
+def _lean_source_from_detail(detail: dict[str, Any]) -> str | None:
+    lean_source = detail.get("lean_source")
+    if isinstance(lean_source, str) and lean_source.strip():
+        return lean_source
+    math_fix = detail.get("math_fix") if isinstance(detail.get("math_fix"), dict) else {}
+    lean_source = math_fix.get("lean_source")
+    if isinstance(lean_source, str) and lean_source.strip():
+        return lean_source
+    return None
+
+
+def _not_encodable_attempt(backend: str, reason: str) -> dict[str, Any]:
+    return backend_attempt_record(
+        backend=backend,
+        status="not_encodable",
+        reason=reason,
+        severity="diagnostic",
+    )
+
+
+def _validation_attempts_for_target(
+    detail: dict[str, Any],
+    target: dict[str, Any],
+    backend_order: tuple[str, ...],
+) -> list[dict[str, Any]]:
+    if target.get("status") != "target_ready":
+        return [
+            _not_encodable_attempt(
+                backend,
+                str(target.get("reason") or "No structured lhs/rhs proof target was available for backend validation."),
+            )
+            for backend in backend_order
+        ]
+    lhs = str(target.get("lhs") or "")
+    rhs = str(target.get("rhs") or "")
+    attempts: list[dict[str, Any]] = []
+    for backend in backend_order:
+        if backend == "lean":
+            lean_source = _lean_source_from_detail(detail)
+            if not lean_source:
+                attempts.append(
+                    _not_encodable_attempt(
+                        "lean",
+                        "Lean validation requires explicit placeholder-free Lean source; this pass does not synthesize Lean proof scripts.",
+                    )
+                )
+                continue
+            route = route_math_obligation(lhs, rhs, backend="lean", lean_source=lean_source)
+            if isinstance(route.get("backend_attempt"), dict):
+                attempts.append(route["backend_attempt"])
+            continue
+        if backend == "sage":
+            route = route_math_obligation(lhs, rhs, backend="sage")
+            attempt = route.get("backend_attempt") if isinstance(route, dict) else None
+            if isinstance(attempt, dict):
+                attempts.append(
+                    {
+                        **attempt,
+                        "severity": "diagnostic",
+                        "reason": (
+                            f"{attempt.get('reason', 'Sage route completed.')} "
+                            "Sage is recorded as attempted only; this pass has no certifying Sage proof adapter."
+                        ),
+                    }
+                )
+            continue
+        if backend == "sympy":
+            route = route_math_obligation(lhs, rhs, backend="sympy")
+            attempt = route.get("backend_attempt") if isinstance(route, dict) else None
+            if isinstance(attempt, dict) and attempt.get("backend") == "sympy":
+                attempts.append(attempt)
+            elif isinstance(attempt, dict):
+                attempts.append(
+                    backend_attempt_record(
+                        backend="sympy",
+                        status=str(route.get("status", "not_encodable")),
+                        reason=f"SymPy validation was not attempted: {attempt.get('reason', 'router rejected the target')}",
+                        evidence=[attempt],
+                        severity="diagnostic",
+                    )
+                )
+    return attempts
+
+
+def _validation_status(attempts: list[dict[str, Any]]) -> tuple[str, str]:
+    for attempt in attempts:
+        if attempt.get("status") == "refuted" and attempt.get("severity") == "blocking":
+            return "refuted", str(attempt.get("reason") or "A deterministic backend refuted the target.")
+    for attempt in attempts:
+        if attempt.get("status") == "proved" and attempt.get("severity") == "certifying":
+            return "verified", str(attempt.get("reason") or "A deterministic backend certified the target.")
+    if not attempts:
+        return "not_encodable", "No backend validation attempt was produced."
+    if all(attempt.get("status") == "not_encodable" for attempt in attempts):
+        return "not_encodable", "No configured backend could encode this proposed fix target."
+    return "attempted_not_certified", "Configured backends were attempted, but none certified or refuted this proposed fix target."
+
+
+def _validate_proposal_details(
+    proposal_details: list[dict[str, Any]],
+    *,
+    certifier_policy: str,
+    backend_order: tuple[str, ...],
+) -> dict[str, Any]:
+    counts: dict[str, int] = {}
+    validated = 0
+    for detail in proposal_details:
+        if not isinstance(detail, dict):
+            continue
+        if not (_detail_has_concrete_fix(detail) or detail.get("proof_target") or isinstance(detail.get("math_fix"), dict)):
+            continue
+        target = _validation_target_from_detail(detail)
+        attempts = _validation_attempts_for_target(detail, target, backend_order)
+        status, reason = _validation_status(attempts)
+        validation = {
+            "policy": certifier_policy,
+            "target": target,
+            "backend_order": list(backend_order),
+            "backend_attempts": attempts,
+            "status": status,
+            "reason": reason,
+            "certification_boundary": (
+                "Only certifying deterministic backend evidence validates a proposed fix. "
+                "Lean certifies only explicit placeholder-free Lean source. Sage is attempted only in this pass."
+            ),
+        }
+        detail["validation"] = validation
+        counts[status] = counts.get(status, 0) + 1
+        validated += 1
+    return {
+        "enabled": True,
+        "policy": certifier_policy,
+        "backend_order": list(backend_order),
+        "validated_detail_count": validated,
+        "status_counts": counts,
+    }
+
+
 def _build_non_actionable_gap_details(
     audited_evidence: list[dict[str, Any]],
     proposal_details: list[dict[str, Any]],
@@ -765,6 +1051,17 @@ def _detail_to_markdown(detail: dict[str, Any], index: int | None = None) -> str
         lines.append(f"   Proof target: `{_markdown_escape(detail.get('proof_target'))}`")
     if detail.get("derivation_plan"):
         lines.append(f"   Derivation plan: {_markdown_escape(detail.get('derivation_plan'))}")
+    validation = detail.get("validation")
+    if isinstance(validation, dict):
+        lines.append(f"   Validation: `{_markdown_escape(validation.get('status', 'unknown'))}` - {_markdown_escape(validation.get('reason', ''))}")
+        attempts = validation.get("backend_attempts") if isinstance(validation.get("backend_attempts"), list) else []
+        if attempts:
+            attempt_text = "; ".join(
+                f"{attempt.get('backend', 'backend')}={attempt.get('status', 'unknown')} ({attempt.get('severity', 'diagnostic')})"
+                for attempt in attempts
+                if isinstance(attempt, dict)
+            )
+            lines.append(f"   Backend attempts: {_markdown_escape(attempt_text)}")
     if detail.get("source_text"):
         lines.append(f"   Source: {_markdown_escape(detail.get('source_text'))}")
     refs = detail.get("evidence_refs")
@@ -859,6 +1156,17 @@ def render_audit_fix_markdown(report: dict[str, Any]) -> str:
     plain_language_details = _proposal_details_from_report(report)
     concrete_details = [item for item in plain_language_details if _detail_has_concrete_fix(item)]
     evidence_gap_details = [item for item in plain_language_details if isinstance(item, dict) and item.get("evidence_only")]
+    validation = report.get("validation") if isinstance(report.get("validation"), dict) else {}
+    if validation:
+        lines.extend(["", "## Proposed Fix Validation", ""])
+        lines.append(f"Enabled: {validation.get('enabled', False)}")
+        lines.append(f"Policy: `{validation.get('policy', '')}`")
+        lines.append(f"Backend order: `{validation.get('backend_order', [])}`")
+        lines.append(f"Validated details: {validation.get('validated_detail_count', 0)}")
+        status_counts = validation.get("status_counts") if isinstance(validation.get("status_counts"), dict) else {}
+        if status_counts:
+            status_text = ", ".join(f"{key}={value}" for key, value in sorted(status_counts.items()))
+            lines.append(f"Status counts: {status_text}")
     lines.extend(["", "## Proposed Changes", ""])
     if concrete_details:
         for index, detail in enumerate(concrete_details, start=1):
@@ -910,6 +1218,10 @@ def build_audit_fix_report(
     paragraph_context: bool = True,
     summary_only: bool = True,
     backend: str = "sympy",
+    validate_proposed_fixes: bool = False,
+    certifier_policy: str = VALIDATION_POLICY_REQUIRE_ATTEMPT,
+    backend_order: list[str] | tuple[str, ...] | None = None,
+    workers: int = 1,
     output_path: str | Path | None = None,
 ) -> dict[str, Any]:
     """Collect audit evidence, propose repairs, and optionally write Markdown."""
@@ -938,38 +1250,20 @@ def build_audit_fix_report(
 
     tool_uses: list[ToolUseRecord] = []
     audited_evidence: list[dict[str, Any]] = list(evidence or [])
-    for label in labels:
-        args = {
-            "root": root,
-            "label": label,
-            "paragraph_context": paragraph_context,
-            "summary_only": summary_only,
-            "backend": backend,
-        }
-        audit = audit_derivation_v2_for_label(
+    if labels:
+        label_audits, label_tool_uses = _ordered_label_audits(
             str(root),
-            label,
+            labels,
             paragraph_context=paragraph_context,
             summary_only=summary_only,
             backend=backend,
+            workers=workers,
         )
-        audited_evidence.append(audit)
-        tool_uses.append(
-            ToolUseRecord(
-                tool="audit_derivation_v2_label",
-                arguments=args,
-                purpose=f"Generate local derivation audit evidence for `{label}`.",
-                status=str(audit.get("status", "unknown")),
-                output_contract=_metadata_contract(audit),
-            )
-        )
+        audited_evidence.extend(label_audits)
+        tool_uses.extend(ToolUseRecord(**item) for item in label_tool_uses)
 
     proposal_source = _source_context(source, root, labels)
     proposal = propose_fix(question, evidence=audited_evidence, source=proposal_source)
-    proposed_changes = _proposal_changes_from_report(proposal)
-    proposal_details = _build_plain_language_details(audited_evidence, proposed_changes)
-    proposal_details.extend(_build_non_actionable_gap_details(audited_evidence, proposal_details))
-    proposal_details.extend(_build_evidence_gap_details(audited_evidence, proposal_details))
     tool_uses.append(
         ToolUseRecord(
             tool="propose_fix",
@@ -983,7 +1277,37 @@ def build_audit_fix_report(
             output_contract=_metadata_contract(proposal),
         )
     )
-
+    proposed_changes = _proposal_changes_from_report(proposal)
+    proposal_details = _build_plain_language_details(audited_evidence, proposed_changes)
+    proposal_details.extend(_build_non_actionable_gap_details(audited_evidence, proposal_details))
+    proposal_details.extend(_build_evidence_gap_details(audited_evidence, proposal_details))
+    validation_summary: dict[str, Any] = {
+        "enabled": False,
+        "policy": certifier_policy,
+        "backend_order": list(_normalize_backend_order(backend_order)),
+        "validated_detail_count": 0,
+        "status_counts": {},
+    }
+    if validate_proposed_fixes:
+        normalized_backend_order = _normalize_backend_order(backend_order)
+        validation_summary = _validate_proposal_details(
+            proposal_details,
+            certifier_policy=certifier_policy,
+            backend_order=normalized_backend_order,
+        )
+        tool_uses.append(
+            ToolUseRecord(
+                tool="validate_proposed_fixes",
+                arguments={
+                    "policy": certifier_policy,
+                    "backend_order": list(normalized_backend_order),
+                    "detail_count": validation_summary["validated_detail_count"],
+                },
+                purpose="Attach deterministic backend-attempt accountability to concrete proposed fixes.",
+                status="completed",
+                output_contract="proposal_fix_validation_summary",
+            )
+        )
     non_claims = default_non_claims(extra_codes={"diagnostic_evidence_not_proof"})
     for code, text in (
         (REPAIR_NON_CLAIM_CODE, REPAIR_NON_CLAIM_TEXT),
@@ -1006,6 +1330,7 @@ def build_audit_fix_report(
         audited_evidence=[_summarize_audit(item) for item in audited_evidence],
         proposal_changes=proposed_changes,
         proposal_details=proposal_details,
+        validation=validation_summary,
         proposal=proposal,
         markdown="",
         output_path=str(output_path) if output_path is not None else None,
@@ -1019,6 +1344,7 @@ def build_audit_fix_report(
             "tool_uses": [asdict(item) for item in tool_uses],
             "proposed_changes": proposed_changes,
             "proposal_details": proposal_details,
+            "validation": validation_summary,
             "next_actions": next_actions,
             "certification_boundary": AUDIT_FIX_REPORT_NON_CLAIM_TEXT,
         },
@@ -1048,6 +1374,10 @@ def audit_and_propose_fix(
     paragraph_context: bool = True,
     summary_only: bool = True,
     backend: str = "sympy",
+    validate_proposed_fixes: bool = False,
+    certifier_policy: str = VALIDATION_POLICY_REQUIRE_ATTEMPT,
+    backend_order: list[str] | tuple[str, ...] | None = None,
+    workers: int = 1,
     output_path: str | Path | None = None,
 ) -> dict[str, Any]:
     """Return a high-level envelope for an audit-plus-fix Markdown report."""
@@ -1064,6 +1394,10 @@ def audit_and_propose_fix(
         paragraph_context=paragraph_context,
         summary_only=summary_only,
         backend=backend,
+        validate_proposed_fixes=validate_proposed_fixes,
+        certifier_policy=certifier_policy,
+        backend_order=backend_order,
+        workers=workers,
         output_path=output_path,
     )
     high_level = high_level_result(
@@ -1109,6 +1443,10 @@ def write_audit_fix_report_markdown(
     paragraph_context: bool = True,
     summary_only: bool = True,
     backend: str = "sympy",
+    validate_proposed_fixes: bool = False,
+    certifier_policy: str = VALIDATION_POLICY_REQUIRE_ATTEMPT,
+    backend_order: list[str] | tuple[str, ...] | None = None,
+    workers: int = 1,
 ) -> dict[str, Any]:
     """Write the Markdown report and return the structured low-level artifact."""
     report = build_audit_fix_report(
@@ -1124,6 +1462,10 @@ def write_audit_fix_report_markdown(
         paragraph_context=paragraph_context,
         summary_only=summary_only,
         backend=backend,
+        validate_proposed_fixes=validate_proposed_fixes,
+        certifier_policy=certifier_policy,
+        backend_order=backend_order,
+        workers=workers,
         output_path=output_path,
     )
     return success_result({"output": str(output_path), "report": report}, contract="audit_fix_report_markdown")

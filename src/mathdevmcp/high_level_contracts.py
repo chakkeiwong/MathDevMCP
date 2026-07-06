@@ -107,6 +107,9 @@ TOP_LEVEL_FIELDS: set[str] = {
     "status",
     "workflow",
     "question",
+    "source",
+    "coverage",
+    "tool_uses",
     "claim_class",
     "answer",
     "evidence",
@@ -114,6 +117,9 @@ TOP_LEVEL_FIELDS: set[str] = {
     "certification_source",
     "veto_reasons",
     "assumptions",
+    "gaps",
+    "proposals",
+    "validation",
     "counterexamples",
     "actions",
     "non_claims",
@@ -397,7 +403,25 @@ def _validate_evidence_ledger(result: dict[str, Any], errors: list[str]) -> None
     non_claim_codes = ledger.get("non_claim_codes")
     expected_codes = sorted(item["code"] for item in result.get("non_claims", []) if isinstance(item, dict) and isinstance(item.get("code"), str))
     if non_claim_codes != expected_codes:
-        errors.append("evidence_ledger.non_claim_codes must mirror non_claims")
+            errors.append("evidence_ledger.non_claim_codes must mirror non_claims")
+
+
+def _validate_optional_mapping_list(result: dict[str, Any], field: str, errors: list[str]) -> None:
+    value = result.get(field)
+    if value is None:
+        return
+    if not isinstance(value, list):
+        errors.append(f"{field} must be a list")
+        return
+    for index, item in enumerate(value):
+        if not isinstance(item, dict):
+            errors.append(f"{field}[{index}] must be an object")
+
+
+def _validate_optional_mapping(result: dict[str, Any], field: str, errors: list[str]) -> None:
+    value = result.get(field)
+    if value is not None and not isinstance(value, dict):
+        errors.append(f"{field} must be an object")
 
 
 def validate_high_level_result(result: dict[str, Any]) -> list[str]:
@@ -438,6 +462,10 @@ def validate_high_level_result(result: dict[str, Any]) -> list[str]:
     for field in ("evidence", "evidence_classes", "veto_reasons", "assumptions", "counterexamples", "actions", "non_claims"):
         if not isinstance(result.get(field), list):
             errors.append(f"{field} must be a list")
+    for field in ("tool_uses", "gaps", "proposals"):
+        _validate_optional_mapping_list(result, field, errors)
+    for field in ("source", "coverage", "validation"):
+        _validate_optional_mapping(result, field, errors)
 
     evidence = result.get("evidence") if isinstance(result.get("evidence"), list) else []
     evidence_classes = result.get("evidence_classes") if isinstance(result.get("evidence_classes"), list) else []

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from mathdevmcp.mcp_server import assumptions_for, audit_derivation_label, audit_implementation_label, audit_kalman_recursion, audit_math_to_code, benchmark_gate, check_equality, compare_label_code, debug_derivation, derive_from, extract_latex_context, get_tool_matrix, governance_policy, high_level_workflow_quality, implementation_brief, latex_label_lookup, lean_check, prepare_review_packet, prove_or_counterexample, release_readiness, run_benchmarks, typed_obligation_label, validate_release_corpus, workbench_benchmark_quality
+from mathdevmcp.mcp_server import assumptions_for, audit_and_propose_assumptions, audit_and_propose_derivations, audit_derivation_label, audit_implementation_label, audit_kalman_recursion, audit_math_to_code, benchmark_gate, check_equality, compare_label_code, debug_derivation, derive_from, extract_latex_context, get_tool_matrix, governance_policy, high_level_workflow_quality, implementation_brief, latex_label_lookup, lean_check, prepare_review_packet, prove_or_counterexample, release_readiness, run_benchmarks, typed_obligation_label, validate_release_corpus, workbench_benchmark_quality
 from test_context_and_fixtures import EXPECTED_BENCHMARK_TOTAL
 
 
@@ -82,6 +82,8 @@ def test_mcp_server_high_level_workflows_return_contract_envelopes():
     derived = derive_from("a + b = b + a", givens=["a,b are scalars"])
     proof = prove_or_counterexample("A*B = B*A")
     assumptions = assumptions_for("logdet(A)")
+    assumption_report = audit_and_propose_assumptions("Audit assumptions", target="logdet(A)")
+    derivation_report = audit_and_propose_derivations("Audit derivations", target="logdet(A) = trace(A)")
     debug = debug_derivation(["logdet(A)", "trace(A)", "trace(A)"])
     code = audit_math_to_code("logdet(S)", "def f(S):\n    return logdet(S)\n")
     packet = prepare_review_packet("Review failed proof", evidence=[proof])
@@ -92,6 +94,10 @@ def test_mcp_server_high_level_workflows_return_contract_envelopes():
     assert proof["status"] == "refuted"
     assert proof["counterexamples"]
     assert assumptions["status"] == "missing_assumptions"
+    assert assumption_report["metadata"]["contract"] == "audit_assumption_report_result"
+    assert assumption_report["proposals"][0]["validation"]["status"] == "validated_by_rule"
+    assert derivation_report["metadata"]["contract"] == "derivation_audit_report_result"
+    assert derivation_report["proposals"][0]["validation"]["status"] == "blocked_by_missing_assumptions"
     assert debug["status"] == "gap_found"
     assert code["status"] == "structural_match"
     assert code["certification_source"] == "none"

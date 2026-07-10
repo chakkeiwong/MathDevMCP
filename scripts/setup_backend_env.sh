@@ -10,10 +10,28 @@ if ! conda env list | awk '{print $1}' | grep -qx "$ENV_NAME"; then
     conda env create -n "$ENV_NAME" -f "$ROOT/environment-backends.yml"
   else
     conda create -y -n "$ENV_NAME" python=3.11 pip sympy
-    conda run -n "$ENV_NAME" python -m pip install "lean-dojo==4.20.0"
+    conda run -n "$ENV_NAME" python -m pip install "lean-dojo==4.20.0" "lean-explore==1.2.1" fastapi jinja2 transformers
   fi
 else
-  conda run -n "$ENV_NAME" python -m pip install "lean-dojo==4.20.0"
+  conda run -n "$ENV_NAME" python -m pip install "lean-dojo==4.20.0" "lean-explore==1.2.1" fastapi jinja2 transformers
+fi
+
+PANTOGRAPH_SOURCE="$ROOT/.localresources/hypothesis_search_survey/code/PyPantograph"
+if [[ -f "$PANTOGRAPH_SOURCE/pyproject.toml" ]]; then
+  git -C "$PANTOGRAPH_SOURCE" submodule update --init src
+  conda run -n "$ENV_NAME" python -m pip install -e "$PANTOGRAPH_SOURCE"
+else
+  conda run -n "$ENV_NAME" python -m pip install "pantograph==0.3.15"
+fi
+
+conda run -n "$ENV_NAME" python -m pip install "torch==2.12.1+cpu" --index-url https://download.pytorch.org/whl/cpu
+conda run -n "$ENV_NAME" python -m pip install sentence-transformers
+
+LEANSEARCH_V2_SOURCE="$ROOT/.localresources/hypothesis_search_survey/code/LeanSearch-v2"
+if [[ -f "$LEANSEARCH_V2_SOURCE/pyproject.toml" ]]; then
+  conda run -n "$ENV_NAME" python -m pip install -e "$LEANSEARCH_V2_SOURCE"
+else
+  echo "LeanSearch-v2 source not found at $LEANSEARCH_V2_SOURCE; clone the pinned source before enabling that integration."
 fi
 
 if [[ ! -x "$HOME/.elan/bin/elan" ]]; then

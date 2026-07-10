@@ -212,6 +212,20 @@ def test_kernel_packages_code_audit_as_structural_not_semantic_proof() -> None:
     assert validate_high_level_result(result) == []
 
 
+def test_kernel_packages_scope_limited_code_audit() -> None:
+    low_level = code_implements_equation(
+        r"\ell(\theta; y_{1:T}) = \sum_{t=1}^{T} \log p(y_t \mid y_{1:t-1}, \theta)",
+        "def likelihood(theta, y_t):\n    return logp(theta, y_t)\n",
+        aliases={"ell": "likelihood", "log": "logp", "p": "logp"},
+    )
+    result = package_code_audit_result(low_level, question="Does code implement likelihood?")
+
+    assert result["status"] == "scope_limited_match"
+    assert result["evidence_classes"] == ["scope_limited_match"]
+    assert "scope_limited_evidence_not_proof" in {item["code"] for item in result["non_claims"]}
+    assert validate_high_level_result(result) == []
+
+
 def test_kernel_packages_review_packet_as_diagnostic_only() -> None:
     evidence = [derive_or_refute("a + b = b + a")]
     low_level = build_math_review_packet("Review the derivation", evidence=evidence)

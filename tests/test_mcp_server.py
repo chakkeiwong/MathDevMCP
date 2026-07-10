@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from mathdevmcp.mcp_server import assumptions_for, audit_and_propose_assumptions, audit_and_propose_derivations, audit_derivation_label, audit_implementation_label, audit_kalman_recursion, audit_math_to_code, benchmark_gate, check_equality, compare_label_code, debug_derivation, derive_from, extract_latex_context, get_tool_matrix, governance_policy, high_level_workflow_quality, implementation_brief, latex_label_lookup, lean_check, prepare_review_packet, prove_or_counterexample, release_readiness, run_benchmarks, typed_obligation_label, validate_release_corpus, workbench_benchmark_quality
+from mathdevmcp.mcp_server import assumptions_for, audit_and_propose_assumptions, audit_and_propose_derivations, audit_derivation_label, audit_implementation_label, audit_kalman_recursion, audit_math_to_code, audit_report_claim_boundary, benchmark_gate, check_equality, compare_label_code, debug_derivation, derive_from, external_tool_first_plan, extract_latex_context, get_tool_matrix, governance_policy, high_level_workflow_quality, implementation_brief, latex_label_lookup, lean_check, prepare_review_packet, prove_or_counterexample, release_readiness, run_benchmarks, typed_obligation_label, validate_release_corpus, workbench_benchmark_quality
 from test_context_and_fixtures import EXPECTED_BENCHMARK_TOTAL
 
 
@@ -86,6 +86,7 @@ def test_mcp_server_high_level_workflows_return_contract_envelopes():
     derivation_report = audit_and_propose_derivations("Audit derivations", target="logdet(A) = trace(A)")
     debug = debug_derivation(["logdet(A)", "trace(A)", "trace(A)"])
     code = audit_math_to_code("logdet(S)", "def f(S):\n    return logdet(S)\n")
+    boundary = audit_report_claim_boundary("The report passed review and is not a proof.", evidence_snippets=["Review result: passed."])
     packet = prepare_review_packet("Review failed proof", evidence=[proof])
 
     assert derived["metadata"] == {"schema_version": "1.0", "contract": "high_level_workflow_result"}
@@ -101,6 +102,8 @@ def test_mcp_server_high_level_workflows_return_contract_envelopes():
     assert debug["status"] == "gap_found"
     assert code["status"] == "structural_match"
     assert code["certification_source"] == "none"
+    assert boundary["metadata"]["contract"] == "report_claim_boundary_audit"
+    assert boundary["mathematical_claim"] is False
     assert packet["status"] == "diagnostic_only"
     assert packet["certification_source"] == "none"
 
@@ -227,3 +230,11 @@ def test_mcp_server_tool_matrix_exposes_core_problem_classes():
 
     assert "long_document_tracking" in problems
     assert "document_grounded_implementation" in problems
+
+
+def test_mcp_server_external_tool_first_plan_returns_contract():
+    result = external_tool_first_plan("a + b = b + a")
+
+    assert result["metadata"] == {"schema_version": "1.0", "contract": "external_tool_first_plan_result"}
+    assert result["considered_tools"]
+    assert "external_tool_plan_not_certificate" in {item["code"] for item in result["non_claims"]}

@@ -52,6 +52,28 @@ export MATHDEVMCP_LEAN_PATH="$HOME/.elan/bin/lean"
 scripts/validate_backend_install.sh "$PWD"
 ```
 
+Optional Lean-context integrations are version-controlled but not required by
+the base package. `doctor` reports both the supported version and the installed
+version/status:
+
+```bash
+python -m pip install -e ".[lean-search]"
+# or let the isolated backend env install the supported LeanDojo + LeanExplore pins:
+scripts/setup_backend_env.sh
+PYTHONPATH=src python -m mathdevmcp.cli doctor
+```
+
+Current supported integration pins are recorded in
+`src/mathdevmcp/integration_versions.py` and surfaced by `doctor`:
+
+- `sympy==1.14.0`
+- `mcp==1.27.0`
+- `lean-dojo==4.20.0` with `leanprover/lean4:v4.20.0`
+- `lean-explore==1.2.1`
+- `pantograph==0.3.15` in a Python 3.11 Lean backend environment
+- LeanSearch-v2 source/service commit `94f4888cbaf9`
+- jixia source commit `755fde27a9cf` with `leanprover/lean4:v4.29.0`
+
 LaTeXML is a system tool. Validate it with:
 
 ```bash
@@ -77,7 +99,7 @@ deterministic primitives, tested workflow tools, and operational release tools:
   `audit_kalman_recursion`, `typed_obligation_label`,
   `derive_from`, `prove_or_counterexample`, `assumptions_for`,
   `debug_derivation`, `audit_math_to_code`, `prepare_review_packet`,
-  `propose_fix`, `audit_and_propose_fix`;
+  `propose_fix`, `audit_and_propose_fix`, `external_tool_first_plan`;
 - operations: `doctor`, `benchmark_gate`, `run_benchmarks`,
   `high_level_workflow_quality`, `workbench_benchmark_quality`,
   `release_corpus_manifest`, `validate_release_corpus`, `release_readiness`,
@@ -115,6 +137,8 @@ PYTHONPATH=src python -m mathdevmcp.cli code-implements-equation \
   "logdet(S)" "def f(S): return logdet(S)"
 PYTHONPATH=src python -m mathdevmcp.cli classify-math-claim \
   "Assume x > 0." --evidence '[{"metadata":{"contract":"claim_support_packet"},"claim_status":"model_assumption"}]'
+PYTHONPATH=src python -m mathdevmcp.cli external-tool-first-plan \
+  "a + b = b + a"
 ```
 
 These tools are conservative. Backend-certified scoped obligations can support

@@ -39,6 +39,7 @@ def _code_terms(code: str) -> tuple[set[str], dict[str, Any]]:
     names: set[str] = set()
     calls: set[str] = set()
     operators: set[str] = set()
+    function_args: dict[str, list[str]] = {}
     for node in ast.walk(tree):
         if isinstance(node, ast.Name):
             names.add(node.id)
@@ -52,7 +53,59 @@ def _code_terms(code: str) -> tuple[set[str], dict[str, Any]]:
                 calls.add(func.attr)
         elif isinstance(node, ast.BinOp):
             operators.add(type(node.op).__name__)
-    return names | calls, {"names": sorted(names), "calls": sorted(calls), "operators": sorted(operators)}
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            args = [arg.arg for arg in node.args.args]
+            function_args[node.name] = args
+    return names | calls, {"names": sorted(names), "calls": sorted(calls), "operators": sorted(operators), "function_args": function_args}
+
+
+def _math_signature_terms(equation: str) -> set[str]:
+    terms: set[str] = set()
+    for match in re.finditer(r"([A-Za-z_\\][A-Za-z0-9_\\]*(?:\^\{[^{}]+\}|_\{[^{}]+\}|_[A-Za-z0-9]+)?)\s*\(([^)]*)\)", equation):
+        args = [item.strip() for item in match.group(2).split(",") if item.strip()]
+        if len(args) >= 2:
+            terms.update(arg.strip("\\{} ") for arg in args if re.search(r"[A-Za-z]", arg))
+    for match in re.finditer(r"\\sum_\{([^{}]+)\}\^\{([^{}]+)\}", equation):
+        terms.update(token for token in _IDENTIFIER.findall(" ".join(match.groups())) if token not in {"sum"})
+    if "\\mid" in equation or "|" in equation:
+        terms.add("conditioning_scope")
+    return {term for term in terms if term}
+
+
+def _scope_diagnostic(equation: str, code_summary: dict[str, Any], matched: list[str], missing: list[str]) -> dict[str, Any]:
+    math_scope_terms = _math_signature_terms(equation)
+    function_args_map = code_summary.get("function_args") if isinstance(code_summary.get("function_args"), dict) else {}
+    code_args = {arg for args in function_args_map.values() if isinstance(args, list) for arg in args}
+    missing_scope_terms = sorted(term for term in math_scope_terms if term not in code_args and term not in matched)
+    matched_scope_terms = sorted(term for term in math_scope_terms if term in code_args or term in matched)
+    function_level_markers = sorted(math_scope_terms)
+    reduced_code_signature = bool(function_args_map) and bool(missing_scope_terms) and bool(matched)
+    is_likelihood_or_value = bool(re.search(r"likelihood|loglik|log_like|\\ell|NPV|V[_\^]|Q\(", equation, re.IGNORECASE))
+    triggered = reduced_code_signature and (is_likelihood_or_value or len(missing_scope_terms) >= 2)
+    return {
+        "status": "scope_limited" if triggered else "not_triggered",
+        "math_scope_terms": sorted(math_scope_terms),
+        "code_function_args": sorted(code_args),
+        "matched_scope_terms": matched_scope_terms,
+        "missing_scope_terms": missing_scope_terms,
+        "function_level_markers": function_level_markers,
+        "supports": (
+            "The code exposes structurally relevant terms for a value-level or instance-level slice of the mathematical expression."
+            if triggered
+            else ""
+        ),
+        "does_not_support": (
+            "The code signature does not expose all function-level arguments, summation/index domains, or conditioning scope required by the mathematical claim."
+            if triggered
+            else ""
+        ),
+        "safe_wording": (
+            "Treat this as scope-limited implementation evidence: it may support one evaluated slice, but it does not prove the full function-level formula."
+            if triggered
+            else ""
+        ),
+        "boundary": "Scope diagnostics are structural and non-executing; they are not code correctness proof.",
+    }
 
 
 def code_implements_equation(equation: str, code: str, *, aliases: dict[str, str] | None = None) -> dict:
@@ -104,7 +157,12 @@ def code_implements_equation(equation: str, code: str, *, aliases: dict[str, str
     if any(term.endswith("_next") for term in equation_terms) and not any(term.endswith("_next") for term in code_terms):
         conflicts.append({"kind": "time_index_mismatch", "reason": "Equation mentions next-period symbol but code lacks matching next-period name."})
     missing_required = [term for term in missing if term in _KNOWN_FUNCTIONS or term in mapped_terms]
-    if conflicts or missing_required:
+    scope_diagnostic = _scope_diagnostic(equation, code_summary, matched, missing)
+    trace_map["scope_diagnostic"] = scope_diagnostic
+    if scope_diagnostic["status"] == "scope_limited" and not conflicts:
+        status = "scope_limited"
+        reason = "Code evidence is scope-limited: it supports a value-level slice but not the full function-level mathematical claim."
+    elif conflicts or missing_required:
         status = "mismatch"
         reason = "Code is missing required equation terms or has structural conflicts."
     else:

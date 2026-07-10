@@ -21,6 +21,34 @@ def test_lean_readiness_reports_separate_sections():
     assert "not proof" in result["certification_boundary"]
 
 
+def test_lean_readiness_surfaces_leandojo_environment_scope(monkeypatch):
+    def fake_doctor_report():
+        return {
+            "capabilities": {
+                "lean": {"available": False, "path": None},
+                "lean_dojo": {
+                    "available": False,
+                    "path": "/active/python",
+                    "detail": "Python module lean_dojo is not importable in active Python; no backend Python was selected.",
+                    "environment_scope": "active_python",
+                    "backend_requested": False,
+                    "backend_env": None,
+                    "backend_prefix": None,
+                    "diagnostic_hint": "Set MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends or run scripts/backend_env_doctor.sh.",
+                },
+            }
+        }
+
+    monkeypatch.setattr("mathdevmcp.lean_readiness.doctor_report", fake_doctor_report)
+
+    result = lean_readiness(ROOT)
+
+    assert result["lean_dojo"]["status"] == "unavailable"
+    assert result["lean_dojo"]["environment_scope"] == "active_python"
+    assert result["lean_dojo"]["backend_requested"] is False
+    assert "mathdevmcp-backends" in result["lean_dojo"]["diagnostic_hint"]
+
+
 def test_lean_readiness_cli_reports_contract():
     result = subprocess.run(
         [sys.executable, "-m", "mathdevmcp.cli", "lean-readiness", "--root", str(ROOT)],

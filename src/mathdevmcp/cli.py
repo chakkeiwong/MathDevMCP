@@ -24,19 +24,24 @@ from .derivation_audit_report import audit_and_propose_derivations as high_level
 from .derive_from import derive_from as high_level_derive_from
 from .derive_or_refute import derive_or_refute
 from .doctor import doctor_report
+from .document_derivation_tree import audit_document_derivation_tree as high_level_audit_document_derivation_tree
 from .domain_templates import generate_obligations_from_template, list_domain_templates, suggest_domain_templates
 from .equation_code_match import code_implements_equation
+from .external_tool_policy import external_tool_first_plan
 from .assumptions_for import audit_and_propose_assumptions as high_level_audit_and_propose_assumptions
 from .assumptions_for import assumptions_for as high_level_assumptions_for
 from .audit_math_to_code import audit_math_to_code as high_level_audit_math_to_code
 from .debug_derivation import debug_derivation as high_level_debug_derivation
 from ._install_rules import install_rules
 from .kalman_workflows import audit_kalman_recursion
-from .latex_index import build_index, extract_context_for_label, extract_paragraph_context_for_label, search_index, write_index
+from .latex_index import build_index, extract_context_for_label, extract_paragraph_context_for_label, search_index_filtered, write_index
 from .lean_readiness import lean_readiness
 from .literature_local_audit import literature_local_audit
 from .math_claim_classifier import classify_math_claim
 from .math_change_impact import math_change_impact
+from .math_document_rigor import audit_math_document_rigor as high_level_audit_math_document_rigor
+from .math_document_rigor import plan_math_document_rigor_audit as high_level_plan_math_document_rigor_audit
+from .report_claim_boundary import audit_report_claim_boundary
 from .math_review_packet import build_math_review_packet
 from .math_to_tests import generate_math_tests
 from .mcp_alias_audit import audit_deprecated_alias_usage
@@ -107,7 +112,14 @@ def _cmd_search(args: argparse.Namespace) -> int:
         index = json.loads(Path(args.index).read_text(encoding="utf-8"))
     else:
         index = build_index(Path(args.root))
-    results = search_index(index, args.query, limit=args.limit)
+    results = search_index_filtered(
+        index,
+        args.query,
+        limit=args.limit,
+        file=args.file or None,
+        include_globs=args.include_globs or None,
+        exclude_globs=args.exclude_globs or None,
+    )
     print(json.dumps(results, indent=2))
     return 0
 
@@ -118,7 +130,15 @@ def _cmd_extract_context(args: argparse.Namespace) -> int:
         index = json.loads(Path(args.index).read_text(encoding="utf-8"))
     else:
         index = build_index(Path(args.root))
-    result = extract_context_for_label(index, args.label, before=args.before, after=args.after)
+    result = extract_context_for_label(
+        index,
+        args.label,
+        before=args.before,
+        after=args.after,
+        file=args.file or None,
+        include_globs=args.include_globs or None,
+        exclude_globs=args.exclude_globs or None,
+    )
     print(json.dumps(result, indent=2))
     return 0
 
@@ -129,7 +149,15 @@ def _cmd_extract_paragraph_context(args: argparse.Namespace) -> int:
         index = json.loads(Path(args.index).read_text(encoding="utf-8"))
     else:
         index = build_index(Path(args.root))
-    result = extract_paragraph_context_for_label(index, args.label, before=args.before, after=args.after)
+    result = extract_paragraph_context_for_label(
+        index,
+        args.label,
+        before=args.before,
+        after=args.after,
+        file=args.file or None,
+        include_globs=args.include_globs or None,
+        exclude_globs=args.exclude_globs or None,
+    )
     print(json.dumps(result, indent=2))
     return 0
 
@@ -179,6 +207,17 @@ def _cmd_code_implements_equation(args: argparse.Namespace) -> int:
 def _cmd_classify_math_claim(args: argparse.Namespace) -> int:
     evidence = _load_json_argument_or_file(args.evidence) if args.evidence else []
     result = classify_math_claim(args.claim, evidence=evidence)
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_audit_report_claim_boundary(args: argparse.Namespace) -> int:
+    evidence_snippets = list(args.evidence_snippet or [])
+    result = audit_report_claim_boundary(
+        args.claim,
+        evidence_snippets=evidence_snippets or None,
+        source=_load_json_argument_or_file(args.source) if args.source else None,
+    )
     print(json.dumps(result, indent=2))
     return 0
 
@@ -400,6 +439,61 @@ def _cmd_high_level_audit_and_propose_fix(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_plan_math_document_rigor_audit(args: argparse.Namespace) -> int:
+    max_labels = None if args.max_labels is not None and args.max_labels <= 0 else args.max_labels
+    result = high_level_plan_math_document_rigor_audit(
+        args.tex_path,
+        focus_labels=args.focus_label or None,
+        max_labels=max_labels,
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_audit_math_document_rigor(args: argparse.Namespace) -> int:
+    max_labels = None if args.max_labels is not None and args.max_labels <= 0 else args.max_labels
+    result = high_level_audit_math_document_rigor(
+        args.tex_path,
+        output_md=Path(args.output_md) if args.output_md else None,
+        output_json=Path(args.output_json) if args.output_json else None,
+        focus_labels=args.focus_label or None,
+        max_labels=max_labels,
+        backend_env=args.backend_env,
+        validation_backends=args.validation_backend or None,
+    )
+    if args.print_markdown:
+        print(result["markdown"])
+        return 0
+    serializable = dict(result)
+    serializable.pop("markdown", None)
+    print(json.dumps(serializable, indent=2))
+    return 0
+
+
+def _cmd_audit_document_derivation_tree(args: argparse.Namespace) -> int:
+    max_labels = None if args.max_labels is not None and args.max_labels <= 0 else args.max_labels
+    result = high_level_audit_document_derivation_tree(
+        args.tex_path,
+        output_md=Path(args.output_md) if args.output_md else None,
+        output_json=Path(args.output_json) if args.output_json else None,
+        focus_labels=args.focus_label or None,
+        max_labels=max_labels,
+        budget_profile=args.budget_profile,
+        max_attempts=args.max_attempts,
+        backend_env=args.backend_env,
+        search_mode=args.search_mode,
+        grounding_policy=args.grounding_policy,
+        workers=args.workers,
+    )
+    if args.print_markdown:
+        print(result["markdown"])
+        return 0
+    serializable = dict(result)
+    serializable.pop("markdown", None)
+    print(json.dumps(serializable, indent=2))
+    return 0
+
+
 def _cmd_high_level_workflow_quality(args: argparse.Namespace) -> int:
     result = build_high_level_workflow_quality_report(Path(args.root))
     print(json.dumps(result, indent=2))
@@ -451,6 +545,17 @@ def _cmd_real_local_source_adapters(args: argparse.Namespace) -> int:
 
 def _cmd_tool_matrix(args: argparse.Namespace) -> int:
     print(json.dumps(tool_matrix(), indent=2))
+    return 0
+
+
+def _cmd_external_tool_first_plan(args: argparse.Namespace) -> int:
+    result = external_tool_first_plan(
+        args.target,
+        goal_kind=args.goal_kind,
+        allow_in_house_gap=args.allow_in_house_gap,
+        gap_justification=args.gap_justification or None,
+    )
+    print(json.dumps(result, indent=2))
     return 0
 
 
@@ -802,6 +907,9 @@ def make_parser() -> argparse.ArgumentParser:
     p_search.add_argument("--root", default=".", help="Root directory containing LaTeX files")
     p_search.add_argument("--index", default="", help="Existing index JSON path")
     p_search.add_argument("--limit", type=int, default=10, help="Maximum results")
+    p_search.add_argument("--file", default="", help="Restrict results to one relative TeX file")
+    p_search.add_argument("--include-glob", dest="include_globs", action="append", default=[], help="Include relative TeX files matching this glob; can be repeated")
+    p_search.add_argument("--exclude-glob", dest="exclude_globs", action="append", default=[], help="Exclude relative TeX files matching this glob; can be repeated")
     p_search.set_defaults(func=_cmd_search)
 
     p_context = sub.add_parser("extract-latex-context", help="Extract context around a LaTeX label")
@@ -810,6 +918,9 @@ def make_parser() -> argparse.ArgumentParser:
     p_context.add_argument("--index", default="", help="Existing index JSON path")
     p_context.add_argument("--before", type=int, default=2, help="Lines of context before")
     p_context.add_argument("--after", type=int, default=2, help="Lines of context after")
+    p_context.add_argument("--file", default="", help="Restrict lookup to one relative TeX file")
+    p_context.add_argument("--include-glob", dest="include_globs", action="append", default=[], help="Include relative TeX files matching this glob; can be repeated")
+    p_context.add_argument("--exclude-glob", dest="exclude_globs", action="append", default=[], help="Exclude relative TeX files matching this glob; can be repeated")
     p_context.set_defaults(func=_cmd_extract_context)
 
     p_paragraph = sub.add_parser("extract-latex-neighborhood", help="Extract paragraph neighborhood around a LaTeX label")
@@ -818,6 +929,9 @@ def make_parser() -> argparse.ArgumentParser:
     p_paragraph.add_argument("--index", default="", help="Existing index JSON path")
     p_paragraph.add_argument("--before", type=int, default=1, help="Paragraphs before")
     p_paragraph.add_argument("--after", type=int, default=1, help="Paragraphs after")
+    p_paragraph.add_argument("--file", default="", help="Restrict lookup to one relative TeX file")
+    p_paragraph.add_argument("--include-glob", dest="include_globs", action="append", default=[], help="Include relative TeX files matching this glob; can be repeated")
+    p_paragraph.add_argument("--exclude-glob", dest="exclude_globs", action="append", default=[], help="Exclude relative TeX files matching this glob; can be repeated")
     p_paragraph.set_defaults(func=_cmd_extract_paragraph_context)
 
     p_code = sub.add_parser("search-code-docs", help="Search code and document files together")
@@ -852,6 +966,12 @@ def make_parser() -> argparse.ArgumentParser:
     p_classify_claim.add_argument("claim", help="Claim text")
     p_classify_claim.add_argument("--evidence", default="", help="Optional JSON evidence list or JSON file path")
     p_classify_claim.set_defaults(func=_cmd_classify_math_claim)
+
+    p_report_boundary = sub.add_parser("audit-report-claim-boundary", help="Classify report-status prose without treating it as a theorem claim")
+    p_report_boundary.add_argument("claim", help="Claim text")
+    p_report_boundary.add_argument("--evidence-snippet", action="append", default=[], help="Supporting report snippet; can be repeated")
+    p_report_boundary.add_argument("--source", default="", help="Optional JSON source object or JSON file path")
+    p_report_boundary.set_defaults(func=_cmd_audit_report_claim_boundary)
 
     p_reconcile_notation = sub.add_parser("reconcile-notation", help="Compare explicit notation convention records")
     p_reconcile_notation.add_argument("left_records", help="JSON list or JSON file path for left notation records")
@@ -995,8 +1115,47 @@ def make_parser() -> argparse.ArgumentParser:
     p_high_audit_fix.add_argument("--output", default="", help="Optional Markdown report output path")
     p_high_audit_fix.set_defaults(func=_cmd_high_level_audit_and_propose_fix, paragraph_context=True)
 
+    p_plan_rigor = sub.add_parser("plan-math-document-rigor-audit", help="Plan a focused mathematical rigor audit for one LaTeX file")
+    p_plan_rigor.add_argument("tex_path", help="Target TeX file")
+    p_plan_rigor.add_argument("--focus-label", action="append", default=[], help="Label to include; can be repeated")
+    p_plan_rigor.add_argument("--max-labels", type=int, default=30, help="Maximum labeled equations to select; <=0 means all")
+    p_plan_rigor.set_defaults(func=_cmd_plan_math_document_rigor_audit)
+
+    p_audit_rigor = sub.add_parser("audit-math-document-rigor", help="Audit one LaTeX file and write a rigor gap/proposal report")
+    p_audit_rigor.add_argument("tex_path", help="Target TeX file")
+    p_audit_rigor.add_argument("--output-md", default="", help="Optional Markdown report output path")
+    p_audit_rigor.add_argument("--output-json", default="", help="Optional JSON report output path")
+    p_audit_rigor.add_argument("--focus-label", action="append", default=[], help="Label to include; can be repeated")
+    p_audit_rigor.add_argument("--max-labels", type=int, default=30, help="Maximum labeled equations to select; <=0 means all")
+    p_audit_rigor.add_argument("--backend-env", default="mathdevmcp-backends", help="Backend env name recorded in the report")
+    p_audit_rigor.add_argument("--validation-backend", action="append", choices=["lean", "sage", "sympy"], default=[], help="Backend validation order; can be repeated")
+    p_audit_rigor.add_argument("--print-markdown", action="store_true", help="Print Markdown instead of JSON")
+    p_audit_rigor.set_defaults(func=_cmd_audit_math_document_rigor)
+
+    p_doc_tree = sub.add_parser("audit-document-derivation-tree", help="Audit LaTeX document targets with semantic work packets and derivation trees")
+    p_doc_tree.add_argument("tex_path", help="Target TeX file")
+    p_doc_tree.add_argument("--output-md", default="", help="Optional Markdown report output path")
+    p_doc_tree.add_argument("--output-json", default="", help="Optional JSON report output path")
+    p_doc_tree.add_argument("--focus-label", action="append", default=[], help="Label to include; can be repeated")
+    p_doc_tree.add_argument("--max-labels", type=int, default=30, help="Maximum labels to select; <=0 means all")
+    p_doc_tree.add_argument("--budget-profile", choices=["smoke", "standard"], default="standard", help="Tree-controller budget profile")
+    p_doc_tree.add_argument("--max-attempts", type=int, default=3, help="Maximum backend attempts per selected row")
+    p_doc_tree.add_argument("--backend-env", default="mathdevmcp-backends", help="Backend env name used for optional integrations")
+    p_doc_tree.add_argument("--search-mode", choices=["agent_guided"], default="agent_guided", help="Search mode for blocker expansion and tree verification")
+    p_doc_tree.add_argument("--grounding-policy", choices=["strict"], default="strict", help="Proposal compiler grounding policy")
+    p_doc_tree.add_argument("--workers", type=int, default=1, help="Parallel target workers; 1 preserves serial execution")
+    p_doc_tree.add_argument("--print-markdown", action="store_true", help="Print Markdown instead of JSON")
+    p_doc_tree.set_defaults(func=_cmd_audit_document_derivation_tree)
+
     p_matrix = sub.add_parser("tool-matrix", help="Print the current tool matrix")
     p_matrix.set_defaults(func=_cmd_tool_matrix)
+
+    p_external_first = sub.add_parser("external-tool-first-plan", help="Plan external tools before in-house mathematical search")
+    p_external_first.add_argument("target")
+    p_external_first.add_argument("--goal-kind", default="derivation")
+    p_external_first.add_argument("--allow-in-house-gap", action="store_true")
+    p_external_first.add_argument("--gap-justification", default="")
+    p_external_first.set_defaults(func=_cmd_external_tool_first_plan)
 
     p_status_taxonomy = sub.add_parser("status-taxonomy", help="Print the current status and substatus taxonomy")
     p_status_taxonomy.set_defaults(func=_cmd_status_taxonomy)

@@ -287,9 +287,26 @@ def test_structural_and_diagnostic_statuses_preserve_nonclaim_boundaries() -> No
         ],
         certification_source="none",
     )
+    scoped = high_level_result(
+        status="scope_limited_match",
+        workflow="audit_math_to_code",
+        question="Does code implement a likelihood?",
+        claim_class="math_to_code",
+        answer="Code supports a value-level slice only.",
+        evidence=[
+            evidence_entry(
+                id="ev-scope",
+                evidence_class="scope_limited_match",
+                source="ast_matcher",
+                summary="Function-level scope terms are missing.",
+            )
+        ],
+        certification_source="none",
+    )
 
     assert validate_high_level_result(structural) == []
     assert validate_high_level_result(diagnostic) == []
+    assert validate_high_level_result(scoped) == []
 
     structural["non_claims"] = default_non_claims()
     assert validate_high_level_result(structural) == [

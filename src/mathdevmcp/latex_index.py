@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, asdict
+import fnmatch
 import json
 from pathlib import Path
 import re
@@ -275,9 +276,74 @@ def write_index(root: Path, output: Path) -> dict:
 
 
 def search_index(index: dict, query: str, limit: int = 10) -> list[dict]:
+    return search_index_filtered(index, query, limit=limit)
+
+
+def _normalize_file_filters(value: str | list[str] | tuple[str, ...] | None) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value] if value else []
+    return [str(item) for item in value if str(item)]
+
+
+def _file_matches_any(relative_file: str, patterns: list[str]) -> bool:
+    return any(fnmatch.fnmatch(relative_file, pattern) for pattern in patterns)
+
+
+def _file_allowed(relative_file: str, *, file: str | None = None, include_globs: list[str] | None = None, exclude_globs: list[str] | None = None) -> bool:
+    include_patterns = _normalize_file_filters(include_globs)
+    exclude_patterns = _normalize_file_filters(exclude_globs)
+    exact_file = str(file) if file else ""
+    if exact_file and relative_file != exact_file:
+        return False
+    if include_patterns and not _file_matches_any(relative_file, include_patterns):
+        return False
+    if exclude_patterns and _file_matches_any(relative_file, exclude_patterns):
+        return False
+    return True
+
+
+def filter_index_blocks(
+    index: dict,
+    *,
+    file: str | None = None,
+    include_globs: list[str] | None = None,
+    exclude_globs: list[str] | None = None,
+) -> list[dict]:
+    return [
+        block
+        for block in index.get("blocks", [])
+        if _file_allowed(str(block.get("file") or ""), file=file, include_globs=include_globs, exclude_globs=exclude_globs)
+    ]
+
+
+def _filtered_label_block(
+    index: dict,
+    label: str,
+    *,
+    file: str | None = None,
+    include_globs: list[str] | None = None,
+    exclude_globs: list[str] | None = None,
+) -> dict | None:
+    for block in filter_index_blocks(index, file=file, include_globs=include_globs, exclude_globs=exclude_globs):
+        if block.get("label") == label:
+            return block
+    return None
+
+
+def search_index_filtered(
+    index: dict,
+    query: str,
+    limit: int = 10,
+    *,
+    file: str | None = None,
+    include_globs: list[str] | None = None,
+    exclude_globs: list[str] | None = None,
+) -> list[dict]:
     terms = [term.lower() for term in re.findall(r"[A-Za-z0-9_\\-]+", query) if term]
     scored: list[tuple[int, dict]] = []
-    for block in index.get("blocks", []):
+    for block in filter_index_blocks(index, file=file, include_globs=include_globs, exclude_globs=exclude_globs):
         haystack = " ".join(
             str(block.get(field) or "")
             for field in ("kind", "name", "file", "label", "title", "text", "block_id", "section_path")
@@ -354,10 +420,20 @@ def extract_paragraph_context(root: Path, relative_path: str, line_start: int, l
     }
 
 
-def find_label_text_fallback(root: Path, label: str) -> dict | None:
+def find_label_text_fallback(
+    root: Path,
+    label: str,
+    *,
+    file: str | None = None,
+    include_globs: list[str] | None = None,
+    exclude_globs: list[str] | None = None,
+) -> dict | None:
     root = root.resolve()
     needle = rf"\label{{{label}}}"
     for path in _discover_input_order(root):
+        relative_file = str(path.relative_to(root))
+        if not _file_allowed(relative_file, file=file, include_globs=include_globs, exclude_globs=exclude_globs):
+            continue
         try:
             lines = path.read_text(encoding="utf-8").splitlines()
         except UnicodeDecodeError:
@@ -365,7 +441,7 @@ def find_label_text_fallback(root: Path, label: str) -> dict | None:
         for index, line in enumerate(lines, start=1):
             if needle in line:
                 return {
-                    "file": str(path.relative_to(root)),
+                    "file": relative_file,
                     "line_start": index,
                     "line_end": index,
                     "label": label,
@@ -378,8 +454,18 @@ def find_label_text_fallback(root: Path, label: str) -> dict | None:
     return None
 
 
-def _fallback_context(root: Path, label: str, before: int, after: int, *, paragraph: bool) -> dict:
-    fallback = find_label_text_fallback(root, label)
+def _fallback_context(
+    root: Path,
+    label: str,
+    before: int,
+    after: int,
+    *,
+    paragraph: bool,
+    file: str | None = None,
+    include_globs: list[str] | None = None,
+    exclude_globs: list[str] | None = None,
+) -> dict:
+    fallback = find_label_text_fallback(root, label, file=file, include_globs=include_globs, exclude_globs=exclude_globs)
     if fallback is None:
         raise KeyError(f"Unknown label: {label}")
     context = (
@@ -392,11 +478,22 @@ def _fallback_context(root: Path, label: str, before: int, after: int, *, paragr
 
 
 
-def extract_paragraph_context_for_label(index: dict, label: str, before: int = 1, after: int = 1) -> dict:
+def extract_paragraph_context_for_label(
+    index: dict,
+    label: str,
+    before: int = 1,
+    after: int = 1,
+    *,
+    file: str | None = None,
+    include_globs: list[str] | None = None,
+    exclude_globs: list[str] | None = None,
+) -> dict:
     root = Path(index["root"])
-    block = index.get("labels", {}).get(label)
+    block = _filtered_label_block(index, label, file=file, include_globs=include_globs, exclude_globs=exclude_globs)
+    if block is None and not (file or include_globs or exclude_globs):
+        block = index.get("labels", {}).get(label)
     if not block:
-        return _fallback_context(root, label, before, after, paragraph=True)
+        return _fallback_context(root, label, before, after, paragraph=True, file=file, include_globs=include_globs, exclude_globs=exclude_globs)
     context = extract_paragraph_context(root, block["file"], block["line_start"], block["line_end"], before=before, after=after)
     context["label"] = label
     context["kind"] = block["kind"]
@@ -406,11 +503,22 @@ def extract_paragraph_context_for_label(index: dict, label: str, before: int = 1
 
 
 
-def extract_context_for_label(index: dict, label: str, before: int = 2, after: int = 2) -> dict:
+def extract_context_for_label(
+    index: dict,
+    label: str,
+    before: int = 2,
+    after: int = 2,
+    *,
+    file: str | None = None,
+    include_globs: list[str] | None = None,
+    exclude_globs: list[str] | None = None,
+) -> dict:
     root = Path(index["root"])
-    block = index.get("labels", {}).get(label)
+    block = _filtered_label_block(index, label, file=file, include_globs=include_globs, exclude_globs=exclude_globs)
+    if block is None and not (file or include_globs or exclude_globs):
+        block = index.get("labels", {}).get(label)
     if not block:
-        return _fallback_context(root, label, before, after, paragraph=False)
+        return _fallback_context(root, label, before, after, paragraph=False, file=file, include_globs=include_globs, exclude_globs=exclude_globs)
     context = extract_context(root, block["file"], block["line_start"], block["line_end"], before=before, after=after)
     context["label"] = label
     context["kind"] = block["kind"]

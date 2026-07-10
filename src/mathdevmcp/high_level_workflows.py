@@ -338,8 +338,22 @@ def package_proof_gap_result(low_level: dict[str, Any], *, question: str) -> dic
 
 
 def package_code_audit_result(low_level: dict[str, Any], *, question: str) -> dict[str, Any]:
-    status = "structural_match" if low_level.get("status") == "consistent" else "structural_mismatch"
-    evidence_class = "structural_match" if status == "structural_match" else "structural_mismatch"
+    if low_level.get("status") == "scope_limited":
+        status = "scope_limited_match"
+        evidence_class = "scope_limited_match"
+    else:
+        status = "structural_match" if low_level.get("status") == "consistent" else "structural_mismatch"
+        evidence_class = "structural_match" if status == "structural_match" else "structural_mismatch"
+    non_claim_codes = {"structural_evidence_not_proof"}
+    vetoes: list[dict[str, Any]] = []
+    if status == "scope_limited_match":
+        non_claim_codes.add("scope_limited_evidence_not_proof")
+        vetoes.append(
+            veto_reason(
+                "scope_limited_evidence_not_promoted",
+                "The code evidence supports only a value-level or instance-level slice of the mathematical claim.",
+            )
+        )
     result = high_level_result(
         status=status,
         workflow="audit_math_to_code",
@@ -356,8 +370,9 @@ def package_code_audit_result(low_level: dict[str, Any], *, question: str) -> di
             )
         ],
         certification_source="none",
-        actions=[] if status == "structural_match" else [action("human_review", "Inspect structural mismatch.")],
-        non_claims=default_non_claims(extra_codes={"structural_evidence_not_proof"}),
+        veto_reasons=vetoes,
+        actions=[] if status == "structural_match" else [action("human_review", "Inspect structural mismatch or scope limitation.")],
+        non_claims=default_non_claims(extra_codes=non_claim_codes),
     )
     return ensure_valid_high_level_result(result)
 

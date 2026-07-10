@@ -19,6 +19,7 @@ MCP_SERVER_EXPOSED_TOOLS = {
     "compare_doc_code",
     "code_implements_equation",
     "classify_math_claim",
+    "audit_report_claim_boundary",
     "reconcile_notation",
     "generate_math_tests",
     "math_review_packet",
@@ -54,6 +55,7 @@ MCP_SERVER_EXPOSED_TOOLS = {
     "workbench_benchmark_quality",
     "high_level_workflow_quality",
     "get_tool_matrix",
+    "external_tool_first_plan",
     "status_taxonomy",
     "doctor",
     "release_corpus_manifest",
@@ -62,6 +64,9 @@ MCP_SERVER_EXPOSED_TOOLS = {
     "release_readiness",
     "release_profile_analysis",
     "lean_readiness",
+    "plan_math_document_rigor_audit",
+    "audit_math_document_rigor",
+    "audit_document_derivation_tree",
 }
 
 
@@ -72,31 +77,104 @@ mcp = FastMCP(
 
 
 @mcp.tool(description="Search indexed LaTeX blocks with provenance.", structured_output=False)
-def search_latex(root: str, query: str, limit: int = 10, cache: str | None = None) -> list[dict]:
-    return call_mcp_tool("search_latex", {"root": root, "query": query, "limit": limit, "cache": cache})
+def search_latex(
+    root: str,
+    query: str,
+    limit: int = 10,
+    cache: str | None = None,
+    file: str | None = None,
+    include_globs: Sequence[str] | None = None,
+    exclude_globs: Sequence[str] | None = None,
+) -> list[dict]:
+    return call_mcp_tool(
+        "search_latex",
+        {
+            "root": root,
+            "query": query,
+            "limit": limit,
+            "cache": cache,
+            "file": file,
+            "include_globs": list(include_globs) if include_globs is not None else None,
+            "exclude_globs": list(exclude_globs) if exclude_globs is not None else None,
+        },
+    )
 
 
 @mcp.tool(description="Extract line context around a LaTeX label.", structured_output=False)
-def extract_latex_context(root: str, label: str, before: int = 2, after: int = 2, cache: str | None = None) -> dict:
+def extract_latex_context(
+    root: str,
+    label: str,
+    before: int = 2,
+    after: int = 2,
+    cache: str | None = None,
+    file: str | None = None,
+    include_globs: Sequence[str] | None = None,
+    exclude_globs: Sequence[str] | None = None,
+) -> dict:
     return call_mcp_tool(
         "extract_latex_context",
-        {"root": root, "label": label, "before": before, "after": after, "cache": cache},
+        {
+            "root": root,
+            "label": label,
+            "before": before,
+            "after": after,
+            "cache": cache,
+            "file": file,
+            "include_globs": list(include_globs) if include_globs is not None else None,
+            "exclude_globs": list(exclude_globs) if exclude_globs is not None else None,
+        },
     )
 
 
 @mcp.tool(description="Extract paragraph neighborhood around a LaTeX label.", structured_output=False)
-def extract_latex_neighborhood(root: str, label: str, before: int = 1, after: int = 1, cache: str | None = None) -> dict:
+def extract_latex_neighborhood(
+    root: str,
+    label: str,
+    before: int = 1,
+    after: int = 1,
+    cache: str | None = None,
+    file: str | None = None,
+    include_globs: Sequence[str] | None = None,
+    exclude_globs: Sequence[str] | None = None,
+) -> dict:
     return call_mcp_tool(
         "extract_latex_neighborhood",
-        {"root": root, "label": label, "before": before, "after": after, "cache": cache},
+        {
+            "root": root,
+            "label": label,
+            "before": before,
+            "after": after,
+            "cache": cache,
+            "file": file,
+            "include_globs": list(include_globs) if include_globs is not None else None,
+            "exclude_globs": list(exclude_globs) if exclude_globs is not None else None,
+        },
     )
 
 
 @mcp.tool(description="Fetch a labeled LaTeX block plus paragraph neighborhood and provenance.", structured_output=False)
-def latex_label_lookup(root: str, label: str, before: int = 1, after: int = 1, cache: str | None = None) -> dict:
+def latex_label_lookup(
+    root: str,
+    label: str,
+    before: int = 1,
+    after: int = 1,
+    cache: str | None = None,
+    file: str | None = None,
+    include_globs: Sequence[str] | None = None,
+    exclude_globs: Sequence[str] | None = None,
+) -> dict:
     return call_mcp_tool(
         "latex_label_lookup",
-        {"root": root, "label": label, "before": before, "after": after, "cache": cache},
+        {
+            "root": root,
+            "label": label,
+            "before": before,
+            "after": after,
+            "cache": cache,
+            "file": file,
+            "include_globs": list(include_globs) if include_globs is not None else None,
+            "exclude_globs": list(exclude_globs) if exclude_globs is not None else None,
+        },
     )
 
 
@@ -126,6 +204,18 @@ def classify_math_claim(claim: str, evidence: Sequence[dict] | None = None) -> d
     return call_mcp_tool(
         "classify_math_claim",
         {"claim": claim, "evidence": list(evidence) if evidence is not None else None},
+    )
+
+
+@mcp.tool(description="Classify report-status and nonclaim prose without treating it as a theorem claim.", structured_output=False)
+def audit_report_claim_boundary(claim: str, evidence_snippets: Sequence[str] | None = None, source: dict | None = None) -> dict:
+    return call_mcp_tool(
+        "audit_report_claim_boundary",
+        {
+            "claim": claim,
+            "evidence_snippets": list(evidence_snippets) if evidence_snippets is not None else None,
+            "source": source,
+        },
     )
 
 
@@ -784,6 +874,24 @@ def get_tool_matrix() -> list[dict]:
     return call_mcp_tool("tool_matrix", {})
 
 
+@mcp.tool(description="Plan the external tools that must be considered before in-house mathematical search.", structured_output=False)
+def external_tool_first_plan(
+    target: str,
+    goal_kind: str = "derivation",
+    allow_in_house_gap: bool = False,
+    gap_justification: str | None = None,
+) -> dict:
+    return call_mcp_tool(
+        "external_tool_first_plan",
+        {
+            "target": target,
+            "goal_kind": goal_kind,
+            "allow_in_house_gap": allow_in_house_gap,
+            "gap_justification": gap_justification,
+        },
+    )
+
+
 @mcp.tool(description="Return the current MathDevMCP status and substatus taxonomy.", structured_output=False)
 def status_taxonomy() -> dict:
     return call_mcp_tool("status_taxonomy", {})
@@ -822,6 +930,78 @@ def release_profile_analysis(root: str) -> dict:
 @mcp.tool(description="Report direct Lean, Lake, and LeanDojo readiness separately.", structured_output=False)
 def lean_readiness(root: str | None = None) -> dict:
     return call_mcp_tool("lean_readiness", {"root": root})
+
+
+@mcp.tool(description="Plan a focused mathematical rigor audit for one LaTeX file.", structured_output=False)
+def plan_math_document_rigor_audit(
+    tex_path: str,
+    focus_labels: Sequence[str] | None = None,
+    max_labels: int = 30,
+) -> dict:
+    return call_mcp_tool(
+        "plan_math_document_rigor_audit",
+        {
+            "tex_path": tex_path,
+            "focus_labels": list(focus_labels) if focus_labels is not None else None,
+            "max_labels": max_labels,
+        },
+    )
+
+
+@mcp.tool(description="Audit one LaTeX file and write a rigor gap/proposal report.", structured_output=False)
+def audit_math_document_rigor(
+    tex_path: str,
+    output_md: str | None = None,
+    output_json: str | None = None,
+    focus_labels: Sequence[str] | None = None,
+    max_labels: int = 30,
+    backend_env: str = "mathdevmcp-backends",
+    validation_backends: Sequence[str] | None = None,
+) -> dict:
+    return call_mcp_tool(
+        "audit_math_document_rigor",
+        {
+            "tex_path": tex_path,
+            "output_md": output_md,
+            "output_json": output_json,
+            "focus_labels": list(focus_labels) if focus_labels is not None else None,
+            "max_labels": max_labels,
+            "backend_env": backend_env,
+            "validation_backends": list(validation_backends) if validation_backends is not None else None,
+        },
+    )
+
+
+@mcp.tool(description="Audit LaTeX document targets with semantic work packets and derivation trees.", structured_output=False)
+def audit_document_derivation_tree(
+    tex_path: str,
+    output_md: str | None = None,
+    output_json: str | None = None,
+    focus_labels: Sequence[str] | None = None,
+    max_labels: int = 30,
+    budget_profile: str = "standard",
+    max_attempts: int = 3,
+    backend_env: str = "mathdevmcp-backends",
+    search_mode: str = "agent_guided",
+    grounding_policy: str = "strict",
+    workers: int = 1,
+) -> dict:
+    return call_mcp_tool(
+        "audit_document_derivation_tree",
+        {
+            "tex_path": tex_path,
+            "output_md": output_md,
+            "output_json": output_json,
+            "focus_labels": list(focus_labels) if focus_labels is not None else None,
+            "max_labels": max_labels,
+            "budget_profile": budget_profile,
+            "max_attempts": max_attempts,
+            "backend_env": backend_env,
+            "search_mode": search_mode,
+            "grounding_policy": grounding_policy,
+            "workers": workers,
+        },
+    )
 
 
 def main(argv: list[str] | None = None) -> int:

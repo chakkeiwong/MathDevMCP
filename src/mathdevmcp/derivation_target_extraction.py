@@ -8,10 +8,11 @@ from typing import Any
 
 from .contracts import attach_contract
 from .equation_locator import locate_equations_in_text
-from .latex_index import build_index
+from .latex_index import build_index, extract_paragraph_context_for_label
 
 
 DERIVATION_TARGET_EXTRACTION_CONTRACT = "derivation_target_extraction_result"
+PROPOSITION_CONTEXT_PACKET_CONTRACT = "proposition_context_packet_result"
 
 
 def _normalize_math_text(text: str) -> str:
@@ -150,6 +151,89 @@ def extract_derivation_targets_for_label(index: dict[str, Any], label: str) -> d
         "targets": targets,
         "fallback_count": fallback_count,
     }
+
+
+def _label_refs(text: str) -> list[str]:
+    refs = re.findall(r"\\(?:cref|Cref|ref|eqref)\{([^}]+)\}", text)
+    labels: list[str] = []
+    for ref in refs:
+        labels.extend(item.strip() for item in ref.split(",") if item.strip())
+    return list(dict.fromkeys(labels))
+
+
+def _proposition_hypotheses(text: str) -> list[str]:
+    hypotheses: list[str] = []
+    for match in re.finditer(r"\b(?:Suppose|Assume|For|If)\b([^.]*)\.", text, flags=re.IGNORECASE | re.DOTALL):
+        item = " ".join(match.group(0).split())
+        if item and item not in hypotheses:
+            hypotheses.append(item)
+    return hypotheses
+
+
+def build_proposition_context_packet(index: dict[str, Any], label: str) -> dict[str, Any]:
+    """Build a source-local context packet for a proposition-like label."""
+    block = index.get("labels", {}).get(label) if isinstance(index.get("labels"), dict) else None
+    if not isinstance(block, dict):
+        return attach_contract(
+            {
+                "label": label,
+                "status": "label_not_found",
+                "reason": f"Label `{label}` was not found in the index.",
+                "context_packet": None,
+                "non_claims": [
+                    {
+                        "code": "context_packet_not_proof",
+                        "text": "Context extraction is source localization only; it does not prove or repair the target.",
+                    }
+                ],
+            },
+            PROPOSITION_CONTEXT_PACKET_CONTRACT,
+        )
+    target_result = extract_derivation_targets_for_label(index, label)
+    paragraph_context = extract_paragraph_context_for_label(index, label, before=1, after=1)
+    text = str(block.get("text", ""))
+    packet = {
+        "id": f"proposition_context_packet:{label}",
+        "label": label,
+        "kind": block.get("kind"),
+        "title": block.get("title"),
+        "file": block.get("file"),
+        "line_start": block.get("line_start"),
+        "line_end": block.get("line_end"),
+        "block_id": block.get("block_id"),
+        "section_path": block.get("section_path", []),
+        "source_text": text,
+        "paragraph_context": paragraph_context,
+        "hypotheses": _proposition_hypotheses(text),
+        "referenced_labels": _label_refs(text),
+        "equation_targets": target_result.get("targets", []),
+        "target_count": target_result.get("target_count", len(target_result.get("targets", []))),
+        "fallback_count": target_result.get("fallback_count", 0),
+        "uncertainty": [
+            item
+            for target in target_result.get("targets", [])
+            for item in target.get("uncertainty", [])
+            if isinstance(target, dict)
+        ],
+        "evidence_refs": [str(block.get("block_id", label)), "derivation_target_extraction_result"],
+        "non_claim": "This proposition context packet localizes source evidence; it is not a proof certificate or repair.",
+    }
+    status = "context_packet_ready" if packet["equation_targets"] else "context_packet_without_equation_targets"
+    return attach_contract(
+        {
+            "label": label,
+            "status": status,
+            "reason": "Built proposition context packet with source-local equation targets.",
+            "context_packet": packet,
+            "non_claims": [
+                {
+                    "code": "context_packet_not_proof",
+                    "text": "Context extraction is source localization only; it does not prove or repair the target.",
+                }
+            ],
+        },
+        PROPOSITION_CONTEXT_PACKET_CONTRACT,
+    )
 
 
 def extract_derivation_targets(root: str | Path, labels: list[str] | tuple[str, ...] | str) -> dict[str, Any]:

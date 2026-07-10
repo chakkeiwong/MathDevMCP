@@ -66,6 +66,11 @@ def lean_readiness(root: str | Path | None = None) -> dict:
             "status": "available" if leandojo.get("available") else "unavailable",
             "path": leandojo.get("path"),
             "detail": leandojo.get("detail"),
+            "environment_scope": leandojo.get("environment_scope"),
+            "backend_requested": leandojo.get("backend_requested"),
+            "backend_env": leandojo.get("backend_env"),
+            "backend_prefix": leandojo.get("backend_prefix"),
+            "diagnostic_hint": leandojo.get("diagnostic_hint"),
         },
         "certification_boundary": "Readiness diagnostics are not proof; only successful Lean checking of supplied source can certify a scoped Lean artifact.",
     }

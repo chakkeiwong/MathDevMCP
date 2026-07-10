@@ -1,6 +1,11 @@
 from pathlib import Path
 
-from mathdevmcp.math_ir import diagnose_typed_obligation, obligation_from_audit_obligation, validate_math_obligation
+from mathdevmcp.math_ir import (
+    diagnose_typed_obligation,
+    obligation_from_audit_obligation,
+    typed_repair_obligation_from_packet,
+    validate_math_obligation,
+)
 from mathdevmcp.matrix_ir import matrix_ir_from_equation_row, parse_matrix_obligation
 from mathdevmcp.proof_audit import audit_derivation_for_label
 from mathdevmcp.typed_workflows import typed_obligation_for_label
@@ -76,6 +81,65 @@ def test_validate_math_obligation_rejects_malformed_payload():
     assert "kind is invalid" in errors
     assert "backend_suitability is invalid" in errors
     assert "diagnostic_status is invalid" in errors
+
+
+def test_typed_repair_obligation_from_packet_preserves_context_graph_blockers():
+    packet = {
+        "id": "semantic_packet_eq_foc_k_0",
+        "label": "eq:foc-k",
+        "target": r"0 = m(\bar e)d\bar e/dk' + \beta \E[V^\star_k(k',b',z')\mid z]",
+        "lhs": "0",
+        "rhs": r"m(\bar e)d\bar e/dk' + \beta \E[V^\star_k(k',b',z')\mid z]",
+        "source_text": r"0 &= m(\bar e)d\bar e/dk' + \beta \E[V^\star_k(k',b',z')\mid z]",
+        "operator_inventory": ["equality", "conditional_expectation", "derivative"],
+        "source_span": {"file": "doc.tex", "line_start": 10, "line_end": 12, "label": "eq:foc-k"},
+        "paragraph_context": {
+            "paragraphs": [
+                {
+                    "line_start": 8,
+                    "line_end": 9,
+                    "text": "Suppose the action is interior and the relevant functions are differentiable.",
+                }
+            ]
+        },
+        "context_graph": {
+            "nodes": [
+                {
+                    "id": "assumption_relevant_functions_differentiable",
+                    "kind": "candidate_assumption",
+                    "status": "nearby_stated",
+                    "summary": "The relevant functions are differentiable.",
+                    "mathematical_role": "supports local derivative notation",
+                    "source_refs": [{"file": "doc.tex", "line_start": 8, "line_end": 9}],
+                    "evidence_refs": ["doc:8"],
+                },
+                {
+                    "id": "requirement_conditional_integrability",
+                    "kind": "candidate_assumption",
+                    "status": "unresolved",
+                    "summary": "Random terms inside the conditional expectation are measurable and integrable.",
+                    "mathematical_role": "finite expectation condition",
+                    "why_status": "No integrability statement appears.",
+                    "required_next_evidence": "State integrability.",
+                    "source_refs": [{"file": "doc.tex", "line_start": 10, "line_end": 12}],
+                    "evidence_refs": ["eq:foc-k"],
+                },
+            ]
+        },
+    }
+
+    typed = typed_repair_obligation_from_packet(packet)
+
+    assert typed["metadata"] == {"schema_version": "1.0", "contract": "typed_repair_obligation"}
+    assert typed["target_label"] == "eq:foc-k"
+    assert "expectation" in typed["unresolved_constructs"]
+    assert "integrability" in typed["unresolved_constructs"]
+    statuses = {item["id"]: item["status"] for item in typed["assumptions"]}
+    assert statuses["assumption_relevant_functions_differentiable"] == "nearby_stated"
+    assert statuses["requirement_conditional_integrability"] == "unresolved"
+    assert typed["encodability"]["status"] == "blocked_pending_typed_assumptions"
+    assert any(hint["backend"] == "manual_formalization" for hint in typed["route_hints"])
+    assert "not proof" in typed["certification_boundary"]
 
 
 def test_matrix_ir_preserves_noncommutative_ordered_products():

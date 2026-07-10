@@ -222,6 +222,28 @@ def test_cli_high_level_workflow_quality_module_command_passes():
     assert payload["total_cases"] == 14
 
 
+def test_cli_external_tool_first_plan_returns_contract():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "mathdevmcp.cli",
+            "external-tool-first-plan",
+            "a + b = b + a",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        env={"PYTHONPATH": str(ROOT / "src")},
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["metadata"] == {"schema_version": "1.0", "contract": "external_tool_first_plan_result"}
+    assert payload["considered_tools"]
+    assert "external_tool_plan_not_certificate" in {item["code"] for item in payload["non_claims"]}
+
+
 def test_release_smoke_script_passes():
     result = subprocess.run(
         [str(ROOT / "scripts" / "release_smoke.sh"), str(ROOT)],

@@ -18,6 +18,8 @@ def test_route_planner_scalar_identity_prefers_symbolic_without_certifying() -> 
     assert result["selected_route"]["tool"] == "derive_or_refute"
     assert result["selected_route"]["evidence_contract"] == "derive_or_refute_result"
     assert result["candidates"][1]["backend"] == "bounded_counterexample"
+    assert result["external_tool_first_plan"]["metadata"]["contract"] == "external_tool_first_plan_result"
+    assert result["external_tool_first_plan"]["selected_external_tools"][0]["tool"] == "sympy"
     assert result["boundary"] == BACKEND_ROUTE_PLAN_BOUNDARY
     assert "route_plan_not_certificate" in {item["code"] for item in result["non_claims"]}
 

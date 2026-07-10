@@ -13,6 +13,10 @@ when investigating one specific profile.
 | MCP | Agent-facing stdio server and in-process facade. | `python -m pip install -e ".[dev,mcp]"` | `PYTHONPATH=src pytest -q tests/test_mcp_facade.py tests/test_mcp_server.py tests/test_mcp_surface_sync.py` | Supported public surface after registry/docs/server checks pass. |
 | symbolic | SymPy-backed bounded proof-obligation diagnostics. | `python -m pip install -e ".[dev,symbolic]"` | `PYTHONPATH=src pytest -q tests/test_symbolic_backend.py tests/test_proof_obligations.py` | Optional supported backend. |
 | `backend` | Isolated LeanDojo backend evidence. | `scripts/setup_backend_env.sh` with `MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends`, or select an existing validated env with `MATHDEVMCP_BACKEND_CONDA_ENV`. | `scripts/backend_env_doctor.sh "$PWD"` and `scripts/validate_backend_install.sh "$PWD"`. | Supported strict internal profile when Pandoc, Lean, Sage, and isolated LeanDojo validate. LaTeXML and SymPy are optional backend-validator caveats. |
+| `lean-search` | Optional Lean declaration and premise retrieval integrations. | `python -m pip install -e ".[dev,lean-search]"` for LeanExplore, or rerun `scripts/setup_backend_env.sh` to install the supported backend pin. LeanSearch-v2 client/runtime belongs in the isolated backend or a separate service/GPU environment. | `PYTHONPATH=src python -m mathdevmcp.cli doctor` and inspect `integrations.lean_explore`, `integrations.leansearchv2`, and `integrations.jixia`. | Version-controlled integration lane; not required by base/public profiles until a workflow explicitly selects it. |
+| `tree-derivation` | Internal external-tool-first derivation search lane with tree evidence, bounded controller, and branch-derived reports. | Base package; optional `[symbolic]`, backend, Lean-search, and proof-state profiles only when selected by a workflow. | `PYTHONPATH=src pytest -q tests/test_tree_derivation_lane_integration.py tests/test_derivation_branch_controller.py tests/test_derivation_tree_report.py tests/test_external_tool_adapters.py tests/test_derivation_search_tree.py`. | Internal agent-workflow lane. It is not public release evidence, not complete MCTS, and not a whole-document proof. |
+| `document-derivation-tree` | Agent-facing document audit lane with semantic packets, agent-guided hypothesis branches, tree/backend evidence, and strict proposal compilation. | Base package; optional `[symbolic]` and backend profiles improve evidence when selected. | `PYTHONPATH=src pytest -q tests/test_document_derivation_tree.py` and inspect `tool_grounded_proposal_compiler_result`. | Experimental workflow lane. Use `search_mode=agent_guided` and `grounding_policy=strict`; blocked paths are gap reports, not repairs. |
+| `pantograph` | Optional Lean proof-state interaction adapter. | Install `pantograph==0.3.15` in a Python 3.11 backend env with matching Lean/lake. | `PYTHONPATH=src python -m mathdevmcp.cli doctor` and inspect `integrations.pantograph`; smoke with `from pantograph import Server`. Direct Lean remains the certification boundary. | Experimental integration lane, not a core dependency. |
 | `latexml` | Strict LaTeXML parser validation. | Install the OS package `latexml` or set `MATHDEVMCP_LATEXML_PATH`. | `MATHDEVMCP_REQUIRE_LATEXML=1 scripts/validate_latexml_backend.sh "$PWD"`. | Supported strict internal profile when the executable validates. |
 | `private-corpus` | External private or sanitized department corpus validation. | Set `MATHDEVMCP_PRIVATE_CORPUS_MANIFEST` to an external manifest outside git. | `scripts/validate_private_corpus.sh "$PWD"`. | Supported strict internal profile; private material must never be committed. |
 | `full` | All internal optional evidence: backend, LaTeXML, and private corpus. | Combine `backend`, `latexml`, and `private-corpus` setup in the same shell. | `MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends MATHDEVMCP_REQUIRE_LATEXML=1 MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/secure/local/path/corpus.json PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile full`. | Internal full-profile release evidence, not a public release claim by itself. |
@@ -37,6 +41,36 @@ public surface gate instead. MCP-facing installs use the optional `[mcp]` extra;
 base library imports remain lightweight.
 
 Direct Lean source rejection is a mismatch. Lean executable absence, toolchain download failures, timeouts, and placeholder proofs are diagnostic or inconclusive evidence, not mathematical refutations.
+
+## Integration Version Control
+
+Optional external tools are treated as part of the MathDevMCP package contract
+only through explicit, versioned integration profiles. The authoritative
+manifest lives in `src/mathdevmcp/integration_versions.py`; `doctor` reports
+the supported version, installed active-Python version, installed backend-env
+version when a backend is selected, and a resolved availability status.
+
+Current supported pins:
+
+- `sympy==1.14.0`
+- `mcp==1.27.0`
+- `lean-dojo==4.20.0` with `leanprover/lean4:v4.20.0`
+- `lean-explore==1.2.1`
+- `pantograph==0.3.15`
+- LeanSearch-v2 source/service commit `94f4888cbaf9`
+- jixia source commit `755fde27a9cf` with `leanprover/lean4:v4.29.0`
+
+Do not silently depend on whatever version happens to be installed. A workflow
+that uses one of these tools should either require a matching `doctor`
+integration status or record the mismatch/unavailable state as diagnostic
+evidence.
+
+LeanExplore is currently installed in the isolated `mathdevmcp-backends`
+environment by `scripts/setup_backend_env.sh`. It may bring a newer transitive
+`mcp` package into that backend env than the core `[mcp]` profile uses. This is
+acceptable only because backend-env MCP is not the MathDevMCP public MCP server
+runtime; `doctor.integrations.mcp` records both active-Python and backend-env
+versions so the distinction stays visible.
 
 ## Public Release Boundary
 

@@ -71,3 +71,26 @@ def test_audit_math_to_code_extra_terms_are_audit_only() -> None:
     assert "lam" in result["evidence"][0]["low_level"]["trace_map"]["extra_code_terms"]
     assert result["status"] != "proved"
     assert validate_high_level_result(result) == []
+
+
+def test_audit_math_to_code_reports_scope_limited_value_slice_not_formula_mismatch() -> None:
+    result = audit_math_to_code(
+        r"\ell(\theta; y_{1:T}) = \sum_{t=1}^{T} \log p(y_t \mid y_{1:t-1}, \theta)",
+        "def likelihood(theta, y_t):\n    return logp(theta, y_t)\n",
+        aliases={"ell": "likelihood", "log": "logp", "p": "logp"},
+    )
+    trace = result["evidence"][0]["low_level"]["trace_map"]
+    scope = trace["scope_diagnostic"]
+
+    assert result["status"] == "scope_limited_match"
+    assert result["certification_source"] == "none"
+    assert result["evidence_classes"] == ["scope_limited_match"]
+    assert "scope_limited_evidence_not_proof" in {item["code"] for item in result["non_claims"]}
+    assert "scope" in result["veto_reasons"][0]["code"]
+    assert "y_t" in scope["code_function_args"]
+    assert scope["missing_scope_terms"]
+    assert "value-level" in scope["supports"]
+    assert "function-level" in scope["does_not_support"]
+    assert "does not prove" in scope["safe_wording"]
+    assert "missing required equation terms" not in result["answer"]
+    assert validate_high_level_result(result) == []

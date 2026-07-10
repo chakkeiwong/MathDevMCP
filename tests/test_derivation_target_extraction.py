@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from mathdevmcp.derivation_target_extraction import (
+    build_proposition_context_packet,
     extract_derivation_targets,
     extract_derivation_targets_for_label,
     extract_derivation_targets_from_block,
@@ -95,3 +96,24 @@ def test_extract_derivation_targets_contract_and_stable_ids() -> None:
         "risky-debt-maliar-deep-learning-lecture-note.tex:770:proposition:prop:interior-foc:target:eq:foc-b",
     ]
     assert "target_extraction_not_proof" in {item["code"] for item in result["non_claims"]}
+
+
+def test_build_proposition_context_packet_for_interior_foc() -> None:
+    index = build_index(DOCS)
+
+    result = build_proposition_context_packet(index, "prop:interior-foc")
+
+    assert result["metadata"]["contract"] == "proposition_context_packet_result"
+    assert result["status"] == "context_packet_ready"
+    packet = result["context_packet"]
+    assert packet["label"] == "prop:interior-foc"
+    assert packet["kind"] == "proposition"
+    assert packet["file"] == "risky-debt-maliar-deep-learning-lecture-note.tex"
+    assert packet["line_start"] == 770
+    assert packet["line_end"] == 787
+    assert "Interior first-order conditions" in packet["title"]
+    assert [target["label"] for target in packet["equation_targets"]] == ["eq:foc-k", "eq:foc-b"]
+    assert any("continuation state" in item for item in packet["hypotheses"])
+    assert any("differentiable" in item for item in packet["hypotheses"])
+    assert "This proposition context packet localizes source evidence" in packet["non_claim"]
+    assert "context_packet_not_proof" in {item["code"] for item in result["non_claims"]}

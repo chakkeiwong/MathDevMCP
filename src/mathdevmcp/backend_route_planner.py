@@ -8,6 +8,7 @@ from typing import Any
 
 from .contracts import attach_contract
 from .doctor import doctor_report
+from .external_tool_policy import external_tool_first_plan
 
 
 BACKEND_ROUTE_PLAN_CONTRACT = "backend_route_plan_result"
@@ -215,13 +216,26 @@ def plan_backend_routes(
     lhs: str | None = None,
     rhs: str | None = None,
     capabilities: dict[str, Any] | None = None,
+    integrations: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Plan deterministic backend routes without executing proof attempts."""
     target_text, left, right = _target_parts(target, lhs, rhs)
-    capability_report = capabilities or doctor_report().get("capabilities", {})
+    if capabilities is None:
+        doctor = doctor_report()
+        capability_report = doctor.get("capabilities", {})
+        integration_report = integrations if integrations is not None else doctor.get("integrations", {})
+    else:
+        capability_report = capabilities
+        integration_report = integrations if integrations is not None else {}
     sympy_capability = capability_report.get("sympy") if isinstance(capability_report, dict) else None
     sage_capability = capability_report.get("sage") if isinstance(capability_report, dict) else None
     lean_capability = capability_report.get("lean") if isinstance(capability_report, dict) else None
+    external_policy_plan = external_tool_first_plan(
+        target_text,
+        goal_kind="derivation",
+        capabilities=capability_report if isinstance(capability_report, dict) else {},
+        integrations=integration_report if isinstance(integration_report, dict) else {},
+    )
     candidates = [
         _symbolic_candidate(left, right, sympy_capability=sympy_capability),
         _counterexample_candidate(left, right, sympy_capability=sympy_capability),
@@ -242,6 +256,7 @@ def plan_backend_routes(
         "rhs": right,
         "selected_route": selected,
         "candidates": candidates,
+        "external_tool_first_plan": external_policy_plan,
         "diagnostics": diagnostics,
         "boundary": BACKEND_ROUTE_PLAN_BOUNDARY,
         "non_claims": [

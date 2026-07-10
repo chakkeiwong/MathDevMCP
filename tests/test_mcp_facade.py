@@ -34,8 +34,10 @@ def test_list_mcp_tools_includes_implementation_brief():
     assert "audit_and_propose_derivations" in names
     assert "debug_derivation" in names
     assert "audit_math_to_code" in names
+    assert "audit_report_claim_boundary" in names
     assert "prepare_review_packet" in names
     assert "high_level_workflow_quality" in names
+    assert "external_tool_first_plan" in names
     assert tools["compare_label_code"]["deprecated"] is True
     assert tools["compare_label_code"]["replacement"] == "audit_implementation_label"
     assert tools["check_proof_obligation"]["deprecated"] is True
@@ -49,6 +51,8 @@ def test_list_mcp_tools_includes_implementation_brief():
     assert tools["audit_and_propose_assumptions"]["output_contract"] == "audit_assumption_report_result"
     assert tools["audit_and_propose_derivations"]["output_contract"] == "derivation_audit_report_result"
     assert tools["audit_math_to_code"]["certifying_capable"] is False
+    assert tools["audit_report_claim_boundary"]["output_contract"] == "report_claim_boundary_audit"
+    assert tools["external_tool_first_plan"]["output_contract"] == "external_tool_first_plan_result"
     assert tools["prepare_review_packet"]["certifying_capable"] is False
 
 
@@ -79,6 +83,13 @@ def test_call_mcp_tool_high_level_surfaces_preserve_boundaries():
     debug = call_mcp_tool("debug_derivation", {"steps": ["logdet(A)", "trace(A)", "trace(A)"]})
     code = call_mcp_tool("audit_math_to_code", {"math": "logdet(S)", "code": "def f(S):\n    return logdet(S)\n"})
     packet = call_mcp_tool("prepare_review_packet", {"question": "Review", "evidence": [proof]})
+    boundary = call_mcp_tool(
+        "audit_report_claim_boundary",
+        {
+            "claim": "The report passed review and is not a proof.",
+            "evidence_snippets": ["Review result: passed."],
+        },
+    )
 
     assert proof["metadata"]["contract"] == "high_level_workflow_result"
     assert proof["status"] == "refuted"
@@ -99,6 +110,30 @@ def test_call_mcp_tool_high_level_surfaces_preserve_boundaries():
     assert packet["status"] == "diagnostic_only"
     assert packet["certification_source"] == "none"
     assert "diagnostic_evidence_not_proof" in {item["code"] for item in packet["non_claims"]}
+    assert boundary["metadata"]["contract"] == "report_claim_boundary_audit"
+    assert boundary["mathematical_claim"] is False
+    assert boundary["document_evidence_needed"]
+
+
+def test_mcp_facade_search_latex_respects_file_filter(tmp_path):
+    (tmp_path / "d446.tex").write_text(r"\section{Shared phrase old}", encoding="utf-8")
+    (tmp_path / "d447.tex").write_text(r"\section{Shared phrase current}", encoding="utf-8")
+
+    result = call_mcp_tool("search_latex", {"root": str(tmp_path), "query": "shared phrase", "file": "d447.tex"})
+
+    assert result
+    assert {item["file"] for item in result} == {"d447.tex"}
+
+
+def test_mcp_facade_latex_label_lookup_respects_file_filter(tmp_path):
+    (tmp_path / "old.tex").write_text(r"\begin{equation}\label{eq:shared} old = 1 \end{equation}", encoding="utf-8")
+    (tmp_path / "final.tex").write_text(r"\begin{equation}\label{eq:shared} final = 2 \end{equation}", encoding="utf-8")
+
+    result = call_mcp_tool("latex_label_lookup", {"root": str(tmp_path), "label": "eq:shared", "file": "final.tex"})
+
+    assert result["ok"] is True
+    assert result["file"] == "final.tex"
+    assert any("final = 2" in paragraph["text"] for paragraph in result["paragraphs"])
 
 
 def test_call_mcp_tool_derivation_report_preserves_extracted_targets() -> None:

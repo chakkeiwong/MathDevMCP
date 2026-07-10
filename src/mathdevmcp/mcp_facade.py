@@ -26,18 +26,23 @@ from .derivation_audit_report import audit_and_propose_derivations as high_level
 from .debug_derivation import debug_derivation as high_level_debug_derivation
 from .derive_from import derive_from as high_level_derive_from
 from .derive_or_refute import derive_or_refute
+from .document_derivation_tree import audit_document_derivation_tree as high_level_audit_document_derivation_tree
 from .doctor import doctor_report
 from .equation_code_match import code_implements_equation
+from .external_tool_policy import external_tool_first_plan as high_level_external_tool_first_plan
 from .governance import governance_policy
 from .index_cache import load_or_build_index
 from .implementation_audit import audit_implementation_label
 from .kalman_workflows import audit_kalman_recursion
-from .latex_index import build_index, extract_context_for_label, extract_paragraph_context_for_label, search_index
+from .latex_index import build_index, extract_context_for_label, extract_paragraph_context_for_label, search_index_filtered
 from .lean_check import check_lean_source
 from .lean_readiness import lean_readiness
 from .literature_local_audit import literature_local_audit
 from .math_claim_classifier import classify_math_claim
 from .math_change_impact import math_change_impact
+from .math_document_rigor import audit_math_document_rigor as high_level_audit_math_document_rigor
+from .math_document_rigor import plan_math_document_rigor_audit as high_level_plan_math_document_rigor_audit
+from .report_claim_boundary import audit_report_claim_boundary as high_level_audit_report_claim_boundary
 from .math_review_packet import build_math_review_packet
 from .math_to_tests import generate_math_tests
 from .notation_reconciliation import reconcile_notation
@@ -182,7 +187,14 @@ def _optional_terms(args: dict[str, Any]) -> list[str] | None:
 
 def _tool_search_latex(args: dict[str, Any]) -> list[dict[str, Any]]:
     index = _index_for_args(args)
-    return search_index(index, _required_string(args, "query"), limit=int(args.get("limit", 10)))
+    return search_index_filtered(
+        index,
+        _required_string(args, "query"),
+        limit=int(args.get("limit", 10)),
+        file=args.get("file") if isinstance(args.get("file"), str) else None,
+        include_globs=_optional_string_list_arg(args, "include_globs"),
+        exclude_globs=_optional_string_list_arg(args, "exclude_globs"),
+    )
 
 
 def _tool_extract_latex_context(args: dict[str, Any]) -> dict[str, Any]:
@@ -192,6 +204,9 @@ def _tool_extract_latex_context(args: dict[str, Any]) -> dict[str, Any]:
         _required_string(args, "label"),
         before=int(args.get("before", 2)),
         after=int(args.get("after", 2)),
+        file=args.get("file") if isinstance(args.get("file"), str) else None,
+        include_globs=_optional_string_list_arg(args, "include_globs"),
+        exclude_globs=_optional_string_list_arg(args, "exclude_globs"),
     )
 
 
@@ -202,6 +217,9 @@ def _tool_extract_latex_neighborhood(args: dict[str, Any]) -> dict[str, Any]:
         _required_string(args, "label"),
         before=int(args.get("before", 1)),
         after=int(args.get("after", 1)),
+        file=args.get("file") if isinstance(args.get("file"), str) else None,
+        include_globs=_optional_string_list_arg(args, "include_globs"),
+        exclude_globs=_optional_string_list_arg(args, "exclude_globs"),
     )
 
 
@@ -248,6 +266,22 @@ def _tool_classify_math_claim(args: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(evidence, list):
         raise ValueError("evidence must be a list of objects")
     return classify_math_claim(_required_string(args, "claim"), evidence=evidence)
+
+
+def _tool_audit_report_claim_boundary(args: dict[str, Any]) -> dict[str, Any]:
+    snippets = args.get("evidence_snippets", args.get("evidence_snippet"))
+    if isinstance(snippets, str):
+        snippets = [snippets]
+    if snippets is not None and (not isinstance(snippets, list) or not all(isinstance(item, str) for item in snippets)):
+        raise ValueError("evidence_snippets must be a string or list of strings")
+    source = args.get("source")
+    if source is not None and not isinstance(source, dict):
+        raise ValueError("source must be an object")
+    return high_level_audit_report_claim_boundary(
+        _required_string(args, "claim"),
+        evidence_snippets=snippets,
+        source=source,
+    )
 
 
 def _tool_reconcile_notation(args: dict[str, Any]) -> dict[str, Any]:
@@ -798,9 +832,95 @@ def _tool_lean_readiness(args: dict[str, Any]) -> dict[str, Any]:
     return lean_readiness(root if isinstance(root, str) and root else None)
 
 
+def _tool_plan_math_document_rigor_audit(args: dict[str, Any]) -> dict[str, Any]:
+    focus_labels = args.get("focus_labels", args.get("focus_label"))
+    if isinstance(focus_labels, str):
+        focus_labels = [focus_labels]
+    if focus_labels is not None and (not isinstance(focus_labels, list) or not all(isinstance(item, str) for item in focus_labels)):
+        raise ValueError("focus_labels must be a string or list of strings")
+    max_labels = args.get("max_labels", 30)
+    max_label_value = int(max_labels) if max_labels is not None else None
+    if max_label_value is not None and max_label_value <= 0:
+        max_label_value = None
+    return high_level_plan_math_document_rigor_audit(
+        _required_string(args, "tex_path"),
+        focus_labels=focus_labels,
+        max_labels=max_label_value,
+    )
+
+
+def _tool_audit_math_document_rigor(args: dict[str, Any]) -> dict[str, Any]:
+    focus_labels = args.get("focus_labels", args.get("focus_label"))
+    if isinstance(focus_labels, str):
+        focus_labels = [focus_labels]
+    if focus_labels is not None and (not isinstance(focus_labels, list) or not all(isinstance(item, str) for item in focus_labels)):
+        raise ValueError("focus_labels must be a string or list of strings")
+    validation_backends = args.get("validation_backends", args.get("validation_backend"))
+    if isinstance(validation_backends, str):
+        validation_backends = [validation_backends]
+    if validation_backends is not None and (not isinstance(validation_backends, list) or not all(isinstance(item, str) for item in validation_backends)):
+        raise ValueError("validation_backends must be a string or list of strings")
+    max_labels = args.get("max_labels", 30)
+    max_label_value = int(max_labels) if max_labels is not None else None
+    if max_label_value is not None and max_label_value <= 0:
+        max_label_value = None
+    return high_level_audit_math_document_rigor(
+        _required_string(args, "tex_path"),
+        output_md=args.get("output_md") or None,
+        output_json=args.get("output_json") or None,
+        focus_labels=focus_labels,
+        max_labels=max_label_value,
+        backend_env=str(args.get("backend_env", "mathdevmcp-backends")),
+        validation_backends=validation_backends,
+    )
+
+
+def _tool_audit_document_derivation_tree(args: dict[str, Any]) -> dict[str, Any]:
+    focus_labels = args.get("focus_labels", args.get("focus_label"))
+    if isinstance(focus_labels, str):
+        focus_labels = [focus_labels]
+    if focus_labels is not None and (not isinstance(focus_labels, list) or not all(isinstance(item, str) for item in focus_labels)):
+        raise ValueError("focus_labels must be a string or list of strings")
+    max_labels = args.get("max_labels", 30)
+    max_label_value = int(max_labels) if max_labels is not None else None
+    if max_label_value is not None and max_label_value <= 0:
+        max_label_value = None
+    return high_level_audit_document_derivation_tree(
+        _required_string(args, "tex_path"),
+        output_md=args.get("output_md") or None,
+        output_json=args.get("output_json") or None,
+        focus_labels=focus_labels,
+        max_labels=max_label_value,
+        budget_profile=str(args.get("budget_profile", "standard")),
+        max_attempts=int(args.get("max_attempts", 3)),
+        backend_env=str(args.get("backend_env", "mathdevmcp-backends")),
+        search_mode=str(args.get("search_mode", "agent_guided")),
+        grounding_policy=str(args.get("grounding_policy", "strict")),
+        workers=int(args.get("workers", 1)),
+    )
+
+
 def _tool_status_taxonomy(args: dict[str, Any]) -> dict[str, Any]:
     _ = args
     return status_taxonomy()
+
+
+def _tool_external_tool_first_plan(args: dict[str, Any]) -> dict[str, Any]:
+    capabilities = args.get("capabilities")
+    integrations = args.get("integrations")
+    if capabilities is not None and not isinstance(capabilities, dict):
+        raise ValueError("capabilities must be an object")
+    if integrations is not None and not isinstance(integrations, dict):
+        raise ValueError("integrations must be an object")
+    gap_justification = args.get("gap_justification")
+    return high_level_external_tool_first_plan(
+        _required_string(args, "target"),
+        goal_kind=str(args.get("goal_kind", "derivation")),
+        capabilities=capabilities,
+        integrations=integrations,
+        allow_in_house_gap=bool(args.get("allow_in_house_gap", False)),
+        gap_justification=gap_justification if isinstance(gap_justification, str) else None,
+    )
 
 
 MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
@@ -841,6 +961,14 @@ MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
         _tool_classify_math_claim,
         "Classify a math claim by supplied evidence without promoting diagnostics to proof.",
         "math_claim_classification",
+        "workflow",
+        stability="experimental",
+    ),
+    MCPToolSpec(
+        "audit_report_claim_boundary",
+        _tool_audit_report_claim_boundary,
+        "Classify report-status and nonclaim prose without treating it as a theorem claim.",
+        "report_claim_boundary_audit",
         "workflow",
         stability="experimental",
     ),
@@ -1071,6 +1199,14 @@ MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
     MCPToolSpec("workbench_benchmark_quality", _tool_workbench_benchmark_quality, "Return seeded workbench benchmark quality thresholds.", "workbench_benchmark_quality_report", "operational", stability="experimental"),
     MCPToolSpec("high_level_workflow_quality", _tool_high_level_workflow_quality, "Return seeded high-level workflow benchmark quality thresholds.", "high_level_workflow_quality_report", "operational", stability="experimental"),
     MCPToolSpec("tool_matrix", _tool_tool_matrix, "Return the current MathDevMCP tool matrix.", "tool_matrix", "informational", server_name="get_tool_matrix"),
+    MCPToolSpec(
+        "external_tool_first_plan",
+        _tool_external_tool_first_plan,
+        "Plan the external tools that must be considered before in-house mathematical search.",
+        "external_tool_first_plan_result",
+        "workflow",
+        stability="experimental",
+    ),
     MCPToolSpec("status_taxonomy", _tool_status_taxonomy, "Return the current MathDevMCP status and substatus taxonomy.", "status_taxonomy", "informational"),
     MCPToolSpec("doctor", _tool_doctor, "Report external backend capabilities and environment diagnostics.", "doctor_report", "operational"),
     MCPToolSpec("release_corpus_manifest", _tool_release_corpus_manifest, "Return the release corpus manifest.", "release_corpus_manifest", "operational"),
@@ -1079,6 +1215,9 @@ MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
     MCPToolSpec("release_readiness", _tool_release_readiness, "Return an auditable release-readiness report.", "release_readiness_report", "operational"),
     MCPToolSpec("release_profile_analysis", _tool_release_profile_analysis, "Analyze every release profile and remaining profile gaps.", "release_profile_analysis", "operational"),
     MCPToolSpec("lean_readiness", _tool_lean_readiness, "Report direct Lean, Lake, and LeanDojo readiness separately.", "lean_readiness", "operational"),
+    MCPToolSpec("plan_math_document_rigor_audit", _tool_plan_math_document_rigor_audit, "Plan a focused mathematical rigor audit for one LaTeX file.", "math_document_rigor_audit_plan", "workflow", stability="experimental"),
+    MCPToolSpec("audit_math_document_rigor", _tool_audit_math_document_rigor, "Audit one LaTeX file and write a rigor gap/proposal report.", "math_document_rigor_audit", "workflow", stability="experimental", optional_capability="symbolic_backend"),
+    MCPToolSpec("audit_document_derivation_tree", _tool_audit_document_derivation_tree, "Audit LaTeX document targets with semantic work packets and derivation trees.", "document_derivation_tree_audit", "workflow", stability="experimental", optional_capability="symbolic_backend"),
 )
 
 

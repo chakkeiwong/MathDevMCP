@@ -1,7 +1,13 @@
 from pathlib import Path
 
 from mathdevmcp.equation_locator import locate_equations_in_text, summarize_equation_localization
-from mathdevmcp.latex_index import build_index, extract_context_for_label, extract_paragraph_context_for_label, search_index
+from mathdevmcp.latex_index import (
+    build_index,
+    extract_context_for_label,
+    extract_paragraph_context_for_label,
+    search_index,
+    search_index_filtered,
+)
 
 
 def test_build_index_finds_sections_and_equations(tmp_path: Path):
@@ -83,6 +89,47 @@ The Jacobian determinant appears in the change of variables formula.
     assert results[0]["label"] == "prop:logdet"
 
 
+def test_search_index_filtered_restricts_versioned_report_files(tmp_path: Path):
+    old = tmp_path / "bgs_final_committee_report_d446.tex"
+    current = tmp_path / "bgs_final_committee_report_d447.tex"
+    old.write_text(
+        r"""
+\section{Old}
+\begin{equation}\label{eq:old}
+MathDevMCP audit pass = old
+\end{equation}
+""",
+        encoding="utf-8",
+    )
+    current.write_text(
+        r"""
+\section{Current}
+\begin{equation}\label{eq:current}
+MathDevMCP audit pass = current
+\end{equation}
+""",
+        encoding="utf-8",
+    )
+    index = build_index(tmp_path)
+
+    exact = search_index_filtered(index, "MathDevMCP audit pass", file="bgs_final_committee_report_d447.tex")
+    excluded = search_index_filtered(index, "MathDevMCP audit pass", exclude_globs=["*d446.tex"])
+
+    assert {item["file"] for item in exact} == {"bgs_final_committee_report_d447.tex"}
+    assert {item["file"] for item in excluded} == {"bgs_final_committee_report_d447.tex"}
+
+
+def test_search_index_filtered_include_globs_select_current_version(tmp_path: Path):
+    (tmp_path / "report_d446.tex").write_text(r"\section{Old MathDevMCP audit pass}", encoding="utf-8")
+    (tmp_path / "report_d447.tex").write_text(r"\section{Current MathDevMCP audit pass}", encoding="utf-8")
+    index = build_index(tmp_path)
+
+    results = search_index_filtered(index, "MathDevMCP audit pass", include_globs=["*d447.tex"])
+
+    assert results
+    assert {item["file"] for item in results} == {"report_d447.tex"}
+
+
 
 def test_build_index_follows_input_order_and_tracks_section_path(tmp_path: Path):
     main = tmp_path / "main.tex"
@@ -129,6 +176,35 @@ For an invertible map $T$, the density includes $\log |\det J_T|$.
 
     assert context["section_path"] == ["Transport Maps", "Jacobian identities"]
     assert context["block_id"].endswith("proposition:prop:logdet")
+
+
+def test_extract_context_for_label_respects_file_filter_with_duplicate_labels(tmp_path: Path):
+    old = tmp_path / "old_version.tex"
+    final = tmp_path / "final_submission.tex"
+    old.write_text(
+        r"""
+\section{Old}
+\begin{equation}\label{eq:shared}
+old = 1
+\end{equation}
+""",
+        encoding="utf-8",
+    )
+    final.write_text(
+        r"""
+\section{Final}
+\begin{equation}\label{eq:shared}
+final = 2
+\end{equation}
+""",
+        encoding="utf-8",
+    )
+    index = build_index(tmp_path)
+
+    context = extract_context_for_label(index, "eq:shared", file="final_submission.tex")
+
+    assert context["file"] == "final_submission.tex"
+    assert any("final = 2" in item["text"] for item in context["excerpt"])
 
 
 def test_extract_context_for_section_label_falls_back_to_text_search(tmp_path: Path):

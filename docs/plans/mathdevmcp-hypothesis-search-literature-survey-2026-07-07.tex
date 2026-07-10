@@ -1,0 +1,1664 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{url}
+
+\hypersetup{
+  pdftitle={Implementation-Grade Survey for Hypothesis-Tree Derivation Search in MathDevMCP},
+  hidelinks
+}
+
+\newcommand{\MathDevMCP}{\textsc{MathDevMCP}}
+\newcommand{\Lean}{\textsc{Lean}}
+\newcommand{\Coq}{\textsc{Coq}}
+\newcommand{\Isabelle}{\textsc{Isabelle}}
+\newcommand{\Sage}{\textsc{SageMath}}
+\newcommand{\SymPy}{\textsc{SymPy}}
+\newcommand{\MCTS}{\textsc{MCTS}}
+\newcommand{\UCT}{\textsc{UCT}}
+\newcommand{\LLM}{\textsc{LLM}}
+\newcommand{\API}{\textsc{API}}
+\setlength{\emergencystretch}{3em}
+
+\title{Implementation-Grade Survey for Hypothesis-Tree Derivation Search in \MathDevMCP}
+\author{}
+\date{2026-07-07}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\MathDevMCP{} needs a stronger engine for hard mathematical document repair.
+The current workflows can locate gaps, discover some missing assumptions, and
+abstain safely, but difficult repairs often require a search over alternative
+formalizations, assumption sets, derivation decompositions, and backend routes.
+This note surveys the relevant theorem-proving and language-agent literature,
+inspects official code where available, and turns the findings into an
+implementation decision document. The recommendation is to build a
+\emph{MathDevMCP-native evidence-grounded hypothesis tree}: use deterministic
+source parsers and backends as the environment, borrow best-first/MCTS-style
+branching and proof-state data structures from existing systems, and keep
+Lean/Pantograph/LeanDojo integrations optional adapters rather than required
+core dependencies.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Purpose, Evidence Contract, and Non-Claims}
+
+\paragraph{Question.}
+Which existing algorithms and codebases should guide or support a
+\MathDevMCP{} feature that searches over derivation hypotheses and
+missing-assumption branches, records blocker nodes, and delegates checkable
+steps to deterministic backends?
+
+\paragraph{Why this matters.}
+The weak report failure is not only a rendering problem. A report line such as
+``justify the reconstructed equality from context'' is weak because the system
+has not searched for the missing derivation. For hard documents, the missing
+piece may be an assumption, a definition, a source-span reconstruction, a
+rewrite route, a measure-theoretic condition, a shape/type condition, or a
+formalization choice. A single linear attempt is structurally underpowered.
+
+\paragraph{Primary criterion.}
+This document should be self-contained enough for an implementation decision.
+For each major candidate it records:
+
+\begin{itemize}[leftmargin=*]
+\item the problem the paper/tool solves;
+\item the actual state/action/search/scoring algorithm;
+\item what code exists and what was inspected locally;
+\item whether the code appears directly installable or usable;
+\item whether \MathDevMCP{} should reuse it, integrate against it, adapt the
+  algorithm only, or avoid it.
+\end{itemize}
+
+\paragraph{Veto diagnostics.}
+This note must not treat \LLM{} output as proof, must not claim installability
+without a local check, must not recommend direct reuse without inspecting
+dependencies and runtime shape, and must not confuse proof-assistant theorem
+proving with mathematical-document repair.
+
+\paragraph{Not concluded.}
+This is not a benchmark. It does not prove that any external code can solve the
+credit-card NPV or risky-debt documents. It is a decision artifact for the next
+implementation plan.
+
+\section{Local Baseline and the Actual Problem}
+
+\subsection{Current \MathDevMCP{} Behavior}
+
+Local inspection shows these relevant workflows:
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{derive\_or\_refute}: split target into lhs/rhs, discover
+  assumptions, route to a backend, optionally run counterexample search, and
+  return one result.
+\item \texttt{derive\_from}: wrap the low-level derivation/refutation result
+  into a high-level result with gaps, proposals, tool uses, and non-claims.
+\item \texttt{assumptions\_for}: propose route-required assumptions and
+  possible sufficient assumption sets.
+\item \texttt{audit\_and\_propose\_fix}: audit labels and use
+  \texttt{ProcessPoolExecutor} across labels.
+\item \texttt{audit\_math\_document\_rigor}: render a document-level report
+  with concrete-repair and diagnostic-abstention ledgers.
+\end{itemize}
+
+The repo has parallelism across labels. It does not yet have a within-problem
+search tree that expands alternative assumption branches, subgoals, and backend
+routes for one hard derivation.
+
+\subsection{The Mathematical Search Problem}
+
+For a hard document target, the system receives a claim \(T\), source context
+\(C\), and known assumptions \(A_0\). It wants to produce one of:
+
+\begin{enumerate}[leftmargin=*]
+\item a derivation of \(T\) from source-backed assumptions and checked steps;
+\item a refutation/counterexample;
+\item a best-progress branch with exact remaining blockers;
+\item a budget-exhausted search tree that is still useful to a human or agent.
+\end{enumerate}
+
+The search state is not simply a Lean proof state. For \MathDevMCP{} it should
+include:
+
+\[
+  s = (T, C, A, G, D, B, E, P)
+\]
+
+where \(A\) is the current assumption set, \(G\) is the list of subgoals,
+\(D\) is the partial derivation, \(B\) is the blocker ledger, \(E\) is backend
+evidence, and \(P\) is the candidate patch/source-span state.
+
+Actions include:
+
+\begin{itemize}[leftmargin=*]
+\item add a candidate assumption set;
+\item split the target into subgoals;
+\item recover or expand a source span;
+\item rewrite an expression using a definition or accounting identity;
+\item run a backend check;
+\item ask a proof assistant for tactic/proof-state feedback;
+\item mark a branch blocked with evidence.
+\end{itemize}
+
+The success condition is not ``the agent sounds confident.'' It is:
+
+\begin{quote}
+Every step on a winning branch is either backend checked, source-backed and
+accepted as an explicit assumption, or explicitly marked as an unchecked
+modeling convention.
+\end{quote}
+
+\subsection{Why the Current Reports Regress}
+
+The weak-report regression has a structural cause. The current high-level
+reports can say that a problem is unresolved, and they can sometimes produce a
+local assumption proposal, but they do not yet maintain a search state across
+multiple attempted repairs for the same target. When a branch fails, the
+failure is summarized rather than converted into a new, typed subproblem. This
+causes three concrete pathologies:
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{One-route collapse.} A target is sent through one derivation
+  route. If that route is inconclusive, the report falls back to generic
+  advice even when another route is available.
+\item \textbf{Missing blocker memory.} A failure such as ``conditional law not
+  defined'' is not retained as a node that can be expanded by postulating a
+  finite-state kernel, a measurable transition kernel, or a deterministic
+  sequence convention.
+\item \textbf{No branch-level evidence accounting.} The renderer cannot say
+  which assumptions made which derivation step work, because the underlying
+  result is not a branch containing assumptions, checked steps, rejected
+  alternatives, and remaining blockers.
+\end{enumerate}
+
+The tool that is missing is therefore not only ``a better renderer.'' The
+missing tool is a reusable search controller whose output is already shaped as
+an agent-consumable repair report.
+
+\subsection{Minimum Agent-Consumable Output}
+
+For a hard target, the function should produce a result with this contract:
+
+\begin{verbatim}
+{
+  "question": "can we derive target T from context C?",
+  "budget": {"max_nodes": ..., "max_depth": ..., "timeouts": ...},
+  "best_branch": {
+    "status": "proved|refuted|partial|blocked|budget_exhausted",
+    "assumptions_added": [...],
+    "derivation_steps": [
+      {
+        "claim": "...",
+        "justification": "...",
+        "checker": "parser|sympy|sage|lean|source_assumption",
+        "checker_status": "certified|accepted_assumption|not_certified",
+        "evidence_ref": "..."
+      }
+    ],
+    "patch": {"assumption_latex": "...", "replacement_latex": "..."}
+  },
+  "blocked_branches": [...],
+  "rejected_branches": [...],
+  "non_claims": [...]
+}
+\end{verbatim}
+
+The result should be directly consumable by an agent: it should say where the
+claim is, what was tried, which assumptions were introduced, why those
+assumptions close a mathematical gap, what backend checked which step, and what
+precise patch should be made if the branch is selected.
+
+\subsection{Example: Finite-State Conditional Expectation Branch}
+
+A typical stochastic-economics repair should not say only ``assume
+integrability.'' It should show the route. Suppose a document uses
+\[
+  E_t[m_{t+1} X_{t+1}]
+\]
+without defining the conditional law. One branch can postulate a finite-state
+shock space \(\Omega=\{\omega_1,\ldots,\omega_K\}\) with conditional
+probabilities \(p_k(s_t)\). That branch transforms the expectation into
+\[
+  E_t[m_{t+1}X_{t+1}]
+  =
+  \sum_{k=1}^K p_k(s_t)\,
+  m(s_t,\omega_k) X(s_t,\omega_k).
+\]
+The branch then has concrete obligations:
+
+\begin{enumerate}[leftmargin=*]
+\item \(p_k(s_t)\ge 0\) and \(\sum_k p_k(s_t)=1\), so the conditional law is
+  defined.
+\item \(m(s_t,\omega_k)X(s_t,\omega_k)\) is finite for every \(k\), so the
+  finite expectation is integrable.
+\item The algebraic rewrite from expectation notation to weighted finite sum is
+  a definition expansion, not an economic theorem.
+\item Any subsequent equality can be checked by \SymPy/\Sage{} as an algebraic
+  identity over the finite sum, or blocked with the exact missing identity.
+\end{enumerate}
+
+This is the level of repair detail the new search controller must make
+available to the report layer.
+
+\section{Code Inspection Protocol}
+
+All cloned code lives under:
+
+\begin{verbatim}
+.localresources/hypothesis_search_survey/code/
+\end{verbatim}
+
+The inspection used:
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{git ls-remote} to check public repository availability;
+\item shallow \texttt{git clone --depth 1} for official repositories;
+\item README/license/dependency/API inspection;
+\item lightweight local probes for installed Python modules and executables;
+\item no heavy model download, Coq/Isabelle install, Hugging Face download, or
+  broad environment mutation.
+\end{itemize}
+
+Local environment probes found:
+
+\begin{itemize}[leftmargin=*]
+\item \Sage{} is available at \texttt{/usr/bin/sage}.
+\item \SymPy{} imports in active Python.
+\item \Lean/\texttt{lake}/\texttt{elan} binaries exist, but local version
+  checks timed out in the active diagnostic path.
+\item \texttt{lean\_dojo}, \texttt{pantograph}, \texttt{tot}, \texttt{torch},
+  \texttt{transformers}, and \texttt{openai} were not importable in the active
+  Python used by the probe.
+\item Existing \MathDevMCP{} code already has LeanDojo readiness/policy
+  wrappers, including the requirement that LeanDojo output must be reconstructed
+  and checked by direct Lean before certification.
+\end{itemize}
+
+\section{Code and Paper Evidence Ledger}
+
+\subsection{Local Paper Copies}
+
+The following papers were downloaded locally because they materially affect the
+implementation decision:
+
+\begin{itemize}[leftmargin=*]
+\item \path{.localresources/hypothesis_search_survey/papers/leandojo-2306.15626.pdf}.
+\item \path{.localresources/hypothesis_search_survey/papers/pantograph-2410.16429.pdf}.
+\item \path{.localresources/hypothesis_search_survey/papers/htps-2205.11491.pdf}.
+\item \path{.localresources/hypothesis_search_survey/papers/tree-of-thoughts-2305.10601.pdf}.
+\item \path{.localresources/hypothesis_search_survey/papers/deepseek-prover-v15-2408.08152.pdf}.
+\end{itemize}
+
+\subsection{Clone Manifest}
+
+\begin{center}
+\small
+\begin{tabular}{lll}
+\toprule
+Repository & Local HEAD & Primary inspection target \\
+\midrule
+LeanDojo & \texttt{7a9f600b250a} & README, package metadata \\
+LeanDojo-v2 & \texttt{936ea0dd32ff} & README, \texttt{pyproject.toml}, prover tree \\
+ReProver & \texttt{fd6d99c01e8b} & \texttt{prover/search\_tree.py}, \texttt{proof\_search.py} \\
+PyPantograph & \texttt{f8aee320ee55} & \texttt{pantograph/server.py}, \texttt{search.py} \\
+aesop & \texttt{24fa6b359974} & README, \texttt{lakefile.toml}, \texttt{lean-toolchain} \\
+LeanCopilot & \texttt{2458f7339df4} & README, \texttt{lakefile.lean} \\
+CoqGym & \texttt{a739d99cdf5b} & README, setup/dependency structure \\
+Evariste & \texttt{ef43511f2d23} & README, setup files, license \\
+tree-of-thought-llm & \texttt{8050e67d0e3a} & \texttt{src/tot/methods/bfs.py}, requirements \\
+LanguageAgentTreeSearch & \texttt{853d81614607} & \texttt{programming/mcts.py}, requirements \\
+DeepSeek-Prover-V1.5 & \texttt{2c4ba9119eef} & README, \texttt{configs/RMaxTS.py}, requirements \\
+lean-explore & \texttt{3a52d6b9922f} & README, MCP/API docs, search models \\
+LeanSearch-v2 & \texttt{94f4888cbaf9} & README, client, retrieval pipeline \\
+jixia & \texttt{755fde27a9cf} & README, Lean static-analysis plugins \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Local Probes}
+
+Bounded probes were used to avoid mutating the active environment:
+
+\begin{itemize}[leftmargin=*]
+\item Active Python can import \SymPy{} but cannot import
+  \texttt{lean\_dojo}, \texttt{lean\_dojo\_v2}, \texttt{pantograph},
+  \texttt{tot}, \texttt{torch}, \texttt{transformers}, \texttt{openai}, or
+  \texttt{ray}.
+\item \texttt{python3 -m py\_compile} passed for the inspected ReProver
+  search files, PyPantograph search/server files, ToT BFS file, LATS
+  \texttt{programming/mcts.py}, and DeepSeek-Prover-V1.5 launch/config files.
+\item \texttt{python3 -m compileall} passed for the inspected
+  \texttt{lean-explore}, \texttt{LeanSearch-v2}, and \texttt{jixia} source
+  trees. This is a syntax/readiness probe only; it is not an install or runtime
+  proof.
+\item A broad compile of the LATS programming directory failed on vendored
+  \texttt{human\_eval/execution.py}; therefore only the MCTS controller file is
+  treated as locally syntax-checked.
+\item \texttt{python3 -m mathdevmcp.cli doctor} found \Sage{} and \SymPy{} but
+  reported Lean readiness as inconclusive in the active diagnostic path.
+\item No \texttt{pip install}, \texttt{lake build}, model download, Docker
+  build, OPAM/Coq setup, or GPU run was attempted.
+\end{itemize}
+
+\subsection{Readiness Classification}
+
+This survey uses three implementation classifications:
+
+\begin{description}[style=nextline,leftmargin=0pt]
+\item[Use directly.] The code is small enough, locally installable or already
+usable, and matches the \MathDevMCP{} contract without forcing heavy model or
+proof-assistant setup.
+\item[Integrate/test against.] The code exposes a useful runtime boundary, but
+requires an environment gate, optional backend env, model/API token, or proof
+assistant project before it can be used safely.
+\item[Not recommended as dependency.] The code is too heavy, stale, non-running,
+not proof-specific, license-limited, or mismatched with document-repair. Its
+algorithm may still be worth adapting.
+\end{description}
+
+\subsection{Candidate-by-Candidate Result}
+
+\begin{description}[style=nextline,leftmargin=0pt]
+\item[LeanDojo original.] \textbf{Classification: not recommended as a new
+dependency.} The README says the original package is deprecated and directs new
+projects to LeanDojo-v2. It remains important for existing compatibility and for
+understanding the ReProver paper, but new work should not bind the core search
+controller to it.
+
+\item[LeanDojo-v2.] \textbf{Classification: integrate/test against later.}
+It is a complete framework for tracing, training, retrieval, agents, and
+Pantograph-based proving, but its package metadata requires Python 3.11 and
+heavy dependencies including PyTorch, Lightning, Transformers, DeepSpeed, TRL,
+PEFT, Ray, OpenAI, PyGithub, and datasets. It belongs in an isolated backend
+environment, not the core \MathDevMCP{} import path.
+
+\item[ReProver.] \textbf{Classification: adapt algorithm only now; integrate
+later only through a LeanDojo lane.} The local files are valuable because they
+show a compact proof-search skeleton: status enum, internal nodes, edges,
+cumulative priority, best-first queue, tactic execution, status propagation,
+and proof extraction. Direct reuse pulls in LeanDojo, PyTorch, Ray, vLLM, and
+model checkpoints, so the immediate value is architectural.
+
+\item[PyPantograph.] \textbf{Classification: integrate/test against after an
+environment gate.} It is the best optional proof-state adapter candidate. Its
+Python package has no ordinary Python dependencies, but the build script
+bundles a Lean REPL and requires matching Lean/lake setup. It should implement
+a \texttt{ProofStateBackend} after direct Lean readiness is stable.
+
+\item[Aesop.] \textbf{Classification: integrate/test against as a Lean-side
+tactic after a Lean project gate; adapt algorithm now.} Aesop is not a Python
+package. Its safe/unsafe rule discipline and best-first AND/OR tree are a
+strong template for \MathDevMCP{} expansion operators.
+
+\item[Lean Copilot.] \textbf{Classification: not core; possible later
+experiment.} It is useful as a Lean-side tactic/model interface reference, but
+requires Lean project setup, C++/CMake machinery, model assets, and Git LFS.
+
+\item[CoqGym.] \textbf{Classification: not recommended as dependency.} It is
+useful as a replayable proof-state dataset reference. Direct use requires a
+Coq/SerAPI/CoqHammer/OPAM/Docker stack that does not match the current Lean/Sage
+lane.
+
+\item[Evariste / HTPS.] \textbf{Classification: not recommended as dependency.}
+The README says the code does not run out of the box after Meta-internal
+components were removed, and the majority license is CC-BY-NC. The AND/OR
+hypergraph algorithm is still important.
+
+\item[Tree of Thoughts.] \textbf{Classification: not recommended as dependency.}
+The code is simple and the BFS file syntax-checks, but the system is prompt/API
+centric and depends on the old OpenAI package. Borrow only the
+generate/evaluate/select abstraction.
+
+\item[Language Agent Tree Search.] \textbf{Classification: not recommended as
+dependency.} The MCTS file syntax-checks and is a good control-loop reference,
+but the broader programming tree has a syntax error in vendored HumanEval code
+and the project depends on API/task executors. Borrow the feedback/backprop
+ledger idea.
+
+\item[DeepSeek-Prover-V1.5.] \textbf{Classification: not core; strategic
+reference and possible future high-budget benchmark.} The repo is public and
+the inspected config exposes RMaxTS with large settings: batch size 512, Lean
+concurrency 64, sample count 6400, and 256 search processes. Requirements
+include PyTorch, Transformers, vLLM, FlashAttention, and GPU-oriented inference.
+It is evidence that hard proof search benefits from verifier feedback and many
+attempts, not a drop-in document-repair component.
+
+\item[HunyuanProver.] \textbf{Classification: paper/strategy reference only for
+this survey.} A GitHub repository search for \texttt{HunyuanProver} returned no
+obvious official repo in the bounded probe. Do not plan an integration until an
+official codebase is identified and inspected.
+
+\item[LeanExplore.] \textbf{Classification: readily borrowable integration
+pattern; possible optional dependency after environment review.} The cloned
+repo is a Python package with Apache-2.0 license, a hosted API client, a local
+hybrid retrieval backend, and an MCP server. Its MCP design is especially
+relevant: agents first call a low-token \texttt{search\_summary} tool and then
+fetch only the source, docstring, module, dependencies, or description for the
+few declarations they need \cite{asher2025leanexplore}. This is directly
+portable to \MathDevMCP{}.
+
+\item[LeanSearch-v2.] \textbf{Classification: borrow algorithms and client
+shape now; do not make the local server a core dependency.} The repo targets
+global premise retrieval with a standard retrieval endpoint and a reasoning
+mode. Its local standard pipeline requires GPU-backed cuVS, Qwen embedding and
+reranking models, and Python 3.11; its thin HTTP client is lightweight. The
+most useful immediate ideas are global premise retrieval, decompose/retrieve/
+filter/judge loops, and the rule that proof attempts must use only retrieved
+tools/theorems \cite{gao2026leansearchv2}.
+
+\item[jixia.] \textbf{Classification: borrow source-analysis contract now;
+optional Lean adapter later.} jixia is a Lean 4 static-analysis tool that emits
+JSON for declarations, symbols, elaboration information, proof-state lines, and
+ASTs. Its README stresses exact Lean-version matching. This makes it a strong
+template for source-range and dependency ledgers, but not a zero-setup core
+dependency \cite{jixiagithub}.
+\end{description}
+
+\section{Second-Pass Citation Snowball and Borrowability Audit}
+
+\subsection{Scope and Limitation}
+
+After the first survey pass, a citation-snowball script was written under
+\path{.localresources/hypothesis_search_survey/snowball/} to query Semantic
+Scholar for references and citations of the seed papers. The API returned HTTP
+429 for all seed papers in the bounded run, and
+\path{candidate_papers.json} is therefore empty. This note must not claim a
+complete forward/backward citation graph.
+
+The fallback pass used three evidence sources:
+
+\begin{enumerate}[leftmargin=*]
+\item local PDF text mining from LeanDojo/ReProver, Pantograph, HTPS,
+  Tree-of-Thoughts, and DeepSeek-Prover-V1.5;
+\item targeted arXiv/GitHub searches for systems named in those related-work
+  and comparison sections;
+\item shallow local clone inspection for the most directly borrowable code
+  surfaces.
+\end{enumerate}
+
+This is a bounded implementation survey, not an exhaustive bibliometric review.
+Its purpose is to decide which mechanisms \MathDevMCP{} can borrow soon.
+
+\subsection{What the Snowball Pass Added}
+
+The first pass already covered major proof-search families, but it underweighted
+premise retrieval and declaration search. The second pass surfaced four
+borrowable clusters:
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Agent-token-efficient declaration search.} LeanExplore exposes a
+  low-token MCP workflow: search summaries first, then per-field source,
+  docstring, dependency, or module fetches. This matches \MathDevMCP{}'s goal of
+  reducing agent hallucination and token use.
+\item \textbf{Global premise retrieval.} LeanSearch-v2 and ReProver both show
+  that hard proof search needs a premise index before generation. LeanSearch-v2
+  is too heavy as a core dependency, but its standard-client boundary and
+  reasoning retrieval loop are reusable design patterns.
+\item \textbf{Source-range and dependency extraction.} jixia, LeanDojo, and
+  CoqGym all treat source ranges, dependencies, proof states, and replay logs as
+  first-class data. \MathDevMCP{} should do the same for LaTeX labels,
+  assumptions, equations, and derived obligations.
+\item \textbf{Partial-progress proof search.} DeepSeek-Prover-V1.5's
+  truncate-and-resume search and RMaxTS exploration mechanism reinforce the
+  blocker-node design: a failed attempt should become a reusable partial path,
+  not a generic report sentence.
+\end{enumerate}
+
+\subsection{Coverage Matrix for Readily Borrowable Mechanisms}
+
+\begin{small}
+\begin{longtable}{p{0.18\linewidth}p{0.26\linewidth}p{0.23\linewidth}p{0.23\linewidth}}
+\toprule
+Family or system & Mechanism & Borrowability for \MathDevMCP{} & Concrete action \\
+\midrule
+\endhead
+LeanExplore & MCP/API search with \texttt{search\_summary} plus per-field
+getters for source, dependencies, docstrings, descriptions, and modules &
+High. The interaction pattern is directly agent-consumable and token-frugal;
+local backend is optional & Add a summary-first context-search provider with
+field-fetch methods; later add optional LeanExplore adapter \\
+\addlinespace
+LeanSearch-v2 & Global premise retrieval; standard HTTP client; reasoning mode
+that decomposes, retrieves, filters, and judges candidate premises & Medium.
+The client shape and reasoning loop are useful; the full local server is GPU
+and model heavy & Borrow the decompose--retrieve--filter--judge contract and
+``use only retrieved tools'' rule; keep GPU server outside core \\
+\addlinespace
+jixia & Non-intrusive Lean source analysis: declarations, symbols, elaboration,
+line proof states, AST dumps & Medium. Great contract for exact source
+provenance; requires exact Lean-version matching & Mirror the JSON evidence
+contract for LaTeX source spans now; make jixia a future optional Lean static
+analysis backend \\
+\addlinespace
+ReProver/LeanDojo & Accessible-premise restriction, DPR-style premise
+retrieval, best-first tactic search, status propagation & High for algorithm,
+low for direct dependency & Build a document-level premise index restricted to
+nearby/source-accessible assumptions before hypothesis expansion \\
+\addlinespace
+Aesop & Normalize/safe/unsafe rule phases; best-first search over goals &
+High. This is a simple discipline to encode in Python & Require every expansion
+provider to declare \texttt{normalize}, \texttt{safe}, or \texttt{unsafe};
+unsafe operators must branch and record assumptions \\
+\addlinespace
+Pantograph & Machine-to-machine Lean proof-state API; MCTS-compatible search
+state; goal/tactic branching & Medium after Lean environment gate & Define
+\texttt{ProofStateBackend}; use Pantograph for search evidence but certify with
+direct Lean \\
+\addlinespace
+Hammer family & Select premises, translate to ATP,
+search, reconstruct proof in the assistant & High as proof discipline, not as
+Python dependency & Keep external search separate from certification; every
+repair must reconstruct through a deterministic backend or explicit assumption \\
+\addlinespace
+HTPS/Evariste & AND/OR hypergraph for tactics that create multiple subgoals &
+High for data model, low for dependency & Add \texttt{AlternativeNode} and
+\texttt{ObligationSetNode}; conjunctive assumption obligations must all close \\
+\addlinespace
+DeepSeek-Prover-V1.5/RMaxTS & Truncate-and-resume MCTS, intrinsic reward for
+new proof states, root/tree parallelization & Medium for future deep profile &
+Implement smoke/standard/deep budget ladder; in deep mode reward new checked
+states and keep partial paths \\
+\addlinespace
+Thor/Baldur/DSP & Generate candidate proof, run checker, repair from verifier
+feedback, accept only checked scripts & High as report-promotion policy & Add
+regression tests forbidding concrete fixes without checker evidence or accepted
+assumptions \\
+\addlinespace
+Proof-state datasets & Replayable proof-state environment and dataset
+format & Medium as logging format, low as dependency & Serialize every branch,
+backend attempt, source span, and blocker to replayable JSON \\
+\bottomrule
+\end{longtable}
+\end{small}
+
+\subsection{Most Readily Borrowable Ideas}
+
+The highest-return borrowable ideas are not large prover models. They are
+small contracts that make agents less speculative.
+
+\paragraph{1. Summary-first retrieval.}
+Borrow LeanExplore's MCP design. A MathDevMCP agent should not receive an
+entire document index or full Lean source dump by default. It should call:
+
+\begin{verbatim}
+search_context_summary(query, limit, scope)
+get_context_source(context_id)
+get_context_assumptions(context_id)
+get_context_dependencies(context_id)
+get_context_location(context_id)
+\end{verbatim}
+
+This is immediately useful for LaTeX documents even before Lean integration:
+the same API can search labels, equations, assumptions, definitions, theorem
+statements, and nearby prose.
+
+\paragraph{2. Accessible-premise filtering.}
+Borrow ReProver's accessible-premise idea. For document repair, the accessible
+premise set should include assumptions and definitions in the same theorem
+environment, earlier equations in the same section, declared global
+assumptions, imported notation conventions, and user-provided assumptions. It
+should exclude later claims unless the document explicitly permits forward
+references. This prevents the agent from proving a step using facts the text
+has not established.
+
+\paragraph{3. Decompose/retrieve/filter/judge before generation.}
+Borrow LeanSearch-v2's reasoning pattern but replace free-form judging with
+structured evidence. For a hard target:
+
+\begin{enumerate}[leftmargin=*]
+\item decompose the target into needed mathematical objects and subclaims;
+\item retrieve candidate assumptions, definitions, lemmas, and backend routes;
+\item filter by source accessibility and type/shape compatibility;
+\item judge only whether the retrieved material can support the next checked
+  obligation.
+\end{enumerate}
+
+Only after this should a branch synthesize a repair patch.
+
+\paragraph{4. Source-range evidence as a first-class object.}
+Borrow jixia/CoqGym's source and replay mindset. A repair proposal must carry
+the exact file, label, line, source span, dependency IDs, and checker attempts.
+This should become a reusable \texttt{EvidenceRef} object rather than prose in
+a report.
+
+\paragraph{5. Partial-progress tree nodes.}
+Borrow DeepSeek-Prover-V1.5's truncate-and-resume lesson. If a branch derives
+steps 1--3 and fails at step 4, the tree should store the successful prefix and
+expand from the blocker. It should not collapse the whole attempt into
+``collect more evidence.''
+
+\subsection{Immediate Design Delta}
+
+The next implementation plan should add three small, reusable components before
+any heavyweight prover integration:
+
+\begin{enumerate}[leftmargin=*]
+\item \texttt{ContextSearchProvider}: summary-first retrieval over document
+  labels, equations, assumptions, definitions, and optional Lean declarations.
+\item \texttt{AccessiblePremiseIndex}: deterministic source-accessibility and
+  dependency filtering for each target label or source span.
+\item \texttt{EvidenceRef}: stable references for source span, retrieved
+  premise, backend attempt, blocker, and accepted assumption.
+\end{enumerate}
+
+These components are the easiest borrow from the literature and code search,
+and they directly attack the regression that produced hand-wavy reports.
+
+\section{Algorithm Families}
+
+\subsection{Sledgehammer, CoqHammer, and the Hammer Pattern}
+
+\paragraph{Problem solved.}
+Interactive proof assistants have rich libraries but users do not want to find
+all premises and write all low-level proof steps manually. Hammers bridge
+interactive proof assistants with external automated provers: select relevant
+facts, translate a goal, run automated provers, and reconstruct a checked proof
+inside the proof assistant when possible
+\cite{paulson2010sledgehammer,blanchette2016hammering,czarnecki2018hammer}.
+
+\paragraph{Algorithm sketch.}
+
+\begin{enumerate}[leftmargin=*]
+\item Input a typed proof-assistant goal and local context.
+\item Select relevant premises from the library.
+\item Translate the goal and premises to an ATP/SMT-friendly representation.
+\item Run one or more automated provers under timeouts.
+\item If a proof is found, reconstruct a proof script in the assistant.
+\item Return either a checked proof/reconstruction or prover diagnostics.
+\end{enumerate}
+
+\paragraph{Relevance to \MathDevMCP.}
+The hammer pattern is the right discipline: search and proposal may happen
+outside the certifier, but the certifier boundary is explicit. For
+\MathDevMCP{} this means the hypothesis tree can propose source-backed
+assumptions and subgoals, but final proof claims must be checked by Lean or a
+scoped deterministic backend.
+
+\paragraph{Implementation lesson.}
+Premise/assumption selection is a first-class component, not an afterthought.
+\MathDevMCP{} should retrieve definitions, assumptions, and local equations
+from the target document before expanding speculative branches.
+
+\paragraph{Translation to document repair.}
+For \MathDevMCP{}, the hammer pattern should become:
+
+\begin{enumerate}[leftmargin=*]
+\item Parse the target and collect local definitions, assumptions, labels, and
+  nearby equations.
+\item Select a small premise set: source-backed assumptions first, then
+  deterministic route-required assumptions, then optional modeling conventions.
+\item Translate the target to the strongest backend-supported form: finite
+  algebra for \SymPy/\Sage{}, direct Lean statement for local formal goals, or
+  typed diagnostic obligation if no backend can encode it.
+\item Run multiple backend attempts under timeouts.
+\item Promote only reconstructed/checkable results; otherwise return the
+  exact missing premise or failed translation as a blocker.
+\end{enumerate}
+
+\subsection{Aesop: Best-First Rule Search in Lean}
+
+\paragraph{Problem solved.}
+Aesop automates ``obvious'' Lean proofs by applying a configurable set of rules.
+It is useful both as general automation and as a framework for domain-specific
+automation \cite{aesopgithub}.
+
+\paragraph{Algorithm.}
+Aesop builds a search tree of Lean goals. Rules can be safe or unsafe. Safe
+rules are applied eagerly and are not backtracked; unsafe rules are assigned a
+success probability. The tree is explored best-first: goals reached through
+high-probability rules are prioritized. Before rule application, goals are
+normalized with configurable normalization rules, including \texttt{simp\_all}.
+
+\paragraph{Important mechanics.}
+
+\begin{itemize}[leftmargin=*]
+\item State: Lean goal state.
+\item Action: apply a rule/tactic.
+\item Safe action: deterministic progress; no backtracking.
+\item Unsafe action: branch with a probability/priority.
+\item Scoring: multiply parent priority by rule success probability.
+\item Termination: proof found, rule space exhausted, or resource limits.
+\item Debugging: trace options expose search steps and tree.
+\end{itemize}
+
+\paragraph{Code readiness.}
+The Aesop repo was cloned. It is a Lean package with \texttt{lakefile.toml} and
+\texttt{lean-toolchain}. It is not a Python library. Direct use requires a
+matching Lean project and lake build.
+
+\paragraph{Recommendation.}
+Use Aesop as both an algorithmic template and a Lean-side tactic. The
+\MathDevMCP{} hypothesis tree should copy the safe/unsafe distinction:
+parser-normalization, complete source-span recovery, and dimension checking are
+safe deterministic actions; adding an economic convention or general
+integrability condition is unsafe and should branch.
+
+\paragraph{Direct design requirement.}
+Every \MathDevMCP{} expansion operator should declare one of three phases:
+\texttt{normalize}, \texttt{safe}, or \texttt{unsafe}. A normalize operator
+must not introduce a new assumption; it may only canonicalize notation,
+recover a source span, normalize dimensions, or unfold definitions. A safe
+operator must be provability-preserving under the current branch assumptions.
+An unsafe operator may introduce a modeling convention or one of several
+sufficient assumption sets, and therefore must create a branch with an
+evidence-labeled hypothesis. This one rule would prevent many hand-wavy
+reports: an operator that cannot justify its safety must be recorded as a
+branching hypothesis, not as a fix.
+
+\subsection{LeanDojo, ReProver, and LeanDojo-v2}
+
+\paragraph{Problem solved.}
+LeanDojo provides programmatic interaction with Lean and extraction of proof
+states/tactics/premises from Lean repositories. ReProver adds
+retrieval-augmented tactic generation: retrieve relevant premises and generate
+tactics conditioned on the proof state and retrieved premises
+\cite{yang2023leandojo,reprovergithub}. LeanDojo-v2 expands this into an
+end-to-end framework with repository tracing, agents, trainers, Pantograph-based
+provers, and external APIs.
+
+\paragraph{ReProver best-first algorithm.}
+The inspected \texttt{prover/search\_tree.py} and
+\texttt{prover/proof\_search.py} implement:
+
+\begin{itemize}[leftmargin=*]
+\item Node statuses: \texttt{PROVED}, \texttt{FAILED}, \texttt{OPEN}.
+\item Internal node state: Lean tactic state and cumulative action log
+  probability.
+\item Edge: a tactic from a source state to a destination state.
+\item Priority: cumulative log probability.
+\item Expansion: pop highest-priority open node; generate tactic suggestions;
+  run each tactic in LeanDojo; create proof-finished, error, or new internal
+  nodes.
+\item Status propagation: a node is proved if any child is proved; failed if
+  all children failed.
+\item Proof extraction: recursively choose child edge with shortest
+  distance-to-proof.
+\item Stopping: proof found, root failed, priority queue empty, timeout, or max
+  expansions.
+\end{itemize}
+
+\paragraph{What to borrow.}
+This is a nearly perfect skeleton for a \MathDevMCP{} search controller, but
+the state should be broader than Lean tactic state. Replace tactic generation
+with expansion operators such as assumption expansion, source-span expansion,
+subgoal split, backend attempt, and patch synthesis. Replace cumulative tactic
+logprob with evidence-grounded branch priority.
+
+\paragraph{Implementation skeleton to adapt.}
+The \MathDevMCP{} controller can adapt the ReProver loop almost literally:
+
+\begin{verbatim}
+root = SearchNode(target=T, assumptions=A0, status="open", score=0)
+queue = priority_queue([root])
+while queue and not budget.exhausted():
+    node = queue.pop_best()
+    expansions = expansion_policy(node)
+    edges = []
+    for expansion in expansions:
+        child = apply_expansion(node, expansion)
+        child = run_available_backends(child)
+        child.status = propagate_local_status(child)
+        edges.append(SearchEdge(expansion, child))
+        if child.status in {"open", "partial"}:
+            queue.push(child)
+    node.out_edges = edges
+    propagate_status_to_ancestors(node)
+return extract_best_branch(root), render_blockers(root)
+\end{verbatim}
+
+The differences from ReProver are the important part. The action is not a Lean
+tactic; it is a repair operator. The environment is not only Lean; it is the
+set of deterministic \MathDevMCP{} tools. The reward is not a model log
+probability; it is evidence quality and patchability.
+
+\paragraph{Code readiness.}
+The original LeanDojo clone is marked deprecated by its README. LeanDojo-v2 is
+more complete but heavy: it requires Python 3.11, PyTorch, Transformers,
+DeepSpeed, TRL, PEFT, Ray, GitHub/Hugging Face tokens for common workflows, and
+Pantograph for Lean RPC. Active \MathDevMCP{} Python did not import
+\texttt{lean\_dojo} or \texttt{lean\_dojo\_v2} during the probe.
+
+\paragraph{Recommendation.}
+Do not make LeanDojo-v2 a required dependency of \MathDevMCP{} core. Implement
+a native search controller and define an optional LeanDojo/Pantograph adapter
+that can be enabled in a backend environment. Reuse the search-tree structure
+and proof-attempt ledger ideas.
+
+\subsection{PyPantograph}
+
+\paragraph{Problem solved.}
+Pantograph exposes Lean 4 as a machine-to-machine interaction environment:
+start goals, execute tactics, inspect states, load sketches, check files, and
+manage proof-state branching \cite{pantographgithub}.
+
+\paragraph{Algorithm/API mechanics.}
+The inspected \texttt{pantograph/server.py} exposes a \texttt{Server} with
+methods such as:
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{goal\_start}: create a goal state from an expression;
+\item \texttt{goal\_tactic}: run a tactic on a selected goal;
+\item \texttt{goal\_continue}: resume a target after branch search;
+\item \texttt{expr\_type}: check expression types;
+\item error handling for parse errors, tactic failure, unsafe/sorry-producing
+  tactics.
+\end{itemize}
+
+The inspected \texttt{pantograph/search.py} provides:
+
+\begin{itemize}[leftmargin=*]
+\item a \texttt{SearchState} with goal state, parent, goal priorities,
+  children, tried tactics, visit counts, and exhaustion flags;
+\item an \texttt{Agent} interface with \texttt{next\_tactic} and
+  \texttt{guidance};
+\item an \texttt{MCTSAgent} interface with \texttt{estimate}, \texttt{select},
+  and \texttt{backup}.
+\end{itemize}
+
+\paragraph{Code readiness.}
+PyPantograph was cloned. It is small and clean, with Apache-2.0 license and a
+Python package. But building requires its Lean REPL with matching Lean version:
+the build script runs \texttt{lake build repl} and copies the compiled REPL into
+the Python package. Active Python did not import \texttt{pantograph}; no build
+was attempted.
+
+\paragraph{Recommendation.}
+This is the best direct integration candidate after an environment gate. For
+the next \MathDevMCP{} phase, do not block on Pantograph. Design a
+\texttt{ProofStateBackend} interface so Pantograph can later implement
+\texttt{start\_goal}, \texttt{run\_tactic}, \texttt{check\_expr}, and
+\texttt{branch}.
+
+\paragraph{Concrete adapter boundary.}
+The Pantograph adapter should not be allowed to certify a document repair by
+itself. It should return proof-state evidence:
+
+\begin{verbatim}
+{
+  "backend": "pantograph",
+  "goal": "...",
+  "attempted_tactics": [...],
+  "result": "closed|open|tactic_failure|server_error",
+  "proof_script_candidate": "...",
+  "requires_direct_lean_check": true
+}
+\end{verbatim}
+
+If the branch claims a proof, \MathDevMCP{} should reconstruct a standalone
+Lean theorem and run direct Lean checking. Pantograph is an interactive search
+environment; direct Lean is the certification boundary.
+
+\subsection{CoqGym, HOList, GamePad, and TacticZero}
+
+\paragraph{Problem solved.}
+These systems expose theorem proving as a machine-learning environment:
+state, action/tactic, transition, reward, and datasets of proof states
+\cite{bansal2019holist,yang2019coqgym,huang2019gamepad,wu2021tacticzero}.
+
+\paragraph{CoqGym mechanics.}
+CoqGym extracts Coq proofs into JSON/LMDB records containing source commands,
+proof steps, goals, hypotheses, environments, and tactic commands. This makes
+proof search learnable and replayable. It also includes an interaction
+environment and ASTactic model.
+
+\paragraph{Code readiness.}
+The CoqGym repo was cloned and is large even shallow. README explicitly says
+native setup is nontrivial and recommends Docker. Native setup requires OPAM,
+OCaml switch, Coq, SerAPI, CoqHammer, Ruby, LMDB, and building Coq projects.
+No install was attempted.
+
+\paragraph{Recommendation.}
+Use as a data-format reference: \MathDevMCP{} should log search nodes and
+backend transitions in a replayable JSON format. Do not integrate CoqGym code
+for the hypothesis-search lane.
+
+\subsection{HyperTree Proof Search and Evariste}
+
+\paragraph{Problem solved.}
+HyperTree Proof Search (HTPS) addresses neural theorem proving where actions
+can create multiple subgoals. A proof search node is naturally AND/OR-like: a
+tactic may produce several child goals, and the parent is solved only if all
+children close \cite{lample2022htps}.
+
+\paragraph{Algorithm.}
+HTPS represents proof search as a hypergraph:
+
+\begin{itemize}[leftmargin=*]
+\item OR nodes represent goals that may be solved by one of several tactics;
+\item hyperedges represent tactics;
+\item each hyperedge points to a set of subgoals;
+\item the search alternates expansion and value/priority estimation;
+\item status propagates through the hypergraph: a hyperedge succeeds only if
+  all subgoals succeed.
+\end{itemize}
+
+\paragraph{Code readiness.}
+The Evariste repo was cloned. Its README explicitly says the code does not run
+out of the box because Meta-internal references were removed without fixing
+generic entry points. Majority license is CC-BY-NC, with some subcomponents
+under separate licenses.
+
+\paragraph{Recommendation.}
+Do not integrate Evariste code. Borrow the AND/OR hypergraph idea. This matters
+for \MathDevMCP{} because many derivation branches split into multiple
+obligations: e.g., conditional expectation requires law, measurability, and
+integrability; Bellman recursion requires state/action set, transition kernel,
+reward finiteness, and terminal condition.
+
+\paragraph{Direct design requirement.}
+The search tree should not be a plain OR tree. Some expansions produce a set of
+obligations that must all close. For example, the finite conditional
+expectation branch succeeds only if the probability law, finiteness, and
+algebraic rewrite obligations all close. This requires an AND/OR node type:
+\texttt{AlternativeNode} for competing routes and \texttt{ObligationSetNode}
+for conjunctive subgoals.
+
+\subsection{Draft-Sketch-Prove, Thor, and Baldur}
+
+\paragraph{Problem solved.}
+These systems use language models to propose informal proof sketches or full
+proofs, then use formal tools for checking and repair
+\cite{jiang2022draft,jiang2022thor,first2023baldur}.
+
+\paragraph{Algorithm pattern.}
+
+\begin{enumerate}[leftmargin=*]
+\item Generate a candidate proof/sketch/script.
+\item Run a proof assistant or ATP-backed checker.
+\item Parse failures into repair prompts or subgoals.
+\item Iterate under a budget.
+\item Accept only checked proof scripts; otherwise return diagnostics.
+\end{enumerate}
+
+\paragraph{Relevance.}
+The important idea is not ``ask the LLM harder.'' It is the verifier loop. A
+\MathDevMCP{} branch may be proposed by an agent, but every branch must be run
+through parsers, \SymPy/\Sage, shape/type checks, or \Lean{} before it can be
+promoted.
+
+\subsection{Tree of Thoughts}
+
+\paragraph{Problem solved.}
+Tree of Thoughts (ToT) generalizes single-chain prompting into a search over
+intermediate thought states \cite{yao2023tot}.
+
+\paragraph{Algorithm from inspected code.}
+The official \texttt{bfs.py} implements:
+
+\begin{enumerate}[leftmargin=*]
+\item Maintain candidate partial outputs \(y\).
+\item Generate successors with either \texttt{sample} or \texttt{propose}.
+\item Evaluate candidates with \texttt{value} or \texttt{vote} prompts.
+\item Select top candidates greedily or by sampling.
+\item Repeat for a fixed number of task steps.
+\item Log generated candidates, values, and selected states.
+\end{enumerate}
+
+\paragraph{Code readiness.}
+Repo cloned; \texttt{compileall} passed for source. It depends on the old
+\texttt{openai==0.27.7} package and API keys for actual runs. Active Python did
+not have \texttt{openai} or \texttt{tot} installed.
+
+\paragraph{Recommendation.}
+Do not reuse code directly. Borrow the generate/evaluate/select interface, but
+replace LLM value prompts with deterministic evidence scoring.
+
+\subsection{Language Agent Tree Search}
+
+\paragraph{Problem solved.}
+LATS combines language-model generation, environment feedback, reflection, and
+tree search for reasoning/acting tasks \cite{zhou2023lats}.
+
+\paragraph{Algorithm from inspected code.}
+The programming \texttt{mcts.py} implements:
+
+\begin{itemize}[leftmargin=*]
+\item Node fields: solution, parent, children, value, visits, reflection, test
+  feedback.
+\item Selection: recursively choose child by \UCT.
+\item Expansion: generate \(n\) new candidate solutions conditioned on prior
+  solution, feedback, and reflection.
+\item Simulation/evaluation: run tests, compute reward from passed tests and
+  final success.
+\item Backpropagation: add reward to the child and ancestors.
+\item Logging: write solutions, feedback, reflection, and pass/fail status.
+\end{itemize}
+
+\paragraph{Code readiness.}
+Repo cloned. It requires OpenAI/API-key paths and task-specific environments
+such as HotPotQA/WebShop/programming executors. It is not proof-specific.
+
+\paragraph{Recommendation.}
+Borrow the control loop and logging discipline. Do not reuse as a dependency.
+For \MathDevMCP, the environment feedback should be backend evidence, not unit
+tests over generated code.
+
+\subsection{DeepSeek-Prover, HunyuanProver, and Modern Guided Tree Search}
+
+\paragraph{Problem solved.}
+Recent prover systems combine large theorem-proving models, synthetic data,
+proof-assistant feedback, reinforcement learning, and guided tree search for
+\Lean{} theorem proving \cite{xin2024deepseekprover,deepseek2025v15,li2025hunyuanprover}.
+
+\paragraph{Algorithmic implications.}
+The lesson for \MathDevMCP{} is that hard proving is a high-budget search
+problem. These systems rely on many generated attempts and verifier feedback.
+They do not imply that a small local tool should train a prover. They do imply
+that \MathDevMCP{} should record many attempted branches and should not expect
+one pass to solve hard derivations.
+
+\paragraph{Recommendation.}
+Use as strategic evidence that verifier-guided search is the right direction.
+Do not depend on large prover models in the core workflow.
+
+\paragraph{Code inspection note.}
+The DeepSeek-Prover-V1.5 repo exposes a high-budget RMaxTS configuration:
+sample count \(6400\), concurrent sampling \(32\), Lean concurrent requests
+\(64\), batch size \(512\), and \(256\) search processes. This is not a local
+default for \MathDevMCP{}. It is a scale warning: genuinely hard derivations may
+require many branches. The immediate implementation should therefore expose a
+budget ladder:
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{smoke}: 10--20 nodes, one or two deterministic routes.
+\item \texttt{standard}: 80--200 nodes, multiple assumption branches and
+  backend attempts.
+\item \texttt{deep}: explicit user-approved run with higher node count,
+  process parallelism, and optional Lean/Pantograph adapters.
+\end{itemize}
+
+\section{Decision: What Should MathDevMCP Build?}
+
+\subsection{Do Not Pick a Single External Algorithm as Core}
+
+No inspected codebase is a clean drop-in for \MathDevMCP{}:
+
+\begin{itemize}[leftmargin=*]
+\item LeanDojo-v2 is powerful but too heavy for a core dependency.
+\item PyPantograph is promising but needs a Lean/Pantograph environment gate.
+\item Aesop is Lean-side, not a Python document-repair engine.
+\item Evariste explicitly does not run out of the box.
+\item ToT/LATS are not proof systems and rely on LLM/API feedback.
+\item CoqGym is a dataset/environment reference, not a direct integration path.
+\end{itemize}
+
+The right plan is a \MathDevMCP-native controller with optional adapters.
+
+\subsection{Recommended Core Algorithm: Evidence-Grounded Hypothesis Tree}
+
+\paragraph{State.}
+Each node should record:
+
+\begin{verbatim}
+node_id
+parent_id
+depth
+target
+source_span
+claim_kind
+postulated_assumptions
+accepted_assumptions
+subgoals
+derived_steps
+backend_attempts
+blockers
+patch_candidates
+score
+status
+\end{verbatim}
+
+\paragraph{Statuses.}
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{proved}: all required obligations are certified or accepted under
+  explicit assumptions.
+\item \texttt{refuted}: a backend/counterexample refuted the target.
+\item \texttt{blocked}: expansion hit a concrete blocker.
+\item \texttt{open}: branch can still be expanded.
+\item \texttt{budget\_exhausted}: not solved within search budget.
+\item \texttt{rejected}: malformed or unsupported candidate.
+\end{itemize}
+
+\paragraph{Actions.}
+
+\begin{description}[style=nextline,leftmargin=0pt]
+\item[Source-span expansion.]
+Recover complete equation/proof span. Evidence: LaTeX parser and localization
+check.
+\item[Assumption expansion.]
+Add finite-state, kernel-integrability, shape, Bellman, accounting, or
+differentiability branch. Evidence: \texttt{assumptions\_for}, domain
+templates, and source references.
+\item[Subgoal split.]
+Turn target into local obligations. Evidence: typed obligation IR.
+\item[Algebra/backend check.]
+Try \SymPy/\Sage{} on algebraic or finite-sum step. Evidence: backend result.
+\item[Lean/Pantograph check.]
+Try a formal Lean local theorem or tactic path. Evidence: direct Lean final
+check is required before certification.
+\item[Patch synthesis.]
+Construct exact assumption block and replacement LaTeX. Evidence: parser and
+source-span checks.
+\item[Blocker record.]
+Stop branch with concrete missing object. Evidence: blocker type and required
+next artifact.
+\end{description}
+
+\paragraph{Scoring.}
+Start with best-first/beam search, inspired by Aesop and ReProver. Use a
+transparent additive score:
+
+\begin{align*}
+  S(n)={}&
+  4C_{\Lean}(n)
+  + 3C_{\Sage/\SymPy}(n)
+  + 2C_{\mathrm{parser/type}}(n) \\
+  &+ 2R_{\mathrm{source}}(n)
+  + P_{\mathrm{patch}}(n)
+  - 3B_{\mathrm{fatal}}(n) \\
+  &- 2H_{\mathrm{unsupported}}(n)
+  - M_{\mathrm{malformed}}(n).
+\end{align*}
+
+Later add \UCT:
+
+\[
+  UCT(n) = \bar r(n) + c \sqrt{\frac{\log N(parent(n))}{N(n)}}.
+\]
+
+Here reward \(\bar r(n)\) must be evidence-grounded: checked steps, fewer
+missing assumptions, source-backed definitions, and patchability. It must not
+be LLM confidence.
+
+\paragraph{Expansion policy.}
+For the first implementation, avoid open-ended MCTS. Use:
+
+\begin{enumerate}[leftmargin=*]
+\item deterministic root normalization;
+\item generate a small fixed set of expansion operators;
+\item best-first or beam search with \texttt{max\_nodes}, \texttt{max\_depth},
+  \texttt{max\_branches\_per\_blocker}, and backend timeouts;
+\item process-level parallelism only for side-effect-free backend attempts or
+  branch scoring;
+\item stable final ordering for reproducible reports.
+\end{enumerate}
+
+\subsection{Optional Adapter Interfaces}
+
+Define adapters but keep core independent:
+
+\begin{verbatim}
+class SearchBackend:
+    def can_handle(obligation) -> BackendCapability
+    def attempt(node, timeout) -> BackendAttempt
+
+class ProofStateBackend(SearchBackend):
+    def start_goal(statement) -> ProofState
+    def run_tactic(state, tactic) -> ProofStateResult
+
+class ExpansionProvider:
+    def expand(node, budget) -> list[Expansion]
+\end{verbatim}
+
+Concrete adapters:
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{SymPyBackend}: active now.
+\item \texttt{SageBackend}: active if \texttt{/usr/bin/sage} path is usable.
+\item \texttt{LeanDirectBackend}: direct Lean check only; certification
+  authority.
+\item \texttt{PantographBackend}: optional proof-state/tactic interaction.
+\item \texttt{LeanDojoV2Backend}: optional tracing/retrieval/prover backend in
+  isolated environment.
+\end{itemize}
+
+\subsection{Implementation Blueprint}
+
+\paragraph{Proposed Python entry point.}
+The reusable function should be a pure-Python high-level workflow:
+
+\begin{verbatim}
+hypothesis_search_derivation(
+    tex_path: str | None,
+    label: str | None,
+    target: str,
+    context: str | None = None,
+    provided_assumptions: list[str] | None = None,
+    search_profile: Literal["smoke", "standard", "deep"] = "standard",
+    backends: list[str] = ["sympy", "sage", "lean"],
+    output_path: str | None = None,
+) -> dict[str, Any]
+\end{verbatim}
+
+It should also have a Markdown renderer:
+
+\begin{verbatim}
+render_hypothesis_search_report(result) -> str
+\end{verbatim}
+
+The output path is optional. If provided, the function writes a report and
+returns the same structured JSON result. This matches the successful
+\texttt{audit\_math\_document\_rigor} pattern but gives the agent a stronger
+within-problem search artifact.
+
+\paragraph{Core data structures.}
+
+\begin{verbatim}
+@dataclass(frozen=True)
+class SearchBudget:
+    max_nodes: int
+    max_depth: int
+    max_branches_per_node: int
+    backend_timeout_s: float
+    workers: int
+
+@dataclass
+class SearchNode:
+    node_id: str
+    parent_id: str | None
+    kind: Literal["alternative", "obligation_set", "leaf"]
+    target: str
+    assumptions: list[Assumption]
+    obligations: list[Obligation]
+    derivation_steps: list[DerivationStep]
+    backend_attempts: list[BackendAttempt]
+    blockers: list[Blocker]
+    patch_candidates: list[PatchCandidate]
+    score: float
+    status: Literal[
+        "proved", "refuted", "partial", "blocked",
+        "open", "budget_exhausted", "rejected"
+    ]
+\end{verbatim}
+
+\paragraph{Expansion providers.}
+
+\begin{description}[leftmargin=*]
+\item[Source span provider.] Takes a label or line range and returns the
+  smallest complete equation/proof span. It must record file, line, section
+  path, and parser confidence.
+\item[Assumption provider.] Calls or generalizes \texttt{assumptions\_for} to
+  produce alternative sufficient assumption sets, each with mathematical
+  rationale and source/provenance.
+\item[Derivation split provider.] Converts one large equality or prose claim
+  into typed obligations: definition expansion, algebraic equality, shape/type
+  constraint, stochastic expectation condition, or modeling convention.
+\item[Backend provider.] Runs routeable obligations through \SymPy{}, \Sage{},
+  direct Lean, or optional Pantograph/LeanDojo adapters.
+\item[Patch provider.] Produces exact assumption blocks and replacement LaTeX
+  only when all required branch steps are either checked or explicit accepted
+  assumptions.
+\end{description}
+
+\paragraph{Promotion rule.}
+A branch may be reported as a concrete repair only if:
+
+\begin{enumerate}[leftmargin=*]
+\item every derivation step has a checker status of \texttt{certified} or
+  \texttt{accepted\_assumption};
+\item every accepted assumption has a location, statement, why-needed field,
+  and derivation role;
+\item every backend claim has a backend attempt record;
+\item every patch has the source span it replaces and the assumptions it
+  introduces;
+\item all remaining gaps are explicitly in the diagnostic-abstention ledger.
+\end{enumerate}
+
+\subsection{Parallelism and Search Budget}
+
+The literature supports parallel search, but the first implementation should
+use controlled process-level parallelism only where branch attempts are
+side-effect-free. A good initial policy is:
+
+\begin{itemize}[leftmargin=*]
+\item expand the priority queue deterministically in the parent process;
+\item submit independent backend attempts for sibling branches to a process
+  pool;
+\item merge results by stable node id, not by completion order;
+\item cap backend timeouts separately from global search budget;
+\item record every timeout as a blocker or rejected backend attempt, not as a
+  mathematical failure.
+\end{itemize}
+
+This gives speed without making reports non-reproducible.
+
+\subsection{Required Report Sections}
+
+The Markdown/LaTeX report should include:
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Question and location.} The target, source file, line range, and
+  section path.
+\item \textbf{Budget and tools.} Search profile, node/depth/backend timeouts,
+  and exact backend/tool calls.
+\item \textbf{Best branch.} Assumptions added, derivation steps, backend
+  evidence, and patch candidates.
+\item \textbf{Why assumptions are missing.} For each added assumption, show the
+  failed obligation it closes.
+\item \textbf{How derivation works under assumptions.} Step-by-step route with
+  checked or accepted evidence status.
+\item \textbf{Blocked alternatives.} Branches attempted, where they stopped,
+  and the smallest artifact needed to continue.
+\item \textbf{Non-claims.} No proof of global minimality, no claim about
+  unsearched branches, no certification from LLM-only text, and no Lean proof
+  unless direct Lean passed.
+\end{enumerate}
+
+\section{Implementation Readiness Ranking}
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Implement now: native search controller.}
+  The core can be pure Python using existing \MathDevMCP{} structures and
+  deterministic backends.
+\item \textbf{Implement now: deterministic expansion templates.}
+  Start with conditional expectation, finite-horizon NPV, accounting identity,
+  Bellman recursion, and shape/dimension constraints.
+\item \textbf{Implement next: optional Pantograph adapter.}
+  PyPantograph is the cleanest proof-state API but requires environment setup.
+\item \textbf{Implement next: Lean direct final-check discipline.}
+  Every Lean-derived branch must end in direct Lean checking.
+\item \textbf{Defer: LeanDojo-v2/ReProver model integration.}
+  Useful but heavy; needs separate backend env, tokens, model dependencies, and
+  benchmark plan.
+\item \textbf{Reference only: Evariste/HTPS code, CoqGym, ToT, LATS.}
+  Borrow algorithms/data formats/control loops, not runtime dependencies.
+\end{enumerate}
+
+\section{Implementation Decision Matrix}
+
+\begin{description}[style=nextline,leftmargin=0pt]
+\item[Native evidence-grounded search controller.]
+Expected value: directly fixes weak reports and is compatible with current
+tools. Main risk: schema and tests must be disciplined. Decision: start here.
+\item[Pantograph optional adapter.]
+Expected value: Lean proof-state feedback and tactic search. Main risk:
+Lean/lake/Pantograph environment gate. Decision: build after the core
+controller.
+\item[LeanDojo-v2 / ReProver integration.]
+Expected value: retrieval and trained prover infrastructure. Main risk: heavy
+dependencies, tokens, and model/runtime cost. Decision: separate backend lane
+only.
+\item[Aesop Lean-side tactic.]
+Expected value: strong automation for generated Lean goals. Main risk: Lean
+project and domain formalization required. Decision: use when a direct Lean
+route exists.
+\item[DeepSeek-Prover-V1.5 style search.]
+Expected value: evidence for high-budget verifier-guided search. Main risk:
+GPU/model/proof benchmark cost. Decision: strategic reference, not core.
+\item[ToT/LATS code reuse.]
+Expected value: simple tree-search control examples. Main risk: LLM/API-centric
+and not proof-specific. Decision: borrow abstractions only.
+\item[CoqGym/Evariste code reuse.]
+Expected value: rich proof-search history. Main risk: heavy, non-running, or
+mismatched stack. Decision: do not integrate.
+\end{description}
+
+The decision is not to pick a paper implementation wholesale. The decision is
+to build the missing \MathDevMCP{} abstraction that all successful systems
+share: explicit search state, verifier feedback, status propagation, budgeted
+branching, and replayable evidence.
+
+\section{How the Report Should Change}
+
+A derivation-grade report should no longer say:
+
+\begin{quote}
+Derivation route: justify the reconstructed equality from context.
+\end{quote}
+
+It should say:
+
+\begin{quote}
+Search budget: 80 nodes, depth 5, 4 workers. Best branch:
+finite-state conditional expectation. Source span was complete and parsed.
+Step 1 expands the NPV definition; parser checked. Step 2 applies linearity of
+finite conditional expectation; \SymPy{} checked the finite weighted-sum
+algebra. Step 3 uses the economic zero-profit pricing convention; this remains
+an explicit modeling assumption. Blocked alternatives: kernel-integrability
+branch lacked a conditional kernel; Bellman branch lacked terminal boundary.
+Patch: insert Assumption A and replace equation block B.
+\end{quote}
+
+This is the practical standard for implementation.
+
+\section{Proposed Next Implementation Plan}
+
+\begin{enumerate}[leftmargin=*]
+\item Add \texttt{hypothesis\_search.py} with node/edge/budget dataclasses,
+  status propagation, stable best-first queue, JSON serialization, and
+  deterministic scoring.
+\item Add source-span and assumption expansion providers. The first target
+  templates should be finite conditional expectation, finite-horizon NPV,
+  accounting identity, Bellman recursion, and shape/dimension constraints.
+\item Add backend attempt provider that reuses the existing route layer for
+  \SymPy/\Sage/direct Lean where available. Backend unavailable must become a
+  blocker, not a refutation.
+\item Add patch synthesis only after a branch satisfies the promotion rule.
+  Patch records must include replacement span, inserted assumptions, and
+  derivation role for each assumption.
+\item Add report renderer with required sections: best branch, derivation under
+  assumptions, blocked alternatives, exact tools used, budget, and non-claims.
+\item Add tests that forbid concrete repairs without checked steps or accepted
+  assumptions. Include regression tests for the previous hand-wavy phrases such
+  as ``justify from context'' and ``collect more evidence''.
+\item Integrate into \texttt{audit\_math\_document\_rigor} for selected hard
+  labels behind a profile flag. Keep the old path as fallback until reports are
+  stable.
+\item Add optional Pantograph adapter only after the core controller passes
+  tests and direct Lean readiness is reliable in a separate backend env.
+\end{enumerate}
+
+\subsection{First Experiment After Implementation}
+
+The first application experiment should be the credit-card NPV document because
+it contains exactly the kind of finite-state, accounting, discounting, and
+expectation assumptions that stress the search design. The evidence contract
+should be:
+
+\begin{description}[leftmargin=*]
+\item[Question.] Can the new search controller produce concrete, derivation
+grade repairs instead of diagnostic-only comments for selected NPV claims?
+\item[Baseline.] Current \texttt{audit\_math\_document\_rigor} report on the
+same labels.
+\item[Promotion criterion.] At least one target produces a best branch with
+  explicit assumptions, a derivation route under those assumptions, checked or
+  accepted evidence per step, and exact patch text.
+\item[Veto diagnostics.] Any concrete repair lacking location, assumption role,
+  backend/source evidence, or patch span is a failure.
+\item[Non-claim.] Passing this experiment does not prove the whole document is
+  rigorous; it only validates the search/report machinery on selected targets.
+\end{description}
+
+\section{Final Recommendation}
+
+The implementation should not start by installing a large external prover
+stack. It should start by making \MathDevMCP{} search explicit and
+reproducible:
+
+\begin{center}
+\textbf{agent proposes candidate branches; deterministic tools check nodes;
+the controller records evidence, blockers, scores, and budgets.}
+\end{center}
+
+This directly addresses the user's concern: hard derivation repair is a search
+problem under uncertainty, not a one-pass report-generation problem.
+
+\begin{thebibliography}{99}
+
+\bibitem{paulson2010sledgehammer}
+Lawrence C. Paulson and Jasmin C. Blanchette.
+\newblock Three years of experience with Sledgehammer, a practical link between
+automatic and interactive theorem provers.
+\newblock In \emph{Proceedings of the 8th International Workshop on the
+Implementation of Logics}, 2010.
+\newblock \url{https://isabelle.in.tum.de/doc/sledgehammer.pdf}.
+
+\bibitem{blanchette2016hammering}
+Jasmin C. Blanchette, Cezary Kaliszyk, Lawrence C. Paulson, and Josef Urban.
+\newblock Hammering towards QED.
+\newblock \emph{Journal of Formalized Reasoning}, 9(1), 2016.
+
+\bibitem{czarnecki2018hammer}
+Lukasz Czajka and Cezary Kaliszyk.
+\newblock Hammer for Coq: Automation for dependent type theory.
+\newblock \emph{Journal of Automated Reasoning}, 61, 2018.
+
+\bibitem{aesopgithub}
+Jannis Limperg and Lean community contributors.
+\newblock Aesop: Automated proof search for Lean.
+\newblock GitHub repository.
+\newblock \url{https://github.com/leanprover-community/aesop}.
+
+\bibitem{bansal2019holist}
+Kshitij Bansal, Sarah M. Loos, Markus N. Rabe, Christian Szegedy, and Stewart Wilcox.
+\newblock HOList: An environment for machine learning of higher-order logic theorem proving.
+\newblock In \emph{International Conference on Machine Learning}, 2019.
+
+\bibitem{yang2019coqgym}
+Kaiyu Yang and Jia Deng.
+\newblock Learning to prove theorems via interacting with proof assistants.
+\newblock In \emph{International Conference on Machine Learning}, 2019.
+
+\bibitem{huang2019gamepad}
+Daniel Huang, Prafulla Dhariwal, Dawn Song, and Ilya Sutskever.
+\newblock GamePad: A learning environment for theorem proving.
+\newblock In \emph{International Conference on Learning Representations}, 2019.
+
+\bibitem{wu2021tacticzero}
+Yuhuai Wu, Albert Q. Jiang, Wenda Li, Markus N. Rabe, Charles E. Staats,
+Mateja Jamnik, and Christian Szegedy.
+\newblock TacticZero: Learning to prove theorems from scratch with deep
+reinforcement learning.
+\newblock In \emph{NeurIPS}, 2021.
+
+\bibitem{yang2023leandojo}
+Kaiyu Yang, Aidan M. Swope, Alex Gu, Rahul Chalamala, Peiyang Song, Shixing Yu,
+Saad Godil, Ryan J. Prenger, and Anima Anandkumar.
+\newblock LeanDojo: Theorem proving with retrieval-augmented language models.
+\newblock In \emph{Neural Information Processing Systems Datasets and
+Benchmarks Track}, 2023.
+\newblock \url{https://github.com/lean-dojo/LeanDojo}.
+
+\bibitem{reprovergithub}
+LeanDojo contributors.
+\newblock ReProver: Retrieval-augmented theorem proving for Lean.
+\newblock GitHub repository.
+\newblock \url{https://github.com/lean-dojo/ReProver}.
+
+\bibitem{pantographgithub}
+Leni Aniva, Chuyue Sun, Brando Miranda, Clark Barrett, and Sanmi Koyejo.
+\newblock Pantograph: A machine-to-machine interaction interface for advanced
+theorem proving, high level reasoning, and data extraction in Lean 4.
+\newblock 2024.
+\newblock \url{https://github.com/stanford-centaur/PyPantograph}.
+
+\bibitem{lample2022htps}
+Guillaume Lample, Timothée Lacroix, Marie-Anne Lachaux, Thibaut Lavril,
+Xavier Martinet, Amandine Hayat, Gabriel Ebner, Aurélien Rodriguez, and
+colleagues.
+\newblock HyperTree Proof Search for neural theorem proving.
+\newblock In \emph{NeurIPS}, 2022.
+
+\bibitem{jiang2022draft}
+Albert Q. Jiang, Wenda Li, Jesse Michael Han, and Yuhuai Wu.
+\newblock Draft, Sketch, and Prove: Guiding formal theorem provers with
+informal proofs.
+\newblock In \emph{International Conference on Learning Representations}, 2023.
+
+\bibitem{jiang2022thor}
+Albert Q. Jiang, Sean Welleck, Jin Peng Zhou, Timothée Lacroix, Jiacheng Liu,
+Wenda Li, Mateja Jamnik, Guillaume Lample, and Yuhuai Wu.
+\newblock Thor: Wielding hammers to integrate language models and automated
+theorem provers.
+\newblock In \emph{NeurIPS}, 2022.
+
+\bibitem{first2023baldur}
+Emily First, Markus N. Rabe, Talia Ringer, and Yuriy Brun.
+\newblock Baldur: Whole-proof generation and repair with large language models.
+\newblock In \emph{ACM Joint European Software Engineering Conference and
+Symposium on the Foundations of Software Engineering}, 2023.
+
+\bibitem{xin2024deepseekprover}
+Huajian Xin, Daya Guo, Zhihong Shao, Zehui Ren, Qihao Zhu, Bo Liu, Chong Ruan,
+Wenda Li, and Xiaodan Liang.
+\newblock DeepSeek-Prover: Advancing theorem proving in LLMs through large-scale
+synthetic data.
+\newblock 2024.
+
+\bibitem{deepseek2025v15}
+DeepSeek-AI.
+\newblock DeepSeek-Prover-V1.5: Harnessing proof assistant feedback for
+reinforcement learning and Monte-Carlo tree search.
+\newblock 2024/2025 technical report.
+
+\bibitem{asher2025leanexplore}
+Justin Asher.
+\newblock LeanExplore: A search engine for Lean 4 declarations.
+\newblock 2025.
+\newblock \url{https://arxiv.org/abs/2506.11085}.
+\newblock Code: \url{https://github.com/justincasher/lean-explore}.
+
+\bibitem{gao2026leansearchv2}
+Guoxiong Gao, Zeming Sun, Jiedong Jiang, Yutong Wang, Jingda Xu, Peihao Wu,
+Bryan Dai, and Bin Dong.
+\newblock LeanSearch v2: Global premise retrieval for Lean 4 theorem proving.
+\newblock 2026.
+\newblock \url{https://arxiv.org/abs/2605.13137}.
+\newblock Code: \url{https://github.com/frenzymath/LeanSearch-v2}.
+
+\bibitem{jixiagithub}
+FrenzyMath contributors.
+\newblock jixia: A static analysis tool for Lean 4.
+\newblock GitHub repository.
+\newblock \url{https://github.com/frenzymath/jixia}.
+
+\bibitem{li2025hunyuanprover}
+HunyuanProver team.
+\newblock HunyuanProver: A scalable data synthesis framework and guided tree
+search for automated theorem proving.
+\newblock 2025 technical report.
+
+\bibitem{yao2023tot}
+Shunyu Yao, Dian Yu, Jeffrey Zhao, Izhak Shafran, Thomas L. Griffiths, Yuan Cao,
+and Karthik Narasimhan.
+\newblock Tree of Thoughts: Deliberate problem solving with large language
+models.
+\newblock In \emph{NeurIPS}, 2023.
+\newblock \url{https://github.com/princeton-nlp/tree-of-thought-llm}.
+
+\bibitem{zhou2023lats}
+Andy Zhou, Kai Yan, Michal Shlapentokh-Rothman, Haohan Wang, and Yu-Xiong Wang.
+\newblock Language Agent Tree Search unifies reasoning, acting, and planning in
+language models.
+\newblock In \emph{ICML}, 2024.
+\newblock \url{https://github.com/lapisrocks/LanguageAgentTreeSearch}.
+
+\bibitem{zheng2021minif2f}
+Kunhao Zheng, Jesse Michael Han, and Stanislas Polu.
+\newblock miniF2F: A cross-system benchmark for formal Olympiad-level
+mathematics.
+\newblock In \emph{International Conference on Learning Representations}, 2022.
+
+\bibitem{azerbayev2023proofnet}
+Zhangir Azerbayev, Bartosz Piotrowski, Hailey Schoelkopf, Edward W. Ayers,
+Dragomir Radev, and Jeremy Avigad.
+\newblock ProofNet: Autoformalizing and formally proving undergraduate-level
+mathematics.
+\newblock 2023.
+
+\end{thebibliography}
+
+\end{document}

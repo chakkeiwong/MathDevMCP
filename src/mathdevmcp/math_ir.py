@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 import re
-from typing import Literal
+from typing import Any, Literal
 
 from .contracts import contract_metadata
 
@@ -88,16 +88,52 @@ class MathObligation:
     metadata: dict[str, str]
 
 
+@dataclass(frozen=True)
+class RepairAssumptionStatus:
+    id: str
+    text: str
+    status: str
+    role: str
+    source_refs: list[dict]
+    evidence_refs: list[str]
+
+
+@dataclass(frozen=True)
+class TypedRepairObligation:
+    id: str
+    source_packet_id: str
+    target_label: str
+    target: str
+    lhs: str
+    rhs: str
+    raw_text: str
+    kind: str
+    operators: list[str]
+    variables: list[dict]
+    assumptions: list[dict]
+    unresolved_constructs: list[str]
+    unresolved_context_nodes: list[dict]
+    source_refs: list[dict]
+    route_hints: list[dict]
+    encodability: dict
+    math_obligation: dict
+    diagnostic_status: str
+    certification_boundary: str
+    metadata: dict[str, str]
+
+
 _UNRESOLVED_PATTERNS = {
     "derivative": r"\\partial|\\nabla|Derivative",
+    "latex_derivative": r"\\frac\s*\{d|\\frac\s*\{\\partial|d\\bar",
     "matrix_inverse": r"\^-1|\^{-1}|inverse",
     "trace": r"\\operatorname\{tr\}|\\tr|trace",
     "determinant": r"\\log\s*\\det\b|\\det\b|\blogdet\b|\bdet\s*\(",
-    "expectation": r"\\mathbb\{E\}|E\[|expectation",
+    "expectation": r"\\mathbb\{E\}|\\E\b|E\[|expectation",
     "transpose": r"\\top\b|transpose",
     "posterior": r"posterior|logpost|log_post|\\pi",
     "hamiltonian": r"Hamiltonian|H\(",
     "conditional": r"\\mid|\|",
+    "optimization": r"\\max|\\min",
 }
 
 
@@ -265,6 +301,243 @@ def _unresolved(text: str) -> list[str]:
     if "transpose" not in unresolved and _has_apostrophe_transpose(text):
         unresolved.append("transpose")
     return unresolved
+
+
+def _dedupe(values: list[str]) -> list[str]:
+    return list(dict.fromkeys(item for item in values if item))
+
+
+def _context_node_construct(node: dict[str, Any]) -> str:
+    node_id = str(node.get("id", ""))
+    summary = str(node.get("summary", ""))
+    haystack = f"{node_id} {summary}".lower()
+    if "conditional_law" in haystack or "conditional law" in haystack:
+        return "conditional_law"
+    if "integrab" in haystack:
+        return "integrability"
+    if "interchange" in haystack or "pass through" in haystack:
+        return "derivative_expectation_interchange"
+    if "choice_independent" in haystack or "kernel derivative" in haystack:
+        return "choice_independent_transition_law"
+    if "differentiable" in haystack:
+        return "differentiability"
+    if "dimension" in haystack or "conform" in haystack:
+        return "shape_or_conformability"
+    return node_id or "unresolved_context_node"
+
+
+def _status_rank(status: str) -> int:
+    order = {"missing": 0, "unresolved": 1, "inferred_candidate": 2, "nearby_stated": 3, "stated": 4}
+    return order.get(status, 2)
+
+
+def _repair_assumptions_from_graph(context_graph: dict[str, Any]) -> list[dict[str, Any]]:
+    assumptions: list[dict[str, Any]] = []
+    for node in context_graph.get("nodes", []):
+        if not isinstance(node, dict) or node.get("kind") != "candidate_assumption":
+            continue
+        assumptions.append(
+            asdict(
+                RepairAssumptionStatus(
+                    id=str(node.get("id", "")),
+                    text=str(node.get("summary", "")),
+                    status=str(node.get("status", "unknown")),
+                    role=str(node.get("mathematical_role", "")),
+                    source_refs=list(node.get("source_refs", [])) if isinstance(node.get("source_refs"), list) else [],
+                    evidence_refs=list(node.get("evidence_refs", [])) if isinstance(node.get("evidence_refs"), list) else [],
+                )
+            )
+        )
+    assumptions.sort(key=lambda item: (_status_rank(str(item.get("status", ""))), item.get("id", "")))
+    return assumptions
+
+
+def _unresolved_context_nodes(context_graph: dict[str, Any]) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for node in context_graph.get("nodes", []):
+        if not isinstance(node, dict):
+            continue
+        if node.get("status") not in {"missing", "unresolved"}:
+            continue
+        if node.get("kind") not in {"candidate_assumption", "operator", "symbol_inventory"}:
+            continue
+        records.append(
+            {
+                "id": node.get("id"),
+                "status": node.get("status"),
+                "construct": _context_node_construct(node),
+                "summary": node.get("summary"),
+                "why_status": node.get("why_status"),
+                "required_next_evidence": node.get("required_next_evidence"),
+                "source_refs": node.get("source_refs", []),
+                "evidence_refs": node.get("evidence_refs", []),
+            }
+        )
+    return records
+
+
+def _route_hints_from_graph(
+    *,
+    math_hints: list[dict[str, Any]],
+    unresolved_constructs: list[str],
+    assumptions: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    hints: list[dict[str, Any]] = [dict(item) for item in math_hints if isinstance(item, dict)]
+    missing = [item for item in assumptions if item.get("status") in {"missing", "unresolved"}]
+    if any(item in unresolved_constructs for item in ("expectation", "conditional", "conditional_law", "integrability")):
+        hints.append(
+            {
+                "backend": "manual_formalization",
+                "suitability": "required_before_cas",
+                "reason": "Conditional expectation requires a typed probability kernel and integrability assumptions before CAS or Lean encoding.",
+            }
+        )
+    if "derivative_expectation_interchange" in unresolved_constructs:
+        hints.append(
+            {
+                "backend": "lean",
+                "suitability": "formalization_candidate_after_assumptions",
+                "reason": "Derivative-under-expectation can only be checked after the interchange theorem assumptions are stated.",
+            }
+        )
+    if missing:
+        hints.append(
+            {
+                "backend": "human_review",
+                "suitability": "required",
+                "reason": "Missing or unresolved typed assumptions block certifying backend attempts.",
+            }
+        )
+    deduped: list[dict[str, Any]] = []
+    seen: set[tuple[str, str, str]] = set()
+    for hint in hints:
+        key = (str(hint.get("backend", "")), str(hint.get("suitability", "")), str(hint.get("reason", "")))
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(hint)
+    return deduped
+
+
+def _encodability(
+    *,
+    unresolved_constructs: list[str],
+    assumptions: list[dict[str, Any]],
+    math_obligation: dict[str, Any],
+) -> dict[str, Any]:
+    missing = [item["id"] for item in assumptions if item.get("status") in {"missing", "unresolved"}]
+    unsupported = [
+        item
+        for item in unresolved_constructs
+        if item
+        in {
+            "expectation",
+            "conditional",
+            "conditional_law",
+            "integrability",
+            "derivative_expectation_interchange",
+            "choice_independent_transition_law",
+        }
+    ]
+    return {
+        "status": "blocked_pending_typed_assumptions" if missing or unsupported else "candidate",
+        "candidate_backends": _dedupe(
+            [
+                str(hint.get("backend", ""))
+                for hint in _route_hints_from_graph(
+                    math_hints=math_obligation.get("backend_route_hints", []),
+                    unresolved_constructs=unresolved_constructs,
+                    assumptions=assumptions,
+                )
+                if isinstance(hint, dict)
+            ]
+        ),
+        "blocked_by_assumption_ids": missing,
+        "unsupported_constructs": unsupported,
+        "why": (
+            "Missing/unresolved assumptions or stochastic/interchange constructs must be resolved before certifying backend routing."
+            if missing or unsupported
+            else "No missing typed assumptions were detected by the bounded typed IR builder."
+        ),
+    }
+
+
+def typed_repair_obligation_from_packet(packet: dict[str, Any]) -> dict[str, Any]:
+    """Build a typed repair obligation from a semantic packet and context graph."""
+    context_graph = packet.get("context_graph") if isinstance(packet.get("context_graph"), dict) else {}
+    target = str(packet.get("target") or packet.get("grouped_target") or "")
+    lhs = str(packet.get("lhs") or "")
+    rhs = str(packet.get("rhs") or "")
+    raw_text = "\n".join(
+        item
+        for item in (
+            str(packet.get("source_text", "")),
+            str(packet.get("full_display_source", "")),
+        )
+        if item
+    ) or target
+    diagnostic = diagnose_typed_obligation(
+        {
+            "id": f"typed_source_{packet.get('id', packet.get('label', 'target'))}",
+            "lhs": lhs,
+            "rhs": rhs,
+            "source_text": raw_text,
+            "provenance": packet.get("source_span", {}),
+        },
+        context_text="\n".join(
+            str(paragraph.get("text", ""))
+            for paragraph in packet.get("paragraph_context", {}).get("paragraphs", [])
+            if isinstance(paragraph, dict)
+        ),
+    )
+    math_obligation = diagnostic["obligation"]
+    context_unresolved = _unresolved_context_nodes(context_graph)
+    unresolved_constructs = _dedupe(
+        list(math_obligation.get("unresolved_constructs", []))
+        + [str(item.get("construct", "")) for item in context_unresolved]
+    )
+    assumptions = _repair_assumptions_from_graph(context_graph)
+    route_hints = _route_hints_from_graph(
+        math_hints=math_obligation.get("backend_route_hints", []),
+        unresolved_constructs=unresolved_constructs,
+        assumptions=assumptions,
+    )
+    encodability = _encodability(
+        unresolved_constructs=unresolved_constructs,
+        assumptions=assumptions,
+        math_obligation={**math_obligation, "backend_route_hints": route_hints},
+    )
+    diagnostic_status = (
+        "blocked_on_missing_typed_assumptions"
+        if encodability["status"] != "candidate"
+        else str(diagnostic.get("status", math_obligation.get("diagnostic_status", "typed_review")))
+    )
+    result = TypedRepairObligation(
+        id=f"typed_repair_obligation_{packet.get('id', packet.get('label', 'target'))}",
+        source_packet_id=str(packet.get("id", "")),
+        target_label=str(packet.get("label") or packet.get("row_id") or ""),
+        target=target,
+        lhs=lhs,
+        rhs=rhs,
+        raw_text=raw_text,
+        kind=str(math_obligation.get("kind", "unknown")),
+        operators=list(packet.get("operator_inventory", [])) if isinstance(packet.get("operator_inventory"), list) else [],
+        variables=list(math_obligation.get("typed_symbols", [])),
+        assumptions=assumptions,
+        unresolved_constructs=unresolved_constructs,
+        unresolved_context_nodes=context_unresolved,
+        source_refs=[
+            packet.get("source_span", {}),
+            packet.get("display_source_span", {}),
+        ],
+        route_hints=route_hints,
+        encodability=encodability,
+        math_obligation=math_obligation,
+        diagnostic_status=diagnostic_status,
+        certification_boundary="Typed repair obligations are diagnostic routing artifacts; they are not proof certificates or backend encodings.",
+        metadata=contract_metadata("typed_repair_obligation"),
+    )
+    return asdict(result)
 
 
 def _kind(lhs: str, rhs: str) -> ObligationKind:

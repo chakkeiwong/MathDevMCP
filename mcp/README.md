@@ -30,6 +30,8 @@ Facade registry: `src/mathdevmcp/mcp_facade.py`
   Python code structure without executing code.
 - `classify_math_claim` - experimentally classify a math claim by supplied
   evidence without promoting diagnostics to proof.
+- `audit_report_claim_boundary` - experimentally classify report-status and
+  nonclaim prose without treating it as a theorem claim.
 - `reconcile_notation` - experimentally compare explicit notation convention
   records and report conflicts or unresolved aliases.
 - `generate_math_tests` - experimentally generate diagnostic pytest snippets
@@ -48,6 +50,11 @@ Facade registry: `src/mathdevmcp/mcp_facade.py`
   only when available.
 - `assumptions_for` - experimentally list route-required assumptions for a
   target without claiming global minimality.
+- `audit_and_propose_assumptions` - experimentally audit targets or labels and
+  propose concrete assumption repairs without claiming proof closure.
+- `audit_and_propose_derivations` - experimentally audit targets or labels and
+  propose concrete derivation repairs without applying edits or claiming proof
+  closure.
 - `debug_derivation` - experimentally localize the first unsupported or
   refuted step in a bounded derivation chain.
 - `audit_math_to_code` - experimentally run a structural math-to-code audit.
@@ -79,6 +86,18 @@ Facade registry: `src/mathdevmcp/mcp_facade.py`
 - `audit_temporal_contract` - experimentally audit explicit current/next
   temporal bindings between a labeled DSGE-style document context and a code
   file path. This is diagnostic and does not certify DSGE correctness.
+- `external_tool_first_plan` - experimentally plan the external tools that
+  must be considered before in-house mathematical search. This is a routing
+  and governance artifact, not a proof.
+- `plan_math_document_rigor_audit` - experimentally plan a focused
+  mathematical rigor audit for one LaTeX file.
+- `audit_math_document_rigor` - experimentally audit one LaTeX file and write
+  a rigor gap/proposal report.
+- `audit_document_derivation_tree` - experimentally audit LaTeX targets with
+  semantic work packets, agent-guided hypothesis branches, tree/backend
+  evidence, and `tool_grounded_proposal_compiler_result`. Use
+  `search_mode="agent_guided"` and `grounding_policy="strict"` for the current
+  strict contract; blocked paths are gap reports, not repair proposals.
 
 ### Operational Tools
 

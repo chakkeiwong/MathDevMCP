@@ -41,3 +41,6 @@ tests/test_literature_gate.py
 
 # Local holdout-local evaluation artifacts.
 .local/mathdevmcp/
+
+# Local downloaded papers/code caches used while preparing surveys.
+.localresources/

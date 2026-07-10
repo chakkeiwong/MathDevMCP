@@ -1,0 +1,1984 @@
+{
+  "backend_env": "mathdevmcp-backends",
+  "backend_provenance": {
+    "certification_boundary": "Only scoped certifying backend evidence accepted by the promotion guard proves a branch.",
+    "doctor": {
+      "capabilities": {
+        "latexml": {
+          "available": true,
+          "backend_env": null,
+          "backend_prefix": null,
+          "backend_requested": null,
+          "detail": "available",
+          "diagnostic_hint": null,
+          "environment_scope": null,
+          "kind": "executable",
+          "name": "latexml",
+          "path": "/usr/bin/latexml",
+          "status": "available",
+          "version": "latexml (LaTeXML version 0.8.6)"
+        },
+        "lean": {
+          "available": true,
+          "backend_env": null,
+          "backend_prefix": null,
+          "backend_requested": null,
+          "detail": "available",
+          "diagnostic_hint": null,
+          "environment_scope": null,
+          "kind": "executable",
+          "name": "lean",
+          "path": "/home/chakwong/.elan/bin/lean",
+          "status": "available",
+          "version": "Lean (version 4.20.0, x86_64-unknown-linux-gnu, commit 77cfc4d1a4f6, Release)"
+        },
+        "lean_dojo": {
+          "available": true,
+          "backend_env": "mathdevmcp-backends",
+          "backend_prefix": "/home/chakwong/miniconda3/envs/mathdevmcp-backends",
+          "backend_requested": true,
+          "detail": "Python module lean_dojo imports in backend env",
+          "diagnostic_hint": null,
+          "environment_scope": "backend_python",
+          "kind": "python",
+          "name": "lean_dojo",
+          "path": "/home/chakwong/miniconda3/envs/mathdevmcp-backends/bin/python",
+          "status": "available",
+          "version": "4.20.0"
+        },
+        "pandoc": {
+          "available": true,
+          "backend_env": null,
+          "backend_prefix": null,
+          "backend_requested": null,
+          "detail": "available",
+          "diagnostic_hint": null,
+          "environment_scope": null,
+          "kind": "executable",
+          "name": "pandoc",
+          "path": "/usr/bin/pandoc",
+          "status": "available",
+          "version": "pandoc 2.9.2.1"
+        },
+        "sage": {
+          "available": true,
+          "backend_env": null,
+          "backend_prefix": null,
+          "backend_requested": null,
+          "detail": "available",
+          "diagnostic_hint": null,
+          "environment_scope": null,
+          "kind": "executable",
+          "name": "sage",
+          "path": "/usr/bin/sage",
+          "status": "available",
+          "version": "SageMath version 9.5, Release Date: 2022-01-30"
+        },
+        "sympy": {
+          "available": true,
+          "backend_env": "mathdevmcp-backends",
+          "backend_prefix": "/home/chakwong/miniconda3/envs/mathdevmcp-backends",
+          "backend_requested": true,
+          "detail": "Python module sympy imports in backend env",
+          "diagnostic_hint": null,
+          "environment_scope": "backend_python",
+          "kind": "python",
+          "name": "sympy",
+          "path": "/home/chakwong/miniconda3/envs/mathdevmcp-backends/bin/python",
+          "status": "available",
+          "version": "1.14.0"
+        }
+      },
+      "conflicts": [],
+      "integrations": {
+        "jixia": {
+          "available": true,
+          "detail": "executable exists",
+          "git_commit": "755fde27a9cf",
+          "install_hint": "Build jixia from the pinned source commit with the exact target Lean toolchain.",
+          "kind": "lean_executable",
+          "lean_toolchain": "leanprover/lean4:v4.29.0",
+          "name": "jixia",
+          "path": "/home/chakwong/python/MathDevMCP/.localresources/hypothesis_search_survey/code/jixia/.lake/build/bin/jixia",
+          "profile": "lean-static-analysis",
+          "resolved_available": true,
+          "resolved_scope": "executable",
+          "resolved_version": null,
+          "resolved_version_status": "not_applicable",
+          "role": "Lean declaration, symbol, elaboration, line proof-state, and AST extraction.",
+          "source": "https://github.com/frenzymath/jixia",
+          "supported_version": null,
+          "version": null,
+          "version_status": "not_applicable"
+        },
+        "lean_dojo": {
+          "available": false,
+          "backend_available": true,
+          "backend_detail": "Python module lean_dojo imports in backend env",
+          "backend_version": "4.20.0",
+          "backend_version_status": "match",
+          "detail": "Python module lean_dojo is not importable in active Python",
+          "git_commit": null,
+          "install_hint": "scripts/setup_backend_env.sh",
+          "kind": "backend_python_package",
+          "lean_toolchain": "leanprover/lean4:v4.20.0",
+          "name": "lean_dojo",
+          "profile": "backend",
+          "resolved_available": true,
+          "resolved_scope": "backend_python",
+          "resolved_version": "4.20.0",
+          "resolved_version_status": "match",
+          "role": "Isolated LeanDojo backend evidence for Lean theorem-proving workflows.",
+          "source": "https://github.com/lean-dojo/LeanDojo",
+          "supported_version": "4.20.0",
+          "version": null,
+          "version_status": "missing"
+        },
+        "lean_explore": {
+          "available": false,
+          "backend_available": true,
+          "backend_detail": "Python module lean_explore imports in backend env",
+          "backend_version": "1.2.1",
+          "backend_version_status": "match",
+          "detail": "Python module lean_explore is not importable in active Python",
+          "git_commit": "3a52d6b9922f",
+          "install_hint": "python -m pip install -e \".[lean-search]\"",
+          "kind": "python_package",
+          "lean_toolchain": null,
+          "name": "lean_explore",
+          "profile": "lean-search",
+          "resolved_available": true,
+          "resolved_scope": "backend_python",
+          "resolved_version": "1.2.1",
+          "resolved_version_status": "match",
+          "role": "Summary-first Lean declaration search via API, local backend, or MCP.",
+          "source": "https://github.com/justincasher/lean-explore",
+          "supported_version": "1.2.1",
+          "version": null,
+          "version_status": "missing"
+        },
+        "leansearchv2": {
+          "available": false,
+          "backend_available": true,
+          "backend_detail": "Python module leansearchv2 imports in backend env",
+          "backend_version": "0.1.0",
+          "backend_version_status": "match",
+          "detail": "Python module leansearchv2 is not importable in active Python",
+          "git_commit": "94f4888cbaf9",
+          "install_hint": "Use the LeanSearch-v2 HTTP service/client in a separate GPU/model environment.",
+          "kind": "service_or_local_package",
+          "lean_toolchain": null,
+          "name": "leansearchv2",
+          "profile": "lean-search-deep",
+          "resolved_available": true,
+          "resolved_scope": "backend_python",
+          "resolved_version": "0.1.0",
+          "resolved_version_status": "match",
+          "role": "Global premise retrieval and decompose-retrieve-filter-judge search pattern.",
+          "source": "https://github.com/frenzymath/LeanSearch-v2",
+          "supported_version": "0.1.0",
+          "version": null,
+          "version_status": "missing"
+        },
+        "mcp": {
+          "available": true,
+          "backend_available": true,
+          "backend_detail": "Python module mcp imports in backend env",
+          "backend_version": "1.28.1",
+          "backend_version_status": "mismatch",
+          "detail": "Python module imports in active Python",
+          "git_commit": null,
+          "install_hint": "python -m pip install -e \".[mcp]\"",
+          "kind": "python_package",
+          "lean_toolchain": null,
+          "name": "mcp",
+          "profile": "mcp",
+          "resolved_available": true,
+          "resolved_scope": "active_python",
+          "resolved_version": "1.27.0",
+          "resolved_version_status": "match",
+          "role": "Agent-facing MCP server runtime.",
+          "source": "https://pypi.org/project/mcp/",
+          "supported_version": "1.27.0",
+          "version": "1.27.0",
+          "version_status": "match"
+        },
+        "pantograph": {
+          "available": false,
+          "backend_available": true,
+          "backend_detail": "Python module pantograph imports in backend env",
+          "backend_version": "0.3.15",
+          "backend_version_status": "match",
+          "detail": "Python module pantograph is not importable in active Python",
+          "git_commit": "f8aee320ee55",
+          "install_hint": "python -m pip install -e \".[pantograph]\" in a Python 3.11 backend env with matching Lean/lake",
+          "kind": "backend_python_package",
+          "lean_toolchain": null,
+          "name": "pantograph",
+          "profile": "pantograph",
+          "resolved_available": true,
+          "resolved_scope": "backend_python",
+          "resolved_version": "0.3.15",
+          "resolved_version_status": "match",
+          "role": "Optional Lean proof-state interaction backend; direct Lean remains the certification boundary.",
+          "source": "https://github.com/stanford-centaur/PyPantograph",
+          "supported_version": "0.3.15",
+          "version": null,
+          "version_status": "missing"
+        },
+        "sympy": {
+          "available": true,
+          "backend_available": true,
+          "backend_detail": "Python module sympy imports in backend env",
+          "backend_version": "1.14.0",
+          "backend_version_status": "match",
+          "detail": "Python module imports in active Python",
+          "git_commit": null,
+          "install_hint": "python -m pip install -e \".[symbolic]\"",
+          "kind": "python_package",
+          "lean_toolchain": null,
+          "name": "sympy",
+          "profile": "symbolic",
+          "resolved_available": true,
+          "resolved_scope": "active_python",
+          "resolved_version": "1.14.0",
+          "resolved_version_status": "match",
+          "role": "Bounded symbolic algebra and equality checks.",
+          "source": "https://www.sympy.org/",
+          "supported_version": "1.14.0",
+          "version": "1.14.0",
+          "version_status": "match"
+        }
+      },
+      "metadata": {
+        "contract": "doctor_report",
+        "schema_version": "1.0"
+      },
+      "ok": true,
+      "python": {
+        "executable": "/home/chakwong/miniconda3/envs/tfgpu/bin/python3",
+        "path_head": [
+          "/home/chakwong/.elan/bin",
+          "/home/chakwong/bin",
+          "/home/chakwong/.codex/tmp/arg0/codex-arg0KNM3Su",
+          "/home/chakwong/.vscode-server/bin/7e7950df89d055b5a378379db9ee14290772148a/bin/remote-cli",
+          "/home/chakwong/miniconda3/envs/tfgpu/bin"
+        ],
+        "prefix": "/home/chakwong/miniconda3/envs/tfgpu",
+        "version": "3.11.15"
+      }
+    }
+  },
+  "context_targets": [],
+  "coverage": {
+    "available_equation_rows": 1,
+    "available_labeled_rows": 1,
+    "blocker_count": 3,
+    "context_graph_count": 1,
+    "context_graph_status_counts": {
+      "inferred_candidate": 2
+    },
+    "context_target_count": 0,
+    "context_target_labels": [],
+    "missing_focus_labels": [],
+    "promoted_count": 1,
+    "ranked_branch_count": 1,
+    "selected_rows": 1,
+    "semantic_packet_count": 1,
+    "status": "partial_coverage",
+    "target_file_only": true,
+    "typed_repair_obligation_count": 1,
+    "typed_repair_obligation_status_counts": {
+      "ready_for_backend": 1
+    }
+  },
+  "document_inventory": {
+    "equation_localization": {
+      "by_environment": {
+        "equation": 1
+      },
+      "metadata": {
+        "contract": "equation_localization_summary",
+        "schema_version": "1.0"
+      },
+      "reason": "Equation rows were localized with source spans.",
+      "row_count": 1,
+      "status": "localized",
+      "uncertain_row_count": 0
+    },
+    "label_ref_hygiene": {
+      "duplicate_labels": [],
+      "label_count": 1,
+      "missing_refs": [],
+      "ref_count": 0,
+      "unique_label_count": 1
+    },
+    "line_count": 5,
+    "section_count": 1
+  },
+  "metadata": {
+    "contract": "document_derivation_tree_audit",
+    "schema_version": "1.0"
+  },
+  "non_claims": [
+    {
+      "code": "document_tree_audit_not_document_proof",
+      "text": "This workflow is a semantic gap and tree-evidence report; it does not prove the whole document."
+    },
+    {
+      "code": "semantic_packets_not_certificates",
+      "text": "Missing obligations, assumption sets, and derivation routes are deterministic guidance, not proof certificates."
+    },
+    {
+      "code": "proof_search_not_final_certificate",
+      "text": "LeanDojo, Pantograph, retrieval, route plans, and static extraction are diagnostic until direct Lean or another certifying backend checks the scoped target."
+    }
+  ],
+  "output_md": "docs/reviews/simple-algebra-branch-ranking-phase05-smoke-2026-07-09.md",
+  "targets": [
+    {
+      "claim_type": "identity_or_definition",
+      "label": "eq:simple",
+      "location": "simple_phase04.tex > Algebra > eq:simple > line 3",
+      "promotion": {
+        "boundary": "A branch can be promoted to proved or refuted only from scoped certifying backend evidence or a concrete counterexample. Route plans, retrieval hits, static extraction, proof-state traces, and backend unavailability are diagnostic evidence only.",
+        "can_promote": true,
+        "errors": [],
+        "evidence_refs": [
+          "sympy_algebra_attempt"
+        ],
+        "reason": "Branch status is supported by certifying evidence.",
+        "supported_status": "proved"
+      },
+      "row_id": "simple_phase04.tex:3:equation:0",
+      "row_index": 0,
+      "semantic_work_packet": {
+        "claim_type": "identity_or_definition",
+        "context_graph": {
+          "edges": [],
+          "id": "context_graph_eq_simple",
+          "nodes": [
+            {
+              "evidence_refs": [
+                "semantic_packet_eq_simple_0"
+              ],
+              "id": "operator_equality",
+              "kind": "operator",
+              "mathematical_role": "operator that induces route-required assumptions",
+              "required_next_evidence": "Typed IR should decide whether this operator can be encoded for a backend.",
+              "source_refs": [
+                {
+                  "evidence_ref": "semantic_packet_eq_simple_0",
+                  "file": "simple_phase04.tex",
+                  "kind": "operator_occurrence",
+                  "label": "eq:simple",
+                  "line_end": 4,
+                  "line_start": 3,
+                  "snippet": "x + 1 = 1 + x \\begin{equation} \\label{eq:simple} x + 1 = 1 + x \\end{equation} x + 1 = 1 + x x + 1 = 1 + x"
+                }
+              ],
+              "status": "inferred_candidate",
+              "summary": "Operator `equality` appears in the local target text.",
+              "why_status": "The operator is detected syntactically from source-local LaTeX."
+            },
+            {
+              "evidence_refs": [
+                "semantic_packet_eq_simple_0"
+              ],
+              "id": "symbol_inventory",
+              "kind": "symbol_inventory",
+              "mathematical_role": "source-local symbol inventory for typed obligation construction",
+              "required_next_evidence": "Assign scalar/vector/function/random-variable roles in typed IR.",
+              "source_refs": [
+                {
+                  "evidence_ref": "semantic_packet_eq_simple_0",
+                  "file": "simple_phase04.tex",
+                  "kind": "target_source",
+                  "label": "eq:simple",
+                  "line_end": 4,
+                  "line_start": 3,
+                  "snippet": "x + 1 = 1 + x"
+                }
+              ],
+              "status": "inferred_candidate",
+              "summary": "Macros: ['\\\\section']; identifiers: ['Algebra', 'eq', 'equation', 'simple', 'x'].",
+              "why_status": "Symbols are extracted syntactically and still need type/domain assignment."
+            }
+          ],
+          "non_claim": "The context graph is deterministic source-evidence accounting; it is not a proof certificate or sufficiency proof.",
+          "source_scope": {
+            "file": "simple_phase04.tex",
+            "label": "eq:simple",
+            "line_end": 4,
+            "line_start": 3,
+            "nearby_paragraph_count": 1
+          },
+          "status": "context_graph_ready",
+          "status_counts": {
+            "inferred_candidate": 2
+          },
+          "target_label": "eq:simple"
+        },
+        "display_labels": [
+          "eq:simple"
+        ],
+        "display_row_count": 1,
+        "display_source_span": {
+          "environment": "equation",
+          "file": "simple_phase04.tex",
+          "labels": [
+            "eq:simple"
+          ],
+          "line_end": 5,
+          "line_start": 2,
+          "section_path": [
+            "Algebra"
+          ]
+        },
+        "evidence_refs": [
+          "simple_phase04.tex:3:equation:0",
+          "actionable_abstention_payload",
+          "assumption_discovery_result"
+        ],
+        "full_display_source": "\\begin{equation}\n\\label{eq:simple}\nx + 1 = 1 + x\n\\end{equation}",
+        "grouped_lhs": "x + 1",
+        "grouped_rhs": "1 + x",
+        "grouped_target": "x + 1 = 1 + x",
+        "how_derivation_can_work": [
+          {
+            "detail": "Convert the cited line into a typed obligation before proposing a document edit.",
+            "step": "Formalize local obligation"
+          }
+        ],
+        "id": "semantic_packet_eq_simple_0",
+        "label": "eq:simple",
+        "label_row_count": 1,
+        "lhs": "x + 1",
+        "lhs_rhs_candidates": [
+          {
+            "lhs": "x + 1",
+            "line_end": 4,
+            "line_start": 3,
+            "rhs": "1 + x",
+            "source": "row",
+            "target": "x + 1 = 1 + x"
+          },
+          {
+            "lhs": "x + 1",
+            "line_end": 5,
+            "line_start": 2,
+            "rhs": "1 + x",
+            "source": "full_display",
+            "target": "x + 1 = 1 + x"
+          }
+        ],
+        "location": "simple_phase04.tex > Algebra > eq:simple > line 3",
+        "missing_obligations": [
+          {
+            "closes": "Creates the next deterministic target for assumption discovery or proof audit.",
+            "evidence_ref": "actionable_abstention:generic_formalization",
+            "id": "formalized_local_obligation",
+            "kind": "formalization_condition",
+            "mathematically_missing": "A typed local obligation with defined symbols, domains, and operator meanings.",
+            "why_missing": "The diagnostic source does not yet expose enough structure for a mathematical repair."
+          }
+        ],
+        "missing_route_assumptions": [],
+        "next_audit": {
+          "purpose": "Regenerate concrete proposals after adding the listed obligations.",
+          "tool": "audit_and_propose_fix"
+        },
+        "non_claim": "Semantic work packets are deterministic guidance for proof search; they are not proof certificates.",
+        "operator_inventory": [
+          "equality"
+        ],
+        "paragraph_context": {
+          "block_id": "pytest-of-chakwong/pytest-215/test_document_derivation_tree_3/simple.tex:3:equation:eq:simple",
+          "context_end": 6,
+          "context_start": 2,
+          "file": "pytest-of-chakwong/pytest-215/test_document_derivation_tree_3/simple.tex",
+          "kind": "equation",
+          "label": "eq:simple",
+          "line_end": 6,
+          "line_start": 3,
+          "paragraphs": [
+            {
+              "line_end": 6,
+              "line_start": 2,
+              "text": "\\section{Algebra}\n\\begin{equation}\n\\label{eq:simple}\nx + 1 = 1 + x\n\\end{equation}"
+            }
+          ],
+          "section_path": [
+            "Algebra"
+          ]
+        },
+        "possible_assumption_sets": [
+          {
+            "assumptions": [
+              "Define every symbol, domain, and operator in the cited source line.",
+              "Choose whether the line is a definition, identity, optimization condition, estimator, or diagnostic.",
+              "Rerun the relevant assumption/proof audit after the typed obligation exists."
+            ],
+            "closes": "Makes the abstention inspectable by deterministic tooling.",
+            "id": "typed_obligation_first",
+            "role": "next deterministic artifact"
+          }
+        ],
+        "rhs": "1 + x",
+        "route_required_assumptions": [],
+        "row_id": "simple_phase04.tex:3:equation:0",
+        "semantic_domains": [
+          "generic_formalization"
+        ],
+        "source_environment": "equation",
+        "source_span": {
+          "file": "simple_phase04.tex",
+          "label": "eq:simple",
+          "line_end": 4,
+          "line_start": 3,
+          "section_path": [
+            "Algebra"
+          ]
+        },
+        "source_text": "x + 1 = 1 + x",
+        "symbol_inventory": {
+          "identifiers": [
+            "x"
+          ],
+          "macros": []
+        },
+        "target": "x + 1 = 1 + x",
+        "typed_repair_obligation": {
+          "assumptions": [],
+          "certification_boundary": "Typed repair obligations are diagnostic routing artifacts; they are not proof certificates or backend encodings.",
+          "diagnostic_status": "ready_for_backend",
+          "encodability": {
+            "blocked_by_assumption_ids": [],
+            "candidate_backends": [
+              "sympy"
+            ],
+            "status": "candidate",
+            "unsupported_constructs": [],
+            "why": "No missing typed assumptions were detected by the bounded typed IR builder."
+          },
+          "id": "typed_repair_obligation_semantic_packet_eq_simple_0",
+          "kind": "equation",
+          "lhs": "x + 1",
+          "math_obligation": {
+            "assumptions": [],
+            "backend_route_hints": [
+              {
+                "backend": "sympy",
+                "reason": "The obligation is syntactically suitable for bounded symbolic checking.",
+                "suitability": "candidate"
+              }
+            ],
+            "backend_suitability": "symbolic",
+            "diagnostic_status": "ready_for_backend",
+            "dimension_constraints": [],
+            "id": "typed_source_semantic_packet_eq_simple_0",
+            "kind": "equation",
+            "lhs": "x + 1",
+            "metadata": {
+              "contract": "math_obligation",
+              "schema_version": "1.0"
+            },
+            "parser_backend": "current",
+            "provenance": {
+              "file": "simple_phase04.tex",
+              "label": "eq:simple",
+              "line_end": 4,
+              "line_start": 3,
+              "section_path": [
+                "Algebra"
+              ]
+            },
+            "raw_text": "x + 1 = 1 + x\n\\begin{equation}\n\\label{eq:simple}\nx + 1 = 1 + x\n\\end{equation}",
+            "rhs": "1 + x",
+            "stochastic_objects": [],
+            "symbols": [
+              {
+                "name": "eq",
+                "role": "unknown",
+                "source": "expression"
+              },
+              {
+                "name": "equation",
+                "role": "unknown",
+                "source": "expression"
+              },
+              {
+                "name": "simple",
+                "role": "unknown",
+                "source": "expression"
+              },
+              {
+                "name": "x",
+                "role": "unknown",
+                "source": "expression"
+              }
+            ],
+            "typed_symbols": [
+              {
+                "name": "eq",
+                "role": "unknown",
+                "shape": "unknown",
+                "source": "notation_heuristic",
+                "status": "candidate_not_assumption"
+              },
+              {
+                "name": "equation",
+                "role": "unknown",
+                "shape": "unknown",
+                "source": "notation_heuristic",
+                "status": "candidate_not_assumption"
+              },
+              {
+                "name": "simple",
+                "role": "unknown",
+                "shape": "unknown",
+                "source": "notation_heuristic",
+                "status": "candidate_not_assumption"
+              },
+              {
+                "name": "x",
+                "role": "vector_candidate",
+                "shape": "vector_candidate",
+                "source": "notation_heuristic",
+                "status": "candidate_not_assumption"
+              }
+            ],
+            "unresolved_constructs": []
+          },
+          "metadata": {
+            "contract": "typed_repair_obligation",
+            "schema_version": "1.0"
+          },
+          "operators": [
+            "equality"
+          ],
+          "raw_text": "x + 1 = 1 + x\n\\begin{equation}\n\\label{eq:simple}\nx + 1 = 1 + x\n\\end{equation}",
+          "rhs": "1 + x",
+          "route_hints": [
+            {
+              "backend": "sympy",
+              "reason": "The obligation is syntactically suitable for bounded symbolic checking.",
+              "suitability": "candidate"
+            }
+          ],
+          "source_packet_id": "semantic_packet_eq_simple_0",
+          "source_refs": [
+            {
+              "file": "simple_phase04.tex",
+              "label": "eq:simple",
+              "line_end": 4,
+              "line_start": 3,
+              "section_path": [
+                "Algebra"
+              ]
+            },
+            {
+              "environment": "equation",
+              "file": "simple_phase04.tex",
+              "labels": [
+                "eq:simple"
+              ],
+              "line_end": 5,
+              "line_start": 2,
+              "section_path": [
+                "Algebra"
+              ]
+            }
+          ],
+          "target": "x + 1 = 1 + x",
+          "target_label": "eq:simple",
+          "unresolved_constructs": [],
+          "unresolved_context_nodes": [],
+          "variables": [
+            {
+              "name": "eq",
+              "role": "unknown",
+              "shape": "unknown",
+              "source": "notation_heuristic",
+              "status": "candidate_not_assumption"
+            },
+            {
+              "name": "equation",
+              "role": "unknown",
+              "shape": "unknown",
+              "source": "notation_heuristic",
+              "status": "candidate_not_assumption"
+            },
+            {
+              "name": "simple",
+              "role": "unknown",
+              "shape": "unknown",
+              "source": "notation_heuristic",
+              "status": "candidate_not_assumption"
+            },
+            {
+              "name": "x",
+              "role": "vector_candidate",
+              "shape": "vector_candidate",
+              "source": "notation_heuristic",
+              "status": "candidate_not_assumption"
+            }
+          ]
+        },
+        "uncertainty": []
+      },
+      "status": "proved",
+      "tree": {
+        "assumption_branches": [
+          {
+            "assumptions": [
+              "Define every symbol, domain, and operator in the cited source line.",
+              "Choose whether the line is a definition, identity, optimization condition, estimator, or diagnostic.",
+              "Rerun the relevant assumption/proof audit after the typed obligation exists."
+            ],
+            "backend_attempts": [
+              {
+                "boundary": "A branch can be promoted to proved or refuted only from scoped certifying backend evidence or a concrete counterexample. Route plans, retrieval hits, static extraction, proof-state traces, and backend unavailability are diagnostic evidence only.",
+                "certification_status": "certified",
+                "evidence_kind": "certifying_backend",
+                "id": "sympy_algebra_attempt",
+                "input_summary": "x + 1 = 1 + x",
+                "output_ref": "mathdevmcp://external-tool-adapter/sympy/58fb02ebf0b4e13d",
+                "status": "proved",
+                "timeout_seconds": null,
+                "tool": "sympy",
+                "version": null
+              }
+            ],
+            "backend_evidence": {
+              "backend_attempt_count": 1,
+              "boundary": "A branch can be promoted to proved or refuted only from scoped certifying backend evidence or a concrete counterexample. Route plans, retrieval hits, static extraction, proof-state traces, and backend unavailability are diagnostic evidence only.",
+              "promotion": {
+                "boundary": "A branch can be promoted to proved or refuted only from scoped certifying backend evidence or a concrete counterexample. Route plans, retrieval hits, static extraction, proof-state traces, and backend unavailability are diagnostic evidence only.",
+                "can_promote": true,
+                "errors": [],
+                "evidence_refs": [
+                  "sympy_algebra_attempt"
+                ],
+                "reason": "Branch status is supported by certifying evidence.",
+                "supported_status": "proved"
+              },
+              "status": "scoped_backend_evidence_available",
+              "translation_attempt_count": 3,
+              "translation_blocker_count": 0
+            },
+            "blockers": [
+              {
+                "evidence_refs": [
+                  "semantic_packet_eq_simple_0",
+                  "branch_semantic_packet_eq_simple_0_typed_obligation_first"
+                ],
+                "id": "blocker_formalization_branch_semantic_packet_eq_simple_0_typed_obligation_first_lean",
+                "kind": "formalization_required",
+                "problem": "lean stub is not yet a certifying formalization.",
+                "required_next_evidence": "Translate the source-local equality and branch assumptions into the backend language, then run the backend check.",
+                "source": "document_derivation_tree_formalization_stub",
+                "why": "Lean theorem statement for the LaTeX equality has not been generated"
+              }
+            ],
+            "closes_obligations": [
+              "formalized_local_obligation"
+            ],
+            "derivation_route_under_assumptions": [
+              {
+                "detail": "Convert the cited line into a typed obligation before proposing a document edit.",
+                "evidence_refs": [
+                  "semantic_packet_eq_simple_0"
+                ],
+                "id": "typed_obligation_first_route_1",
+                "source": "semantic_work_packet",
+                "step": "Formalize local obligation"
+              }
+            ],
+            "evidence_refs": [
+              "semantic_packet_eq_simple_0",
+              "actionable_abstention:generic_formalization"
+            ],
+            "expansion_records": [
+              {
+                "boundary": "Branch ranking is a deterministic evidence ordering over recorded branch attempts, blockers, assumptions, and route evidence. It is not MCTS, global optimization, proof, minimality, or scientific validation.",
+                "evidence_refs": [
+                  "semantic_packet_eq_simple_0",
+                  "actionable_abstention:generic_formalization"
+                ],
+                "id": "expansion_branch_semantic_packet_eq_simple_0_typed_obligation_first_assumptions",
+                "kind": "assumption_addition",
+                "status": "proposed",
+                "summary": "Propose 3 assumption(s) for this branch."
+              },
+              {
+                "boundary": "Branch ranking is a deterministic evidence ordering over recorded branch attempts, blockers, assumptions, and route evidence. It is not MCTS, global optimization, proof, minimality, or scientific validation.",
+                "evidence_refs": [
+                  "semantic_packet_eq_simple_0"
+                ],
+                "id": "expansion_branch_semantic_packet_eq_simple_0_typed_obligation_first_derivation_1",
+                "kind": "derivation_split",
+                "status": "diagnostic_route",
+                "summary": "Convert the cited line into a typed obligation before proposing a document edit."
+              },
+              {
+                "boundary": "Branch ranking is a deterministic evidence ordering over recorded branch attempts, blockers, assumptions, and route evidence. It is not MCTS, global optimization, proof, minimality, or scientific validation.",
+                "evidence_refs": [
+                  "sympy_algebra_attempt"
+                ],
+                "id": "expansion_branch_semantic_packet_eq_simple_0_typed_obligation_first_formalization_sympy",
+                "kind": "formalization_route",
+                "status": "executed",
+                "summary": "sympy has bounded attempt evidence attached to this branch."
+              },
+              {
+                "boundary": "Branch ranking is a deterministic evidence ordering over recorded branch attempts, blockers, assumptions, and route evidence. It is not MCTS, global optimization, proof, minimality, or scientific validation.",
+                "evidence_refs": [],
+                "id": "expansion_branch_semantic_packet_eq_simple_0_typed_obligation_first_formalization_sage",
+                "kind": "formalization_route",
+                "status": "not_selected_by_typed_route",
+                "summary": "sage was not selected by the typed route hints for this branch."
+              },
+              {
+                "boundary": "Branch ranking is a deterministic evidence ordering over recorded branch attempts, blockers, assumptions, and route evidence. It is not MCTS, global optimization, proof, minimality, or scientific validation.",
+                "evidence_refs": [
+                  "blocker_formalization_branch_semantic_packet_eq_simple_0_typed_obligation_first_lean"
+                ],
+                "id": "expansion_branch_semantic_packet_eq_simple_0_typed_obligation_first_formalization_lean",
+                "kind": "formalization_route",
+                "status": "requires_formalization",
+                "summary": "Lean requires explicit Lean source before direct checking can certify this branch."
+              },
+              {
+                "boundary": "A branch can be promoted to proved or refuted only from scoped certifying backend evidence or a concrete counterexample. Route plans, retrieval hits, static extraction, proof-state traces, and backend unavailability are diagnostic evidence only.",
+                "evidence_refs": [
+                  "sympy_algebra_attempt"
+                ],
+                "id": "expansion_branch_semantic_packet_eq_simple_0_typed_obligation_first_backend_sympy_algebra_attempt",
+                "kind": "backend_attempt",
+                "status": "proved",
+                "summary": "sympy attempt with evidence certifying_backend and certification certified."
+              },
+              {
+                "boundary": "Branch ranking is a deterministic evidence ordering over recorded branch attempts, blockers, assumptions, and route evidence. It is not MCTS, global optimization, proof, minimality, or scientific validation.",
+                "evidence_refs": [
+                  "semantic_packet_eq_simple_0",
+                  "branch_semantic_packet_eq_simple_0_typed_obligation_first"
+                ],
+                "id": "expansion_branch_semantic_packet_eq_simple_0_typed_obligation_first_blocker_blocker_formalization_branch_semantic_packet_eq_simple_0_typed_obligation_first_lean",
+                "kind": "blocker",
+                "status": "blocking",
+                "summary": "lean stub is not yet a certifying formalization."
+              }
+            ],
+            "external_tool_first_ledger": [
+              {
+                "certification_boundary": "Certifying only for the scoped expression class actually encoded and checked.",
+                "environment_scope": "active_python",
+                "role": "Deterministic symbolic algebra, scalar equality, and bounded simplification checks.",
+                "selected_route": true,
+                "status": "available",
+                "tool": "sympy",
+                "version": "1.14.0",
+                "version_status": "match",
+                "why_not_used_now": "Selected for controller/backend attempt."
+              },
+              {
+                "certification_boundary": "Certifying only for the scoped Sage computation under explicit domain assumptions.",
+                "environment_scope": "executable",
+                "role": "Deterministic CAS route for matrix/domain algebra, calculus, and richer symbolic checks.",
+                "selected_route": true,
+                "status": "available",
+                "tool": "sage",
+                "version": "SageMath version 9.5, Release Date: 2022-01-30",
+                "version_status": "available",
+                "why_not_used_now": "Selected for controller/backend attempt."
+              },
+              {
+                "certification_boundary": "Certifying only when direct Lean checking succeeds without placeholders.",
+                "environment_scope": "executable",
+                "role": "Final formal certification for explicit Lean source.",
+                "selected_route": true,
+                "status": "requires_formalization",
+                "tool": "lean",
+                "version": "Lean (version 4.20.0, x86_64-unknown-linux-gnu, commit 77cfc4d1a4f6, Release)",
+                "version_status": "available",
+                "why_not_used_now": "Selected for controller/backend attempt."
+              },
+              {
+                "certification_boundary": "Retrieval evidence only; retrieved premises are not proof certificates.",
+                "environment_scope": "backend_python",
+                "role": "Global Lean premise retrieval and decompose-retrieve-filter-judge search evidence.",
+                "selected_route": true,
+                "status": "available",
+                "tool": "leansearchv2",
+                "version": "0.1.0",
+                "version_status": "match",
+                "why_not_used_now": "Selected for controller/backend attempt."
+              },
+              {
+                "certification_boundary": "Retrieval evidence only; retrieved declarations are not proof certificates.",
+                "environment_scope": "backend_python",
+                "role": "Summary-first Lean declaration and premise search.",
+                "selected_route": true,
+                "status": "available",
+                "tool": "lean_explore",
+                "version": "1.2.1",
+                "version_status": "match",
+                "why_not_used_now": "Selected for controller/backend attempt."
+              },
+              {
+                "certification_boundary": "Static extraction evidence only unless followed by a certifying backend check.",
+                "environment_scope": "executable",
+                "role": "Lean declaration, symbol, elaboration, AST, and proof-state/source extraction.",
+                "selected_route": true,
+                "status": "requires_formalization",
+                "tool": "jixia",
+                "version": null,
+                "version_status": "not_applicable",
+                "why_not_used_now": "Selected for controller/backend attempt."
+              },
+              {
+                "certification_boundary": "Proof-state/search evidence only; final proof claims need direct Lean verification.",
+                "environment_scope": "backend_python",
+                "role": "Lean proof-state interaction and tactic/search stepping; final certification remains direct Lean.",
+                "selected_route": true,
+                "status": "requires_formalization",
+                "tool": "pantograph",
+                "version": "0.3.15",
+                "version_status": "match",
+                "why_not_used_now": "Selected for controller/backend attempt."
+              },
+              {
+                "certification_boundary": "Proof-state/search evidence only; final proof claims need direct Lean verification.",
+                "environment_scope": "backend_python",
+                "role": "Lean theorem-proving environment interaction; final certification remains direct Lean.",
+                "selected_route": true,
+                "status": "requires_formalization",
+                "tool": "lean_dojo",
+                "version": "4.20.0",
+                "version_status": "match",
+                "why_not_used_now": "Selected for controller/backend attempt."
+              }
+            ],
+            "formalization_stubs": [
+              {
+                "backend": "sympy",
+                "certification_boundary": "Formalization stubs are next-check artifacts only; they do not certify the target.",
+                "encoded_assumptions": [
+                  "Define every symbol, domain, and operator in the cited source line.",
+                  "Choose whether the line is a definition, identity, optimization condition, estimator, or diagnostic.",
+                  "Rerun the relevant assumption/proof audit after the typed obligation exists."
+                ],
+                "evidence_refs": [
+                  "semantic_packet_eq_simple_0",
+                  "branch_semantic_packet_eq_simple_0_typed_obligation_first"
+                ],
+                "id": "formalization_branch_semantic_packet_eq_simple_0_typed_obligation_first_sympy",
+                "source_span": {
+                  "environment": "equation",
+                  "file": "simple_phase04.tex",
+                  "labels": [
+                    "eq:simple"
+                  ],
+                  "line_end": 5,
+                  "line_start": 2,
+                  "section_path": [
+                    "Algebra"
+                  ]
+                },
+                "status": "candidate_stub",
+                "stub": "# Translate the LaTeX equality into SymPy expressions lhs, rhs, then check simplify(lhs - rhs) == 0 under the encoded assumptions.",
+                "target": "x + 1 = 1 + x",
+                "unsupported_constructs": []
+              },
+              {
+                "backend": "sage",
+                "certification_boundary": "Formalization stubs are next-check artifacts only; they do not certify the target.",
+                "encoded_assumptions": [
+                  "Define every symbol, domain, and operator in the cited source line.",
+                  "Choose whether the line is a definition, identity, optimization condition, estimator, or diagnostic.",
+                  "Rerun the relevant assumption/proof audit after the typed obligation exists."
+                ],
+                "evidence_refs": [
+                  "semantic_packet_eq_simple_0",
+                  "branch_semantic_packet_eq_simple_0_typed_obligation_first"
+                ],
+                "id": "formalization_branch_semantic_packet_eq_simple_0_typed_obligation_first_sage",
+                "source_span": {
+                  "environment": "equation",
+                  "file": "simple_phase04.tex",
+                  "labels": [
+                    "eq:simple"
+                  ],
+                  "line_end": 5,
+                  "line_start": 2,
+                  "section_path": [
+                    "Algebra"
+                  ]
+                },
+                "status": "candidate_stub",
+                "stub": "# Translate the LaTeX equality into Sage symbolic expressions lhs, rhs, then check bool((lhs - rhs).simplify_full() == 0) under the encoded assumptions.",
+                "target": "x + 1 = 1 + x",
+                "unsupported_constructs": []
+              },
+              {
+                "backend": "lean",
+                "certification_boundary": "Formalization stubs are next-check artifacts only; they do not certify the target.",
+                "encoded_assumptions": [
+                  "Define every symbol, domain, and operator in the cited source line.",
+                  "Choose whether the line is a definition, identity, optimization condition, estimator, or diagnostic.",
+                  "Rerun the relevant assumption/proof audit after the typed obligation exists."
+                ],
+                "evidence_refs": [
+                  "semantic_packet_eq_simple_0",
+                  "branch_semantic_packet_eq_simple_0_typed_obligation_first"
+                ],
+                "id": "formalization_branch_semantic_packet_eq_simple_0_typed_obligation_first_lean",
+                "source_span": {
+                  "environment": "equation",
+                  "file": "simple_phase04.tex",
+                  "labels": [
+                    "eq:simple"
+                  ],
+                  "line_end": 5,
+                  "line_start": 2,
+                  "section_path": [
+                    "Algebra"
+                  ]
+                },
+                "status": "skeleton_contains_sorry_not_certifying",
+                "stub": "theorem document_obligation_under_assumptions : True := by\n  -- Replace True with the translated source equality and encode the branch assumptions.\n  trivial",
+                "target": "x + 1 = 1 + x",
+                "unsupported_constructs": [
+                  "Lean theorem statement for the LaTeX equality has not been generated"
+                ]
+              }
+            ],
+            "id": "branch_semantic_packet_eq_simple_0_typed_obligation_first",
+            "mathematical_why": "This branch closes `Makes the abstention inspectable by deterministic tooling.` by making the operators and objects in the displayed equality well-defined before backend certification.",
+            "non_claim": "This branch proposes a sufficient route; it is not a proof certificate and not a globally minimal assumption set.",
+            "role": "next deterministic artifact",
+            "status": "scoped_target_proved_not_document_proof",
+            "translation_attempts": [
+              {
+                "backend": "sympy",
+                "backend_attempt_ids": [
+                  "sympy_algebra_attempt"
+                ],
+                "blocker_ids": [],
+                "certification_boundary": "A branch can be promoted to proved or refuted only from scoped certifying backend evidence or a concrete counterexample. Route plans, retrieval hits, static extraction, proof-state traces, and backend unavailability are diagnostic evidence only.",
+                "expected_next_artifact": "Recorded in backend_attempt_ids or blocker_ids.",
+                "id": "translation_branch_semantic_packet_eq_simple_0_typed_obligation_first_sympy",
+                "input_summary": "x + 1 = 1 + x",
+                "reason": "sympy has bounded attempt evidence attached to this branch.",
+                "status": "executed"
+              },
+              {
+                "backend": "sage",
+                "backend_attempt_ids": [],
+                "blocker_ids": [],
+                "certification_boundary": "A branch can be promoted to proved or refuted only from scoped certifying backend evidence or a concrete counterexample. Route plans, retrieval hits, static extraction, proof-state traces, and backend unavailability are diagnostic evidence only.",
+                "expected_next_artifact": "Recorded in backend_attempt_ids or blocker_ids.",
+                "id": "translation_branch_semantic_packet_eq_simple_0_typed_obligation_first_sage",
+                "input_summary": "x + 1 = 1 + x",
+                "reason": "sage was not selected by the typed route hints for this branch.",
+                "status": "not_selected_by_typed_route"
+              },
+              {
+                "backend": "lean",
+                "backend_attempt_ids": [],
+                "blocker_ids": [
+                  "blocker_formalization_branch_semantic_packet_eq_simple_0_typed_obligation_first_lean"
+                ],
+                "certification_boundary": "A branch can be promoted to proved or refuted only from scoped certifying backend evidence or a concrete counterexample. Route plans, retrieval hits, static extraction, proof-state traces, and backend unavailability are diagnostic evidence only.",
+                "expected_next_artifact": "Scoped backend attempt/certificate for the encoded equality.",
+                "id": "translation_branch_semantic_packet_eq_simple_0_typed_obligation_first_lean",
+                "input_summary": "x + 1 = 1 + x",
+                "reason": "Lean requires explicit Lean source before direct checking can certify this branch.",
+                "status": "requires_formalization"
+              }
+            ],
+            "translation_blockers": [],
+            "typed_backend_route_hints": [
+              {
+                "backend": "sympy",
+                "reason": "The obligation is syntactically suitable for bounded symbolic checking.",
+                "suitability": "candidate"
+              }
+            ],
+            "typed_encodability": {
+              "blocked_by_assumption_ids": [],
+              "candidate_backends": [
+                "sympy"
+              ],
+              "status": "candidate",
+              "unsupported_constructs": [],
+              "why": "No missing typed assumptions were detected by the bounded typed IR builder."
+            },
+            "typed_obligation_ids": [
+              "typed_repair_obligation_semantic_packet_eq_simple_0"
+            ],
+            "typed_unresolved_constructs": [],
+            "validation_status": "scoped_backend_evidence_available"
+          }
+        ],
+        "assumptions": [
+          {
+            "assumptions": [
+              "Define every symbol, domain, and operator in the cited source line.",
+              "Choose whether the line is a definition, identity, optimization condition, estimator, or diagnostic.",
+              "Rerun the relevant assumption/proof audit after the typed obligation exists."
+            ],
+            "branch_id": "branch_semantic_packet_eq_simple_0_typed_obligation_first",
+            "closes": [
+              "formalized_local_obligation"
+            ],
+            "derivation_route_under_assumptions": [
+              {
+                "detail": "Convert the cited line into a typed obligation before proposing a document edit.",
+                "evidence_refs": [
+                  "semantic_packet_eq_simple_0"
+                ],
+                "id": "typed_obligation_first_route_1",
+                "source": "semantic_work_packet",
+                "step": "Formalize local obligation"
+              }
+            ],
+            "evidence_refs": [
+              "semantic_packet_eq_simple_0"
+            ],
+            "external_tool_first_ledger": [
+              {
+                "certification_boundary": "Certifying only for the scoped expression class actually encoded and checked.",
+                "environment_scope": "active_python",
+                "role": "Deterministic symbolic algebra, scalar equality, and bounded simplification checks.",
+                "selected_route": true,
+                "status": "available",
+                "tool": "sympy",
+                "version": "1.14.0",
+                "version_status": "match",
+                "why_not_used_now": "Selected for controller/backend attempt."
+              },
+              {
+                "certification_boundary": "Certifying only for the scoped Sage computation under explicit domain assumptions.",
+                "environment_scope": "executable",
+                "role": "Deterministic CAS route for matrix/domain algebra, calculus, and richer symbolic checks.",
+                "selected_route": true,
+                "status": "available",
+                "tool": "sage",
+                "version": "SageMath version 9.5, Release Date: 2022-01-30",
+                "version_status": "available",
+                "why_not_used_now": "Selected for controller/backend attempt."
+              },
+              {
+                "certification_boundary": "Certifying only when direct Lean checking succeeds without placeholders.",
+                "environment_scope": "executable",
+                "role": "Final formal certification for explicit Lean source.",
+                "selected_route": true,
+                "status": "requires_formalization",
+                "tool": "lean",
+                "version": "Lean (version 4.20.0, x86_64-unknown-linux-gnu, commit 77cfc4d1a4f6, Release)",
+                "version_status": "available",
+                "why_not_used_now": "Selected for controller/backend attempt."
+              },
+              {
+                "certification_boundary": "Retrieval evidence only; retrieved premises are not proof certificates.",
+                "environment_scope": "backend_python",
+                "role": "Global Lean premise retrieval and decompose-retrieve-filter-judge search evidence.",
+                "selected_route": true,
+                "status": "available",
+                "tool": "leansearchv2",
+                "version": "0.1.0",
+                "version_status": "match",
+                "why_not_used_now": "Selected for controller/backend attempt."
+              },
+              {
+                "certification_boundary": "Retrieval evidence only; retrieved declarations are not proof certificates.",
+                "environment_scope": "backend_python",
+                "role": "Summary-first Lean declaration and premise search.",
+                "selected_route": true,
+                "status": "available",
+                "tool": "lean_explore",
+                "version": "1.2.1",
+                "version_status": "match",
+                "why_not_used_now": "Selected for controller/backend attempt."
+              },
+              {
+                "certification_boundary": "Static extraction evidence only unless followed by a certifying backend check.",
+                "environment_scope": "executable",
+                "role": "Lean declaration, symbol, elaboration, AST, and proof-state/source extraction.",
+                "selected_route": true,
+                "status": "requires_formalization",
+                "tool": "jixia",
+                "version": null,
+                "version_status": "not_applicable",
+                "why_not_used_now": "Selected for controller/backend attempt."
+              },
+              {
+                "certification_boundary": "Proof-state/search evidence only; final proof claims need direct Lean verification.",
+                "environment_scope": "backend_python",
+                "role": "Lean proof-state interaction and tactic/search stepping; final certification remains direct Lean.",
+                "selected_route": true,
+                "status": "requires_formalization",
+                "tool": "pantograph",
+                "version": "0.3.15",
+                "version_status": "match",
+                "why_not_used_now": "Selected for controller/backend attempt."
+              },
+              {
+                "certification_boundary": "Proof-state/search evidence only; final proof claims need direct Lean verification.",
+                "environment_scope": "backend_python",
+                "role": "Lean theorem-proving environment interaction; final certification remains direct Lean.",
+                "selected_route": true,
+                "status": "requires_formalization",
+                "tool": "lean_dojo",
+                "version": "4.20.0",
+                "version_status": "match",
+                "why_not_used_now": "Selected for controller/backend attempt."
+              }
+            ],
+            "id": "typed_obligation_first",
+            "mathematical_why": "This branch closes `Makes the abstention inspectable by deterministic tooling.` by making the operators and objects in the displayed equality well-defined before backend certification.",
+            "source": "semantic_work_packet",
+            "status": "proposed_sufficient"
+          }
+        ],
+        "backend_attempts": [
+          {
+            "boundary": "A branch can be promoted to proved or refuted only from scoped certifying backend evidence or a concrete counterexample. Route plans, retrieval hits, static extraction, proof-state traces, and backend unavailability are diagnostic evidence only.",
+            "certification_status": "certified",
+            "evidence_kind": "certifying_backend",
+            "id": "sympy_algebra_attempt",
+            "input_summary": "x + 1 = 1 + x",
+            "output_ref": "mathdevmcp://external-tool-adapter/sympy/58fb02ebf0b4e13d",
+            "status": "proved",
+            "timeout_seconds": null,
+            "tool": "sympy",
+            "version": null
+          }
+        ],
+        "blockers": [
+          {
+            "evidence_refs": [],
+            "id": "blocker_lean_source_required",
+            "kind": "formalization_required",
+            "problem": "Lean certification was selected but no Lean source was supplied.",
+            "required_next_evidence": "Supply Lean source or a formalization branch before Lean certification.",
+            "source": "derivation_branch_controller",
+            "why": "Direct Lean checking requires an explicit Lean statement/proof artifact."
+          },
+          {
+            "evidence_refs": [
+              "semantic_packet_eq_simple_0",
+              "branch_semantic_packet_eq_simple_0_typed_obligation_first"
+            ],
+            "id": "blocker_formalization_branch_semantic_packet_eq_simple_0_typed_obligation_first_lean",
+            "kind": "formalization_required",
+            "problem": "lean stub is not yet a certifying formalization.",
+            "required_next_evidence": "Translate the source-local equality and branch assumptions into the backend language, then run the backend check.",
+            "source": "document_derivation_tree_formalization_stub",
+            "why": "Lean theorem statement for the LaTeX equality has not been generated"
+          },
+          {
+            "evidence_refs": [
+              "actionable_abstention:generic_formalization"
+            ],
+            "id": "blocker_semantic_packet_eq_simple_0_formalized_local_obligation",
+            "kind": "formalization_condition",
+            "problem": "A typed local obligation with defined symbols, domains, and operator meanings.",
+            "required_next_evidence": "Creates the next deterministic target for assumption discovery or proof audit.",
+            "source": "semantic_work_packet",
+            "why": "The diagnostic source does not yet expose enough structure for a mathematical repair."
+          }
+        ],
+        "branch_ranking": {
+          "boundary": "Branch ranking is a deterministic evidence ordering over recorded branch attempts, blockers, assumptions, and route evidence. It is not MCTS, global optimization, proof, minimality, or scientific validation.",
+          "branch_count": 1,
+          "metadata": {
+            "contract": "repair_branch_ranking_result",
+            "schema_version": "1.0"
+          },
+          "non_claims": [
+            "Ranking is deterministic evidence ordering only.",
+            "Top-ranked does not mean globally optimal, minimal, proved, or publication-ready."
+          ],
+          "ranked_branch_ids": [
+            "branch_semantic_packet_eq_simple_0_typed_obligation_first"
+          ],
+          "rankings": [
+            {
+              "branch_id": "branch_semantic_packet_eq_simple_0_typed_obligation_first",
+              "expansion_record_count": 7,
+              "explanation": "Ranked as scoped_proved: backend=100, closure=6, source=15, blocker_specificity=0, non_minimality_penalty=2.",
+              "non_claim": "Branch ranking is a deterministic evidence ordering over recorded branch attempts, blockers, assumptions, and route evidence. It is not MCTS, global optimization, proof, minimality, or scientific validation.",
+              "outcome": "scoped_proved",
+              "promotion": {
+                "boundary": "A branch can be promoted to proved or refuted only from scoped certifying backend evidence or a concrete counterexample. Route plans, retrieval hits, static extraction, proof-state traces, and backend unavailability are diagnostic evidence only.",
+                "can_promote": true,
+                "errors": [],
+                "evidence_refs": [
+                  "sympy_algebra_attempt"
+                ],
+                "reason": "Branch status is supported by certifying evidence.",
+                "supported_status": "proved"
+              },
+              "rank": 1,
+              "score": 119,
+              "score_components": {
+                "assumption_count": 3,
+                "backend_attempt_count": 1,
+                "backend_certification": 100,
+                "blocker_specificity": 0,
+                "closure_strength": 6,
+                "non_minimality_penalty": 2,
+                "score": 119,
+                "source_support": 15,
+                "specific_blocker_count": 0
+              },
+              "status": "scoped_target_proved_not_document_proof"
+            }
+          ],
+          "status": "ranked",
+          "top_branch_id": "branch_semantic_packet_eq_simple_0_typed_obligation_first"
+        },
+        "context_graph": {
+          "edges": [],
+          "id": "context_graph_eq_simple",
+          "nodes": [
+            {
+              "evidence_refs": [
+                "semantic_packet_eq_simple_0"
+              ],
+              "id": "operator_equality",
+              "kind": "operator",
+              "mathematical_role": "operator that induces route-required assumptions",
+              "required_next_evidence": "Typed IR should decide whether this operator can be encoded for a backend.",
+              "source_refs": [
+                {
+                  "evidence_ref": "semantic_packet_eq_simple_0",
+                  "file": "simple_phase04.tex",
+                  "kind": "operator_occurrence",
+                  "label": "eq:simple",
+                  "line_end": 4,
+                  "line_start": 3,
+                  "snippet": "x + 1 = 1 + x \\begin{equation} \\label{eq:simple} x + 1 = 1 + x \\end{equation} x + 1 = 1 + x x + 1 = 1 + x"
+                }
+              ],
+              "status": "inferred_candidate",
+              "summary": "Operator `equality` appears in the local target text.",
+              "why_status": "The operator is detected syntactically from source-local LaTeX."
+            },
+            {
+              "evidence_refs": [
+                "semantic_packet_eq_simple_0"
+              ],
+              "id": "symbol_inventory",
+              "kind": "symbol_inventory",
+              "mathematical_role": "source-local symbol inventory for typed obligation construction",
+              "required_next_evidence": "Assign scalar/vector/function/random-variable roles in typed IR.",
+              "source_refs": [
+                {
+                  "evidence_ref": "semantic_packet_eq_simple_0",
+                  "file": "simple_phase04.tex",
+                  "kind": "target_source",
+                  "label": "eq:simple",
+                  "line_end": 4,
+                  "line_start": 3,
+                  "snippet": "x + 1 = 1 + x"
+                }
+              ],
+              "status": "inferred_candidate",
+              "summary": "Macros: ['\\\\section']; identifiers: ['Algebra', 'eq', 'equation', 'simple', 'x'].",
+              "why_status": "Symbols are extracted syntactically and still need type/domain assignment."
+            }
+          ],
+          "non_claim": "The context graph is deterministic source-evidence accounting; it is not a proof certificate or sufficiency proof.",
+          "source_scope": {
+            "file": "simple_phase04.tex",
+            "label": "eq:simple",
+            "line_end": 4,
+            "line_start": 3,
+            "nearby_paragraph_count": 1
+          },
+          "status": "context_graph_ready",
+          "status_counts": {
+            "inferred_candidate": 2
+          },
+          "target_label": "eq:simple"
+        },
+        "controller": {
+          "attempts_used": 1,
+          "exhausted_actions": [],
+          "promotion": {
+            "boundary": "A branch can be promoted to proved or refuted only from scoped certifying backend evidence or a concrete counterexample. Route plans, retrieval hits, static extraction, proof-state traces, and backend unavailability are diagnostic evidence only.",
+            "can_promote": true,
+            "errors": [],
+            "evidence_refs": [
+              "sympy_algebra_attempt"
+            ],
+            "reason": "Branch status is supported by certifying evidence.",
+            "supported_status": "proved"
+          },
+          "reason": "A branch was promoted by certifying/refuting evidence.",
+          "status": "proved",
+          "validation_errors": []
+        },
+        "derivation_steps": [
+          {
+            "checker": "semantic_work_packet",
+            "checker_status": "diagnostic_route",
+            "claim": "Formalize local obligation",
+            "evidence_refs": [
+              "semantic_packet_eq_simple_0"
+            ],
+            "id": "semantic_packet_eq_simple_0_route_step_1",
+            "justification": "Convert the cited line into a typed obligation before proposing a document edit."
+          }
+        ],
+        "patch_candidates": [
+          {
+            "evidence_refs": [
+              "semantic_packet_eq_simple_0",
+              "actionable_abstention:generic_formalization"
+            ],
+            "id": "patch_branch_semantic_packet_eq_simple_0_typed_obligation_first",
+            "kind": "add_assumption_and_route_text",
+            "location": {
+              "environment": "equation",
+              "file": "simple_phase04.tex",
+              "labels": [
+                "eq:simple"
+              ],
+              "line_end": 5,
+              "line_start": 2,
+              "section_path": [
+                "Algebra"
+              ]
+            },
+            "proposed_text": "Near `eq:simple` at simple_phase04.tex > Algebra > eq:simple > line 3, add an assumptions paragraph: \"For this displayed equality, assume: Define every symbol, domain, and operator in the cited source line. Choose whether the line is a definition, identity, optimization condition, estimator, or diagnostic. Rerun the relevant assumption/proof audit after the typed obligation exists. Under these assumptions, the derivation route is: Formalize local obligation: Convert the cited line into a typed obligation before proposing a document edit.\"",
+            "rationale": "This branch closes `Makes the abstention inspectable by deterministic tooling.` by making the operators and objects in the displayed equality well-defined before backend certification.",
+            "validation_status": "scoped_backend_evidence_available"
+          }
+        ],
+        "report_sections": [
+          {
+            "assumptions": [
+              {
+                "assumptions": [
+                  "Define every symbol, domain, and operator in the cited source line.",
+                  "Choose whether the line is a definition, identity, optimization condition, estimator, or diagnostic.",
+                  "Rerun the relevant assumption/proof audit after the typed obligation exists."
+                ],
+                "branch_id": "branch_semantic_packet_eq_simple_0_typed_obligation_first",
+                "closes": [
+                  "formalized_local_obligation"
+                ],
+                "derivation_route_under_assumptions": [
+                  {
+                    "detail": "Convert the cited line into a typed obligation before proposing a document edit.",
+                    "evidence_refs": [
+                      "semantic_packet_eq_simple_0"
+                    ],
+                    "id": "typed_obligation_first_route_1",
+                    "source": "semantic_work_packet",
+                    "step": "Formalize local obligation"
+                  }
+                ],
+                "evidence_refs": [
+                  "semantic_packet_eq_simple_0"
+                ],
+                "external_tool_first_ledger": [
+                  {
+                    "certification_boundary": "Certifying only for the scoped expression class actually encoded and checked.",
+                    "environment_scope": "active_python",
+                    "role": "Deterministic symbolic algebra, scalar equality, and bounded simplification checks.",
+                    "selected_route": true,
+                    "status": "available",
+                    "tool": "sympy",
+                    "version": "1.14.0",
+                    "version_status": "match",
+                    "why_not_used_now": "Selected for controller/backend attempt."
+                  },
+                  {
+                    "certification_boundary": "Certifying only for the scoped Sage computation under explicit domain assumptions.",
+                    "environment_scope": "executable",
+                    "role": "Deterministic CAS route for matrix/domain algebra, calculus, and richer symbolic checks.",
+                    "selected_route": true,
+                    "status": "available",
+                    "tool": "sage",
+                    "version": "SageMath version 9.5, Release Date: 2022-01-30",
+                    "version_status": "available",
+                    "why_not_used_now": "Selected for controller/backend attempt."
+                  },
+                  {
+                    "certification_boundary": "Certifying only when direct Lean checking succeeds without placeholders.",
+                    "environment_scope": "executable",
+                    "role": "Final formal certification for explicit Lean source.",
+                    "selected_route": true,
+                    "status": "requires_formalization",
+                    "tool": "lean",
+                    "version": "Lean (version 4.20.0, x86_64-unknown-linux-gnu, commit 77cfc4d1a4f6, Release)",
+                    "version_status": "available",
+                    "why_not_used_now": "Selected for controller/backend attempt."
+                  },
+                  {
+                    "certification_boundary": "Retrieval evidence only; retrieved premises are not proof certificates.",
+                    "environment_scope": "backend_python",
+                    "role": "Global Lean premise retrieval and decompose-retrieve-filter-judge search evidence.",
+                    "selected_route": true,
+                    "status": "available",
+                    "tool": "leansearchv2",
+                    "version": "0.1.0",
+                    "version_status": "match",
+                    "why_not_used_now": "Selected for controller/backend attempt."
+                  },
+                  {
+                    "certification_boundary": "Retrieval evidence only; retrieved declarations are not proof certificates.",
+                    "environment_scope": "backend_python",
+                    "role": "Summary-first Lean declaration and premise search.",
+                    "selected_route": true,
+                    "status": "available",
+                    "tool": "lean_explore",
+                    "version": "1.2.1",
+                    "version_status": "match",
+                    "why_not_used_now": "Selected for controller/backend attempt."
+                  },
+                  {
+                    "certification_boundary": "Static extraction evidence only unless followed by a certifying backend check.",
+                    "environment_scope": "executable",
+                    "role": "Lean declaration, symbol, elaboration, AST, and proof-state/source extraction.",
+                    "selected_route": true,
+                    "status": "requires_formalization",
+                    "tool": "jixia",
+                    "version": null,
+                    "version_status": "not_applicable",
+                    "why_not_used_now": "Selected for controller/backend attempt."
+                  },
+                  {
+                    "certification_boundary": "Proof-state/search evidence only; final proof claims need direct Lean verification.",
+                    "environment_scope": "backend_python",
+                    "role": "Lean proof-state interaction and tactic/search stepping; final certification remains direct Lean.",
+                    "selected_route": true,
+                    "status": "requires_formalization",
+                    "tool": "pantograph",
+                    "version": "0.3.15",
+                    "version_status": "match",
+                    "why_not_used_now": "Selected for controller/backend attempt."
+                  },
+                  {
+                    "certification_boundary": "Proof-state/search evidence only; final proof claims need direct Lean verification.",
+                    "environment_scope": "backend_python",
+                    "role": "Lean theorem-proving environment interaction; final certification remains direct Lean.",
+                    "selected_route": true,
+                    "status": "requires_formalization",
+                    "tool": "lean_dojo",
+                    "version": "4.20.0",
+                    "version_status": "match",
+                    "why_not_used_now": "Selected for controller/backend attempt."
+                  }
+                ],
+                "id": "typed_obligation_first",
+                "mathematical_why": "This branch closes `Makes the abstention inspectable by deterministic tooling.` by making the operators and objects in the displayed equality well-defined before backend certification.",
+                "source": "semantic_work_packet",
+                "status": "proposed_sufficient"
+              }
+            ],
+            "blockers": [
+              {
+                "evidence_refs": [],
+                "id": "blocker_lean_source_required",
+                "kind": "formalization_required",
+                "problem": "Lean certification was selected but no Lean source was supplied.",
+                "required_next_evidence": "Supply Lean source or a formalization branch before Lean certification.",
+                "source": "derivation_branch_controller",
+                "why": "Direct Lean checking requires an explicit Lean statement/proof artifact."
+              },
+              {
+                "evidence_refs": [
+                  "semantic_packet_eq_simple_0",
+                  "branch_semantic_packet_eq_simple_0_typed_obligation_first"
+                ],
+                "id": "blocker_formalization_branch_semantic_packet_eq_simple_0_typed_obligation_first_lean",
+                "kind": "formalization_required",
+                "problem": "lean stub is not yet a certifying formalization.",
+                "required_next_evidence": "Translate the source-local equality and branch assumptions into the backend language, then run the backend check.",
+                "source": "document_derivation_tree_formalization_stub",
+                "why": "Lean theorem statement for the LaTeX equality has not been generated"
+              },
+              {
+                "evidence_refs": [
+                  "actionable_abstention:generic_formalization"
+                ],
+                "id": "blocker_semantic_packet_eq_simple_0_formalized_local_obligation",
+                "kind": "formalization_condition",
+                "problem": "A typed local obligation with defined symbols, domains, and operator meanings.",
+                "required_next_evidence": "Creates the next deterministic target for assumption discovery or proof audit.",
+                "source": "semantic_work_packet",
+                "why": "The diagnostic source does not yet expose enough structure for a mathematical repair."
+              }
+            ],
+            "derivation_steps": [
+              {
+                "checker": "semantic_work_packet",
+                "checker_status": "diagnostic_route",
+                "claim": "Formalize local obligation",
+                "evidence_refs": [
+                  "semantic_packet_eq_simple_0"
+                ],
+                "id": "semantic_packet_eq_simple_0_route_step_1",
+                "justification": "Convert the cited line into a typed obligation before proposing a document edit."
+              }
+            ],
+            "id": "root",
+            "location": "simple_phase04.tex > Algebra > eq:simple > line 3-4",
+            "mathematical_why": "Branch status is supported by certifying evidence.",
+            "problem": "The target `x + 1 = 1 + x` has scoped certifying evidence in this branch.",
+            "promotion": {
+              "boundary": "A branch can be promoted to proved or refuted only from scoped certifying backend evidence or a concrete counterexample. Route plans, retrieval hits, static extraction, proof-state traces, and backend unavailability are diagnostic evidence only.",
+              "can_promote": true,
+              "errors": [],
+              "evidence_refs": [
+                "sympy_algebra_attempt"
+              ],
+              "reason": "Branch status is supported by certifying evidence.",
+              "supported_status": "proved"
+            },
+            "proposed_patches": [
+              {
+                "evidence_refs": [
+                  "semantic_packet_eq_simple_0",
+                  "actionable_abstention:generic_formalization"
+                ],
+                "id": "patch_branch_semantic_packet_eq_simple_0_typed_obligation_first",
+                "kind": "add_assumption_and_route_text",
+                "location": {
+                  "environment": "equation",
+                  "file": "simple_phase04.tex",
+                  "labels": [
+                    "eq:simple"
+                  ],
+                  "line_end": 5,
+                  "line_start": 2,
+                  "section_path": [
+                    "Algebra"
+                  ]
+                },
+                "proposed_text": "Near `eq:simple` at simple_phase04.tex > Algebra > eq:simple > line 3, add an assumptions paragraph: \"For this displayed equality, assume: Define every symbol, domain, and operator in the cited source line. Choose whether the line is a definition, identity, optimization condition, estimator, or diagnostic. Rerun the relevant assumption/proof audit after the typed obligation exists. Under these assumptions, the derivation route is: Formalize local obligation: Convert the cited line into a typed obligation before proposing a document edit.\"",
+                "rationale": "This branch closes `Makes the abstention inspectable by deterministic tooling.` by making the operators and objects in the displayed equality well-defined before backend certification.",
+                "validation_status": "scoped_backend_evidence_available"
+              }
+            ],
+            "status": "proved",
+            "tools_used": [
+              {
+                "boundary": "A branch can be promoted to proved or refuted only from scoped certifying backend evidence or a concrete counterexample. Route plans, retrieval hits, static extraction, proof-state traces, and backend unavailability are diagnostic evidence only.",
+                "certification_status": "certified",
+                "evidence_kind": "certifying_backend",
+                "id": "sympy_algebra_attempt",
+                "output_ref": "mathdevmcp://external-tool-adapter/sympy/58fb02ebf0b4e13d",
+                "status": "proved",
+                "tool": "sympy"
+              }
+            ],
+            "warnings": []
+          }
+        ],
+        "status": "proved",
+        "summary": {
+          "backend_attempt_count": 1,
+          "blocker_count": 1,
+          "node_count": 1,
+          "patch_candidate_count": 0,
+          "status_counts": {
+            "proved": 1
+          }
+        },
+        "typed_repair_obligations": [
+          {
+            "assumptions": [],
+            "certification_boundary": "Typed repair obligations are diagnostic routing artifacts; they are not proof certificates or backend encodings.",
+            "diagnostic_status": "ready_for_backend",
+            "encodability": {
+              "blocked_by_assumption_ids": [],
+              "candidate_backends": [
+                "sympy"
+              ],
+              "status": "candidate",
+              "unsupported_constructs": [],
+              "why": "No missing typed assumptions were detected by the bounded typed IR builder."
+            },
+            "id": "typed_repair_obligation_semantic_packet_eq_simple_0",
+            "kind": "equation",
+            "lhs": "x + 1",
+            "math_obligation": {
+              "assumptions": [],
+              "backend_route_hints": [
+                {
+                  "backend": "sympy",
+                  "reason": "The obligation is syntactically suitable for bounded symbolic checking.",
+                  "suitability": "candidate"
+                }
+              ],
+              "backend_suitability": "symbolic",
+              "diagnostic_status": "ready_for_backend",
+              "dimension_constraints": [],
+              "id": "typed_source_semantic_packet_eq_simple_0",
+              "kind": "equation",
+              "lhs": "x + 1",
+              "metadata": {
+                "contract": "math_obligation",
+                "schema_version": "1.0"
+              },
+              "parser_backend": "current",
+              "provenance": {
+                "file": "simple_phase04.tex",
+                "label": "eq:simple",
+                "line_end": 4,
+                "line_start": 3,
+                "section_path": [
+                  "Algebra"
+                ]
+              },
+              "raw_text": "x + 1 = 1 + x\n\\begin{equation}\n\\label{eq:simple}\nx + 1 = 1 + x\n\\end{equation}",
+              "rhs": "1 + x",
+              "stochastic_objects": [],
+              "symbols": [
+                {
+                  "name": "eq",
+                  "role": "unknown",
+                  "source": "expression"
+                },
+                {
+                  "name": "equation",
+                  "role": "unknown",
+                  "source": "expression"
+                },
+                {
+                  "name": "simple",
+                  "role": "unknown",
+                  "source": "expression"
+                },
+                {
+                  "name": "x",
+                  "role": "unknown",
+                  "source": "expression"
+                }
+              ],
+              "typed_symbols": [
+                {
+                  "name": "eq",
+                  "role": "unknown",
+                  "shape": "unknown",
+                  "source": "notation_heuristic",
+                  "status": "candidate_not_assumption"
+                },
+                {
+                  "name": "equation",
+                  "role": "unknown",
+                  "shape": "unknown",
+                  "source": "notation_heuristic",
+                  "status": "candidate_not_assumption"
+                },
+                {
+                  "name": "simple",
+                  "role": "unknown",
+                  "shape": "unknown",
+                  "source": "notation_heuristic",
+                  "status": "candidate_not_assumption"
+                },
+                {
+                  "name": "x",
+                  "role": "vector_candidate",
+                  "shape": "vector_candidate",
+                  "source": "notation_heuristic",
+                  "status": "candidate_not_assumption"
+                }
+              ],
+              "unresolved_constructs": []
+            },
+            "metadata": {
+              "contract": "typed_repair_obligation",
+              "schema_version": "1.0"
+            },
+            "operators": [
+              "equality"
+            ],
+            "raw_text": "x + 1 = 1 + x\n\\begin{equation}\n\\label{eq:simple}\nx + 1 = 1 + x\n\\end{equation}",
+            "rhs": "1 + x",
+            "route_hints": [
+              {
+                "backend": "sympy",
+                "reason": "The obligation is syntactically suitable for bounded symbolic checking.",
+                "suitability": "candidate"
+              }
+            ],
+            "source_packet_id": "semantic_packet_eq_simple_0",
+            "source_refs": [
+              {
+                "file": "simple_phase04.tex",
+                "label": "eq:simple",
+                "line_end": 4,
+                "line_start": 3,
+                "section_path": [
+                  "Algebra"
+                ]
+              },
+              {
+                "environment": "equation",
+                "file": "simple_phase04.tex",
+                "labels": [
+                  "eq:simple"
+                ],
+                "line_end": 5,
+                "line_start": 2,
+                "section_path": [
+                  "Algebra"
+                ]
+              }
+            ],
+            "target": "x + 1 = 1 + x",
+            "target_label": "eq:simple",
+            "unresolved_constructs": [],
+            "unresolved_context_nodes": [],
+            "variables": [
+              {
+                "name": "eq",
+                "role": "unknown",
+                "shape": "unknown",
+                "source": "notation_heuristic",
+                "status": "candidate_not_assumption"
+              },
+              {
+                "name": "equation",
+                "role": "unknown",
+                "shape": "unknown",
+                "source": "notation_heuristic",
+                "status": "candidate_not_assumption"
+              },
+              {
+                "name": "simple",
+                "role": "unknown",
+                "shape": "unknown",
+                "source": "notation_heuristic",
+                "status": "candidate_not_assumption"
+              },
+              {
+                "name": "x",
+                "role": "vector_candidate",
+                "shape": "vector_candidate",
+                "source": "notation_heuristic",
+                "status": "candidate_not_assumption"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "tex_path": "/tmp/simple_phase04.tex",
+  "tool_uses": [
+    {
+      "arguments": {
+        "root": "/tmp",
+        "tex_path": "/tmp/simple_phase04.tex"
+      },
+      "output_contract": "equation_rows",
+      "purpose": "Localize source rows in the exact target file.",
+      "status": "completed",
+      "tool": "locate_equations_in_file"
+    },
+    {
+      "arguments": {
+        "context_target_count": 0,
+        "focus_labels": [
+          "eq:simple"
+        ]
+      },
+      "output_contract": "proposition_context_packet_result",
+      "purpose": "Localize proposition labels that are not display-equation rows and attach equation targets/context.",
+      "status": "not_needed",
+      "tool": "build_proposition_context_packet"
+    },
+    {
+      "arguments": {
+        "selected_rows": 1
+      },
+      "output_contract": "semantic_work_packet",
+      "purpose": "Classify each target and generate full-display semantic packets, missing obligations, assumption sets, and derivation routes.",
+      "status": "completed",
+      "tool": "build_semantic_work_packet"
+    },
+    {
+      "arguments": {
+        "selected_rows": 1
+      },
+      "output_contract": "assumption_discovery_result",
+      "purpose": "Detect route-required assumptions before backend proof attempts.",
+      "status": "completed",
+      "tool": "assumptions_required"
+    },
+    {
+      "arguments": {
+        "context_graph_count": 1,
+        "status_counts": {
+          "inferred_candidate": 2
+        }
+      },
+      "output_contract": "local_context_graph",
+      "purpose": "Classify local source evidence as stated, nearby stated, inferred, missing, or unresolved before proposing repairs.",
+      "status": "completed",
+      "tool": "build_local_context_graph"
+    },
+    {
+      "arguments": {
+        "status_counts": {
+          "ready_for_backend": 1
+        },
+        "typed_repair_obligation_count": 1
+      },
+      "output_contract": "typed_repair_obligation",
+      "purpose": "Convert context graph and semantic packet evidence into typed repair obligations before branch/report generation.",
+      "status": "completed",
+      "tool": "typed_repair_obligation_from_packet"
+    },
+    {
+      "arguments": {
+        "backend_env": "mathdevmcp-backends"
+      },
+      "output_contract": "doctor_report",
+      "purpose": "Record external backend capability provenance.",
+      "status": "available",
+      "tool": "doctor_report"
+    },
+    {
+      "arguments": {
+        "budget_profile": "standard",
+        "max_attempts": 2,
+        "selected_rows": 1
+      },
+      "output_contract": "derivation_search_tree_result",
+      "purpose": "Run the external-tool-first branch controller on semantic packet targets.",
+      "status": "completed",
+      "tool": "can_derive_with_budget"
+    },
+    {
+      "arguments": {
+        "ranked_branch_count": 1
+      },
+      "output_contract": "repair_branch_ranking_result",
+      "purpose": "Rank assumption branches by recorded backend evidence, blocker specificity, source support, closure strength, and non-minimality.",
+      "status": "completed",
+      "tool": "rank_repair_branches"
+    },
+    {
+      "arguments": {
+        "rendered_trees": 1
+      },
+      "output_contract": "derivation_tree_report_result",
+      "purpose": "Render each derivation tree into structured evidence sections.",
+      "status": "completed",
+      "tool": "render_derivation_tree_report"
+    }
+  ]
+}

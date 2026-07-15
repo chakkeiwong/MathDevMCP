@@ -2,21 +2,42 @@
 
 Date: 2026-07-10
 
-Status: `READY_FOR_REBOOT`
+Status: `READY_FOR_REBOOT_REMEDIATION_PROGRAM_COMPLETE_2026_07_15`
 
 ## Read This First
+
+2026-07-15 handoff: the real-document remediation program completed Phases
+00-09 with final bounded status `SAFE_AND_SUBSTANTIVELY_USEFUL`. Read these
+current artifacts before older runbook history:
+
+- `docs/plans/mathdevmcp-real-document-mission-remediation-master-plan-2026-07-10.md`;
+- `docs/plans/mathdevmcp-real-document-remediation-phase-09-final-red-team-and-decision-result-2026-07-15.md`;
+- `docs/reviews/mathdevmcp-real-document-remediation-phase-09-final-result-review-record-2026-07-15.md`;
+- `.local/mathdevmcp/evidence/p09-20260715/20260715T141536Z-357f363df829/decision.json`.
+
+The final decision digest is
+`e40c27e328fac2f242c0fe4b4c0ae1fd93f7fd7e45cb6038c7b5c33629742a32`.
+This closes only the bounded remediation mission. Publication, default changes,
+release, deployment, source edits, formal proof, new-corpus generalization, and
+full-suite health remain unclaimed and unauthorized.
 
 This memo records the clean reboot state after the agent-guided,
 tool-verified repair lane was completed, committed, and pushed.
 
-The governing mission remains:
+The governing mission, with wording clarified on 2026-07-10, is:
 
-- build a conservative agent-facing math-development tool;
+- build an exploratory, high-standard, rigorous, agent-facing mathematical
+  development system;
+- search broadly across candidate assumptions, derivations, counterexamples,
+  formalizations, and external-tool routes;
 - make outputs directly useful to agents and colleagues;
 - prefer deterministic or specialist external tools whenever possible;
 - keep agent hypotheses as candidate branches, not evidence;
 - never promote diagnostics, route plans, retrieval, or generated prose into
   proof without backend verification under explicit assumptions.
+
+In short: exploratory in search, rigorous at the claim boundary. Candidate
+branches may be speculative; published repairs and verified claims may not be.
 
 Read these first after reboot:
 
@@ -185,6 +206,10 @@ strict gaps and no certified repairs.
 - The implementation has focused test coverage, not a full release gate.
 
 ## Next Safe Work Packages
+
+The 2026-07-15 remediation result changes the priority: do not reopen Phases
+00-09 or repeat their governance machinery. Choose a new scientific/product
+lane only after stating its own question and evidence contract.
 
 Good next lanes after reboot:
 

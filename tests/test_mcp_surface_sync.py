@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from mathdevmcp.mcp_facade import MCP_TOOL_SPECS, TOOL_HANDLERS, call_mcp_tool, list_mcp_tools
-from mathdevmcp.mcp_server import MCP_SERVER_EXPOSED_TOOLS
+from mathdevmcp.mcp_server import MCP_SERVER_EXPOSED_TOOLS, mcp
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -66,6 +66,29 @@ def test_mcp_server_exposure_matches_registry_aliases():
     assert server_names == MCP_SERVER_EXPOSED_TOOLS
     assert "tool_matrix" in {spec.name for spec in MCP_TOOL_SPECS}
     assert "get_tool_matrix" in MCP_SERVER_EXPOSED_TOOLS
+
+
+def test_document_derivation_fastmcp_schema_exposes_v2_structured_content_tools():
+    tool = mcp._tool_manager._tools["audit_document_derivation_tree"]
+    properties = tool.parameters["properties"]
+
+    assert properties["response_mode"]["default"] == "compact"
+    assert properties["response_mode"]["enum"] == ["compact", "detailed", "artifact_only"]
+    assert properties["artifact_root"]["default"] is None
+    assert properties["target_limit"]["default"] is None
+    assert properties["target_cursor"]["default"] is None
+    assert tool.fn_metadata.output_schema is None
+
+    resolver = mcp._tool_manager._tools["resolve_document_derivation_records"]
+    resolver_properties = resolver.parameters["properties"]
+    assert resolver_properties["target_id"]["default"] is None
+    assert resolver_properties["offset"]["default"] == 0
+    assert resolver_properties["limit"]["default"] == 100
+    assert resolver.fn_metadata.output_schema is None
+
+    registry = {spec.name: spec for spec in MCP_TOOL_SPECS}
+    assert registry["audit_document_derivation_tree"].output_contract == "document_derivation_response"
+    assert registry["resolve_document_derivation_records"].output_contract == "document_derivation_record_page"
 
 
 def test_mcp_readme_mentions_every_registry_and_server_tool():

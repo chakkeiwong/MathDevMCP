@@ -2,18 +2,27 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
+import hashlib
 import json
 import re
+import stat
 import subprocess
 import tempfile
 import time
+from typing import Any
 import xml.etree.ElementTree as ET
 
 from .backend_env import backend_bin, backend_subprocess_env
 from .contracts import attach_contract, contract_metadata
+from .evidence_manifest import (
+    atomic_write_bytes_no_replace,
+    canonical_json_bytes,
+    content_digest,
+    read_bytes_no_follow,
+)
 from .latex_index import build_index
 
 
@@ -38,6 +47,22 @@ class ParserBenchmarkReport:
     results: list[dict]
     summary: dict[str, int]
     metadata: dict[str, str]
+
+
+P02_ORACLE_REF = (
+    "docs/plans/mathdevmcp-real-document-remediation-phase-02r3-"
+    "timeout-policy-recovery-oracle-2026-07-12.json"
+)
+P02_RESULT_ROUND_PARENT = Path(".local/mathdevmcp/evidence/p02r3-20260712/result-rounds")
+P02_FIDELITY_FIELDS = (
+    "exact_requested_label_set",
+    "exact_owner_label_spans",
+    "exact_owned_row_spans",
+    "exact_excluded_sibling_spans",
+    "exact_nested_environment_stack",
+    "exact_source_byte_roundtrip",
+    "explicit_uncertainty_localization",
+)
 
 
 def _tex_files(root: Path) -> list[Path]:
@@ -313,3 +338,301 @@ def compare_parser_backends(root: str | Path, backends: list[str] | None = None,
         for result in results
     }
     return asdict(ParserBenchmarkReport(ok=True, results=results, summary=summary, metadata=contract_metadata("parser_benchmark_report")))
+
+
+def compare_p02_fidelity_vectors(current: Sequence[int], candidate: Sequence[int]) -> dict[str, Any]:
+    """Compare the reviewed seven-bit vectors in priority order."""
+    left = list(current)
+    right = list(candidate)
+    if len(left) != len(P02_FIDELITY_FIELDS) or len(right) != len(P02_FIDELITY_FIELDS):
+        raise ValueError("Phase 02 fidelity vectors must contain exactly seven bits")
+    if any(type(value) is not int or value not in {0, 1} for value in [*left, *right]):
+        raise ValueError("Phase 02 fidelity vectors contain only integer bits")
+    first_difference = next((index for index, pair in enumerate(zip(left, right, strict=True)) if pair[0] != pair[1]), None)
+    if first_difference is None:
+        relation = "equal_retain_current"
+    elif right[first_difference] > left[first_difference]:
+        relation = "candidate_materially_better"
+    else:
+        relation = "current_materially_better"
+    return {
+        "schema_version": "p02_fidelity_vector_comparison@1",
+        "fields": list(P02_FIDELITY_FIELDS),
+        "current": left,
+        "candidate": right,
+        "first_differing_field": P02_FIDELITY_FIELDS[first_difference] if first_difference is not None else None,
+        "relation": relation,
+    }
+
+
+def _p02_root() -> Path:
+    root = Path.cwd().absolute()
+    if not (root / ".git").exists() or not (root / P02_ORACLE_REF).is_file():
+        raise ValueError("Phase 02R3 parser fidelity must run from the MathDevMCP workspace root")
+    return root
+
+
+def _p02_round_ref(round_root: str | Path) -> str:
+    value = Path(round_root)
+    if (
+        value.is_absolute()
+        or value.parent != P02_RESULT_ROUND_PARENT
+        or value.name not in {f"rr0{i}" for i in range(1, 6)}
+    ):
+        raise ValueError("Phase 02R3 parser round root is outside the reviewed result-round scope")
+    return value.as_posix()
+
+
+def _p02_load_profile(root: Path) -> dict[str, Any]:
+    from .extraction_evidence import load_profile
+
+    effective, _materialized = load_profile(root)
+    profile = effective["parser_fidelity_profile"]
+    if tuple(profile["fidelity_vector_fields_in_priority_order"]) != P02_FIDELITY_FIELDS:
+        raise ValueError("Phase 02R3 parser fidelity field registry mismatch")
+    if list(profile["executables"]) != ["latexml", "pandoc"]:
+        raise ValueError("Phase 02R3 parser backend order differs from the reviewed profile")
+    if len(profile["source_allowlist"]) != 13 or len(set(profile["source_allowlist"])) != 13:
+        raise ValueError("Phase 02R3 parser source allowlist is not exact and unique")
+    return profile
+
+
+def _p02_environment(profile: dict[str, Any], round_ref: str) -> dict[str, str]:
+    return {key: value.replace("RR", round_ref) for key, value in profile["environment"].items()}
+
+
+def _p02_write(root: Path, ref: str, data: bytes) -> dict[str, Any]:
+    result = atomic_write_bytes_no_replace(root, ref, data)
+    return {"ref": ref, "sha256": result["sha256"], "byte_count": result["byte_count"]}
+
+
+def _p02_write_json(root: Path, ref: str, record: dict[str, Any]) -> dict[str, Any]:
+    return _p02_write(root, ref, canonical_json_bytes(record))
+
+
+def _p02_read_regular(root: Path, ref: str) -> bytes:
+    raw, info = read_bytes_no_follow(root, ref)
+    if not stat.S_ISREG(info.st_mode):
+        raise ValueError(f"Phase 02R2 raw artifact is not regular: {ref}")
+    return raw
+
+
+def _p02_raw_binding(root: Path, ref: str, *, required: bool) -> dict[str, Any]:
+    path = root / ref
+    exists = path.exists() or path.is_symlink()
+    if not exists:
+        if required:
+            raise ValueError(f"Phase 02R2 required raw artifact is absent: {ref}")
+        return {"byte_count": None, "present": False, "ref": ref, "sha256": None}
+    raw = _p02_read_regular(root, ref)
+    return {
+        "byte_count": len(raw),
+        "present": True,
+        "ref": ref,
+        "sha256": content_digest(raw),
+    }
+
+
+def _p02_prepare_directories(root: Path, round_ref: str) -> None:
+    round_path = root / round_ref
+    current = root
+    for part in Path(round_ref).parts:
+        current = current / part
+        if current.is_symlink() or not current.is_dir():
+            raise ValueError("Phase 02R2 parser round root is absent or unsafe")
+    parser_path = round_path / "parser"
+    if parser_path.exists() or parser_path.is_symlink():
+        raise ValueError("Phase 02R2 parser subtree must be absent before the one-shot action")
+    parser_path.mkdir(mode=0o700, exist_ok=False)
+    for path in (
+        parser_path / "home",
+        parser_path / "latexml",
+        parser_path / "pandoc",
+        parser_path / "receipts",
+        parser_path / "observations",
+        parser_path / "expected-values",
+    ):
+        if path.exists() or path.is_symlink():
+            if path.is_symlink() or not path.is_dir():
+                raise ValueError(f"unsafe Phase 02R2 parser directory: {path.relative_to(root)}")
+        else:
+            path.mkdir(mode=0o700, exist_ok=False)
+
+
+def _p02_run(
+    root: Path,
+    argv: list[str],
+    *,
+    environment: dict[str, str],
+    timeout: int,
+) -> tuple[int | None, bytes, bytes, bool, int]:
+    started = time.perf_counter_ns()
+    try:
+        completed = subprocess.run(
+            argv,
+            cwd=root,
+            env=environment,
+            check=False,
+            capture_output=True,
+            timeout=timeout,
+        )
+        return completed.returncode, completed.stdout, completed.stderr, False, time.perf_counter_ns() - started
+    except subprocess.TimeoutExpired as exc:
+        stdout = exc.stdout if isinstance(exc.stdout, bytes) else (exc.stdout or "").encode("utf-8", "replace")
+        stderr = exc.stderr if isinstance(exc.stderr, bytes) else (exc.stderr or "").encode("utf-8", "replace")
+        return None, stdout, stderr, True, time.perf_counter_ns() - started
+
+
+def run_p02_parser_fidelity(round_root: str | Path) -> dict[str, Any]:
+    """Run and independently verify the exact reviewed P02R3 parser profile."""
+    root = _p02_root()
+    round_ref = _p02_round_ref(round_root)
+    profile = _p02_load_profile(root)
+    environment = _p02_environment(profile, round_ref)
+    implementation_manifest_ref = f"{round_ref}/implementation-round-sha256.txt"
+    _p02_read_regular(root, implementation_manifest_ref)
+    _p02_prepare_directories(root, round_ref)
+
+    version_receipts: dict[str, dict[str, str]] = {}
+    timed_out_invocation_count = 0
+    for backend, executable in profile["executables"].items():
+        argv = list(executable["version_argv"])
+        exit_code, stdout, stderr, timed_out, wall_ns = _p02_run(
+            root,
+            argv,
+            environment=environment,
+            timeout=executable["version_timeout_seconds"],
+        )
+        stdout_ref = f"{round_ref}/parser/receipts/{backend}-version.stdout"
+        stderr_ref = f"{round_ref}/parser/receipts/{backend}-version.stderr"
+        _p02_write(root, stdout_ref, stdout)
+        _p02_write(root, stderr_ref, stderr)
+        version_record = {
+            "argv": argv,
+            "backend": backend,
+            "environment": environment,
+            "exit_code": exit_code,
+            "schema_version": "p02r2_parser_version_invocation_receipt@1",
+            "stderr": _p02_raw_binding(root, stderr_ref, required=True),
+            "stdout": _p02_raw_binding(root, stdout_ref, required=True),
+            "timed_out": timed_out,
+            "timeout_seconds": executable["version_timeout_seconds"],
+            "wall_time_ns": wall_ns,
+        }
+        version_ref = f"{round_ref}/parser/receipts/{backend}-version-raw.json"
+        version_artifact = _p02_write_json(root, version_ref, version_record)
+        version_receipts[backend] = {
+            "ref": version_ref,
+            "sha256": version_artifact["sha256"],
+        }
+        timed_out_invocation_count += int(timed_out)
+
+    source_receipt_count = 0
+    for source_ref in profile["source_allowlist"]:
+        case_token = hashlib.sha256(source_ref.encode("utf-8")).hexdigest()
+        for backend, executable in profile["executables"].items():
+            source_before = content_digest(_p02_read_regular(root, source_ref))
+            argv = [
+                value.replace("RR", round_ref).replace("CASE", case_token).replace("SOURCE", source_ref)
+                for value in executable["fidelity_argv_template"]
+            ]
+            for output_ref in (
+                f"{round_ref}/parser/latexml/{case_token}.log",
+                f"{round_ref}/parser/latexml/{case_token}.xml",
+            ):
+                if backend == "latexml" and ((root / output_ref).exists() or (root / output_ref).is_symlink()):
+                    raise ValueError(f"Phase 02 parser output already exists: {output_ref}")
+            exit_code, stdout, stderr, timed_out, wall_ns = _p02_run(
+                root,
+                argv,
+                environment=environment,
+                timeout=executable["source_timeout_seconds"],
+            )
+            stdout_ref = f"{round_ref}/parser/receipts/{backend}-{case_token}.stdout"
+            stderr_ref = f"{round_ref}/parser/receipts/{backend}-{case_token}.stderr"
+            _p02_write(root, stdout_ref, stdout)
+            _p02_write(root, stderr_ref, stderr)
+            source_after = content_digest(_p02_read_regular(root, source_ref))
+            stdout_binding = _p02_raw_binding(root, stdout_ref, required=True)
+            stderr_binding = _p02_raw_binding(root, stderr_ref, required=True)
+            if backend == "latexml":
+                output_binding = _p02_raw_binding(
+                    root,
+                    f"{round_ref}/parser/latexml/{case_token}.xml",
+                    required=False,
+                )
+                log_binding = _p02_raw_binding(
+                    root,
+                    f"{round_ref}/parser/latexml/{case_token}.log",
+                    required=False,
+                )
+            else:
+                output_binding = dict(stdout_binding)
+                log_binding = None
+            record = {
+                "argv": argv,
+                "backend": backend,
+                "case_token": case_token,
+                "environment": environment,
+                "exit_code": exit_code,
+                "log": log_binding,
+                "output": output_binding,
+                "schema_version": "p02r2_parser_source_invocation_receipt@1",
+                "source_ref": source_ref,
+                "source_sha256_after": source_after,
+                "source_sha256_before": source_before,
+                "stderr": stderr_binding,
+                "stdout": stdout_binding,
+                "timed_out": timed_out,
+                "timeout_seconds": executable["source_timeout_seconds"],
+                "version_receipt_ref": version_receipts[backend]["ref"],
+                "version_receipt_sha256": version_receipts[backend]["sha256"],
+                "wall_time_ns": wall_ns,
+            }
+            receipt_ref = f"{round_ref}/parser/receipts/{backend}-{case_token}-raw.json"
+            _p02_write_json(root, receipt_ref, record)
+            source_receipt_count += 1
+            timed_out_invocation_count += int(timed_out)
+            if source_after != source_before:
+                raise ValueError(f"Phase 02R3 parser mutated a protected source: {source_ref}")
+
+    if len(version_receipts) != 2 or source_receipt_count != 26:
+        raise ValueError("Phase 02R3 parser runner did not seal exactly 2+26 raw receipts")
+
+    from .extraction_evidence import (
+        build_expected_value_projections,
+        build_parser_comparison,
+        build_parser_raw_observations,
+        verify_parser_comparison,
+        verify_parser_timeout_gate,
+    )
+
+    observations = build_parser_raw_observations(root, round_ref, implementation_manifest_ref)
+    for item in observations:
+        _p02_write_json(root, item["ref"], item["record"])
+    projections = build_expected_value_projections(root, round_ref)
+    for item in projections:
+        _p02_write_json(root, item["ref"], item["record"])
+
+    comparison = build_parser_comparison(root, round_ref, implementation_manifest_ref)
+    comparison_ref = f"{round_ref}/parser/parser-comparison.json"
+    artifact = _p02_write_json(root, comparison_ref, comparison)
+    verified = verify_parser_comparison(root, comparison_ref, implementation_manifest_ref)
+    if verified["sha256"] != artifact["sha256"] or verified["record"] != comparison:
+        raise ValueError("Phase 02R3 parser comparison differs from independent reconstruction")
+    timeout_gate = verify_parser_timeout_gate(root, round_ref, implementation_manifest_ref)
+    if timeout_gate["timed_out_invocation_count"] != timed_out_invocation_count:
+        raise ValueError("Phase 02R3 timeout count differs from independent receipt reconstruction")
+    if not timeout_gate["all_invocations_completed_within_ceiling"]:
+        raise ValueError("Phase 02R3 parser timeout gate failed")
+    return {
+        "comparison_ref": comparison_ref,
+        "comparison_sha256": artifact["sha256"],
+        "comparison": comparison,
+        "observation_artifact_count": len(observations),
+        "projection_artifact_count": len(projections),
+        "version_invocation_count": len(version_receipts),
+        "source_invocation_count": source_receipt_count,
+        "timed_out_invocation_count": timed_out_invocation_count,
+        "timeout_gate": timeout_gate,
+    }

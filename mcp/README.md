@@ -95,9 +95,30 @@ Facade registry: `src/mathdevmcp/mcp_facade.py`
   a rigor gap/proposal report.
 - `audit_document_derivation_tree` - experimentally audit LaTeX targets with
   semantic work packets, agent-guided hypothesis branches, tree/backend
-  evidence, and `tool_grounded_proposal_compiler_result`. Use
+  evidence, and `tool_grounded_proposal_compiler_result`. The default MCP/CLI
+  transport is the v2 compact `document_derivation_response`; request
+  `response_mode="detailed"` for the redacted raw-audit-compatible view or
+  `response_mode="artifact_only"` with `artifact_root` for a small response
+  bound to exact local detailed bytes. With `artifact_root`, compact responses
+  use byte-aware pages and return one strict `page_token`; pass that token as
+  `target_cursor` to continue without rerunning the audit. Without
+  `artifact_root`, compact mode returns every target inline, emits no token,
+  and reports any byte overage rather than dropping records. Use
   `search_mode="agent_guided"` and `grounding_policy="strict"` for the current
-  strict contract; blocked paths are gap reports, not repair proposals.
+  strict contract. Every response mode remains diagnostic, keeps publication
+  disabled, and reports blocked paths as gaps rather than repair proposals.
+- `resolve_document_derivation_records` - resolve one exact global or
+  target-scoped record collection from the verified persisted audit. Supply
+  the page's `page_token`, exact collection name, `artifact_root`, and the exact
+  target ID for target-scoped collections. Resolver `limit` controls record
+  pagination independently of the token's target-page limit.
+
+Phase 08 compact responses are an intentional experimental v1-to-v2 break.
+Phase 07 JSON cursors and `next_cursor` are rejected; rerun the initial request
+to obtain a v2 `page_token`. FastMCP returns one fixed text pointer and the
+machine-readable result in `structuredContent`, with no `outputSchema`.
+Content-only MCP clients must migrate to `structuredContent`, the CLI, or the
+in-process facade. Compact CLI output is canonical one-line JSON.
 
 ### Operational Tools
 

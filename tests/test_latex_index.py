@@ -7,6 +7,7 @@ from mathdevmcp.latex_index import (
     extract_paragraph_context_for_label,
     search_index,
     search_index_filtered,
+    resolve_label_occurrences,
 )
 
 
@@ -68,6 +69,39 @@ def test_equation_localization_summary_reports_uncertainty():
     assert summary["metadata"] == {"schema_version": "1.0", "contract": "equation_localization_summary"}
     assert summary["status"] == "localized_with_uncertainty"
     assert summary["uncertain_row_count"] == 1
+
+
+def test_phase02_locator_preserves_bytes_and_never_inherits_a_sibling_label() -> None:
+    source = (
+        "\\begin{align}\n"
+        "a &= b \\label{eq:first}\\\\\n"
+        "  &= c \\nonumber\\\\\n"
+        "u &= v \\label{eq:second}\n"
+        "\\end{align}\n"
+    )
+    rows = locate_equations_in_text(source, relative_path="reviewed.tex")
+
+    assert [row["explicit_label"] for row in rows] == ["eq:first", None, "eq:second"]
+    assert [row["label"] for row in rows] == ["eq:first", None, "eq:second"]
+    assert [source.encode()[row["byte_start"] : row["byte_end"]].decode() for row in rows] == [
+        row["source_text"] for row in rows
+    ]
+    assert rows[1]["has_nonumber"] is True
+    assert rows[0]["environment_id"] == rows[2]["environment_id"]
+
+
+def test_phase02_nested_aligned_rows_keep_outer_to_inner_environment_stack() -> None:
+    source = (Path(__file__).parent / "fixtures/label_scoped_obligations/nested_aligned.tex").read_text(
+        encoding="utf-8"
+    )
+    rows = locate_equations_in_text(source, relative_path="nested_aligned.tex")
+
+    assert [(row["byte_start"], row["byte_end"]) for row in rows] == [(33, 46), (54, 76)]
+    assert [[item["kind"] for item in row["environment_stack_descriptors"]] for row in rows] == [
+        ["equation", "aligned"],
+        ["equation", "aligned"],
+    ]
+    assert len({row["environment_id"] for row in rows}) == 1
 
 
 def test_search_index_ranks_matching_blocks(tmp_path: Path):
@@ -205,6 +239,20 @@ final = 2
 
     assert context["file"] == "final_submission.tex"
     assert any("final = 2" in item["text"] for item in context["excerpt"])
+
+
+def test_phase02_index_exposes_all_duplicate_occurrences_without_overwrite(tmp_path: Path) -> None:
+    for name, value in (("a.tex", "x = 1"), ("b.tex", "x = 2")):
+        (tmp_path / name).write_text(
+            f"\\begin{{equation}}\n{value}\n\\label{{eq:shared}}\n\\end{{equation}}\n",
+            encoding="utf-8",
+        )
+    index = build_index(tmp_path)
+
+    assert "eq:shared" not in index["labels"]
+    assert [item["file"] for item in index["label_occurrences"]["eq:shared"]] == ["a.tex", "b.tex"]
+    assert resolve_label_occurrences(index, "eq:shared")["status"] == "ambiguous"
+    assert resolve_label_occurrences(index, "eq:shared", file="b.tex")["occurrence"]["file"] == "b.tex"
 
 
 def test_extract_context_for_section_label_falls_back_to_text_search(tmp_path: Path):

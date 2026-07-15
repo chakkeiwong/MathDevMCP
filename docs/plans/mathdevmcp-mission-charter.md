@@ -1,16 +1,23 @@
 # MathDevMCP Mission Charter
 
 Date: 2026-07-04
+Mission wording amended: 2026-07-10
 
-Status: `CANONICAL_MISSION_SPINE_REVIEW_AGREED`
+Status: `CANONICAL_MISSION_SPINE_AMENDED_2026_07_10`
 
 ## Mission
 
-MathDevMCP's mission is to become a conservative agent-facing
-math-development tool, exposed through CLI/MCP, that helps agents and
-colleagues audit mathematical code and documents, locate proof gaps, missing
-assumptions, implementation mismatches, and backend limitations, while never
-mistaking diagnostics for proof.
+MathDevMCP's mission is to become an exploratory, high-standard, rigorous,
+agent-facing mathematical development system, exposed through CLI/MCP, that
+helps agents and colleagues audit and develop mathematical code and documents,
+locate proof gaps, missing assumptions, implementation mismatches, and backend
+limitations, and investigate candidate repairs while never mistaking
+diagnostics or hypotheses for proof.
+
+The system is exploratory in search and rigorous at the claim boundary. It may
+generate and investigate speculative candidate branches broadly; it publishes
+a mathematical repair or verified claim only when the scoped result is
+supported under explicit assumptions by the required reproducible evidence.
 
 ## Product Spine
 
@@ -117,7 +124,8 @@ benchmark by default. Its product implication is:
 
 ## Review Status
 
-Sonnet max read-only review agreed with this mission spine:
+Sonnet max read-only review agreed with the 2026-07-04 wording of this mission
+spine:
 
 - `REVIEW_STATUS=agreed`;
 - `VERDICT=AGREE`;
@@ -127,3 +135,8 @@ Sonnet max read-only review agreed with this mission spine:
 The review suggested one clarity patch: docs should not satisfy the product
 artifact field by themselves unless tied to a named user workflow. That patch
 was applied in `docs/plans/mathdevmcp-anti-drift-gate.md`.
+
+The 2026-07-10 wording amendment replaces "conservative" as the identity of
+the system with "exploratory, high-standard, rigorous, and agent-facing." It
+does not weaken the safety invariant, evidence requirements, abstention rules,
+or non-claims. This amendment has not inherited the earlier review verdict.

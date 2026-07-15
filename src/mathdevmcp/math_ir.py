@@ -7,6 +7,7 @@ import re
 from typing import Any, Literal
 
 from .contracts import contract_metadata
+from .evidence_manifest import EvidenceValidationError, content_digest, validate_logical_path
 
 
 ObligationKind = Literal["equation", "inequality", "definition", "unknown"]
@@ -22,6 +23,7 @@ TypedRole = Literal[
     "stochastic_process_candidate",
     "likelihood_candidate",
     "posterior_candidate",
+    "policy_candidate",
     "gradient_candidate",
     "hamiltonian_candidate",
     "unknown",
@@ -122,6 +124,20 @@ class TypedRepairObligation:
     metadata: dict[str, str]
 
 
+SYMBOL_PRIORITY = {
+    "scoped_override": 0,
+    "exact_declaration": 1,
+    "explicit_alias": 2,
+    "dependency_linked_use": 3,
+    "lexical_heuristic": 4,
+}
+SYMBOL_RESOLUTION_STATES = frozenset({"resolved", "ambiguous", "candidate", "unknown", "not_searched"})
+ASSUMPTION_SUPPORT_STATES = frozenset(
+    {"stated", "source_supported", "candidate_assumption", "ambiguous", "not_found_after_search", "not_searched"}
+)
+ASSUMPTION_ENCODING_STATES = frozenset({"encoded", "not_encodable", "not_yet_encoded", "not_applicable"})
+
+
 _UNRESOLVED_PATTERNS = {
     "derivative": r"\\partial|\\nabla|Derivative",
     "latex_derivative": r"\\frac\s*\{d|\\frac\s*\{\\partial|d\\bar",
@@ -130,7 +146,7 @@ _UNRESOLVED_PATTERNS = {
     "determinant": r"\\log\s*\\det\b|\\det\b|\blogdet\b|\bdet\s*\(",
     "expectation": r"\\mathbb\{E\}|\\E\b|E\[|expectation",
     "transpose": r"\\top\b|transpose",
-    "posterior": r"posterior|logpost|log_post|\\pi",
+    "posterior": r"posterior|logpost|log_post",
     "hamiltonian": r"Hamiltonian|H\(",
     "conditional": r"\\mid|\|",
     "optimization": r"\\max|\\min",
@@ -169,6 +185,298 @@ def _typed_role(symbol: str, text: str) -> tuple[TypedRole, str]:
     if symbol.endswith("_t"):
         return "stochastic_process_candidate", "unknown"
     return "unknown", "unknown"
+
+
+def _require_scope(scope: Any, name: str = "scope") -> dict[str, str]:
+    keys = {"entry_source_digest", "file", "label", "obligation_digest"}
+    if not isinstance(scope, dict) or set(scope) != keys:
+        raise EvidenceValidationError(f"{name} keys must be exactly {sorted(keys)}")
+    result: dict[str, str] = {}
+    for key in keys:
+        value = scope[key]
+        if not isinstance(value, str) or not value:
+            raise EvidenceValidationError(f"{name}.{key} must be a non-empty string")
+        result[key] = value
+    if not re.fullmatch(r"[0-9a-f]{64}", result["entry_source_digest"]):
+        raise EvidenceValidationError(f"{name}.entry_source_digest must be a lowercase SHA-256")
+    if not re.fullmatch(r"[0-9a-f]{64}", result["obligation_digest"]):
+        raise EvidenceValidationError(f"{name}.obligation_digest must be a lowercase SHA-256")
+    validate_logical_path(result["file"], name=f"{name}.file")
+    return result
+
+
+def _exact_source_ref(value: Any, name: str = "source_ref") -> dict[str, Any]:
+    keys = {
+        "file",
+        "source_digest",
+        "byte_span",
+        "line_span",
+        "enclosing_node_id",
+        "dependency_path",
+        "applicability_reason",
+    }
+    if not isinstance(value, dict) or set(value) != keys:
+        raise EvidenceValidationError(f"{name} keys must be exactly {sorted(keys)}")
+    validate_logical_path(value["file"], name=f"{name}.file")
+    if not isinstance(value["source_digest"], str) or not re.fullmatch(r"[0-9a-f]{64}", value["source_digest"]):
+        raise EvidenceValidationError(f"{name}.source_digest must be a lowercase SHA-256")
+    for span_name in ("byte_span", "line_span"):
+        span = value[span_name]
+        if not isinstance(span, dict) or set(span) != {"start", "end"}:
+            raise EvidenceValidationError(f"{name}.{span_name} must have start/end")
+        start, end = span["start"], span["end"]
+        minimum = 1 if span_name == "line_span" else 0
+        if type(start) is not int or type(end) is not int or start < minimum or end < start:
+            raise EvidenceValidationError(f"{name}.{span_name} is invalid")
+    if value["byte_span"]["end"] <= value["byte_span"]["start"]:
+        raise EvidenceValidationError(f"{name}.byte_span must be non-empty")
+    for key in ("enclosing_node_id", "applicability_reason"):
+        if not isinstance(value[key], str) or not value[key]:
+            raise EvidenceValidationError(f"{name}.{key} must be a non-empty string")
+    path = value["dependency_path"]
+    if not isinstance(path, list) or not path or any(not isinstance(item, str) or not item for item in path):
+        raise EvidenceValidationError(f"{name}.dependency_path must be a non-empty string list")
+    return dict(value)
+
+
+def _symbol_candidate(
+    value: Any,
+    *,
+    scope: dict[str, str],
+    override: bool,
+) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+    if not isinstance(value, dict):
+        raise EvidenceValidationError("symbol evidence must be an object")
+    required = {"symbol", "proposed_role", "scope", "source_refs", "applicability_reason"}
+    if not override:
+        required.add("evidence_kind")
+    else:
+        required.add("override_provenance")
+    if set(value) != required:
+        raise EvidenceValidationError(f"symbol evidence keys must be exactly {sorted(required)}")
+    record_scope = _require_scope(value["scope"], "symbol evidence scope")
+    if record_scope != scope:
+        return None, {
+            "kind": "override_scope_mismatch" if override else "evidence_scope_mismatch",
+            "symbol": value.get("symbol"),
+            "record_scope": record_scope,
+            "request_scope": scope,
+        }
+    for key in ("symbol", "proposed_role", "applicability_reason"):
+        if not isinstance(value[key], str) or not value[key]:
+            raise EvidenceValidationError(f"symbol evidence {key} must be a non-empty string")
+    priority = "scoped_override" if override else value["evidence_kind"]
+    if priority not in SYMBOL_PRIORITY:
+        raise EvidenceValidationError(f"symbol evidence priority is invalid: {priority}")
+    refs = value["source_refs"]
+    if not isinstance(refs, list):
+        raise EvidenceValidationError("symbol evidence source_refs must be a list")
+    if priority == "lexical_heuristic":
+        if refs:
+            raise EvidenceValidationError("lexical symbol evidence cannot claim exact source support")
+        source_refs: list[dict[str, Any]] = []
+    else:
+        if not refs:
+            raise EvidenceValidationError("non-lexical symbol evidence requires exact source refs")
+        source_refs = [_exact_source_ref(item, f"symbol source_refs[{index}]") for index, item in enumerate(refs)]
+    candidate = {
+        "symbol": value["symbol"],
+        "proposed_role": value["proposed_role"],
+        "scope": scope,
+        "evidence_kind": priority,
+        "source_refs": source_refs,
+        "applicability_reason": value["applicability_reason"],
+        "priority_class": priority,
+    }
+    if override:
+        provenance = value["override_provenance"]
+        if not isinstance(provenance, dict) or set(provenance) != {"authority", "artifact_ref", "artifact_sha256"}:
+            raise EvidenceValidationError("override_provenance has invalid keys")
+        if provenance["authority"] != "human_user":
+            raise EvidenceValidationError("only human_user may author a scoped override")
+        validate_logical_path(provenance["artifact_ref"], name="override_provenance.artifact_ref")
+        if not isinstance(provenance["artifact_sha256"], str) or not re.fullmatch(r"[0-9a-f]{64}", provenance["artifact_sha256"]):
+            raise EvidenceValidationError("override_provenance.artifact_sha256 must be a lowercase SHA-256")
+        candidate["override_provenance"] = dict(provenance)
+    candidate["candidate_id"] = "sym_" + content_digest(
+        [
+            candidate["symbol"],
+            candidate["proposed_role"],
+            candidate["scope"],
+            candidate["evidence_kind"],
+            candidate["source_refs"],
+        ]
+    )
+    return candidate, None
+
+
+def resolve_symbol_roles(
+    symbol_spellings: list[str],
+    *,
+    scope: dict[str, str],
+    evidence_records: list[dict[str, Any]],
+    overrides: list[dict[str, Any]] | tuple[dict[str, Any], ...] = (),
+    search_state: str,
+) -> dict[str, Any]:
+    """Resolve roles only from unique, highest-priority non-lexical evidence."""
+    bound_scope = _require_scope(scope)
+    if not isinstance(symbol_spellings, list) or any(not isinstance(item, str) or not item for item in symbol_spellings):
+        raise EvidenceValidationError("symbol_spellings must be a list of non-empty strings")
+    if len(symbol_spellings) != len(set(symbol_spellings)):
+        raise EvidenceValidationError("symbol_spellings must not contain duplicates")
+    if search_state not in ASSUMPTION_SUPPORT_STATES:
+        raise EvidenceValidationError("symbol search_state is invalid")
+    candidates: list[dict[str, Any]] = []
+    diagnostics: list[dict[str, Any]] = []
+    for record in evidence_records:
+        candidate, diagnostic = _symbol_candidate(record, scope=bound_scope, override=False)
+        if candidate is not None:
+            candidates.append(candidate)
+        if diagnostic is not None:
+            diagnostics.append(diagnostic)
+    for record in overrides:
+        candidate, diagnostic = _symbol_candidate(record, scope=bound_scope, override=True)
+        if candidate is not None:
+            candidates.append(candidate)
+        if diagnostic is not None:
+            diagnostics.append(diagnostic)
+    candidates = [candidate for candidate in candidates if candidate["symbol"] in symbol_spellings]
+    candidates.sort(
+        key=lambda item: (
+            symbol_spellings.index(item["symbol"]),
+            SYMBOL_PRIORITY[item["priority_class"]],
+            item["proposed_role"],
+            item["candidate_id"],
+        )
+    )
+    resolutions: list[dict[str, Any]] = []
+    for symbol in symbol_spellings:
+        records = [item for item in candidates if item["symbol"] == symbol]
+        if not records:
+            state = "not_searched" if search_state == "not_searched" else "unknown"
+            resolutions.append({"symbol": symbol, "state": state, "role": None, "candidate_ids": []})
+            continue
+        top_priority = min(SYMBOL_PRIORITY[item["priority_class"]] for item in records)
+        top = [item for item in records if SYMBOL_PRIORITY[item["priority_class"]] == top_priority]
+        roles = sorted({item["proposed_role"] for item in top})
+        if top[0]["priority_class"] == "lexical_heuristic":
+            state, role = "candidate", None
+        elif len(roles) == 1:
+            state, role = "resolved", roles[0]
+        else:
+            state, role = "ambiguous", None
+        assert state in SYMBOL_RESOLUTION_STATES
+        resolutions.append(
+            {"symbol": symbol, "state": state, "role": role, "candidate_ids": [item["candidate_id"] for item in top]}
+        )
+    return {
+        "schema_version": "p03_symbol_resolution@1",
+        "scope": bound_scope,
+        "candidates": candidates,
+        "resolutions": resolutions,
+        "diagnostics": diagnostics,
+        "non_claim": "Symbol candidates and resolutions are scoped source interpretations, not mathematical proof.",
+    }
+
+
+def validate_typed_assumption(value: Any) -> dict[str, Any]:
+    keys = {
+        "assumption_id",
+        "predicate",
+        "formal_predicate",
+        "kind",
+        "subjects",
+        "support_state",
+        "source_refs",
+        "encoding_state",
+        "closes_blocker_ids",
+        "mathematical_sufficiency",
+        "binding_digest",
+    }
+    if not isinstance(value, dict) or set(value) != keys:
+        raise EvidenceValidationError(f"typed assumption keys must be exactly {sorted(keys)}")
+    for key in ("predicate", "kind"):
+        if not isinstance(value[key], str) or not value[key]:
+            raise EvidenceValidationError(f"typed assumption {key} must be a non-empty string")
+    if value["formal_predicate"] is not None and (
+        not isinstance(value["formal_predicate"], str) or not value["formal_predicate"]
+    ):
+        raise EvidenceValidationError("typed assumption formal_predicate must be null or non-empty")
+    for key in ("subjects", "closes_blocker_ids"):
+        items = value[key]
+        if not isinstance(items, list) or any(not isinstance(item, str) or not item for item in items):
+            raise EvidenceValidationError(f"typed assumption {key} must be a string list")
+        if len(items) != len(set(items)):
+            raise EvidenceValidationError(f"typed assumption {key} contains duplicates")
+    if not value["subjects"]:
+        raise EvidenceValidationError("typed assumption subjects must be non-empty")
+    if value["support_state"] not in ASSUMPTION_SUPPORT_STATES:
+        raise EvidenceValidationError("typed assumption support_state is invalid")
+    if value["encoding_state"] not in ASSUMPTION_ENCODING_STATES:
+        raise EvidenceValidationError("typed assumption encoding_state is invalid")
+    refs = value["source_refs"]
+    if not isinstance(refs, list):
+        raise EvidenceValidationError("typed assumption source_refs must be a list")
+    if value["support_state"] in {"stated", "source_supported"}:
+        if not refs:
+            raise EvidenceValidationError("source-supported typed assumptions require exact source refs")
+        for index, item in enumerate(refs):
+            _exact_source_ref(item, f"typed assumption source_refs[{index}]")
+    elif refs:
+        raise EvidenceValidationError("non-source-supported typed assumptions cannot carry source refs")
+    if value["encoding_state"] == "encoded" and value["formal_predicate"] is None:
+        raise EvidenceValidationError("encoded typed assumptions require a formal predicate")
+    if value["mathematical_sufficiency"] != "not_established":
+        raise EvidenceValidationError("P03 typed assumptions cannot establish mathematical sufficiency")
+    identity = {
+        "kind": value["kind"],
+        "subjects": value["subjects"],
+        "predicate": value["predicate"],
+        "formal_predicate": value["formal_predicate"],
+    }
+    expected_id = "asm_" + content_digest(identity)
+    if value["assumption_id"] != expected_id:
+        raise EvidenceValidationError("typed assumption id mismatch")
+    expected_binding = content_digest({key: child for key, child in value.items() if key != "binding_digest"})
+    if value["binding_digest"] != expected_binding:
+        raise EvidenceValidationError("typed assumption binding digest mismatch")
+    return value
+
+
+def build_typed_assumption(
+    *,
+    predicate: str,
+    formal_predicate: str | None,
+    kind: str,
+    subjects: list[str],
+    support_state: str,
+    source_refs: list[dict[str, Any]],
+    encoding_state: str,
+    closes_blocker_ids: list[str],
+    search_completed: bool | None = None,
+) -> dict[str, Any]:
+    if support_state == "not_found_after_search" and search_completed is not True:
+        raise EvidenceValidationError("not_found_after_search requires an explicitly completed search")
+    identity = {
+        "kind": kind,
+        "subjects": list(subjects),
+        "predicate": predicate,
+        "formal_predicate": formal_predicate,
+    }
+    result = {
+        "assumption_id": "asm_" + content_digest(identity),
+        "predicate": predicate,
+        "formal_predicate": formal_predicate,
+        "kind": kind,
+        "subjects": list(subjects),
+        "support_state": support_state,
+        "source_refs": [dict(item) for item in source_refs],
+        "encoding_state": encoding_state,
+        "closes_blocker_ids": list(closes_blocker_ids),
+        "mathematical_sufficiency": "not_established",
+    }
+    result["binding_digest"] = content_digest(result)
+    return validate_typed_assumption(result)
 
 
 def _typed_symbols(text: str) -> list[dict]:
@@ -462,7 +770,11 @@ def _encodability(
     }
 
 
-def typed_repair_obligation_from_packet(packet: dict[str, Any]) -> dict[str, Any]:
+def typed_repair_obligation_from_packet(
+    packet: dict[str, Any],
+    *,
+    context_evidence: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Build a typed repair obligation from a semantic packet and context graph."""
     context_graph = packet.get("context_graph") if isinstance(packet.get("context_graph"), dict) else {}
     target = str(packet.get("target") or packet.get("grouped_target") or "")
@@ -497,6 +809,14 @@ def typed_repair_obligation_from_packet(packet: dict[str, Any]) -> dict[str, Any
         + [str(item.get("construct", "")) for item in context_unresolved]
     )
     assumptions = _repair_assumptions_from_graph(context_graph)
+    normative_assumptions: list[dict[str, Any]] = []
+    if context_evidence is not None:
+        if not isinstance(context_evidence, dict):
+            raise EvidenceValidationError("context_evidence must be an object")
+        raw_assumptions = context_evidence.get("typed_assumptions", [])
+        if not isinstance(raw_assumptions, list):
+            raise EvidenceValidationError("context_evidence.typed_assumptions must be a list")
+        normative_assumptions = [validate_typed_assumption(item) for item in raw_assumptions]
     route_hints = _route_hints_from_graph(
         math_hints=math_obligation.get("backend_route_hints", []),
         unresolved_constructs=unresolved_constructs,
@@ -537,7 +857,20 @@ def typed_repair_obligation_from_packet(packet: dict[str, Any]) -> dict[str, Any
         certification_boundary="Typed repair obligations are diagnostic routing artifacts; they are not proof certificates or backend encodings.",
         metadata=contract_metadata("typed_repair_obligation"),
     )
-    return asdict(result)
+    payload = asdict(result)
+    if context_evidence is not None:
+        payload["normative_typed_assumptions"] = normative_assumptions
+        payload["encodability"] = {
+            **payload["encodability"],
+            "blocked_by_assumption_ids": [
+                item["assumption_id"]
+                for item in normative_assumptions
+                if item["support_state"] not in {"stated", "source_supported"}
+                or item["encoding_state"] != "encoded"
+            ],
+            "source_support_is_mathematical_sufficiency": False,
+        }
+    return payload
 
 
 def _kind(lhs: str, rhs: str) -> ObligationKind:

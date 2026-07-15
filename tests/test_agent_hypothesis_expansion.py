@@ -1,6 +1,7 @@
 from mathdevmcp.agent_hypothesis_expansion import (
     AGENT_HYPOTHESIS_EXPANSION_CONTRACT,
     AGENT_HYPOTHESIS_EXPANSION_SET_CONTRACT,
+    hypothesis_generator_provenance,
     propose_hypothesis_expansions,
     validate_agent_hypothesis_expansion,
 )
@@ -34,7 +35,8 @@ def test_conditional_law_blocker_generates_valid_candidate_expansions() -> None:
     for candidate in result["candidates"]:
         assert candidate["metadata"]["contract"] == AGENT_HYPOTHESIS_EXPANSION_CONTRACT
         assert candidate["target_blocker_id"] == "blocker_conditional_law_translation_required"
-        assert candidate["provenance"] == "agent_generated_candidate"
+        assert candidate["provenance"] == "rule_generated"
+        assert candidate["generation"]["kind"] == "rule_generated"
         assert candidate["status"] == "candidate_pending_tree_verification"
         assert "not" in candidate["boundary"].lower()
         assert "proof" in candidate["boundary"].lower()
@@ -104,7 +106,8 @@ def test_validation_rejects_vague_or_raw_unbounded_hypothesis() -> None:
             "success_criterion": "Looks good.",
             "failure_criterion": "Fails.",
             "source_refs": [],
-            "provenance": "agent_generated_candidate",
+            "generation": {"kind": "rule_generated", "rule_id": "bad", "source_refs": []},
+            "provenance": "rule_generated",
             "status": "candidate_pending_tree_verification",
             "boundary": "Candidate only.",
         }
@@ -116,6 +119,44 @@ def test_validation_rejects_vague_or_raw_unbounded_hypothesis() -> None:
     assert "expected_backend_role must be a non-empty string" in errors
     assert "boundary must explicitly state the hypothesis is not proof" in errors
     assert any("too vague" in error for error in errors)
+
+
+def test_rule_template_is_not_agent_generated() -> None:
+    candidate = propose_hypothesis_expansions(_blocker(), max_candidates=1)["candidates"][0]
+
+    assert hypothesis_generator_provenance(candidate)["kind"] == "rule_generated"
+    assert candidate["provenance"] != "agent_generated"
+
+
+def test_agent_generated_requires_execution_provenance() -> None:
+    candidate = propose_hypothesis_expansions(_blocker(), max_candidates=1)["candidates"][0]
+    candidate["provenance"] = "agent_generated"
+    candidate["generation"] = {
+        "kind": "agent_generated",
+        "executor": "synthetic-agent",
+        "provider": None,
+        "model": None,
+        "request_digest": "1" * 64,
+        "response_digest": "2" * 64,
+        "timestamp": "invalid",
+        "budget": {},
+        "source_refs": candidate["source_refs"],
+    }
+
+    errors = validate_agent_hypothesis_expansion(candidate)
+    assert "agent_generated timestamp must be UTC second precision" in errors
+    assert "agent_generated budget must be a non-empty object" in errors
+
+
+def test_legacy_agent_label_is_noncertifying_rule_provenance() -> None:
+    candidate = propose_hypothesis_expansions(_blocker(), max_candidates=1)["candidates"][0]
+    candidate.pop("generation")
+    candidate["provenance"] = "agent_generated_candidate"
+
+    normalized = hypothesis_generator_provenance(candidate)
+    assert normalized["kind"] == "legacy_rule_generated"
+    assert "not agent execution" in normalized["non_claim"].lower()
+    assert validate_agent_hypothesis_expansion(candidate) == []
 
 
 def test_failed_paths_are_not_repeated() -> None:

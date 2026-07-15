@@ -36,3 +36,6 @@ mathdevmcp-mcp = "mathdevmcp.mcp_server:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "requires_external_tool: trusted external mathematical backend smoke; deselect unless explicitly authorized",
+]

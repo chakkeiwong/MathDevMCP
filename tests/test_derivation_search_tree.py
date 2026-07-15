@@ -1,4 +1,7 @@
+from copy import deepcopy
 import json
+
+import pytest
 
 from mathdevmcp.derivation_search_tree import (
     AssumptionSet,
@@ -8,10 +11,16 @@ from mathdevmcp.derivation_search_tree import (
     branch_can_be_promoted,
     branch_promotion_report,
     build_initial_search_tree,
+    branch_tree_semantic_digest,
+    build_branch_record,
     certifying_backend_attempt,
     counterexample_backend_attempt,
     make_search_node,
     summarize_search_tree,
+    transition_branch,
+    validate_branch_generator,
+    validate_branch_record,
+    validate_branch_tree,
     validate_search_tree,
 )
 from mathdevmcp.external_tool_policy import external_tool_first_plan
@@ -323,3 +332,138 @@ def test_patch_candidate_carries_location_rationale_and_evidence() -> None:
     assert summarize_search_tree(tree)["patch_candidate_count"] == 1
     assert node["patch_candidates"][0]["location"]["line_start"] == 770
     assert "Conditional expectations" in node["patch_candidates"][0]["rationale"]
+
+
+def _p04_root(**updates) -> dict:
+    arguments = {
+        "obligation_digest": "a" * 64,
+        "target": "x + 1 = 1 + x",
+        "typed_assumptions": [{"id": "asm-real", "predicate": "x is real"}],
+        "generator": {"kind": "root"},
+        "formalization_plan": {"backend": "synthetic", "route": "injected"},
+        "state": "ready",
+    }
+    arguments.update(updates)
+    return build_branch_record(**arguments)
+
+
+def test_child_branch_id_changes_with_assumptions_lineage_and_formalization() -> None:
+    root = _p04_root()
+    generator = {"kind": "rule_generated", "rule_id": "split", "source_refs": ["blocker:1"]}
+    baseline = build_branch_record(
+        obligation_digest="a" * 64,
+        target="x = x",
+        typed_assumptions=[{"id": "a1", "predicate": "x is real"}],
+        generator=generator,
+        formalization_plan={"backend": "synthetic", "route": "one"},
+        parent=root,
+    )
+    changed_assumption = build_branch_record(
+        obligation_digest="a" * 64,
+        target="x = x",
+        typed_assumptions=[{"id": "a1", "predicate": "x is nonzero"}],
+        generator=generator,
+        formalization_plan={"backend": "synthetic", "route": "one"},
+        parent=root,
+    )
+    changed_plan = build_branch_record(
+        obligation_digest="a" * 64,
+        target="x = x",
+        typed_assumptions=[{"id": "a1", "predicate": "x is real"}],
+        generator=generator,
+        formalization_plan={"backend": "synthetic", "route": "two"},
+        parent=root,
+    )
+    other_root = _p04_root(target="y + 1 = 1 + y")
+    changed_lineage = build_branch_record(
+        obligation_digest="a" * 64,
+        target="x = x",
+        typed_assumptions=[{"id": "a1", "predicate": "x is real"}],
+        generator=generator,
+        formalization_plan={"backend": "synthetic", "route": "one"},
+        parent=other_root,
+    )
+
+    assert len({baseline["id"], changed_assumption["id"], changed_plan["id"], changed_lineage["id"]}) == 4
+    assert validate_branch_record(baseline) == []
+
+
+def test_parent_lineage_is_immutable_and_shared_ledgers_are_rejected() -> None:
+    root = _p04_root()
+    child = build_branch_record(
+        obligation_digest="a" * 64,
+        target="x = x",
+        typed_assumptions=[],
+        generator={"kind": "rule_generated", "rule_id": "split", "source_refs": []},
+        formalization_plan={"backend": "synthetic"},
+        parent=root,
+    )
+    root["children"].append(child)
+    assert validate_branch_tree(root) == []
+
+    child["lineage"][0] = "branch_wrong"
+    assert any("lineage" in error for error in validate_branch_tree(root))
+    child["lineage"][0] = root["id"]
+    child["attempt_refs"] = root["attempt_refs"]
+    assert any("shared mutable ledger" in error for error in validate_branch_tree(root))
+
+
+def test_branch_state_transition_table_rejects_unrecorded_jump() -> None:
+    branch = _p04_root()
+    running = transition_branch(
+        branch,
+        "running",
+        reason="Synthetic request started.",
+        request_ref="artifact://p04/request/one",
+    )
+    proved = transition_branch(
+        running,
+        "proved",
+        reason="Injected exact-branch result was certifying.",
+        result_ref="artifact://p04/result/one",
+    )
+
+    assert validate_branch_record(proved) == []
+    with pytest.raises(ValueError, match="illegal branch transition"):
+        transition_branch(branch, "proved", reason="Skipped request execution.")
+
+    mutated = deepcopy(proved)
+    mutated["state"] = "refuted"
+    assert "branch state does not match final transition" in validate_branch_record(mutated)
+
+
+def test_agent_generated_requires_execution_provenance() -> None:
+    invalid = {
+        "kind": "agent_generated",
+        "executor": "synthetic-agent",
+        "provider": None,
+        "model": None,
+        "request_digest": "1" * 64,
+        "response_digest": "2" * 64,
+        "timestamp": "not-a-time",
+        "budget": {},
+        "source_refs": [],
+    }
+    errors = validate_branch_generator(invalid)
+    assert "agent_generated timestamp must be UTC second precision" in errors
+    assert "agent_generated budget must be a non-empty object" in errors
+
+
+def test_serial_parallel_child_order_has_same_semantic_tree_digest() -> None:
+    def tree(order: tuple[str, str]) -> dict:
+        root = _p04_root()
+        children = {
+            label: build_branch_record(
+                obligation_digest="a" * 64,
+                target=f"{label} = {label}",
+                typed_assumptions=[{"id": label}],
+                generator={"kind": "rule_generated", "rule_id": label, "source_refs": []},
+                formalization_plan={"backend": "synthetic"},
+                parent=root,
+            )
+            for label in ("x", "y")
+        }
+        root["children"] = [children[label] for label in order]
+        return root
+
+    assert branch_tree_semantic_digest(tree(("x", "y"))) == branch_tree_semantic_digest(tree(("y", "x")))

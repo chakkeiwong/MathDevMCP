@@ -78,7 +78,10 @@ _ASSUMPTION_RULES = [
     },
     {
         "kind": "sqrt_domain",
-        "patterns": [re.compile(r"\bsqrt\s*\(")],
+        "patterns": [
+            re.compile(r"\bsqrt\s*\("),
+            re.compile(r"\\sqrt(?:\s*\[[^\]]*\])?\s*\{"),
+        ],
         "text": "square-root argument is nonnegative in the target domain",
         "source": "square root",
         "route_categories": ["domain_condition"],

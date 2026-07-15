@@ -1,4 +1,7 @@
+import hashlib
+
 from mathdevmcp.derivation_branch_controller import branch_expansion_records, can_derive_with_budget, rank_repair_branches
+from mathdevmcp.external_tool_adapters import EvidenceContext
 
 
 CAPABILITIES = {
@@ -140,7 +143,7 @@ def test_controller_records_lean_source_required_blocker_without_proof_claim() -
     assert tree["controller"]["promotion"]["can_promote"] is False
 
 
-def test_controller_runs_lean_check_when_source_supplied() -> None:
+def test_controller_requires_explicit_binding_before_lean_action() -> None:
     def algebra(target, *, lhs=None, rhs=None, backend="auto"):
         return {
             "status": "unknown",
@@ -148,7 +151,10 @@ def test_controller_runs_lean_check_when_source_supplied() -> None:
             "metadata": {"schema_version": "1.0", "contract": "derive_or_refute_result"},
         }
 
+    lean_calls = []
+
     def lean(source, *, timeout_seconds=10, allow_sorry=False):
+        lean_calls.append(source)
         return {
             "status": "verified",
             "reason": "Lean accepted the source without placeholders.",
@@ -165,9 +171,13 @@ def test_controller_runs_lean_check_when_source_supplied() -> None:
         lean_runner=lean,
     )
 
-    assert tree["status"] == "proved"
-    assert [attempt["tool"] for attempt in tree["root"]["backend_attempts"]] == ["sympy", "lean"]
-    assert tree["root"]["backend_attempts"][-1]["evidence_kind"] == "lean_check"
+    assert tree["status"] == "partial"
+    assert [attempt["tool"] for attempt in tree["root"]["backend_attempts"]] == ["sympy"]
+    assert lean_calls == []
+    assert any(
+        blocker["id"] == "blocker_lean_source_target_binding_required"
+        for blocker in tree["root"]["blockers"]
+    )
 
 
 def test_controller_rejects_unrelated_lean_source_as_certifying_evidence() -> None:
@@ -280,7 +290,7 @@ def test_controller_catches_adapter_action_exceptions() -> None:
     assert any("malformed adapter output" in blocker["why"] for blocker in tree["root"]["blockers"])
 
 
-def test_rank_repair_branches_prefers_certified_then_specific_blocked_branch() -> None:
+def test_rank_repair_branches_uses_validity_gated_partial_order_without_scores() -> None:
     certified = {
         "id": "branch_certified",
         "status": "scoped_target_proved_not_document_proof",
@@ -338,9 +348,23 @@ def test_rank_repair_branches_prefers_certified_then_specific_blocked_branch() -
 
     assert ranking["metadata"]["contract"] == "repair_branch_ranking_result"
     assert ranking["top_branch_id"] == "branch_certified"
-    assert ranking["rankings"][0]["outcome"] == "scoped_proved"
+    assert ranking["nondominated_branch_ids"] == ["branch_certified"]
+    assert ranking["rankings"][0]["nondominated"] is True
     assert ranking["rankings"][1]["outcome"] == "blocked_with_specific_next_evidence"
-    assert ranking["rankings"][1]["score_components"]["specific_blocker_count"] == 2
+    assert ranking["ledgers"]["deduplicated_entries"]
+    assert all(item["ledger_entry_ids"] for item in ranking["rankings"])
+    assert all("ledgers" not in item for item in ranking["rankings"])
+    assert ranking["selected_action"]["branch_ids"] == ["branch_certified"]
+    selected_entry_id = ranking["selected_action"]["ledger_entry_ids"][0]
+    selected_entry = next(
+        entry
+        for entry in ranking["ledgers"]["deduplicated_entries"]
+        if entry["entry_id"] == selected_entry_id
+    )
+    assert selected_entry["scope"]["branch_ids"] == ["branch_certified"]
+    assert ranking["selected_action"]["action_kind"] == "repair_evidence_integrity"
+    assert all("score" not in item and "score_components" not in item for item in ranking["rankings"])
+    assert ranking["serialization_order_authority"] == "diagnostic_only"
     assert "not MCTS" in ranking["boundary"]
 
 
@@ -359,3 +383,61 @@ def test_branch_expansion_records_include_assumptions_attempts_and_blockers() ->
 
     assert {"assumption_addition", "derivation_split", "formalization_route", "backend_attempt", "blocker"} <= kinds
     assert all("boundary" in record for record in records)
+
+
+def test_controller_records_compact_verified_attachment_only_with_explicit_context_and_root(tmp_path) -> None:
+    target = "x + 1 = 1 + x"
+    source = target.encode()
+    context = EvidenceContext(
+        source_logical_id="synthetic/source.tex",
+        source_file="synthetic/source.tex",
+        source_label="eq:test",
+        source_bytes=source,
+        source_spans=({"start_byte": 0, "end_byte": len(source)},),
+        parser_version="synthetic-1",
+        obligation_digest=hashlib.sha256(target.encode()).hexdigest(),
+        normalized_target=target,
+        branch_id="root",
+        branch_lineage=("root",),
+        typed_assumptions=({"id": "scalar", "kind": "domain", "statement": "x is real."},),
+        native_input_bytes=target.encode(),
+        native_input_media_type="text/plain",
+        tool_name="sympy",
+        adapter_version="p01-test",
+        backend_version="fake",
+        executable_id="fake_runner",
+        timeout_ms=1000,
+        max_output_bytes=4096,
+        expected_result_class="synthetic_fixture",
+        backend_role="test_only_noncertifying",
+        unsupported_conclusions=(
+            "no_real_document_extraction",
+            "no_backend_conformance",
+            "no_mathematical_certification",
+            "no_branch_local_scheduler",
+            "no_publication_eligibility",
+            "no_source_document_edit",
+            "no_multiprocess_support",
+            "no_release_readiness",
+        ),
+        policy_version="p01-test",
+    )
+
+    def algebra(target, *, lhs=None, rhs=None, backend="auto"):
+        return {"status": "proved", "reason": "Synthetic fake-runner result."}
+
+    tree = can_derive_with_budget(
+        target,
+        capabilities=CAPABILITIES,
+        integrations=INTEGRATIONS,
+        algebra_runner=algebra,
+        evidence_contexts={"algebra_check": context},
+        artifact_root=tmp_path / "evidence",
+    )
+    attachment = tree["root"]["evidence_attachments"][0]
+    attempt = tree["root"]["backend_attempts"][0]
+    assert attachment["integrity_state"] == "verified"
+    assert attachment["claim_eligibility"] == "ineligible"
+    assert attachment["publication_enabled"] is False
+    assert attempt["evidence_schema_version"] == "1.0"
+    assert tree["controller"]["validation_errors"] == []

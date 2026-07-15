@@ -1,0 +1,321 @@
+{
+  "schema_version": "p02r3_timeout_recovery_oracle@1",
+  "phase": "P02",
+  "revision": "P02R3",
+  "date": "2026-07-12",
+  "base_bindings": {
+    "p02r2_plan_ref": "docs/plans/mathdevmcp-real-document-remediation-phase-02r2-capability-scoped-parser-recovery-subplan-2026-07-12.md",
+    "p02r2_plan_sha256": "6ed09b8c1c177c6e76b9547ae350454907047c66c5f62b91c42800bd2c2d1a71",
+    "p02r2_oracle_ref": "docs/plans/mathdevmcp-real-document-remediation-phase-02r2-recovery-oracle-2026-07-12.json",
+    "p02r2_oracle_sha256": "92d75deb5fc30311a46c4d4f077939c594e667269a96ca56de8bf3be928d5562",
+    "p02r2_bootstrap_ref": "docs/plans/p02r2_entry_bootstrap_20260712.py",
+    "p02r2_bootstrap_sha256": "ecffbe248313888300f482204c3599167d96795cc59b11349080c95b9cb15ee2",
+    "p02r2_agreeing_review_ref": "docs/reviews/mathdevmcp-real-document-remediation-phase-02r2-plan-review-r13-result-2026-07-12.md",
+    "p02r2_agreeing_review_sha256": "f3ffa37f99f94bcb76c3188e40fe63dfb35080d1152a9a6af9f377d3d842623a",
+    "p02r2_entry_ref": ".local/mathdevmcp/evidence/p02r2-20260712/entry/entry-record.json",
+    "p02r2_entry_sha256": "8d74abcab7b3735252e8d0f58b0b583dcf7da6b7e9d8557891087f97d6217974",
+    "timeout_blocker_ref": "docs/plans/mathdevmcp-real-document-remediation-phase-02r2-pre-round-timeout-blocker-result-2026-07-12.md",
+    "timeout_blocker_sha256": "d88e3e33eaaa92f980278478861ac31b5ce016f9367b800e45e7b322078beaa9",
+    "timeout_adjudication_ref": "docs/reviews/mathdevmcp-real-document-remediation-phase-02r2-timeout-veto-adjudication-result-2026-07-12.md",
+    "timeout_adjudication_sha256": "250537ea349798e45c8fed62e551f9cb2917f8531d1f3097b449705c5d1b1d41",
+    "materialized_oracle_ref": "docs/plans/mathdevmcp-real-document-remediation-phase-02-materialized-obligations-oracle-2026-07-11.json",
+    "materialized_oracle_sha256": "ae7aa48fb8c475c7c37c75158a9ed6f83b21a686bc8cd8ca2b28c79b36bcb1ad",
+    "timeout_diagnostic_log_ref": ".local/mathdevmcp/diagnostics/p02r2-timeout-20260712/credit.log",
+    "timeout_diagnostic_log_sha256": "df3492c2a2e0178db2c4844d8a76feca3ef9defc3281e8b6263b00196c70cc86",
+    "timeout_diagnostic_xml_ref": ".local/mathdevmcp/diagnostics/p02r2-timeout-20260712/credit.xml",
+    "timeout_diagnostic_xml_sha256": "270067659cfdb990bf8f9e01ce1e39e8447f3239613f78d6295aae0ff4d1c5f2"
+  },
+  "recovery_refs": {
+    "recovery_plan_ref": "docs/plans/mathdevmcp-real-document-remediation-phase-02r3-timeout-policy-recovery-subplan-2026-07-12.md",
+    "recovery_oracle_ref": "docs/plans/mathdevmcp-real-document-remediation-phase-02r3-timeout-policy-recovery-oracle-2026-07-12.json",
+    "entry_bootstrap_ref": "docs/plans/p02r3_entry_bootstrap_20260712.py",
+    "evidence_root_ref": ".local/mathdevmcp/evidence/p02r3-20260712",
+    "entry_root_ref": ".local/mathdevmcp/evidence/p02r3-20260712/entry",
+    "entry_record_ref": ".local/mathdevmcp/evidence/p02r3-20260712/entry/entry-record.json",
+    "implementation_entry_manifest_ref": ".local/mathdevmcp/evidence/p02r3-20260712/entry/implementation-entry-sha256.txt",
+    "protected_entry_manifest_ref": ".local/mathdevmcp/evidence/p02r3-20260712/entry/protected-entry-sha256.txt",
+    "immutable_input_manifest_ref": ".local/mathdevmcp/evidence/p02r3-20260712/entry/immutable-input-sha256.txt",
+    "stable_decision_ref": ".local/mathdevmcp/evidence/p02r3-20260712/phase-results/P02-decision.json"
+  },
+  "review_contract": {
+    "review_round": 15,
+    "result_ref": "docs/reviews/mathdevmcp-real-document-remediation-phase-02r3-plan-review-r15-result-2026-07-12.md",
+    "bundle_ref": "docs/reviews/mathdevmcp-real-document-remediation-phase-02r3-plan-review-r15-bundle-2026-07-12.md",
+    "review_history": [
+      {
+        "round": 14,
+        "result_ref": "docs/reviews/mathdevmcp-real-document-remediation-phase-02r3-plan-review-r14-result-2026-07-12.md",
+        "result_sha256": "604f0aae23065b2257a71eb7291770f69bb7cd9ed7486dccb97e8430fd7579d0",
+        "verdict": "REVISE",
+        "reviewed_p02r3_plan_sha256": "3867c8f93ee4c9f62009944c2c5f9147af99972bf5f6bdfa08f2ad1c70ed4b79",
+        "reviewed_p02r3_oracle_sha256": "8ac9e7b2a0f561545f5ab3b7aeacdd66faae3bf07f4024e7d2358e6e891ef3de",
+        "reviewed_p02r3_bootstrap_sha256": "8e1f9d126a758601027af69f64d7568f68f09572930514063cb47e15b926bee4",
+        "reviewed_p02r2_plan_sha256": "6ed09b8c1c177c6e76b9547ae350454907047c66c5f62b91c42800bd2c2d1a71",
+        "reviewed_p02r2_oracle_sha256": "92d75deb5fc30311a46c4d4f077939c594e667269a96ca56de8bf3be928d5562",
+        "reviewed_p02r2_entry_sha256": "8d74abcab7b3735252e8d0f58b0b583dcf7da6b7e9d8557891087f97d6217974",
+        "reviewed_timeout_blocker_sha256": "d88e3e33eaaa92f980278478861ac31b5ce016f9367b800e45e7b322078beaa9",
+        "reviewed_timeout_adjudication_sha256": "250537ea349798e45c8fed62e551f9cb2917f8531d1f3097b449705c5d1b1d41"
+      }
+    ],
+    "required_binding_labels": [
+      "Reviewed P02R3 plan SHA-256",
+      "Reviewed P02R3 oracle SHA-256",
+      "Reviewed P02R3 bootstrap SHA-256",
+      "Reviewed P02R3 R14 result SHA-256",
+      "Reviewed P02R2 plan SHA-256",
+      "Reviewed P02R2 oracle SHA-256",
+      "Reviewed P02R2 entry SHA-256",
+      "Reviewed timeout blocker SHA-256",
+      "Reviewed timeout adjudication SHA-256"
+    ],
+    "verdict_enum": ["AGREE", "REVISE"],
+    "sequence_rule": "R14 is immutable REVISE history with its result digest and eight reviewed digests; the additionally authorized R15 is the only repair review, must bind the repaired three bytes, R14 result, and five predecessor digests, and must contain one final AGREE verdict; no R16 or alternate P02R3 plan-review round may exist",
+    "budget_boundary": "after the additionally authorized R15, two independently authorized review rounds remain reserved for result review and final-seal audit and cannot be consumed by further plan repair"
+  },
+  "entry_schema": {
+    "schema_version": "p02r3_entry_record@1",
+    "exact_keys": [
+      "schema_version",
+      "phase",
+      "revision",
+      "recovery_plan_ref",
+      "recovery_plan_sha256",
+      "recovery_oracle_ref",
+      "recovery_oracle_sha256",
+      "agreeing_plan_review_ref",
+      "agreeing_plan_review_sha256",
+      "entry_bootstrap_ref",
+      "entry_bootstrap_sha256",
+      "base_plan_ref",
+      "base_plan_sha256",
+      "base_compact_oracle_ref",
+      "base_compact_oracle_sha256",
+      "base_materialized_oracle_ref",
+      "base_materialized_oracle_sha256",
+      "prior_entry_ref",
+      "prior_entry_sha256",
+      "runtime_contract_review_ref",
+      "runtime_contract_review_sha256",
+      "pre_round_blocker_ref",
+      "pre_round_blocker_sha256",
+      "p01_stable_decision_ref",
+      "p01_stable_decision_sha256",
+      "p01_terminal_receipt_index_ref",
+      "p01_terminal_receipt_index_sha256",
+      "implementation_entry_manifest_ref",
+      "implementation_entry_manifest_sha256",
+      "protected_entry_manifest_ref",
+      "protected_entry_manifest_sha256",
+      "immutable_input_manifest_ref",
+      "immutable_input_manifest_sha256"
+    ],
+    "write_order": [
+      ".local/mathdevmcp/evidence/p02r3-20260712/entry/implementation-entry-sha256.txt",
+      ".local/mathdevmcp/evidence/p02r3-20260712/entry/protected-entry-sha256.txt",
+      ".local/mathdevmcp/evidence/p02r3-20260712/entry/immutable-input-sha256.txt",
+      ".local/mathdevmcp/evidence/p02r3-20260712/entry/entry-record.json"
+    ],
+    "binding_meanings": {
+      "base_plan": "sealed P02R2 recovery plan",
+      "base_compact_oracle": "sealed P02R2 recovery oracle",
+      "base_materialized_oracle": "unchanged frozen 17-obligation materialized oracle",
+      "prior_entry": "sealed four-file P02R2 entry snapshot",
+      "runtime_contract_review": "independent timeout-veto adjudication",
+      "pre_round_blocker": "P02R2 pre-round timeout blocker",
+      "p01_predecessor": "unchanged P01 stable decision and terminal receipt index copied only after reopening P02R2 entry"
+    }
+  },
+  "entry_bootstrap_profile": {
+    "schema_version": "p02r3_entry_bootstrap_profile@1",
+    "source_ref": "docs/plans/p02r3_entry_bootstrap_20260712.py",
+    "python": "/home/chakwong/miniconda3/envs/tfgpu/bin/python3",
+    "environment": {
+      "HOME": "/tmp/mathdevmcp-p02r3-entry-home",
+      "LANG": "C.UTF-8",
+      "LC_ALL": "C.UTF-8",
+      "PATH": "/usr/bin:/bin",
+      "PYTHONHASHSEED": "0",
+      "PYTHONPATH": "src"
+    },
+    "external_argv_template": [
+      "/usr/bin/env",
+      "-i",
+      "HOME=/tmp/mathdevmcp-p02r3-entry-home",
+      "LANG=C.UTF-8",
+      "LC_ALL=C.UTF-8",
+      "PATH=/usr/bin:/bin",
+      "PYTHONHASHSEED=0",
+      "PYTHONPATH=src",
+      "/home/chakwong/miniconda3/envs/tfgpu/bin/python3",
+      "-B",
+      "-S",
+      "docs/plans/p02r3_entry_bootstrap_20260712.py",
+      "--agreeing-plan-review-ref",
+      "docs/reviews/mathdevmcp-real-document-remediation-phase-02r3-plan-review-r15-result-2026-07-12.md"
+    ],
+    "only_parameter": "--agreeing-plan-review-ref followed by the exact R15 result ref; abbreviations, equal-sign form, repeats, positional values, missing or extra tokens are forbidden",
+    "failure_rule": "require the P02R3 phase root absent before any write; pre-allocation failure writes nothing; after any mkdir or no-replace write, preserve partial state and forbid retry without human recovery"
+  },
+  "profile_patch": [
+    {
+      "path": "/governance_action_profile/fixed_artifact_refs/stable_decision",
+      "expected_base_value": ".local/mathdevmcp/evidence/p02r2-20260712/phase-results/P02-decision.json",
+      "replacement": ".local/mathdevmcp/evidence/p02r3-20260712/phase-results/P02-decision.json"
+    },
+    {
+      "path": "/governance_action_profile/fixed_artifact_refs/human_result",
+      "expected_base_value": "docs/plans/mathdevmcp-real-document-remediation-phase-02r2-label-scoped-extraction-result-RESULT_ROUND-2026-07-12.md",
+      "replacement": "docs/plans/mathdevmcp-real-document-remediation-phase-02r3-label-scoped-extraction-result-RESULT_ROUND-2026-07-12.md"
+    },
+    {
+      "path": "/governance_action_profile/fixed_artifact_refs/result_review",
+      "expected_base_value": "docs/reviews/mathdevmcp-real-document-remediation-phase-02r2-result-review-RESULT_ROUND-result-2026-07-12.md",
+      "replacement": "docs/reviews/mathdevmcp-real-document-remediation-phase-02r3-result-review-RESULT_ROUND-result-2026-07-12.md"
+    },
+    {
+      "path": "/governance_action_profile/fixed_artifact_refs/final_seal_audit",
+      "expected_base_value": "docs/reviews/mathdevmcp-real-document-remediation-phase-02r2-final-seal-audit-RESULT_ROUND-result-2026-07-12.md",
+      "replacement": "docs/reviews/mathdevmcp-real-document-remediation-phase-02r3-final-seal-audit-RESULT_ROUND-result-2026-07-12.md"
+    },
+    {
+      "path": "/governance_action_profile/human_result_profile/fixed_ref_template",
+      "expected_base_value": "docs/plans/mathdevmcp-real-document-remediation-phase-02r2-label-scoped-extraction-result-RESULT_ROUND-2026-07-12.md",
+      "replacement": "docs/plans/mathdevmcp-real-document-remediation-phase-02r3-label-scoped-extraction-result-RESULT_ROUND-2026-07-12.md"
+    },
+    {
+      "path": "/governance_action_profile/actions/result_review_binding/artifact_ref_template",
+      "expected_base_value": "docs/reviews/mathdevmcp-real-document-remediation-phase-02r2-result-review-RESULT_ROUND-result-2026-07-12.md",
+      "replacement": "docs/reviews/mathdevmcp-real-document-remediation-phase-02r3-result-review-RESULT_ROUND-result-2026-07-12.md"
+    },
+    {
+      "path": "/governance_action_profile/actions/final_seal_audit_binding/artifact_ref_template",
+      "expected_base_value": "docs/reviews/mathdevmcp-real-document-remediation-phase-02r2-final-seal-audit-RESULT_ROUND-result-2026-07-12.md",
+      "replacement": "docs/reviews/mathdevmcp-real-document-remediation-phase-02r3-final-seal-audit-RESULT_ROUND-result-2026-07-12.md"
+    },
+    {
+      "path": "/parser_fidelity_profile/executables",
+      "expected_base_value": {
+        "latexml": {
+          "path": "/usr/bin/latexml",
+          "measured_version": "0.8.6",
+          "version_argv": ["/usr/bin/latexml", "--VERSION"],
+          "fidelity_argv_template": [
+            "/usr/bin/latexml",
+            "--quiet",
+            "--nocomments",
+            "--log=RR/parser/latexml/CASE.log",
+            "--destination=RR/parser/latexml/CASE.xml",
+            "SOURCE"
+          ],
+          "timeout_seconds": 60
+        },
+        "pandoc": {
+          "path": "/usr/bin/pandoc",
+          "measured_version": "2.9.2.1",
+          "version_argv": ["/usr/bin/pandoc", "--version"],
+          "fidelity_argv_template": [
+            "/usr/bin/pandoc",
+            "--from=latex",
+            "--to=json",
+            "--wrap=none",
+            "SOURCE"
+          ],
+          "timeout_seconds": 30
+        }
+      },
+      "replacement": {
+        "latexml": {
+          "path": "/usr/bin/latexml",
+          "measured_version": "0.8.6",
+          "version_argv": ["/usr/bin/latexml", "--VERSION"],
+          "fidelity_argv_template": [
+            "/usr/bin/latexml",
+            "--quiet",
+            "--nocomments",
+            "--log=RR/parser/latexml/CASE.log",
+            "--destination=RR/parser/latexml/CASE.xml",
+            "SOURCE"
+          ],
+          "version_timeout_seconds": 60,
+          "source_timeout_seconds": 180
+        },
+        "pandoc": {
+          "path": "/usr/bin/pandoc",
+          "measured_version": "2.9.2.1",
+          "version_argv": ["/usr/bin/pandoc", "--version"],
+          "fidelity_argv_template": [
+            "/usr/bin/pandoc",
+            "--from=latex",
+            "--to=json",
+            "--wrap=none",
+            "SOURCE"
+          ],
+          "version_timeout_seconds": 30,
+          "source_timeout_seconds": 30
+        }
+      }
+    },
+    {
+      "path": "/parser_fidelity_profile/veto_rule",
+      "expected_base_value": "current reconstruction drift, missing or mismatched invocation/raw evidence, source mutation, unclassified capability, limitation promoted or omitted, claimed field without independent provenance, valid independent contradiction, or unjustified selection is a phase veto; correctly classified specialist limitation alone blocks that specialist but does not refute exact current reconstruction",
+      "replacement": "current reconstruction drift; source_mutated, invocation_mismatch, missing_artifact, or version_mismatch status; missing, duplicate, unreviewed, or mismatched invocation/raw evidence; unclassified capability; limitation omitted, mismatched, or promoted; claimed field without independent provenance; valid independent contradiction; frozen identity rewrite; or unjustified selection is a phase veto; a fully reconstructed timed_out, nonzero_exit, malformed_output, or valid_not_source_mappable record with exact source/invocation evidence, explicit matching limitations, empty promotion, and no contradiction blocks only that specialist"
+    },
+    {
+      "path": "/governance_action_profile/round_close_schema/veto_diagnostic_sources/parser_fidelity_or_provenance_failure",
+      "expected_base_value": "current compact/materialized/source drift; missing, duplicate, unreviewed, or mismatched invocation/raw artifact; source mutation; unclassified capability; limitation omitted or promoted; claimed observation without independent provenance; valid specialist contradiction on an independently observed field; frozen identity rewrite; or unjustified specialist selection",
+      "replacement": "current compact/materialized/source drift; source_mutated, invocation_mismatch, missing_artifact, or version_mismatch status; missing, duplicate, unreviewed, or mismatched invocation/raw artifact; unclassified capability; limitation omitted, mismatched, or promoted; claimed observation without independent provenance; valid specialist contradiction on an independently observed field; frozen identity rewrite; or unjustified specialist selection; correctly classified timed_out, nonzero_exit, malformed_output, and valid_not_source_mappable limitations alone are excluded"
+    },
+    {
+      "path": "/parser_capability_contract/limitation_boundary",
+      "expected_base_value": "correctly classified malformed or non-source-mappable specialist output is explanatory, blocks that specialist's promotion, and does not by itself veto an independently exact current reconstruction",
+      "replacement": "a fully reconstructed timed_out, nonzero_exit, malformed_output, or valid_not_source_mappable specialist record with exact source/invocation evidence, a nonempty matching limitation registry, empty promotional fields, and no valid independent contradiction is explanatory, blocks that specialist, and does not by itself veto an independently exact current reconstruction; no invalid bytes supply observations or agreement"
+    }
+  ],
+  "timeout_default_audit": {
+    "rejected_source_baseline_seconds": 60,
+    "formal_timeout_receipt_sha256": "6cbc8258e943e4ff125c3d9a5f4f50c3225e7fa363e312b3385a866fe663efb6",
+    "formal_observed_wall_time_ns": 60084494781,
+    "diagnostic_ceiling_seconds": 300,
+    "diagnostic_latexml_reported_required_time": "1m 38.24s",
+    "diagnostic_time_is_independent_wall_clock": false,
+    "latexml_version_timeout_seconds": 60,
+    "latexml_source_timeout_seconds": 180,
+    "pandoc_version_timeout_seconds": 30,
+    "pandoc_source_timeout_seconds": 30,
+    "reported_margin_milliseconds": 81760,
+    "failure_mode": "runtime variance may still exceed 180 seconds or completed output may remain malformed/non-source-mappable",
+    "early_diagnostic": "one exact full disposable 2+26 profile with no retry and exact source pre/post digests",
+    "registry_rule": "replace the complete inherited executable registry exactly once; every executable has distinct positive integer version_timeout_seconds and source_timeout_seconds and no shared timeout_seconds key",
+    "action_gate_rule": "every version and source receipt must have timed_out false; any timed_out receipt makes parser_fidelity_tests nonzero and stops the success path even though a correctly classified source timeout alone does not set parser_veto",
+    "promotion_status": "target-specific reviewed hypothesis pending disposable execution",
+    "non_claim": "a completed specialist process is not source mapping, extraction correctness, parser promotion, or mathematical evidence"
+  },
+  "parser_veto_partition": {
+    "evidence_integrity_statuses": [
+      "source_mutated",
+      "invocation_mismatch",
+      "missing_artifact",
+      "version_mismatch"
+    ],
+    "limitation_only_statuses": [
+      "timed_out",
+      "nonzero_exit",
+      "malformed_output",
+      "valid_not_source_mappable"
+    ],
+    "candidate_status": "valid_source_mappable",
+    "contradiction_rule": "any nonempty independently reconstructed contradictions list sets parser_veto regardless of otherwise valid capability status",
+    "limitation_only_preconditions": "exact invocation/source/version evidence, status precedence satisfied, matching nonempty limitation registry, empty promotional fields, ineligible for selection, no observations from invalid bytes, and empty contradictions",
+    "validation_rule": "parser_veto must equal the partition-and-contradiction reconstruction and cannot be accepted as an unchecked summary boolean"
+  },
+  "downstream_binding_contract": {
+    "reviewed_plan_fields": "bind the P02R3 recovery plan and digest",
+    "reviewed_compact_oracle_fields": "bind the P02R3 compact overlay and digest; reopen P02R2 plan/oracle/entry, timeout blocker/adjudication, and diagnostics transitively",
+    "reviewed_materialized_oracle_fields": "bind the unchanged materialized 17-obligation oracle and digest",
+    "schema_name_boundary": "existing p02r2 structural schema-version literals remain unchanged because P02R3 changes policy values and namespace only; record revision fields and evidence refs identify P02R3",
+    "final_rule": "candidate, final, review, audit, and stable reconstruction reopen the P02R3 entry and all transitive P02R2 bindings before accepting a pass"
+  },
+  "namespace_rule": "all new entry, round, parser, guard, bundle, result, final, and stable artifacts use p02r3-20260712 or exact phase-02r3 document refs; P02R2 remains protected entry-only predecessor evidence",
+  "effective_profile_rule": "strictly reconstruct the complete reviewed P02R2 effective profile, deep-copy it, require all eleven P02R3 patch expected_base_value values at exact JSON pointers, apply each replacement once, replace entry_snapshot_schema and entry_bootstrap_profile with this oracle values, and reject every other difference",
+  "unchanged_contract": "all P02R2 effective values not listed in profile_patch or replaced wholesale by the P02R3 entry schemas remain exact and authoritative"
+}

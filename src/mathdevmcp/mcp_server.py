@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import Any, Literal
 
 from mcp.server.fastmcp import FastMCP
+from mcp.types import CallToolResult, TextContent
 
 from .mcp_facade import call_mcp_tool
+from .document_derivation_response import DOCUMENT_DERIVATION_COMPATIBILITY_TEXT
 
 
 MCP_SERVER_TOOL_ALIASES = {"tool_matrix": "get_tool_matrix"}
@@ -67,6 +70,7 @@ MCP_SERVER_EXPOSED_TOOLS = {
     "plan_math_document_rigor_audit",
     "audit_math_document_rigor",
     "audit_document_derivation_tree",
+    "resolve_document_derivation_records",
 }
 
 
@@ -972,7 +976,20 @@ def audit_math_document_rigor(
     )
 
 
-@mcp.tool(description="Audit LaTeX document targets with semantic work packets and derivation trees.", structured_output=False)
+def _document_derivation_tool_result(result: dict[str, Any]) -> CallToolResult:
+    return CallToolResult(
+        content=[
+            TextContent(
+                type="text",
+                text=DOCUMENT_DERIVATION_COMPATIBILITY_TEXT,
+            )
+        ],
+        structuredContent=result,
+        isError=result.get("ok") is False,
+    )
+
+
+@mcp.tool(description="Audit LaTeX document targets and return a compact evidence-complete response by default; publication remains disabled.", structured_output=False)
 def audit_document_derivation_tree(
     tex_path: str,
     output_md: str | None = None,
@@ -985,8 +1002,12 @@ def audit_document_derivation_tree(
     search_mode: str = "agent_guided",
     grounding_policy: str = "strict",
     workers: int = 1,
-) -> dict:
-    return call_mcp_tool(
+    response_mode: Literal["compact", "detailed", "artifact_only"] = "compact",
+    artifact_root: str | None = None,
+    target_limit: int | None = None,
+    target_cursor: str | None = None,
+) -> CallToolResult:
+    result = call_mcp_tool(
         "audit_document_derivation_tree",
         {
             "tex_path": tex_path,
@@ -1000,8 +1021,38 @@ def audit_document_derivation_tree(
             "search_mode": search_mode,
             "grounding_policy": grounding_policy,
             "workers": workers,
+            "response_mode": response_mode,
+            "artifact_root": artifact_root,
+            "target_limit": target_limit,
+            "target_cursor": target_cursor,
         },
     )
+    assert isinstance(result, dict)
+    return _document_derivation_tool_result(result)
+
+
+@mcp.tool(description="Resolve exact persisted audit records authorized by a compact document-derivation page token.", structured_output=False)
+def resolve_document_derivation_records(
+    page_token: str,
+    collection: str,
+    artifact_root: str,
+    target_id: str | None = None,
+    offset: int = 0,
+    limit: int = 100,
+) -> CallToolResult:
+    result = call_mcp_tool(
+        "resolve_document_derivation_records",
+        {
+            "page_token": page_token,
+            "target_id": target_id,
+            "collection": collection,
+            "offset": offset,
+            "limit": limit,
+            "artifact_root": artifact_root,
+        },
+    )
+    assert isinstance(result, dict)
+    return _document_derivation_tool_result(result)
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -2,12 +2,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass, asdict
 import fnmatch
+import hashlib
 import json
+import os
 from pathlib import Path
+from pathlib import PurePosixPath
 import re
-from typing import Iterable
+import stat
+from typing import Iterable, Mapping
 
 from .equation_locator import locate_equations_in_file, summarize_equation_localization
+from .evidence_manifest import EvidenceValidationError, validate_logical_path
 
 
 @dataclass(frozen=True)
@@ -22,6 +27,333 @@ class LatexBlock:
     text: str
     block_id: str
     section_path: list[str]
+
+
+@dataclass(frozen=True)
+class EntryRootedSnapshot:
+    logical_ref: str
+    raw_bytes: bytes
+    source_digest: str
+    byte_count: int
+    line_count: int
+    parse_state: str
+    directives: tuple[dict, ...]
+
+
+@dataclass(frozen=True)
+class EntryRootedDiscovery:
+    entry_ref: str
+    snapshots: dict[str, EntryRootedSnapshot]
+    considered_files: tuple[str, ...]
+    reachable_files: tuple[str, ...]
+    excluded_sibling_files: tuple[str, ...]
+    unsearched_files: tuple[dict, ...]
+    diagnostics: tuple[dict, ...]
+    integrity_vetoes: tuple[str, ...]
+    traversal_counts: dict[str, int]
+
+
+_ENTRY_BUDGET_KEYS = frozenset(
+    {"max_files", "max_bytes", "max_nodes", "max_edges", "max_dependency_expansions"}
+)
+_LIVE_INCLUDE_RE = re.compile(rb"\\(input|include)\s*\{([^{}]+)\}")
+_INCLUDE_COMMAND_RE = re.compile(rb"\\(?:input|include)\b")
+
+
+def _entry_budget(value: Mapping[str, int]) -> dict[str, int]:
+    if not isinstance(value, Mapping) or set(value) != _ENTRY_BUDGET_KEYS:
+        raise EvidenceValidationError(
+            f"entry-rooted budget keys must be exactly {sorted(_ENTRY_BUDGET_KEYS)}"
+        )
+    result: dict[str, int] = {}
+    for key in sorted(_ENTRY_BUDGET_KEYS):
+        item = value[key]
+        if type(item) is not int or item <= 0:
+            raise EvidenceValidationError(f"entry-rooted budget {key} must be a positive integer")
+        result[key] = item
+    return result
+
+
+def _live_latex_bytes(raw: bytes) -> bytes:
+    """Blank comments without changing any byte offsets."""
+    output = bytearray(raw)
+    offset = 0
+    for line in raw.splitlines(keepends=True):
+        for index, value in enumerate(line):
+            if value != ord("%"):
+                continue
+            backslashes = 0
+            cursor = index - 1
+            while cursor >= 0 and line[cursor] == ord("\\"):
+                backslashes += 1
+                cursor -= 1
+            if backslashes % 2 == 0:
+                end = len(line.rstrip(b"\r\n"))
+                output[offset + index:offset + end] = b" " * (end - index)
+                break
+        offset += len(line)
+    return bytes(output)
+
+
+def _normalize_include_ref(source_ref: str, target: str) -> tuple[str | None, str | None]:
+    if not target or "\x00" in target or "\\" in target or target.startswith("/"):
+        return None, "path_traversal"
+    raw = PurePosixPath(source_ref).parent.joinpath(PurePosixPath(target))
+    parts: list[str] = []
+    for part in raw.parts:
+        if part in {"", "."}:
+            continue
+        if part == "..":
+            if not parts:
+                return None, "path_traversal"
+            parts.pop()
+        else:
+            parts.append(part)
+    if not parts:
+        return None, "path_traversal"
+    logical = PurePosixPath(*parts)
+    if not logical.suffix:
+        logical = logical.with_suffix(".tex")
+    if logical.suffix != ".tex":
+        return None, "unsupported_include_form"
+    try:
+        return validate_logical_path(logical.as_posix(), name="include target"), None
+    except EvidenceValidationError:
+        return None, "path_traversal"
+
+
+def _safe_regular_bytes(root: Path, logical_ref: str) -> tuple[bytes | None, str | None]:
+    validate_logical_path(logical_ref, name="entry-rooted logical ref")
+    current = root
+    parts = logical_ref.split("/")
+    for index, part in enumerate(parts):
+        current = current / part
+        try:
+            info = current.lstat()
+        except FileNotFoundError:
+            return None, "missing"
+        if stat.S_ISLNK(info.st_mode):
+            return None, "symlink"
+        if index < len(parts) - 1 and not stat.S_ISDIR(info.st_mode):
+            return None, "special"
+        if index == len(parts) - 1 and not stat.S_ISREG(info.st_mode):
+            return None, "special"
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(current, flags)
+    try:
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode):
+            return None, "special"
+        chunks: list[bytes] = []
+        while True:
+            chunk = os.read(fd, 1024 * 1024)
+            if not chunk:
+                break
+            chunks.append(chunk)
+        return b"".join(chunks), None
+    finally:
+        os.close(fd)
+
+
+def _scan_entry_directives(raw: bytes, source_ref: str) -> tuple[tuple[dict, ...], list[dict]]:
+    live = _live_latex_bytes(raw)
+    directives: list[dict] = []
+    diagnostics: list[dict] = []
+    matched_starts: set[int] = set()
+    for match in _LIVE_INCLUDE_RE.finditer(live):
+        matched_starts.add(match.start())
+        try:
+            target_text = match.group(2).decode("utf-8", "strict").strip()
+        except UnicodeDecodeError:
+            target_text = ""
+        target_ref, error = _normalize_include_ref(source_ref, target_text)
+        directive = {
+            "kind": match.group(1).decode("ascii"),
+            "source_file": source_ref,
+            "target_text": target_text,
+            "target_file": target_ref,
+            "byte_span": {"start": match.start(), "end": match.end()},
+            "line_span": {
+                "start": raw[:match.start()].count(b"\n") + 1,
+                "end": raw[:match.end()].count(b"\n") + 1,
+            },
+        }
+        directives.append(directive)
+        if error:
+            diagnostics.append(
+                {
+                    "kind": error,
+                    "classification": "integrity" if error == "path_traversal" else "engineering",
+                    "source_file": source_ref,
+                    "target_file": target_text,
+                    "byte_span": directive["byte_span"],
+                }
+            )
+    for match in _INCLUDE_COMMAND_RE.finditer(live):
+        if match.start() not in matched_starts:
+            diagnostics.append(
+                {
+                    "kind": "unsupported_include_form",
+                    "classification": "engineering",
+                    "source_file": source_ref,
+                    "target_file": None,
+                    "byte_span": {"start": match.start(), "end": match.end()},
+                }
+            )
+    directives.sort(key=lambda item: (item["byte_span"]["start"], item["kind"]))
+    diagnostics.sort(
+        key=lambda item: (
+            item.get("source_file", "").encode("utf-8"),
+            int(item.get("byte_span", {}).get("start", -1)),
+            item["kind"],
+        )
+    )
+    return tuple(directives), diagnostics
+
+
+def _entry_tex_inventory(root: Path) -> tuple[str, ...]:
+    refs: list[str] = []
+    for directory, names, files in os.walk(root, followlinks=False):
+        base = Path(directory)
+        names[:] = sorted(name for name in names if not (base / name).is_symlink())
+        for name in sorted(files):
+            path = base / name
+            if path.suffix != ".tex" or path.is_symlink() or not path.is_file():
+                continue
+            refs.append(path.relative_to(root).as_posix())
+    return tuple(sorted(refs, key=lambda item: item.encode("utf-8")))
+
+
+def discover_entry_rooted_tex_files(
+    root: Path,
+    entry_ref: str,
+    *,
+    budget: Mapping[str, int],
+) -> EntryRootedDiscovery:
+    """Discover only the explicit entry/include closure, preserving exact bytes."""
+    limits = _entry_budget(budget)
+    root = Path(root).absolute()
+    if root.is_symlink() or not root.is_dir():
+        raise EvidenceValidationError("entry-rooted corpus root must be a non-symlink directory")
+    entry = validate_logical_path(entry_ref, name="entry_ref")
+    if not entry.endswith(".tex"):
+        raise EvidenceValidationError("entry_ref must name a .tex file")
+
+    snapshots: dict[str, EntryRootedSnapshot] = {}
+    diagnostics: list[dict] = []
+    unsearched: list[dict] = []
+    considered: set[str] = {entry}
+    queue: list[tuple[str, tuple[str, ...]]] = [(entry, ())]
+    expansions = 0
+    total_bytes = 0
+
+    while queue:
+        logical_ref, ancestors = queue.pop(0)
+        if logical_ref in snapshots:
+            continue
+        if len(snapshots) >= limits["max_files"]:
+            unsearched.append({"file": logical_ref, "reason": "max_files"})
+            continue
+        raw, error = _safe_regular_bytes(root, logical_ref)
+        if error:
+            if logical_ref == entry:
+                raise EvidenceValidationError(f"entry_ref is unavailable or unsafe: {error}")
+            kind = "symlink_include" if error == "symlink" else "missing_include" if error == "missing" else "special_include"
+            diagnostics.append(
+                {
+                    "kind": kind,
+                    "classification": "integrity" if error in {"symlink", "special"} else "engineering",
+                    "source_file": ancestors[-1] if ancestors else entry,
+                    "target_file": logical_ref,
+                    "byte_span": None,
+                }
+            )
+            unsearched.append({"file": logical_ref, "reason": kind})
+            continue
+        assert raw is not None
+        if total_bytes + len(raw) > limits["max_bytes"]:
+            unsearched.append({"file": logical_ref, "reason": "max_bytes"})
+            continue
+        total_bytes += len(raw)
+        try:
+            raw.decode("utf-8", "strict")
+            parse_state = "parsed"
+        except UnicodeDecodeError:
+            parse_state = "decode_error"
+            diagnostics.append(
+                {
+                    "kind": "decode_failure",
+                    "classification": "engineering",
+                    "source_file": logical_ref,
+                    "target_file": logical_ref,
+                    "byte_span": {"start": 0, "end": len(raw)},
+                }
+            )
+        directives, scan_diagnostics = _scan_entry_directives(raw, logical_ref) if parse_state == "parsed" else ((), [])
+        diagnostics.extend(scan_diagnostics)
+        snapshots[logical_ref] = EntryRootedSnapshot(
+            logical_ref=logical_ref,
+            raw_bytes=raw,
+            source_digest=hashlib.sha256(raw).hexdigest(),
+            byte_count=len(raw),
+            line_count=raw.count(b"\n") + (0 if raw.endswith(b"\n") and raw else 1),
+            parse_state=parse_state,
+            directives=directives,
+        )
+        for directive in directives:
+            target = directive["target_file"]
+            if target is None:
+                continue
+            considered.add(target)
+            if target in ancestors or target == logical_ref:
+                diagnostics.append(
+                    {
+                        "kind": "include_cycle",
+                        "classification": "engineering",
+                        "source_file": logical_ref,
+                        "target_file": target,
+                        "byte_span": directive["byte_span"],
+                    }
+                )
+                continue
+            if expansions >= limits["max_dependency_expansions"]:
+                unsearched.append({"file": target, "reason": "max_dependency_expansions"})
+                continue
+            expansions += 1
+            queue.append((target, (*ancestors, logical_ref)))
+
+    inventory = _entry_tex_inventory(root)
+    reachable = tuple(sorted(snapshots, key=lambda item: item.encode("utf-8")))
+    excluded = tuple(item for item in inventory if item not in snapshots)
+    diagnostics.sort(
+        key=lambda item: (
+            str(item.get("source_file", "")).encode("utf-8"),
+            int((item.get("byte_span") or {}).get("start", -1)),
+            item["kind"],
+            str(item.get("target_file") or "").encode("utf-8"),
+        )
+    )
+    unsearched.sort(key=lambda item: (item["file"].encode("utf-8"), item["reason"]))
+    vetoes = tuple(
+        f"{item['kind']}:{item.get('source_file')}:{item.get('target_file')}"
+        for item in diagnostics
+        if item["classification"] == "integrity"
+    )
+    return EntryRootedDiscovery(
+        entry_ref=entry,
+        snapshots=snapshots,
+        considered_files=tuple(sorted(considered, key=lambda item: item.encode("utf-8"))),
+        reachable_files=reachable,
+        excluded_sibling_files=excluded,
+        unsearched_files=tuple(unsearched),
+        diagnostics=tuple(diagnostics),
+        integrity_vetoes=vetoes,
+        traversal_counts={
+            "files": len(snapshots),
+            "bytes": total_bytes,
+            "dependency_expansions": expansions,
+        },
+    )
 
 
 def iter_tex_files(root: Path) -> Iterable[Path]:
@@ -223,12 +555,86 @@ def locate_equations(root: Path) -> list[dict]:
     return sorted(rows, key=lambda row: (row.get("file", ""), row.get("line_start", 0), row.get("row_index", 0)))
 
 
-def _index_diagnostics(root: Path, blocks: list[LatexBlock], equation_rows: list[dict]) -> dict:
-    seen: dict[str, list[dict]] = {}
+def _label_occurrences(blocks: list[LatexBlock], equation_rows: list[dict]) -> dict[str, list[dict]]:
+    display_kinds = {"equation", "align", "alignat", "aligned", "gather", "multline"}
+    occurrences: dict[str, list[dict]] = {}
+
     for block in blocks:
-        if block.label:
-            seen.setdefault(block.label, []).append({"file": block.file, "line_start": block.line_start, "block_id": block.block_id})
-    duplicate_labels = {label: locations for label, locations in seen.items() if len(locations) > 1}
+        if block.kind not in display_kinds and block.label:
+            occurrences.setdefault(block.label, []).append(asdict(block))
+
+    display_blocks = [block for block in blocks if block.kind in display_kinds]
+    for row in equation_rows:
+        labels = row.get("explicit_labels", [])
+        if not isinstance(labels, list) or not labels:
+            continue
+        parent = next(
+            (
+                block
+                for block in display_blocks
+                if block.file == row.get("file")
+                and block.line_start <= int(row.get("line_start", 0)) <= block.line_end
+                and block.line_start <= int(row.get("line_end", 0)) <= block.line_end
+            ),
+            None,
+        )
+        for label in labels:
+            if parent is None:
+                occurrence = {
+                    "kind": row.get("environment"),
+                    "name": row.get("environment"),
+                    "file": row.get("file"),
+                    "line_start": row.get("line_start"),
+                    "line_end": row.get("line_end"),
+                    "label": label,
+                    "title": None,
+                    "text": row.get("source_text", ""),
+                    "block_id": f"{row.get('file')}:{row.get('environment_start_byte')}:{row.get('environment')}:{label}",
+                    "section_path": [],
+                }
+            else:
+                occurrence = asdict(parent)
+                occurrence["label"] = label
+                occurrence["block_id"] = _block_id(parent.file, parent.kind, parent.line_start, label, None)
+            occurrence["label_source"] = "explicit_equation_row"
+            occurrence["label_span"] = next(
+                (
+                    {key: item[key] for key in ("start_byte", "end_byte", "line_start", "line_end")}
+                    for item in row.get("label_spans", [])
+                    if item.get("label") == label
+                ),
+                None,
+            )
+            occurrence["environment_id"] = row.get("environment_id")
+            occurrence["environment_start_byte"] = row.get("environment_start_byte")
+            occurrence["environment_end_byte"] = row.get("environment_end_byte")
+            occurrences.setdefault(label, []).append(occurrence)
+
+    for label, values in occurrences.items():
+        values.sort(
+            key=lambda item: (
+                str(item.get("file", "")).encode("utf-8"),
+                int(item.get("line_start", 0)),
+                int((item.get("label_span") or {}).get("start_byte", -1)),
+            )
+        )
+    return occurrences
+
+
+def _index_diagnostics(root: Path, label_occurrences: dict[str, list[dict]], equation_rows: list[dict]) -> dict:
+    duplicate_labels = {
+        label: [
+            {
+                "file": item.get("file"),
+                "line_start": item.get("line_start"),
+                "block_id": item.get("block_id"),
+                "label_span": item.get("label_span"),
+            }
+            for item in locations
+        ]
+        for label, locations in label_occurrences.items()
+        if len(locations) > 1
+    }
     tex_files = [str(path.relative_to(root)) for path in iter_tex_files(root)]
     return {
         "status": "indexed_with_diagnostics",
@@ -248,7 +654,8 @@ def build_index(root: Path) -> dict:
     root = root.resolve()
     blocks = extract_latex_blocks(root)
     equation_rows = locate_equations(root)
-    labels = {block.label: asdict(block) for block in blocks if block.label}
+    label_occurrences = _label_occurrences(blocks, equation_rows)
+    labels = {label: values[0] for label, values in label_occurrences.items() if len(values) == 1}
     return {
         "root": str(root.resolve()),
         "n_blocks": len(blocks),
@@ -256,8 +663,9 @@ def build_index(root: Path) -> dict:
         "n_equation_rows": len(equation_rows),
         "blocks": [asdict(block) for block in blocks],
         "labels": labels,
+        "label_occurrences": label_occurrences,
         "equation_rows": equation_rows,
-        "diagnostics": _index_diagnostics(root, blocks, equation_rows),
+        "diagnostics": _index_diagnostics(root, label_occurrences, equation_rows),
     }
 
 
@@ -330,6 +738,26 @@ def _filtered_label_block(
         if block.get("label") == label:
             return block
     return None
+
+
+def resolve_label_occurrences(index: dict, label: str, *, file: str | None = None) -> dict:
+    """Resolve a label without hiding duplicate source occurrences."""
+    occurrences = index.get("label_occurrences", {}).get(label, [])
+    if not isinstance(occurrences, list):
+        occurrences = []
+    matches = [item for item in occurrences if isinstance(item, dict) and (file is None or item.get("file") == file)]
+    if len(matches) == 1:
+        return {"status": "resolved", "label": label, "file": file, "occurrence": matches[0], "occurrences": matches}
+    if not matches:
+        return {"status": "label_not_found", "label": label, "file": file, "occurrence": None, "occurrences": []}
+    return {
+        "status": "ambiguous",
+        "label": label,
+        "file": file,
+        "occurrence": None,
+        "occurrences": matches,
+        "reason": "The label has multiple source occurrences; supply the exact workspace-relative file.",
+    }
 
 
 def search_index_filtered(

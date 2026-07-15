@@ -99,4 +99,4 @@ def test_tree_derivation_lane_unrelated_lean_source_does_not_prove_report() -> N
     assert tree["status"] != "proved"
     assert "blocker_lean_source_target_binding_required" in markdown
     assert "can_promote=False" in markdown
-    assert "Lean source was supplied but is not conservatively bound" in markdown
+    assert "Lean source was supplied without an exact valid branch-target binding" in markdown

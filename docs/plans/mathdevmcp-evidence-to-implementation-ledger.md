@@ -10,19 +10,24 @@ This ledger prevents evidence artifacts from becoming dead ends. Benchmark,
 calibration, and review results should feed implementation, release readiness,
 or regression guards for the MathDevMCP mission.
 
-Mission-spine review status:
+Review status for the 2026-07-04 mission wording:
 
 - `REVIEW_STATUS=agreed`;
 - `VERDICT=AGREE`;
 - `RUN_DIR=.claude_reviews/20260704-021100-mathdevmcp-mission-spine-sonnet-r1`.
 
-Mission reminder:
+Current mission reminder, amended 2026-07-10:
 
-> Build a conservative agent-facing math-development tool, exposed through
-> CLI/MCP, that helps agents and colleagues audit mathematical code and
-> documents, locate proof gaps, missing assumptions, implementation
-> mismatches, and backend limitations, while never mistaking diagnostics for
-> proof.
+> Build an exploratory, high-standard, rigorous, agent-facing mathematical
+> development system, exposed through CLI/MCP, that helps agents and colleagues
+> audit and develop mathematical code and documents, locate proof gaps, missing
+> assumptions, implementation mismatches, and backend limitations, and
+> investigate candidate repairs while never mistaking diagnostics or
+> hypotheses for proof. Be exploratory in search and rigorous at the claim
+> boundary.
+
+The 2026-07-10 wording amendment has not inherited the review verdict above;
+the reviewed evidence and claim-boundary rules remain unchanged.
 
 ## Ledger
 

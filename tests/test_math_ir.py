@@ -1,9 +1,15 @@
 from pathlib import Path
 
+import pytest
+
+from mathdevmcp.evidence_manifest import EvidenceValidationError
 from mathdevmcp.math_ir import (
+    build_typed_assumption,
     diagnose_typed_obligation,
     obligation_from_audit_obligation,
+    resolve_symbol_roles,
     typed_repair_obligation_from_packet,
+    validate_typed_assumption,
     validate_math_obligation,
 )
 from mathdevmcp.matrix_ir import matrix_ir_from_equation_row, parse_matrix_obligation
@@ -13,6 +19,27 @@ from mathdevmcp.typed_workflows import typed_obligation_for_label
 
 ROOT = Path(__file__).resolve().parent.parent
 FIXTURES = ROOT / "benchmarks" / "fixtures"
+
+
+def _scope(*, file: str = "doc.tex", label: str = "eq:target") -> dict:
+    return {
+        "entry_source_digest": "a" * 64,
+        "file": file,
+        "label": label,
+        "obligation_digest": "b" * 64,
+    }
+
+
+def _source_ref(*, file: str = "doc.tex") -> dict:
+    return {
+        "file": file,
+        "source_digest": "c" * 64,
+        "byte_span": {"start": 10, "end": 20},
+        "line_span": {"start": 2, "end": 3},
+        "enclosing_node_id": "ctx_" + "d" * 64,
+        "dependency_path": ["ctx_" + "e" * 64, "edge_" + "f" * 64],
+        "applicability_reason": "The declaration explicitly names the target.",
+    }
 
 
 def test_math_obligation_ir_preserves_provenance_and_symbols():
@@ -72,6 +99,209 @@ def test_typed_obligation_for_label_reports_hmc_posterior_review():
     assert "derivative" in obligation["unresolved_constructs"]
     assert any(item["kind"] == "differentiability_required" for item in obligation["dimension_constraints"])
     assert any(item["role"] == "posterior_candidate" for item in obligation["typed_symbols"])
+
+
+def test_pi_is_not_unconditionally_posterior() -> None:
+    typed = diagnose_typed_obligation(
+        {"id": "pi", "lhs": r"\pi(x)", "rhs": "y", "source_text": r"\pi(x)=y"}
+    )["obligation"]
+
+    assert "posterior" not in typed["unresolved_constructs"]
+    assert all(item["role"] != "posterior_candidate" for item in typed["typed_symbols"])
+
+
+def test_card_pi_resolves_policy_or_remains_not_searched() -> None:
+    evidence = {
+        "symbol": r"\pi",
+        "proposed_role": "policy_candidate",
+        "scope": _scope(),
+        "evidence_kind": "exact_declaration",
+        "source_refs": [_source_ref()],
+        "applicability_reason": "The source explicitly defines pi as the downstream policy.",
+    }
+    resolved = resolve_symbol_roles(
+        [r"\pi"], scope=_scope(), evidence_records=[evidence], search_state="source_supported"
+    )
+    withheld = resolve_symbol_roles(
+        [r"\pi"], scope=_scope(), evidence_records=[], search_state="not_searched"
+    )
+
+    assert resolved["resolutions"][0]["state"] == "resolved"
+    assert resolved["resolutions"][0]["role"] == "policy_candidate"
+    assert withheld["resolutions"][0]["state"] == "not_searched"
+
+
+def test_explicit_override_has_provenance_and_scope() -> None:
+    override = {
+        "symbol": "x",
+        "proposed_role": "scalar_candidate",
+        "scope": _scope(),
+        "source_refs": [_source_ref()],
+        "applicability_reason": "Human-provided scoped convention.",
+        "override_provenance": {
+            "authority": "human_user",
+            "artifact_ref": "docs/reviews/notation.json",
+            "artifact_sha256": "1" * 64,
+        },
+    }
+    result = resolve_symbol_roles(
+        ["x"], scope=_scope(), evidence_records=[], overrides=[override], search_state="source_supported"
+    )
+
+    assert result["resolutions"][0]["state"] == "resolved"
+    candidate = result["candidates"][0]
+    assert candidate["priority_class"] == "scoped_override"
+    assert candidate["override_provenance"] == override["override_provenance"]
+
+
+def test_override_cannot_leak_to_another_file_or_label() -> None:
+    override = {
+        "symbol": "x",
+        "proposed_role": "scalar_candidate",
+        "scope": _scope(file="other.tex", label="eq:other"),
+        "source_refs": [_source_ref(file="other.tex")],
+        "applicability_reason": "Scoped elsewhere.",
+        "override_provenance": {
+            "authority": "human_user",
+            "artifact_ref": "docs/reviews/notation.json",
+            "artifact_sha256": "1" * 64,
+        },
+    }
+    result = resolve_symbol_roles(
+        ["x"], scope=_scope(), evidence_records=[], overrides=[override], search_state="source_supported"
+    )
+
+    assert result["resolutions"][0]["state"] == "unknown"
+    assert result["candidates"] == []
+    assert result["diagnostics"][0]["kind"] == "override_scope_mismatch"
+
+
+def test_conflicting_roles_remain_ambiguous() -> None:
+    records = [
+        {
+            "symbol": "x",
+            "proposed_role": role,
+            "scope": _scope(),
+            "evidence_kind": "exact_declaration",
+            "source_refs": [_source_ref()],
+            "applicability_reason": "Exact but conflicting declaration.",
+        }
+        for role in ("scalar_candidate", "vector_candidate")
+    ]
+    result = resolve_symbol_roles(
+        ["x"], scope=_scope(), evidence_records=records, search_state="source_supported"
+    )
+
+    assert result["resolutions"][0]["state"] == "ambiguous"
+    assert result["resolutions"][0]["role"] is None
+
+
+def test_lexical_role_is_candidate_not_fact() -> None:
+    result = resolve_symbol_roles(
+        ["posterior"],
+        scope=_scope(),
+        evidence_records=[
+            {
+                "symbol": "posterior",
+                "proposed_role": "posterior_candidate",
+                "scope": _scope(),
+                "evidence_kind": "lexical_heuristic",
+                "source_refs": [],
+                "applicability_reason": "Spelling-only heuristic.",
+            }
+        ],
+        search_state="source_supported",
+    )
+
+    assert result["resolutions"][0]["state"] == "candidate"
+    assert result["resolutions"][0]["role"] is None
+
+
+def test_candidate_assumption_does_not_become_stated() -> None:
+    assumption = build_typed_assumption(
+        predicate="f is differentiable",
+        formal_predicate=None,
+        kind="regularity",
+        subjects=["f"],
+        support_state="candidate_assumption",
+        source_refs=[],
+        encoding_state="not_yet_encoded",
+        closes_blocker_ids=["blocker_f"],
+    )
+
+    assert assumption["support_state"] == "candidate_assumption"
+    assert assumption["source_refs"] == []
+
+
+def test_source_supported_requires_exact_ref_and_rejects_none_line() -> None:
+    with pytest.raises(EvidenceValidationError):
+        build_typed_assumption(
+            predicate="f is differentiable",
+            formal_predicate=None,
+            kind="regularity",
+            subjects=["f"],
+            support_state="source_supported",
+            source_refs=[{"file": "doc.tex", "line_span": {"start": None, "end": 2}}],
+            encoding_state="not_yet_encoded",
+            closes_blocker_ids=[],
+        )
+
+
+def test_not_found_requires_completed_search_for_typed_assumption() -> None:
+    with pytest.raises(EvidenceValidationError):
+        build_typed_assumption(
+            predicate="f is differentiable",
+            formal_predicate=None,
+            kind="regularity",
+            subjects=["f"],
+            support_state="not_found_after_search",
+            source_refs=[],
+            encoding_state="not_applicable",
+            closes_blocker_ids=[],
+            search_completed=False,
+        )
+
+
+def test_assumption_identity_is_stable_but_binding_tracks_support_and_encoding() -> None:
+    common = {
+        "predicate": "f is differentiable",
+        "formal_predicate": None,
+        "kind": "regularity",
+        "subjects": ["f"],
+        "closes_blocker_ids": ["blocker_f"],
+    }
+    candidate = build_typed_assumption(
+        **common,
+        support_state="candidate_assumption",
+        source_refs=[],
+        encoding_state="not_yet_encoded",
+    )
+    supported = build_typed_assumption(
+        **common,
+        support_state="source_supported",
+        source_refs=[_source_ref()],
+        encoding_state="not_applicable",
+    )
+
+    assert candidate["assumption_id"] == supported["assumption_id"]
+    assert candidate["binding_digest"] != supported["binding_digest"]
+    assert validate_typed_assumption(supported) == supported
+
+
+def test_source_support_does_not_imply_encoded_or_mathematically_sufficient() -> None:
+    assumption = build_typed_assumption(
+        predicate="f is differentiable",
+        formal_predicate=None,
+        kind="regularity",
+        subjects=["f"],
+        support_state="source_supported",
+        source_refs=[_source_ref()],
+        encoding_state="not_yet_encoded",
+        closes_blocker_ids=["blocker_f"],
+    )
+
+    assert assumption["encoding_state"] == "not_yet_encoded"
+    assert assumption["mathematical_sufficiency"] == "not_established"
 
 
 def test_validate_math_obligation_rejects_malformed_payload():

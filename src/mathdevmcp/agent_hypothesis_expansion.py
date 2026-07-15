@@ -6,12 +6,13 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 from .contracts import attach_contract
+from .derivation_search_tree import validate_branch_generator
 
 
 AGENT_HYPOTHESIS_EXPANSION_CONTRACT = "agent_hypothesis_expansion"
 AGENT_HYPOTHESIS_EXPANSION_SET_CONTRACT = "agent_hypothesis_expansion_set"
 AGENT_HYPOTHESIS_BOUNDARY = (
-    "Agent hypotheses are candidate branch expansions only. They are not "
+    "Generated hypotheses are candidate branch expansions only. They are not "
     "repairs, proofs, validated assumptions, or backend certificates until the "
     "derivation tree records certifying or blocking evidence."
 )
@@ -42,7 +43,8 @@ class AgentHypothesisExpansion:
     success_criterion: str
     failure_criterion: str
     source_refs: list[str]
-    provenance: str = "agent_generated_candidate"
+    generation: dict[str, Any]
+    provenance: str = "rule_generated"
     status: str = "candidate_pending_tree_verification"
     boundary: str = AGENT_HYPOTHESIS_BOUNDARY
 
@@ -81,9 +83,10 @@ def _candidate(
 ) -> dict[str, Any]:
     blocker_id = _text(blocker.get("id"))
     kind = _text(blocker.get("kind"))
+    source_refs = _source_refs(blocker, source_context)
     payload = asdict(
         AgentHypothesisExpansion(
-            id=f"agent_hypothesis_{_slug(blocker_id)}_{route_id}",
+            id=f"rule_hypothesis_{_slug(blocker_id)}_{route_id}",
             target_blocker_id=blocker_id,
             blocker_kind=kind,
             proposed_route=proposed_route,
@@ -93,10 +96,42 @@ def _candidate(
             expected_backend_role=expected_backend_role,
             success_criterion=success_criterion,
             failure_criterion=failure_criterion,
-            source_refs=_source_refs(blocker, source_context),
+            source_refs=source_refs,
+            generation={
+                "kind": "rule_generated",
+                "rule_id": route_id,
+                "source_refs": source_refs,
+            },
         )
     )
     return attach_contract(payload, AGENT_HYPOTHESIS_EXPANSION_CONTRACT)
+
+
+def hypothesis_generator_provenance(expansion: dict[str, Any]) -> dict[str, Any]:
+    """Normalize rule, real-agent, and historical mislabeled provenance."""
+    provenance = _text(expansion.get("provenance"))
+    source_refs = [str(item) for item in expansion.get("source_refs", []) if str(item)]
+    if provenance == "agent_generated_candidate":
+        return {
+            "kind": "legacy_rule_generated",
+            "legacy_label": "agent_generated_candidate",
+            "source_refs": source_refs,
+            "non_claim": "Historical deterministic template; not agent execution.",
+        }
+    generation = expansion.get("generation")
+    if not isinstance(generation, dict):
+        raise ValueError(f"{provenance or 'unknown'} hypothesis needs generation provenance")
+    result = dict(generation)
+    expected_kind = {
+        "rule_generated": "rule_generated",
+        "agent_generated": "agent_generated",
+    }.get(provenance)
+    if expected_kind is None or result.get("kind") != expected_kind:
+        raise ValueError("hypothesis provenance/generation kind mismatch")
+    errors = validate_branch_generator(result)
+    if errors:
+        raise ValueError("; ".join(errors))
+    return result
 
 
 def validate_agent_hypothesis_expansion(expansion: dict[str, Any]) -> list[str]:
@@ -127,8 +162,10 @@ def validate_agent_hypothesis_expansion(expansion: dict[str, Any]) -> list[str]:
         errors.append("assumptions_added must contain at least one non-empty assumption")
     if _text(expansion.get("expected_backend")) not in ALLOWED_EXPECTED_BACKENDS:
         errors.append("expected_backend is not an allowed backend or evidence route")
-    if _text(expansion.get("provenance")) != "agent_generated_candidate":
-        errors.append("provenance must be agent_generated_candidate")
+    try:
+        hypothesis_generator_provenance(expansion)
+    except ValueError as exc:
+        errors.extend(item for item in str(exc).split("; ") if item)
     if _text(expansion.get("status")) != "candidate_pending_tree_verification":
         errors.append("status must be candidate_pending_tree_verification")
     boundary = _text(expansion.get("boundary")).lower()
@@ -161,10 +198,10 @@ def propose_hypothesis_expansions(
     failed_paths: list[dict[str, Any]] | None = None,
     max_candidates: int = 3,
 ) -> dict[str, Any]:
-    """Create deterministic seed hypotheses for a blocker.
+    """Create deterministic rule-generated seed hypotheses for a blocker.
 
-    This function is the schema boundary for later LLM-generated hypotheses.
-    Today it emits conservative deterministic routes from blocker kinds, then
+    This function is the schema boundary for later externally generated hypotheses.
+    Today it emits deterministic routes from blocker kinds, then
     validates them before a tree search can consume them.
     """
     kind = _text(blocker.get("kind"))
@@ -438,8 +475,8 @@ def propose_hypothesis_expansions(
         "typed_obligation_id": typed_obligation.get("id") if isinstance(typed_obligation, dict) else None,
         "boundary": AGENT_HYPOTHESIS_BOUNDARY,
         "non_claims": [
-            "Agent hypotheses are not repairs.",
-            "Agent hypotheses are not proof certificates.",
+            "Rule-generated hypotheses are not repairs.",
+            "Rule-generated hypotheses are not proof certificates.",
             "Tree/backend validation is required before a hypothesis can support report text.",
         ],
     }

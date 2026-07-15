@@ -1,0 +1,71 @@
+{
+  "schema_version": "p04_synthetic_snapshot@1",
+  "fixture": "two_child_injected_executor",
+  "root": {
+    "branch_id": "branch_cc45cb7b021d34ad05e421cf905bdbd9f9eabeb4c7951fa1204ad1ad72be59de",
+    "state": "formalization_blocked",
+    "attempt_refs": [],
+    "result_refs": []
+  },
+  "children": [
+    {
+      "branch_id": "branch_504393fd12e1be3354234a159be43dcbe98482fcfd1cbfbba318561e474f78a2",
+      "target": "x = x",
+      "generator_kind": "rule_generated",
+      "request_ref": "artifact://p04/request/9926113e9f613fd047b198f070914339226bcf9e6a641b7f7355ae62b7658683",
+      "result_ref": "artifact://p04/result/ecb47be79252b9d2ff9c0c9d95c19b12bbbb4661a06a74a6eecf781bcc1becf7",
+      "terminal_state": "proved",
+      "closed_blocker_ids": [
+        "blocker_x"
+      ]
+    },
+    {
+      "branch_id": "branch_ce67e79a37473032b71419bfe429b9869bff85794bde6c510aa8ac0d4e1caa2e",
+      "target": "y = y",
+      "generator_kind": "rule_generated",
+      "request_ref": "artifact://p04/request/b8693c1b9ea4a6f7d094a1d0c4afc3bd0305260de13fc6deaa9b5de427933ea4",
+      "result_ref": "artifact://p04/result/67ad2bd7a25e271133303ac87f6574d2e3e2394b724fe0a8a30d62d26d15455a",
+      "terminal_state": "proved",
+      "closed_blocker_ids": [
+        "blocker_y"
+      ]
+    }
+  ],
+  "event_chain": {
+    "serial_event_kinds": [
+      "request_bound",
+      "result_recorded",
+      "request_bound",
+      "result_recorded"
+    ],
+    "replay_tree_digest": "deae0b2142d19c83c424a7178675cff9a686a4519ea9134f0e0f1f18ca89390a"
+  },
+  "schedule_equivalence": {
+    "serial_final_tree_digest": "deae0b2142d19c83c424a7178675cff9a686a4519ea9134f0e0f1f18ca89390a",
+    "parallel_final_tree_digest": "deae0b2142d19c83c424a7178675cff9a686a4519ea9134f0e0f1f18ca89390a",
+    "semantic_tree_digests_match": true,
+    "rankings_match": true,
+    "parallel_execution_mode": "injected_parallel"
+  },
+  "usage": {
+    "targets": 1,
+    "nodes": 3,
+    "attempts_total": 2,
+    "retrieval_calls": 0,
+    "agent_calls": 0,
+    "input_bytes": 14,
+    "output_bytes": 784,
+    "artifact_bytes": 3316,
+    "artifact_reserved_bytes": 0
+  },
+  "compilation": {
+    "status": "compiled_final_tree",
+    "final_tree_digest": "deae0b2142d19c83c424a7178675cff9a686a4519ea9134f0e0f1f18ca89390a",
+    "publication_mode": "disabled"
+  },
+  "non_claims": [
+    "Injected outcomes are orchestration fixtures, not mathematical proof or backend evidence.",
+    "The snapshot does not establish real-document or external-tool capability.",
+    "Synthetic proved states do not authorize document repair publication."
+  ]
+}

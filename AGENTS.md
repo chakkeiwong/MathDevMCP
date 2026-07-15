@@ -3,6 +3,40 @@
 This repository inherits the global scientific coding agent policy. The rules
 below are stricter project-local requirements for MathDevMCP.
 
+## Mission Character
+
+MathDevMCP is an exploratory, high-standard, rigorous, agent-facing
+mathematical development system. It should search broadly across candidate
+assumptions, derivations, counterexamples, formalizations, and external-tool
+routes while maintaining strict standards for evidence, reproducibility, and
+published claims.
+
+The governing distinction is: exploratory in search, rigorous at the claim
+boundary. A candidate branch may be speculative; a published mathematical
+repair or verified claim may not be.
+
+## Academic Governance Proportionality
+
+Use `docs/plans/mathdevmcp-academic-governance-reset-2026-07-13.md` as the
+prospective governance policy for the real-document remediation program.
+
+- Routine implementation and debugging require focused tests, relevant
+  adjacent checks, and an inspected diff, not receipt chains or review-budget
+  ledgers.
+- Ordinary local operations may be retried after diagnosis. One-shot execution
+  is reserved for genuinely irreversible or externally consequential actions.
+- Use content digests where scientific identity matters: sources, data,
+  obligations, backend inputs/results, and evidence supporting promoted
+  claims. Do not hash every plan, review, log, or command transition by default.
+- Require a substantive independent review for mathematical/scientific claims,
+  important defaults, publication enablement, or release decisions, not for
+  clerical or bookkeeping repairs.
+- Preserve strict assumption, provenance, external-tool, evidence-contract,
+  publication, security, and non-claim boundaries.
+
+The legacy visible gated runbook and its P03R2 recovery machinery are retained
+as history but are not live phase-advancement authority.
+
 ## External-Tool-First Mathematical Search Policy
 
 MathDevMCP is an orchestration and evidence system, not a replacement prover.

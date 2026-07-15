@@ -11,6 +11,7 @@ than a bare "not encodable" answer.
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -21,9 +22,10 @@ from .actionable_abstentions import build_actionable_abstention_payload
 from .agent_hypothesis_expansion import propose_hypothesis_expansions
 from .assumption_discovery import assumptions_required
 from .contracts import attach_contract
+from .context_evidence import compact_context_only_packet, render_context_only_packet_markdown
 from .derivation_branch_controller import branch_expansion_records, can_derive_with_budget, rank_repair_branches
 from .derivation_search_tree import PROMOTION_BOUNDARY, branch_promotion_report
-from .derivation_target_extraction import build_proposition_context_packet
+from .derivation_target_extraction import build_proposition_context_packet, extract_derivation_targets_for_label
 from .derivation_tree_expansion import expand_tree_with_hypotheses
 from .derivation_tree_report import render_derivation_tree_report
 from .doctor import doctor_report
@@ -36,10 +38,32 @@ from .math_document_rigor import _classify_equation, _label_ref_hygiene, _sectio
 DOCUMENT_DERIVATION_TREE_CONTRACT = "document_derivation_tree_audit"
 DOCUMENT_READY_REPAIR_PROPOSAL_CONTRACT = "context_aware_executable_repair_proposal"
 DOCUMENT_GAP_REPORT_CONTRACT = "document_gap_report"
+DOCUMENT_PARTIAL_EVIDENCE_REPORT_CONTRACT = "document_partial_evidence_report"
 TOOL_GROUNDED_PROPOSAL_COMPILER_CONTRACT = "tool_grounded_proposal_compiler_result"
 STRICT_GROUNDING_POLICY = "strict"
 DEFAULT_LABEL_LIMIT = 30
 PARALLEL_EXECUTION_CONTRACT = "document_derivation_tree_parallel_execution"
+DOCUMENT_PUBLICATION_MODE = "disabled"
+DOCUMENT_PUBLICATION_ENABLED = False
+DOCUMENT_CLAIM_ELIGIBILITY = "ineligible"
+DOCUMENT_EVIDENCE_SCHEMA_VERSION = "0-legacy"
+DOCUMENT_INTEGRITY_BINDING_STATUS = "unbound_legacy_evidence"
+DOCUMENT_PUBLICATION_VETO_ID = "document_repair_publication_quarantined"
+LEGACY_BINDING_VETO_ID = "legacy_unbound_document_evidence"
+EDIT_TARGET_MISMATCH_VETO_ID = "edit_target_mismatch"
+DOCUMENT_TOOL_DISABLED_STATUS = "document_derivation_tree_disabled_pending_publication_safety"
+DOCUMENT_TOOL_DISABLE_ENV = "MATHDEVMCP_DISABLE_DOCUMENT_DERIVATION_TREE"
+DOCUMENT_DERIVATION_TREE_TOOL_ENABLED = True
+BRANCH_EXECUTION_PENDING = "branch_execution_pending"
+FORMALIZATION_BLOCKED = "formalization_blocked"
+
+
+def compile_context_only_report(packet: dict[str, Any]) -> dict[str, Any]:
+    """Expose the P03 backend-free report contract to legacy document consumers."""
+    return {
+        "compact": compact_context_only_packet(packet),
+        "markdown": render_context_only_packet_markdown(packet),
+    }
 
 _LATEX_COMMANDS_NOT_SYMBOLS = {
     "begin",
@@ -98,6 +122,60 @@ def _sentence(value: Any) -> str:
     if not text:
         return ""
     return text if text.endswith((".", "!", "?")) else f"{text}."
+
+
+def _effective_document_promotion(raw_promotion: dict[str, Any] | None = None) -> dict[str, Any]:
+    raw = raw_promotion if isinstance(raw_promotion, dict) else {}
+    return {
+        "can_promote": False,
+        "supported_status": None,
+        "reason": "Document promotion is disabled because current backend evidence has no exact Phase 01 binding.",
+        "errors": [LEGACY_BINDING_VETO_ID, DOCUMENT_PUBLICATION_VETO_ID],
+        "evidence_refs": [str(ref) for ref in raw.get("evidence_refs", []) if str(ref)],
+        "boundary": (
+            "Raw lower-level evidence is diagnostic history only. Exact source, target, assumptions, "
+            "branch, native input, result, tool/version, and edit binding are required before document promotion."
+        ),
+    }
+
+
+def _legacy_document_integrity_binding() -> dict[str, Any]:
+    """Describe document evidence without granting mathematical authority."""
+    return {
+        "evidence_schema_version": DOCUMENT_EVIDENCE_SCHEMA_VERSION,
+        "integrity_binding_status": DOCUMENT_INTEGRITY_BINDING_STATUS,
+        "integrity_binding_verified": False,
+        "claim_eligibility": DOCUMENT_CLAIM_ELIGIBILITY,
+        "publication_enabled": DOCUMENT_PUBLICATION_ENABLED,
+    }
+
+
+def _document_attempt_view(attempt: dict[str, Any]) -> dict[str, Any]:
+    view = dict(attempt)
+    view.update(
+        {
+            **_legacy_document_integrity_binding(),
+            "document_evidence_binding": "legacy_unbound",
+            "applicable_to_document_branch": False,
+            "binding_missing_components": [
+                "source_span",
+                "target",
+                "assumptions",
+                "branch",
+                "native_input",
+                "result",
+                "tool_version",
+                "edit",
+            ],
+            "veto_ids": [LEGACY_BINDING_VETO_ID],
+        }
+    )
+    return view
+
+
+def _document_tool_disabled() -> bool:
+    value = os.environ.get(DOCUMENT_TOOL_DISABLE_ENV, "").strip().lower()
+    return not DOCUMENT_DERIVATION_TREE_TOOL_ENABLED or value in {"1", "true", "yes", "on"}
 
 
 def _split_target(text: str) -> tuple[str | None, str | None, str]:
@@ -868,7 +946,8 @@ def _unsupported_for_symbolic(packet: dict[str, Any]) -> list[str]:
         unsupported.append("optimization operator requires feasible-set and attainment formalization")
     if "derivative" in operators:
         unsupported.append("derivative/interchange step requires differentiability and domain formalization")
-    if packet.get("symbol_inventory", {}).get("macros"):
+    symbol_inventory = packet.get("symbol_inventory", {})
+    if symbol_inventory.get("macros") or symbol_inventory.get("latex_commands"):
         unsupported.append("LaTeX macros require translation to backend symbols")
     return list(dict.fromkeys(unsupported))
 
@@ -1017,8 +1096,10 @@ def _branch_translation_blockers(packet: dict[str, Any], branch: dict[str, Any])
         )
     macros = []
     symbol_inventory = packet.get("symbol_inventory")
-    if isinstance(symbol_inventory, dict) and isinstance(symbol_inventory.get("macros"), list):
-        macros = [str(item) for item in symbol_inventory.get("macros", []) if str(item)]
+    if isinstance(symbol_inventory, dict):
+        raw_macros = symbol_inventory.get("macros", symbol_inventory.get("latex_commands", []))
+        if isinstance(raw_macros, list):
+            macros = [str(item) for item in raw_macros if str(item)]
     if macros:
         blockers.append(
             {
@@ -1066,8 +1147,34 @@ def _branch_backend_attempts(
     branch: dict[str, Any],
     root: dict[str, Any],
 ) -> list[dict[str, Any]]:
-    attempts = [dict(item) for item in root.get("backend_attempts", []) if isinstance(item, dict)]
-    return attempts
+    _ = root
+    branch_id = str(branch.get("id", ""))
+    return [
+        _document_attempt_view(item)
+        for item in branch.get("backend_attempts", [])
+        if isinstance(item, dict)
+        and item.get("branch_id") == branch_id
+        and item.get("request_ref")
+        and item.get("result_ref")
+    ]
+
+
+def _branch_execution_blocker(packet: dict[str, Any], branch: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": f"blocker_{branch['id']}_branch_bound_execution_required",
+        "kind": "branch_bound_backend_execution_required",
+        "problem": "This assumption branch has no branch-bound backend request/result evidence.",
+        "why": (
+            "Root attempts bind only the original root target. They do not bind this branch's "
+            "assumptions, formalization request, or result and therefore cannot close the branch."
+        ),
+        "required_next_evidence": (
+            "Create and execute an exact branch request that binds the target, typed assumptions, "
+            "branch id, native input, tool/version, and result."
+        ),
+        "source": "document_derivation_tree_phase04_branch_boundary",
+        "evidence_refs": [str(packet.get("id", "")), str(branch.get("id", ""))],
+    }
 
 
 def _branch_translation_attempts(
@@ -1140,6 +1247,8 @@ def _attach_branch_backend_evidence(packet: dict[str, Any], branch: dict[str, An
     branch["translation_blockers"] = translation_blockers
     formalization_blockers = _formalization_blockers(branch)
     branch["blockers"] = [*translation_blockers, *formalization_blockers]
+    if not backend_attempts:
+        branch["blockers"].append(_branch_execution_blocker(packet, branch))
     branch["translation_attempts"] = _branch_translation_attempts(
         packet,
         branch,
@@ -1147,23 +1256,41 @@ def _attach_branch_backend_evidence(packet: dict[str, Any], branch: dict[str, An
         translation_blockers,
         formalization_blockers,
     )
-    promotion_status = str(root.get("status", branch.get("status", "partial")))
-    promotion = branch_promotion_report({"status": promotion_status, "backend_attempts": backend_attempts})
-    if promotion.get("can_promote") and promotion.get("supported_status") in {"proved", "refuted"}:
-        branch["status"] = f"scoped_target_{promotion['supported_status']}_not_document_proof"
-        branch["validation_status"] = "scoped_backend_evidence_available"
+    promotion_status = str(branch.get("status", "partial"))
+    raw_promotion = branch_promotion_report({"status": promotion_status, "backend_attempts": backend_attempts})
+    effective_promotion = _effective_document_promotion(raw_promotion)
+    if raw_promotion.get("can_promote") and raw_promotion.get("supported_status") in {"proved", "refuted"}:
+        branch["status"] = f"legacy_{raw_promotion['supported_status']}_evidence_unbound"
+        branch["validation_status"] = "legacy_unbound_partial_evidence"
     elif translation_blockers:
         branch["status"] = "blocked_before_backend_certification"
         branch["validation_status"] = "typed_translation_blocked"
     elif backend_attempts:
         branch["status"] = "diagnostic_backend_attempt_recorded"
         branch["validation_status"] = "diagnostic_backend_attempt_only"
+    else:
+        branch["status"] = "unexecuted_branch_pending_bound_request"
+        branch["validation_status"] = "branch_execution_not_attempted"
+    engineering_error = any(str(item.get("status", "")).endswith("error") for item in backend_attempts)
+    if engineering_error:
+        failure_classification = "engineering_error"
+    elif raw_promotion.get("can_promote"):
+        failure_classification = "evidence_binding_error"
+    elif not backend_attempts:
+        failure_classification = BRANCH_EXECUTION_PENDING
+    else:
+        failure_classification = "mathematical_blocked"
     branch["backend_evidence"] = {
+        **_legacy_document_integrity_binding(),
         "status": branch["validation_status"],
+        "binding_status": "legacy_unbound" if backend_attempts else "no_branch_evidence",
+        "failure_classification": failure_classification,
+        "veto_ids": [LEGACY_BINDING_VETO_ID, DOCUMENT_PUBLICATION_VETO_ID],
         "backend_attempt_count": len(backend_attempts),
         "translation_attempt_count": len(branch["translation_attempts"]),
         "translation_blocker_count": len(translation_blockers),
-        "promotion": promotion,
+        "raw_promotion": raw_promotion,
+        "effective_document_promotion": effective_promotion,
         "boundary": PROMOTION_BOUNDARY,
     }
     branch["agent_hypothesis_expansions"] = [
@@ -1362,8 +1489,8 @@ def _proposal_latex_for_branch(packet: dict[str, Any], branch: dict[str, Any]) -
             "\\end{enumerate}",
             "",
             (
-                "This paragraph is a repair proposal only: rerun the listed backend "
-                "or formalization checks before treating the displayed equality as certified."
+                "This paragraph is blocked candidate text only: do not apply it. Rerun the listed backend "
+                "or formalization checks and establish exact evidence binding before treating the display as certified."
             ),
         ]
     )
@@ -1374,11 +1501,16 @@ def _patch_candidate_for_branch(packet: dict[str, Any], branch: dict[str, Any]) 
     source_span = packet.get("display_source_span") if isinstance(packet.get("display_source_span"), dict) and packet.get("display_source_span") else packet.get("source_span", {})
     return {
         "id": f"patch_{branch['id']}",
-        "kind": "add_assumption_and_route_text",
+        "kind": "blocked_candidate_repair",
+        "status": "non_applicable_publication_quarantine",
+        "applicable": False,
         "location": source_span,
-        "proposed_text": _patch_text_for_branch(packet, branch),
+        "candidate_text_blocked": _patch_text_for_branch(packet, branch),
+        "blocked_reason": "Document repair publication is disabled and the branch evidence is legacy/unbound.",
         "rationale": branch.get("mathematical_why", ""),
-        "validation_status": branch.get("validation_status", "diagnostic_pending_backend_or_formalization"),
+        "validation_status": "blocked_non_applicable",
+        "failure_classification": "evidence_binding_error",
+        "veto_ids": [LEGACY_BINDING_VETO_ID, DOCUMENT_PUBLICATION_VETO_ID],
         "evidence_refs": branch.get("evidence_refs", []),
     }
 
@@ -1415,8 +1547,8 @@ def _proposal_problem(packet: dict[str, Any], branch: dict[str, Any], typed: dic
             "The target is not yet a certifiable derivation because missing or unresolved "
             f"assumptions {missing[:6]} block constructs {constructs[:6]}."
         )
-    if branch.get("backend_evidence", {}).get("promotion", {}).get("can_promote"):
-        return "The scoped target has backend evidence; document text should cite the scoped assumptions and proof boundary."
+    if branch.get("backend_evidence", {}).get("raw_promotion", {}).get("can_promote"):
+        return "The scoped target has raw backend evidence, but it is legacy/unbound and cannot support a document edit."
     return "The target remains diagnostic because no branch has enough evidence for certification."
 
 
@@ -1436,21 +1568,43 @@ def _proposal_why(packet: dict[str, Any], branch: dict[str, Any], typed: dict[st
     return " ".join(_sentence(item) for item in why_parts if str(item).strip())
 
 
-def _top_ranked_branch_context(
+def _branch_context_for_report(
     packet: dict[str, Any],
     root: dict[str, Any],
 ) -> tuple[dict[str, Any] | None, dict[str, Any], dict[str, Any], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
     branches = [item for item in root.get("assumption_branches", []) if isinstance(item, dict)]
     ranking = root.get("branch_ranking") if isinstance(root.get("branch_ranking"), dict) else {}
-    top_branch = _branch_by_id(branches, ranking.get("top_branch_id")) or (branches[0] if branches else None)
-    if top_branch is None:
+    nondominated_ids = [
+        str(item)
+        for item in ranking.get("nondominated_branch_ids", [])
+        if isinstance(item, str) and item
+    ]
+    context_branch_id = ranking.get("top_branch_id")
+    selection_authority = "unique_nondominated"
+    if not context_branch_id and nondominated_ids:
+        context_branch_id = nondominated_ids[0]
+        selection_authority = "serialization_only_nondominated_context"
+    context_branch = _branch_by_id(branches, context_branch_id) or (branches[0] if branches else None)
+    if context_branch is None:
         return None, {}, {}, [], [], []
     typed = packet.get("typed_repair_obligation") if isinstance(packet.get("typed_repair_obligation"), dict) else {}
-    top_ranking = None
+    context_ranking = None
     for item in ranking.get("rankings", []) if isinstance(ranking.get("rankings"), list) else []:
-        if isinstance(item, dict) and item.get("branch_id") == top_branch.get("id"):
-            top_ranking = item
+        if isinstance(item, dict) and item.get("branch_id") == context_branch.get("id"):
+            context_ranking = dict(item)
             break
+    context_ranking = context_ranking or {}
+    context_ranking.update(
+        {
+            "context_selection_authority": selection_authority,
+            "nondominated_branch_ids": nondominated_ids,
+            "selected_action_id": (
+                ranking.get("selected_action", {}).get("action_id")
+                if isinstance(ranking.get("selected_action"), dict)
+                else None
+            ),
+        }
+    )
     missing_or_unresolved = [
         {
             "id": item.get("id"),
@@ -1471,20 +1625,18 @@ def _top_ranked_branch_context(
         }
         for item in typed.get("assumptions", []) if isinstance(item, dict) and item.get("status") in {"stated", "nearby_stated"}
     ]
-    remaining_blockers = [
-        {
-            "id": blocker.get("id"),
-            "kind": blocker.get("kind"),
-            "problem": blocker.get("problem"),
-            "why": blocker.get("why"),
-            "required_next_evidence": blocker.get("required_next_evidence"),
-            "evidence_refs": blocker.get("evidence_refs", []),
-        }
-        for blocker in top_branch.get("translation_blockers", [])
-        if isinstance(blocker, dict)
-    ]
-    if not remaining_blockers:
-        remaining_blockers = [
+    remaining_blockers: list[dict[str, Any]] = []
+    seen_blocker_ids: set[str] = set()
+    for blocker in [
+        *[item for item in context_branch.get("translation_blockers", []) if isinstance(item, dict)],
+        *[item for item in context_branch.get("blockers", []) if isinstance(item, dict)],
+    ]:
+        blocker_id = str(blocker.get("id", ""))
+        if blocker_id and blocker_id in seen_blocker_ids:
+            continue
+        if blocker_id:
+            seen_blocker_ids.add(blocker_id)
+        remaining_blockers.append(
             {
                 "id": blocker.get("id"),
                 "kind": blocker.get("kind"),
@@ -1493,19 +1645,46 @@ def _top_ranked_branch_context(
                 "required_next_evidence": blocker.get("required_next_evidence"),
                 "evidence_refs": blocker.get("evidence_refs", []),
             }
-            for blocker in top_branch.get("blockers", [])[:6]
-            if isinstance(blocker, dict)
-        ]
-    return top_branch, typed, top_ranking or {}, missing_or_unresolved, already_stated, remaining_blockers
+        )
+    return context_branch, typed, context_ranking, missing_or_unresolved, already_stated, remaining_blockers
+
+
+def _quarantine_branch_ranking(ranking: dict[str, Any], branches: list[dict[str, Any]]) -> dict[str, Any]:
+    branch_by_id = {str(branch.get("id")): branch for branch in branches if branch.get("id")}
+    quarantined = dict(ranking)
+    quarantined_rankings: list[dict[str, Any]] = []
+    for item in ranking.get("rankings", []) if isinstance(ranking.get("rankings"), list) else []:
+        if not isinstance(item, dict):
+            continue
+        entry = dict(item)
+        branch = branch_by_id.get(str(entry.get("branch_id")), {})
+        evidence = branch.get("backend_evidence") if isinstance(branch.get("backend_evidence"), dict) else {}
+        raw = evidence.get("raw_promotion") if isinstance(evidence.get("raw_promotion"), dict) else {}
+        entry["promotion"] = _effective_document_promotion(raw)
+        if raw.get("can_promote"):
+            entry["outcome"] = "legacy_evidence_unbound"
+            entry["explanation"] = (
+                "Raw lower-level backend evidence affected diagnostic ordering, but exact document binding is absent; "
+                "the effective promotion decision is false."
+            )
+        quarantined_rankings.append(entry)
+    quarantined["rankings"] = quarantined_rankings
+    quarantined["publication_mode"] = DOCUMENT_PUBLICATION_MODE
+    quarantined["boundary"] = (
+        f"{ranking.get('boundary', '')} Document-level promotion is quarantined until exact binding exists."
+    ).strip()
+    return quarantined
 
 
 def _branch_closure_status(branch: dict[str, Any], remaining_blockers: list[dict[str, Any]]) -> str:
-    promotion = branch.get("backend_evidence", {}).get("promotion", {})
+    promotion = branch.get("backend_evidence", {}).get("raw_promotion", {})
     if isinstance(promotion, dict) and promotion.get("can_promote"):
         supported = str(promotion.get("supported_status") or "backend")
         if supported == "refuted":
-            return "refuted_by_backend"
-        return "closed_by_backend"
+            return "legacy_refutation_evidence_unbound"
+        if remaining_blockers:
+            return "legacy_backend_evidence_with_open_requirements"
+        return "legacy_backend_evidence_unbound"
     backend_attempts = [item for item in branch.get("backend_attempts", []) if isinstance(item, dict)]
     certifying_attempts = [
         item
@@ -1514,10 +1693,98 @@ def _branch_closure_status(branch: dict[str, Any], remaining_blockers: list[dict
         or item.get("evidence_kind") in {"certifying_backend", "lean_check", "symbolic_identity", "sage_check"}
     ]
     if certifying_attempts and remaining_blockers:
-        return "partially_closed_by_backend"
+        return "legacy_backend_evidence_with_open_requirements"
     if remaining_blockers:
         return "blocked_at_exact_node"
     return "source_assumption_gap_only"
+
+
+def _document_backend_evidence_view(branch: dict[str, Any]) -> dict[str, Any]:
+    evidence = branch.get("backend_evidence") if isinstance(branch.get("backend_evidence"), dict) else {}
+    raw = evidence.get("raw_promotion") if isinstance(evidence.get("raw_promotion"), dict) else {}
+    return {
+        **_legacy_document_integrity_binding(),
+        "status": evidence.get("status"),
+        "binding_status": evidence.get("binding_status", "no_branch_evidence"),
+        "failure_classification": evidence.get("failure_classification"),
+        "veto_ids": list(evidence.get("veto_ids", [])),
+        "backend_attempt_count": evidence.get("backend_attempt_count", 0),
+        "translation_attempt_count": evidence.get("translation_attempt_count", 0),
+        "translation_blocker_count": evidence.get("translation_blocker_count", 0),
+        "promotion": _effective_document_promotion(raw),
+        "raw_evidence_refs": [str(ref) for ref in raw.get("evidence_refs", []) if str(ref)],
+        "boundary": evidence.get("boundary", PROMOTION_BOUNDARY),
+    }
+
+
+def _document_failure_classifications(
+    branch: dict[str, Any],
+    remaining_blockers: list[dict[str, Any]],
+    missing_or_unresolved: list[dict[str, Any]],
+) -> list[str]:
+    attempts = [item for item in branch.get("backend_attempts", []) if isinstance(item, dict)]
+    raw = branch.get("backend_evidence", {}).get("raw_promotion", {})
+    classifications: list[str] = []
+    if any(str(item.get("status", "")).endswith("error") for item in attempts):
+        classifications.append("engineering_error")
+    if isinstance(raw, dict) and raw.get("can_promote"):
+        classifications.append("evidence_binding_error")
+    execution_pending = any(
+        str(item.get("kind", "")) == "branch_bound_backend_execution_required"
+        for item in remaining_blockers
+    )
+    formalization_blockers = [
+        item
+        for item in remaining_blockers
+        if str(item.get("kind", ""))
+        in {
+            "formalization_required",
+            "macro_translation_required",
+            "conditional_expectation_translation_required",
+            "conditioning_scope_translation_required",
+            "conditional_law_translation_required",
+            "integrability_translation_required",
+            "derivative_expectation_interchange_required",
+            "choice_independent_transition_law_required",
+        }
+    ]
+    mathematical_blockers = [
+        item
+        for item in remaining_blockers
+        if str(item.get("kind", ""))
+        not in {
+            "adapter_error",
+            "target_worker_exception",
+            "parallel_worker_exception",
+            "evidence_binding_required",
+            "branch_bound_backend_execution_required",
+            *{
+                str(blocker.get("kind", ""))
+                for blocker in formalization_blockers
+            },
+        }
+    ]
+    if mathematical_blockers or missing_or_unresolved:
+        classifications.append("mathematical_blocked")
+    if execution_pending:
+        classifications.append(BRANCH_EXECUTION_PENDING)
+    if formalization_blockers:
+        classifications.append(FORMALIZATION_BLOCKED)
+    if not classifications:
+        classifications.append(BRANCH_EXECUTION_PENDING)
+    return classifications
+
+
+def _binding_blocker(branch: dict[str, Any]) -> dict[str, Any]:
+    raw = branch.get("backend_evidence", {}).get("raw_promotion", {})
+    return {
+        "id": f"blocker_{branch.get('id', 'branch')}_{LEGACY_BINDING_VETO_ID}",
+        "kind": "evidence_binding_required",
+        "problem": "The backend attempt is copied legacy evidence and is not exactly bound to this document branch or edit.",
+        "why": "A matching attempt id or successful calculation does not bind source span, target, assumptions, branch, native input, result, tool version, and candidate edit.",
+        "required_next_evidence": "Create and verify the Phase 01 content-addressed evidence manifest before reconsidering document promotion.",
+        "evidence_refs": [str(ref) for ref in raw.get("evidence_refs", []) if str(ref)],
+    }
 
 
 def _common_document_repair_payload(
@@ -1530,10 +1797,14 @@ def _common_document_repair_payload(
     remaining_blockers: list[dict[str, Any]],
 ) -> dict[str, Any]:
     return {
+        **_legacy_document_integrity_binding(),
         "target_label": packet.get("label"),
         "location": packet.get("location"),
         "source_span": packet.get("display_source_span") or packet.get("source_span", {}),
-        "top_branch_id": branch.get("id"),
+        "context_branch_id": branch.get("id"),
+        "context_branch_selection_authority": ranking.get("context_selection_authority"),
+        "nondominated_branch_ids": ranking.get("nondominated_branch_ids", []),
+        "selected_action_id": ranking.get("selected_action_id"),
         "ranking": ranking,
         "problem": _proposal_problem(packet, branch, typed),
         "why": _proposal_why(packet, branch, typed),
@@ -1541,7 +1812,7 @@ def _common_document_repair_payload(
         "missing_or_unresolved_assumptions": missing_or_unresolved,
         "proposed_assumptions": branch.get("assumptions", []),
         "derivation_route_under_assumptions": branch.get("derivation_route_under_assumptions", []),
-        "backend_evidence": branch.get("backend_evidence", {}),
+        "backend_evidence": _document_backend_evidence_view(branch),
         "translation_attempts": branch.get("translation_attempts", []),
         "remaining_blockers_before_certification": remaining_blockers,
         "required_next_evidence": list(
@@ -1566,75 +1837,101 @@ def _common_document_repair_payload(
 
 
 def _document_ready_repair_proposals(packet: dict[str, Any], root: dict[str, Any]) -> list[dict[str, Any]]:
-    top_branch, typed, top_ranking, missing_or_unresolved, already_stated, remaining_blockers = _top_ranked_branch_context(packet, root)
-    if top_branch is None:
+    _ = packet, root
+    return []
+
+
+def _document_partial_evidence_reports(packet: dict[str, Any], root: dict[str, Any]) -> list[dict[str, Any]]:
+    context_branch, typed, context_ranking, missing_or_unresolved, already_stated, remaining_blockers = _branch_context_for_report(packet, root)
+    if context_branch is None:
         return []
-    closure_status = _branch_closure_status(top_branch, remaining_blockers)
-    if closure_status not in {"closed_by_backend", "partially_closed_by_backend"}:
+    raw = context_branch.get("backend_evidence", {}).get("raw_promotion", {})
+    if not isinstance(raw, dict) or not raw.get("can_promote"):
         return []
-    blockers_for_payload = [] if closure_status == "closed_by_backend" else remaining_blockers
-    ranking = root.get("branch_ranking") if isinstance(root.get("branch_ranking"), dict) else {}
-    proposal = {
-        "id": f"document_ready_repair_{top_branch.get('id', 'branch')}",
+    blockers = [*remaining_blockers, _binding_blocker(context_branch)]
+    classifications = _document_failure_classifications(context_branch, blockers, missing_or_unresolved)
+    report = {
+        "id": f"document_partial_evidence_{context_branch.get('id', 'branch')}",
         **_common_document_repair_payload(
             packet,
-            top_branch,
+            context_branch,
             typed,
-            top_ranking,
+            context_ranking,
             missing_or_unresolved,
             already_stated,
-            blockers_for_payload,
+            blockers,
         ),
-        "status": "tool_grounded_repair_proposal",
-        "closure_status": closure_status,
-        "proposed_edit": {
-            "kind": "insert_local_assumptions_and_derivation_route",
-            "placement": f"Insert near `{packet.get('label') or packet.get('row_id')}` before citing the display as justified.",
-            "latex": _proposal_latex_for_branch(packet, top_branch),
+        "status": "partial_evidence_non_repair",
+        "closure_status": _branch_closure_status(context_branch, remaining_blockers),
+        "publication_mode": DOCUMENT_PUBLICATION_MODE,
+        "failure_classification": classifications[0],
+        "failure_classifications": classifications,
+        "veto_ids": [LEGACY_BINDING_VETO_ID, DOCUMENT_PUBLICATION_VETO_ID],
+        "candidate_edit_blocked": {
+            "kind": "blocked_candidate_repair",
+            "applicable": False,
+            "reason": "Raw backend evidence is legacy/unbound and repair publication is quarantined.",
+            "blocked_latex": _proposal_latex_for_branch(packet, context_branch),
         },
         "validation": {
-            "status": top_branch.get("validation_status"),
-            "source": "rank_repair_branches_top_branch",
-            "contract": DOCUMENT_READY_REPAIR_PROPOSAL_CONTRACT,
-            "ranking_boundary": ranking.get("boundary", ""),
+            "status": "evidence_binding_veto",
+            "source": "document_publication_quarantine",
+            "contract": DOCUMENT_PARTIAL_EVIDENCE_REPORT_CONTRACT,
         },
         "non_claims": [
-            "This proposal is branch-derived repair text backed by scoped tree/backend evidence, not an applied edit.",
-            "This proposal certifies only the scoped backend-closed subclaim when closure_status is closed_by_backend.",
-            "The selected branch is evidence-ranked, not globally optimal or minimal.",
+            "This is partial diagnostic evidence, not a repair proposal or document certificate.",
+            "Backend success does not close missing assumptions or establish exact evidence-to-edit binding.",
+            "The blocked candidate text must not be applied.",
         ],
     }
-    return [attach_contract(proposal, DOCUMENT_READY_REPAIR_PROPOSAL_CONTRACT)]
+    return [attach_contract(report, DOCUMENT_PARTIAL_EVIDENCE_REPORT_CONTRACT)]
 
 
 def _document_gap_reports(packet: dict[str, Any], root: dict[str, Any]) -> list[dict[str, Any]]:
-    top_branch, typed, top_ranking, missing_or_unresolved, already_stated, remaining_blockers = _top_ranked_branch_context(packet, root)
-    if top_branch is None:
+    context_branch, typed, context_ranking, missing_or_unresolved, already_stated, remaining_blockers = _branch_context_for_report(packet, root)
+    if context_branch is None:
         return []
-    closure_status = _branch_closure_status(top_branch, remaining_blockers)
-    if closure_status in {"closed_by_backend", "partially_closed_by_backend"}:
+    closure_status = _branch_closure_status(context_branch, remaining_blockers)
+    raw = context_branch.get("backend_evidence", {}).get("raw_promotion", {})
+    if isinstance(raw, dict) and raw.get("can_promote"):
         return []
     ranking = root.get("branch_ranking") if isinstance(root.get("branch_ranking"), dict) else {}
+    classifications = _document_failure_classifications(
+        context_branch, remaining_blockers, missing_or_unresolved
+    )
+    gap_reason_parts: list[str] = []
+    if "mathematical_blocked" in classifications:
+        gap_reason_parts.append("typed mathematical assumptions or domain conditions remain unresolved")
+    if FORMALIZATION_BLOCKED in classifications:
+        gap_reason_parts.append("backend formalization or translation remains incomplete")
+    if BRANCH_EXECUTION_PENDING in classifications:
+        gap_reason_parts.append("the exact branch-bound backend action has not been executed")
+    gap_reason = "; ".join(gap_reason_parts) or "the branch remains open"
     report = {
-        "id": f"document_gap_report_{top_branch.get('id', 'branch')}",
+        "id": f"document_gap_report_{context_branch.get('id', 'branch')}",
         **_common_document_repair_payload(
             packet,
-            top_branch,
+            context_branch,
             typed,
-            top_ranking,
+            context_ranking,
             missing_or_unresolved,
             already_stated,
             remaining_blockers,
         ),
         "status": "blocked_gap_report",
         "closure_status": closure_status,
+        "publication_mode": DOCUMENT_PUBLICATION_MODE,
+        "failure_classification": classifications[0],
+        "failure_classifications": classifications,
+        "veto_ids": [DOCUMENT_PUBLICATION_VETO_ID],
         "candidate_edit_blocked": {
             "kind": "blocked_candidate_repair",
-            "reason": "The top-ranked branch is not backend-closed or partially backend-closed, so it is reported as a gap rather than a repair proposal.",
-            "blocked_latex": _proposal_latex_for_branch(packet, top_branch),
+            "applicable": False,
+            "reason": f"The serialization-only context branch is reported as a gap because {gap_reason}.",
+            "blocked_latex": _proposal_latex_for_branch(packet, context_branch),
         },
         "validation": {
-            "status": top_branch.get("validation_status"),
+            "status": context_branch.get("validation_status"),
             "source": "strict_proposal_gate",
             "contract": DOCUMENT_GAP_REPORT_CONTRACT,
             "ranking_boundary": ranking.get("boundary", ""),
@@ -1642,7 +1939,7 @@ def _document_gap_reports(packet: dict[str, Any], root: dict[str, Any]) -> list[
         "non_claims": [
             "This is a gap report, not a repair proposal.",
             "No proposed edit should be applied until the remaining blockers are closed by source evidence or a certifying backend.",
-            "The selected branch is evidence-ranked, not globally optimal or minimal.",
+            "The context branch is a serialization aid, not a scientific winner, global optimum, or minimal route.",
         ],
     }
     return [attach_contract(report, DOCUMENT_GAP_REPORT_CONTRACT)]
@@ -1665,24 +1962,49 @@ def _proposal_evidence_refs(item: dict[str, Any]) -> list[str]:
     return list(dict.fromkeys(refs))
 
 
+def _edit_target_mismatch(item: dict[str, Any]) -> bool:
+    proposed_edit = item.get("proposed_edit")
+    if not isinstance(proposed_edit, dict):
+        return False
+    report_target = str(item.get("target_label", "")).strip()
+    edit_target = str(proposed_edit.get("target_label", "")).strip()
+    return report_target != edit_target
+
+
 def _validate_ready_proposal(proposal: dict[str, Any]) -> list[str]:
-    errors: list[str] = []
+    errors: list[str] = ["document repair publication is disabled"]
     contract = proposal.get("metadata", {}).get("contract") if isinstance(proposal.get("metadata"), dict) else None
     if contract != DOCUMENT_READY_REPAIR_PROPOSAL_CONTRACT:
         errors.append("repair proposal contract is invalid")
     closure_status = str(proposal.get("closure_status", ""))
-    if closure_status not in {"closed_by_backend", "partially_closed_by_backend"}:
-        errors.append("repair proposal closure_status must be closed_by_backend or partially_closed_by_backend")
+    if closure_status != "closed_by_exact_manifest":
+        errors.append("repair proposal closure_status must be closed_by_exact_manifest")
     if not isinstance(proposal.get("proposed_edit"), dict) or not proposal.get("proposed_edit", {}).get("latex"):
         errors.append("repair proposal must include proposed_edit.latex")
-    if closure_status == "closed_by_backend" and proposal.get("remaining_blockers_before_certification"):
-        errors.append("closed_by_backend repair proposal must not carry remaining blockers")
-    if closure_status == "partially_closed_by_backend" and not proposal.get("remaining_blockers_before_certification"):
-        errors.append("partially_closed_by_backend repair proposal must list remaining blockers")
-    backend = proposal.get("backend_evidence") if isinstance(proposal.get("backend_evidence"), dict) else {}
-    promotion = backend.get("promotion") if isinstance(backend.get("promotion"), dict) else {}
-    if not promotion.get("can_promote"):
-        errors.append("repair proposal requires promotable scoped backend evidence")
+    if _edit_target_mismatch(proposal):
+        errors.append(f"{EDIT_TARGET_MISMATCH_VETO_ID}: proposed_edit.target_label must match target_label")
+    if proposal.get("remaining_blockers_before_certification"):
+        errors.append("closed_by_exact_manifest repair proposal must not carry remaining blockers")
+    decision = proposal.get("promotion_decision")
+    try:
+        from .promotion_policy import verify_phase06_promotion_decision
+
+        verified_decision = verify_phase06_promotion_decision(decision)
+    except (TypeError, ValueError):
+        verified_decision = None
+        errors.append("repair proposal requires a verified Phase 06 promotion decision")
+    if verified_decision is not None:
+        if verified_decision.get("authority") == (
+            "internal_consistency_only_requires_native_evidence_reevaluation"
+        ):
+            errors.append(
+                "persisted Phase 06 decisions cannot authorize a repair without "
+                "native evidence reevaluation"
+            )
+        if verified_decision.get("claim_eligibility") != "exact_manifest_eligible":
+            errors.append("repair proposal requires exact_manifest_eligible claim status")
+        if verified_decision.get("branch_id") != proposal.get("context_branch_id"):
+            errors.append("repair proposal promotion branch binding mismatch")
     if not _proposal_evidence_refs(proposal):
         errors.append("repair proposal must include evidence refs")
     for field in ("location", "problem", "why"):
@@ -1697,8 +2019,8 @@ def _validate_gap_report(report: dict[str, Any]) -> list[str]:
     if contract != DOCUMENT_GAP_REPORT_CONTRACT:
         errors.append("gap report contract is invalid")
     closure_status = str(report.get("closure_status", ""))
-    if closure_status in {"closed_by_backend", "partially_closed_by_backend"}:
-        errors.append("gap report cannot use a backend-closed closure_status")
+    if closure_status == "closed_by_exact_manifest":
+        errors.append("gap report cannot use exact-manifest closure_status")
     if "proposed_edit" in report:
         errors.append("gap report must not include proposed_edit")
     if not isinstance(report.get("candidate_edit_blocked"), dict):
@@ -1713,6 +2035,27 @@ def _validate_gap_report(report: dict[str, Any]) -> list[str]:
     return errors
 
 
+def _validate_partial_evidence_report(report: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    contract = report.get("metadata", {}).get("contract") if isinstance(report.get("metadata"), dict) else None
+    if contract != DOCUMENT_PARTIAL_EVIDENCE_REPORT_CONTRACT:
+        errors.append("partial evidence report contract is invalid")
+    if report.get("publication_mode") != DOCUMENT_PUBLICATION_MODE:
+        errors.append("partial evidence report must keep publication disabled")
+    if "proposed_edit" in report or "proposed_text" in report:
+        errors.append("partial evidence report must not include an applicable edit field")
+    blocked = report.get("candidate_edit_blocked")
+    if not isinstance(blocked, dict) or blocked.get("applicable") is not False:
+        errors.append("partial evidence report must include a non-applicable blocked candidate")
+    if LEGACY_BINDING_VETO_ID not in report.get("veto_ids", []):
+        errors.append("partial evidence report must include the legacy binding veto")
+    if not _as_dicts(report.get("remaining_blockers_before_certification")):
+        errors.append("partial evidence report must list remaining blockers")
+    if not _proposal_evidence_refs(report):
+        errors.append("partial evidence report must include evidence refs")
+    return errors
+
+
 def _compiled_item(
     item: dict[str, Any],
     *,
@@ -1720,34 +2063,161 @@ def _compiled_item(
     publishable: bool,
     validation_errors: list[str],
 ) -> dict[str, Any]:
+    _ = publishable
+    mismatch = _edit_target_mismatch(item)
+    errors = list(validation_errors)
+    mismatch_error = f"{EDIT_TARGET_MISMATCH_VETO_ID}: proposed_edit.target_label must match target_label"
+    if mismatch and mismatch_error not in errors:
+        errors.append(mismatch_error)
+
+    classifications = [str(value) for value in item.get("failure_classifications", []) if str(value)]
+    if mismatch and "evidence_binding_error" not in classifications:
+        classifications.append("evidence_binding_error")
+    primary_classification = item.get("failure_classification")
+    if mismatch:
+        primary_classification = "evidence_binding_error"
+
+    veto_ids = [str(value) for value in item.get("veto_ids", []) if str(value)]
+    for veto_id in (DOCUMENT_PUBLICATION_VETO_ID, EDIT_TARGET_MISMATCH_VETO_ID if mismatch else None):
+        if veto_id and veto_id not in veto_ids:
+            veto_ids.append(veto_id)
+
     return {
+        **_legacy_document_integrity_binding(),
         "id": item.get("id"),
         "type": item_type,
         "target_label": item.get("target_label"),
         "location": item.get("location"),
         "closure_status": item.get("closure_status"),
-        "publishable_as_repair": publishable and not validation_errors,
-        "publishable_as_gap_report": item_type == "gap_report" and not validation_errors,
-        "top_branch_id": item.get("top_branch_id"),
+        "publication_mode": DOCUMENT_PUBLICATION_MODE,
+        "publishable_as_repair": False,
+        "publishable_as_gap_report": item_type == "gap_report" and not errors,
+        "reportable_as_partial_evidence": item_type == "partial_evidence" and not errors,
+        "failure_classification": primary_classification,
+        "failure_classifications": classifications,
+        "veto_ids": veto_ids,
+        "context_branch_id": item.get("context_branch_id"),
+        "context_branch_selection_authority": item.get("context_branch_selection_authority"),
+        "nondominated_branch_ids": item.get("nondominated_branch_ids", []),
+        "selected_action_id": item.get("selected_action_id"),
         "evidence_refs": _proposal_evidence_refs(item),
         "remaining_blocker_ids": [
             str(blocker.get("id", ""))
             for blocker in _as_dicts(item.get("remaining_blockers_before_certification"))
             if blocker.get("id")
         ],
-        "validation_errors": validation_errors,
+        "validation_errors": errors,
         "contract": item.get("metadata", {}).get("contract") if isinstance(item.get("metadata"), dict) else "",
     }
 
 
+_COMPILER_DERIVED_ROOT_FIELDS = frozenset(
+    {
+        "tool_grounded_proposal_compiler",
+        "document_ready_repair_proposals",
+        "document_gap_reports",
+        "document_partial_evidence_reports",
+    }
+)
+
+
+def _walk_recursive_nodes(node: dict[str, Any]) -> list[dict[str, Any]]:
+    nodes = [node]
+    for child in node.get("children", []) if isinstance(node.get("children"), list) else []:
+        if isinstance(child, dict):
+            nodes.extend(_walk_recursive_nodes(child))
+    return nodes
+
+
+def _recursive_expansion_ranking(root: dict[str, Any]) -> dict[str, Any]:
+    nodes = _walk_recursive_nodes(root)[1:]
+    ordered = sorted(
+        nodes,
+        key=lambda node: (
+            len(_walk_recursive_nodes(node)),
+            str(node.get("generator", {}).get("kind", "unknown")),
+            str(node.get("id", "")),
+        ),
+    )
+    rankings = [
+        {
+            "rank": index,
+            "node_id": node.get("id"),
+            "parent_node_id": node.get("parent_node_id"),
+            "status": node.get("status"),
+            "generator_kind": node.get("generator", {}).get("kind")
+            if isinstance(node.get("generator"), dict)
+            else None,
+            "backend_attempt_count": len(
+                [item for item in node.get("backend_attempts", []) if isinstance(item, dict)]
+            ),
+            "blocker_count": len([item for item in node.get("blockers", []) if isinstance(item, dict)]),
+            "execution_status": "unexecuted"
+            if not node.get("backend_attempts")
+            else "branch_bound_attempts_recorded",
+        }
+        for index, node in enumerate(ordered, start=1)
+    ]
+    return {
+        "status": "ranked_unexecuted_candidates" if rankings else "no_expanded_candidates",
+        "ranked_node_ids": [str(item["node_id"]) for item in rankings if item.get("node_id")],
+        "rankings": rankings,
+        "publication_mode": DOCUMENT_PUBLICATION_MODE,
+        "boundary": (
+            "Expanded-node ordering is deterministic exploratory triage. Rule-generated and unexecuted "
+            "nodes carry no mathematical or document-repair authority."
+        ),
+    }
+
+
+def _document_final_tree_projection(tree: dict[str, Any]) -> dict[str, Any]:
+    root = tree.get("root") if isinstance(tree.get("root"), dict) else {}
+    projected_root = {
+        key: value
+        for key, value in root.items()
+        if key not in _COMPILER_DERIVED_ROOT_FIELDS
+    }
+    recursive_expansion = (
+        dict(tree.get("recursive_expansion", {}))
+        if isinstance(tree.get("recursive_expansion"), dict)
+        else {}
+    )
+    recursive_expansion.pop("tree", None)
+    return {
+        "status": tree.get("status"),
+        "target": tree.get("target"),
+        "controller": tree.get("controller", {}),
+        "root": projected_root,
+        "recursive_expansion": recursive_expansion,
+        "publication_mode": DOCUMENT_PUBLICATION_MODE,
+    }
+
+
+def _document_final_tree_digest(tree: dict[str, Any]) -> str:
+    payload = json.dumps(
+        _document_final_tree_projection(tree),
+        ensure_ascii=False,
+        allow_nan=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
 def _compile_tool_grounded_proposal_report(
     packet: dict[str, Any],
-    root: dict[str, Any],
+    tree: dict[str, Any],
     *,
     grounding_policy: str = STRICT_GROUNDING_POLICY,
 ) -> dict[str, Any]:
     """Compile ranked-branch outputs into strict repair/gap ledgers."""
+    root = tree.get("root") if isinstance(tree.get("root"), dict) else {}
+    final_nodes = _walk_recursive_nodes(root) if root else []
+    final_tree_digest = _document_final_tree_digest(tree)
+    final_tree_node_ids = [str(node.get("id", "")) for node in final_nodes if node.get("id")]
+    expanded_node_ids = [str(node.get("id", "")) for node in final_nodes[1:] if node.get("id")]
     ready = _document_ready_repair_proposals(packet, root)
+    partials = _document_partial_evidence_reports(packet, root)
     gaps = _document_gap_reports(packet, root)
     compiled_items: list[dict[str, Any]] = []
     validation_errors: list[dict[str, Any]] = []
@@ -1763,6 +2233,18 @@ def _compile_tool_grounded_proposal_report(
         )
         if errors:
             validation_errors.append({"id": proposal.get("id"), "type": "repair_proposal", "errors": errors})
+    for report in partials:
+        errors = _validate_partial_evidence_report(report)
+        compiled_items.append(
+            _compiled_item(
+                report,
+                item_type="partial_evidence",
+                publishable=False,
+                validation_errors=errors,
+            )
+        )
+        if errors:
+            validation_errors.append({"id": report.get("id"), "type": "partial_evidence", "errors": errors})
     for report in gaps:
         errors = _validate_gap_report(report)
         compiled_items.append(
@@ -1777,22 +2259,37 @@ def _compile_tool_grounded_proposal_report(
             validation_errors.append({"id": report.get("id"), "type": "gap_report", "errors": errors})
     repair_count = sum(1 for item in compiled_items if item["publishable_as_repair"])
     gap_count = sum(1 for item in compiled_items if item["publishable_as_gap_report"])
+    partial_count = sum(1 for item in compiled_items if item["reportable_as_partial_evidence"])
     if validation_errors:
         status = "invalid_compiler_output"
-    elif repair_count or gap_count:
+    elif repair_count or gap_count or partial_count:
         status = "compiled"
     else:
         status = "no_publishable_items"
     result = {
+        **_legacy_document_integrity_binding(),
         "status": status,
+        "publication_mode": DOCUMENT_PUBLICATION_MODE,
+        "publication_veto_ids": [DOCUMENT_PUBLICATION_VETO_ID],
         "grounding_policy": grounding_policy,
         "target_label": packet.get("label"),
-        "top_branch_id": root.get("branch_ranking", {}).get("top_branch_id")
-        if isinstance(root.get("branch_ranking"), dict)
-        else None,
+        "final_tree_digest": final_tree_digest,
+        "final_tree_node_ids": list(final_tree_node_ids),
+        "expanded_node_ids": list(expanded_node_ids),
+        "compiled_after_recursive_expansion": True,
+        "unique_top_branch_id": root.get("branch_ranking", {}).get("top_branch_id")
+        if isinstance(root.get("branch_ranking"), dict) else None,
+        "nondominated_branch_ids": root.get("branch_ranking", {}).get("nondominated_branch_ids", [])
+        if isinstance(root.get("branch_ranking"), dict) else [],
+        "selected_action_id": (
+            root.get("branch_ranking", {}).get("selected_action", {}).get("action_id")
+            if isinstance(root.get("branch_ranking", {}).get("selected_action"), dict)
+            else None
+        ),
         "repair_proposal_count": repair_count,
         "gap_report_count": gap_count,
-        "blocked_candidate_count": len(gaps),
+        "partial_evidence_count": partial_count,
+        "blocked_candidate_count": len(gaps) + len(partials),
         "document_ready_repair_proposals": [
             proposal
             for proposal in ready
@@ -1809,45 +2306,105 @@ def _compile_tool_grounded_proposal_report(
                 for compiled in compiled_items
             )
         ],
+        "document_partial_evidence_reports": [
+            report
+            for report in partials
+            if any(
+                compiled.get("id") == report.get("id") and compiled.get("reportable_as_partial_evidence")
+                for compiled in compiled_items
+            )
+        ],
         "compiled_items": compiled_items,
         "validation_errors": validation_errors,
         "boundary": (
-            "Strict grounding publishes repair proposals only from closed or "
-            "partially closed tree/backend evidence. Blocked paths are gap "
-            "reports and candidate edit text remains blocked."
+            "Document repair publication is disabled. Legacy backend closure is partial evidence only; "
+            "blocked paths are gap reports and all candidate edit text remains non-applicable."
         ),
         "non_claims": [
-            "The compiler does not invent repairs.",
-            "Ranking score alone never makes a branch publishable as a repair.",
+            "The compiler emits no repair proposals while publication is quarantined.",
+            "Partial-order membership alone never makes a branch publishable as a repair.",
+            "Rule-generated or unexecuted expanded nodes are exploratory candidates only.",
             "Gap reports are actionable blockers, not proposed edits.",
+            "Partial evidence is diagnostic and cannot be applied as an edit.",
         ],
     }
     return attach_contract(result, TOOL_GROUNDED_PROPOSAL_COMPILER_CONTRACT)
 
 
-def _select_label_rows(
+def _requested_equation_labels(
     rows: list[dict[str, Any]],
     *,
     focus_labels: list[str] | None,
     max_labels: int | None,
-) -> list[dict[str, Any]]:
-    labeled = [row for row in rows if isinstance(row.get("label"), str) and row.get("label")]
+) -> list[str]:
+    labeled = [str(row["label"]) for row in rows if isinstance(row.get("label"), str) and row.get("label")]
+    available = set(labeled)
     if focus_labels:
-        selected: list[dict[str, Any]] = []
+        selected: list[str] = []
+        seen: set[str] = set()
         for label in focus_labels:
-            selected.extend(row for row in labeled if row.get("label") == label)
+            if label in available and label not in seen:
+                selected.append(label)
+                seen.add(label)
         return selected
-    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for row in labeled:
-        grouped[str(row["label"])].append(row)
-    labels = list(grouped)
+    labels = list(dict.fromkeys(labeled))
     limit = max_labels if max_labels is not None else DEFAULT_LABEL_LIMIT
     if limit is not None and limit > 0:
         labels = labels[:limit]
-    selected = []
+    return labels
+
+
+def _select_label_scoped_targets(
+    path: Path,
+    rows: list[dict[str, Any]],
+    *,
+    focus_labels: list[str] | None,
+    max_labels: int | None,
+    index: dict[str, Any],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    labels = _requested_equation_labels(rows, focus_labels=focus_labels, max_labels=max_labels)
+    selected: list[dict[str, Any]] = []
+    diagnostics: list[dict[str, Any]] = []
+    seen_target_labels: set[str] = set()
     for label in labels:
-        selected.extend(grouped[label])
-    return selected
+        result = extract_derivation_targets_for_label(index, label, file=path.name)
+        candidates = [
+            item
+            for item in result.get("targets", [])
+            if isinstance(item, dict)
+            and item.get("label") == label
+            and item.get("adapter_eligible") is True
+            and isinstance(item.get("label_scoped_obligation"), dict)
+        ]
+        accepted: list[dict[str, Any]] = []
+        if result.get("status") == "extracted" and len(candidates) == 1 and label not in seen_target_labels:
+            accepted = candidates
+            selected.extend(candidates)
+            seen_target_labels.add(label)
+        diagnostics.append(
+            {
+                "label": label,
+                "status": result.get("status"),
+                "reason": result.get("reason"),
+                "candidate_target_count": len(candidates),
+                "accepted_target_count": len(accepted),
+                "obligation_ids": [item.get("obligation_id") for item in accepted],
+                "obligation_digests": [item.get("obligation_digest") for item in accepted],
+                "ambiguities": result.get("ambiguities", []),
+            }
+        )
+    failed = [item for item in diagnostics if item["accepted_target_count"] != 1]
+    return selected, {
+        "method": "validated_label_scoped_obligation",
+        "requested_equation_labels": labels,
+        "selected_target_labels": [str(item.get("label")) for item in selected],
+        "selected_target_count": len(selected),
+        "failure_count": len(failed),
+        "failures": failed,
+        "results": diagnostics,
+        "fallback_to_locator_row": False,
+        "non_claim": "Validated target extraction establishes source ownership, not mathematical truth.",
+    }
 
 
 def _location(tex_path: Path, row: dict[str, Any], sections: list[dict[str, Any]]) -> str:
@@ -1877,6 +2434,7 @@ def _semantic_packet(
     tex_path: Path,
     sections: list[dict[str, Any]],
     rows_for_label: list[dict[str, Any]],
+    rows_for_environment: list[dict[str, Any]],
     paragraph_context: dict[str, Any] | None = None,
     display: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -1953,7 +2511,7 @@ def _semantic_packet(
         "display_labels": display.get("labels", []) if isinstance(display, dict) else [],
         "display_row_count": sum(
             1
-            for item in rows_for_label
+            for item in rows_for_environment
             if isinstance(display, dict)
             and item.get("file") == display.get("file")
             and int(display.get("line_start", 0)) <= int(item.get("line_start", 0) or 0)
@@ -1972,6 +2530,149 @@ def _semantic_packet(
         "missing_route_assumptions": assumptions.get("missing_assumptions", []),
         "next_audit": abstention.get("next_audit", {}),
         "evidence_refs": [str(row.get("id", row.get("label", "row"))), "actionable_abstention_payload", "assumption_discovery_result"],
+        "non_claim": "Semantic work packets are deterministic guidance for proof search; they are not proof certificates.",
+    }
+    packet["context_graph"] = build_local_context_graph(packet)
+    packet["typed_repair_obligation"] = typed_repair_obligation_from_packet(packet)
+    return packet
+
+
+def _semantic_packet_from_label_scoped_target(
+    target_record: dict[str, Any],
+    *,
+    tex_path: Path,
+    sections: list[dict[str, Any]],
+    paragraph_context: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build a semantic packet from one validated, source-owned obligation."""
+    obligation = target_record.get("label_scoped_obligation")
+    if not isinstance(obligation, dict):
+        raise ValueError("label-scoped target is missing its obligation record")
+    normalized = obligation.get("normalized_target")
+    if not isinstance(normalized, dict) or normalized.get("complete_lhs_rhs") is not True:
+        raise ValueError("label-scoped target is not a complete lhs/rhs obligation")
+    if target_record.get("obligation_id") != obligation.get("obligation_id"):
+        raise ValueError("label-scoped target obligation id does not match its source record")
+    if target_record.get("obligation_digest") != obligation.get("obligation_digest"):
+        raise ValueError("label-scoped target obligation digest does not match its source record")
+
+    label = str(obligation.get("label", target_record.get("label", "")))
+    target = str(normalized.get("display_text", ""))
+    lhs = str(target_record.get("lhs", ""))
+    rhs = str(target_record.get("rhs", ""))
+    if not label or not target or not lhs or not rhs:
+        raise ValueError("label-scoped target lacks a label, target, lhs, or rhs")
+    owned_rows = [item for item in obligation.get("owned_rows", []) if isinstance(item, dict)]
+    owned_spans = [item for item in obligation.get("owned_spans", []) if isinstance(item, dict)]
+    if not owned_rows or not owned_spans:
+        raise ValueError("label-scoped target lacks exact owned rows or spans")
+
+    source_math = str(obligation.get("source_math", ""))
+    document = obligation.get("document") if isinstance(obligation.get("document"), dict) else {}
+    environment = obligation.get("environment") if isinstance(obligation.get("environment"), dict) else {}
+    source_span = {
+        "file": document.get("file") or target_record.get("source_file") or target_record.get("file"),
+        "line_start": owned_spans[0].get("line_start"),
+        "line_end": owned_spans[-1].get("line_end"),
+        "label": label,
+        "section_path": _section_path_for_line(sections, int(owned_spans[0].get("line_start", 0))),
+        "start_byte": owned_spans[0].get("start_byte"),
+        "end_byte": owned_spans[-1].get("end_byte"),
+        "source_digest": document.get("source_digest"),
+        "obligation_id": obligation.get("obligation_id"),
+        "obligation_digest": obligation.get("obligation_digest"),
+    }
+    location_row = {
+        "file": target_record.get("file") or tex_path.name,
+        "line_start": source_span["line_start"],
+        "label": label,
+    }
+    claim_row = {"text": target}
+    claim_type = _classify_equation(claim_row)
+    packet_id = f"semantic_packet_{_slug(label)}_{str(obligation['obligation_digest'])[:16]}"
+    abstention = build_actionable_abstention_payload(
+        text="\n".join(item for item in (source_math, target, claim_type) if item),
+        problem=f"Build a semantic derivation route for `{label}` before backend certification.",
+        why_not_concrete="A validated source obligation still requires explicit assumptions and backend evidence.",
+        location=_location(tex_path, location_row, sections),
+        kind=claim_type,
+        evidence_refs=[str(obligation["obligation_id"]), str(obligation["obligation_digest"])],
+    )
+    assumptions = assumptions_required(target)
+    scoped_symbols = obligation.get("symbol_inventory") if isinstance(obligation.get("symbol_inventory"), dict) else {}
+    compatibility_symbols = {
+        "macros": list(scoped_symbols.get("latex_commands", [])),
+        "identifiers": list(scoped_symbols.get("bare_identifiers", [])),
+    }
+    packet = {
+        "id": packet_id,
+        "label": label,
+        "row_id": owned_rows[0].get("row_id"),
+        "location": _location(tex_path, location_row, sections),
+        "source_span": source_span,
+        "claim_type": claim_type,
+        "target": target,
+        "lhs": lhs,
+        "rhs": rhs,
+        "grouped_target": target,
+        "grouped_lhs": lhs,
+        "grouped_rhs": rhs,
+        "lhs_rhs_candidates": [
+            {
+                "source": "row",
+                "binding": "label_scoped_obligation",
+                "lhs": lhs,
+                "rhs": rhs,
+                "target": target,
+                "line_start": source_span["line_start"],
+                "line_end": source_span["line_end"],
+            },
+            {
+                "source": "full_display",
+                "binding": "label_scoped_owned_source",
+                "lhs": lhs,
+                "rhs": rhs,
+                "target": target,
+                "line_start": source_span["line_start"],
+                "line_end": source_span["line_end"],
+            },
+        ],
+        "source_text": source_math,
+        "paragraph_context": paragraph_context or {},
+        "full_display_source": source_math,
+        "display_source_span": {
+            **source_span,
+            "labels": [label],
+            "environment": environment.get("kind"),
+        },
+        "display_labels": [label],
+        "display_row_count": len(owned_rows),
+        "operator_inventory": list(obligation.get("operator_inventory", [])),
+        "symbol_inventory": scoped_symbols,
+        "symbol_inventory_compatibility": compatibility_symbols,
+        "source_environment": environment.get("kind"),
+        "uncertainty": list(obligation.get("uncertainties", [])),
+        "label_row_count": len(owned_rows),
+        "semantic_domains": abstention.get("domains", []),
+        "missing_obligations": abstention.get("missing_obligations", []),
+        "possible_assumption_sets": abstention.get("possible_assumption_sets", []),
+        "how_derivation_can_work": abstention.get("how_derivation_can_work", []),
+        "route_required_assumptions": assumptions.get("assumptions", []),
+        "missing_route_assumptions": assumptions.get("missing_assumptions", []),
+        "next_audit": abstention.get("next_audit", {}),
+        "obligation_id": obligation["obligation_id"],
+        "obligation_digest": obligation["obligation_digest"],
+        "owned_spans": owned_spans,
+        "excluded_spans": list(obligation.get("excluded_spans", [])),
+        "normalized_target": normalized,
+        "label_scoped_obligation": obligation,
+        "target_ingress": "validated_label_scoped_obligation",
+        "evidence_refs": [
+            str(obligation["obligation_id"]),
+            str(obligation["obligation_digest"]),
+            "actionable_abstention_payload",
+            "assumption_discovery_result",
+        ],
         "non_claim": "Semantic work packets are deterministic guidance for proof search; they are not proof certificates.",
     }
     packet["context_graph"] = build_local_context_graph(packet)
@@ -2062,12 +2763,15 @@ def _augment_tree(tree: dict[str, Any], packet: dict[str, Any]) -> None:
                 "evidence_refs": [str(packet.get("row_id"))],
             }
         )
-    if int(packet.get("label_row_count", 1)) > 1:
+    if packet.get("target_ingress") != "validated_label_scoped_obligation" and max(
+        int(packet.get("label_row_count", 1)),
+        int(packet.get("display_row_count", 1)),
+    ) > 1:
         blockers.append(
             {
                 "id": f"blocker_{packet['id']}_grouped_multiline_obligation_required",
                 "kind": "grouped_multiline_obligation_required",
-                "problem": "The label spans multiple localized equation rows.",
+                "problem": "The label or its reconstructed display spans multiple localized equation rows.",
                 "why": "A single-row tree attempt cannot certify a full multiline align environment.",
                 "required_next_evidence": "Group all rows for the label into one formal obligation or split them into separately labeled obligations.",
                 "source": "locate_equations_in_file",
@@ -2087,32 +2791,106 @@ def _augment_tree(tree: dict[str, Any], packet: dict[str, Any]) -> None:
                 "evidence_refs": [str(packet.get("row_id"))],
             }
         )
-    root["branch_ranking"] = rank_repair_branches(branches)
-    compiler = _compile_tool_grounded_proposal_report(packet, root)
-    root["tool_grounded_proposal_compiler"] = compiler
-    root["document_ready_repair_proposals"] = compiler.get("document_ready_repair_proposals", [])
-    root["document_gap_reports"] = compiler.get("document_gap_reports", [])
-    tree["recursive_expansion"] = expand_tree_with_hypotheses(
+    expansion_result = expand_tree_with_hypotheses(
         tree,
         budget={"max_depth": 1, "max_nodes": 2, "max_agent_expansions_per_blocker": 1},
     )
+    tree["recursive_expansion"] = {
+        key: value
+        for key, value in expansion_result.items()
+        if key != "tree"
+    }
+    root["branch_ranking"] = _quarantine_branch_ranking(rank_repair_branches(branches), branches)
+    root["recursive_expansion_ranking"] = _recursive_expansion_ranking(root)
+    compiler = _compile_tool_grounded_proposal_report(packet, tree)
+    root["tool_grounded_proposal_compiler"] = compiler
+    root["document_ready_repair_proposals"] = compiler.get("document_ready_repair_proposals", [])
+    root["document_gap_reports"] = compiler.get("document_gap_reports", [])
+    root["document_partial_evidence_reports"] = compiler.get("document_partial_evidence_reports", [])
+    tree["final_tree_digest"] = compiler["final_tree_digest"]
+
+
+def _quarantine_report_sections(rendered: dict[str, Any]) -> list[dict[str, Any]]:
+    sections: list[dict[str, Any]] = []
+    for section in rendered.get("sections", []) if isinstance(rendered.get("sections"), list) else []:
+        if not isinstance(section, dict):
+            continue
+        item = dict(section)
+        raw = item.get("promotion") if isinstance(item.get("promotion"), dict) else {}
+        item["promotion"] = _effective_document_promotion(raw)
+        if raw.get("can_promote"):
+            item["status"] = "partial_evidence"
+        patches: list[dict[str, Any]] = []
+        for patch in item.get("proposed_patches", []) if isinstance(item.get("proposed_patches"), list) else []:
+            if not isinstance(patch, dict):
+                continue
+            blocked = dict(patch)
+            text = blocked.pop("proposed_text", None)
+            if text and "candidate_text_blocked" not in blocked:
+                blocked["candidate_text_blocked"] = text
+            blocked.update(
+                {
+                    "kind": "blocked_candidate_repair",
+                    "status": "non_applicable_publication_quarantine",
+                    "applicable": False,
+                    "validation_status": "blocked_non_applicable",
+                    "veto_ids": [LEGACY_BINDING_VETO_ID, DOCUMENT_PUBLICATION_VETO_ID],
+                }
+            )
+            patches.append(blocked)
+        item["proposed_patches"] = patches
+        sections.append(item)
+    return sections
 
 
 def _compact_tree(tree: dict[str, Any], rendered: dict[str, Any]) -> dict[str, Any]:
     root = tree.get("root", {})
     controller = tree.get("controller", {})
+    raw_controller_promotion = controller.get("promotion") if isinstance(controller.get("promotion"), dict) else {}
+    compact_status = "partial_evidence" if raw_controller_promotion.get("can_promote") else tree.get("status")
+    engineering_error = any(
+        str(attempt.get("status", "")).endswith("error")
+        for attempt in root.get("backend_attempts", [])
+        if isinstance(attempt, dict)
+    )
+    failure_classifications = {
+        str(value)
+        for branch in root.get("assumption_branches", [])
+        if isinstance(branch, dict)
+        for value in [branch.get("backend_evidence", {}).get("failure_classification")]
+        if value
+    }
+    for report_key in ("document_partial_evidence_reports", "document_gap_reports"):
+        for report in root.get(report_key, []):
+            if not isinstance(report, dict):
+                continue
+            failure_classifications.update(
+                str(value) for value in report.get("failure_classifications", []) if str(value)
+            )
+    if engineering_error:
+        failure_classifications.add("engineering_error")
     return {
-        "status": tree.get("status"),
+        **_legacy_document_integrity_binding(),
+        "status": compact_status,
+        "publication_mode": DOCUMENT_PUBLICATION_MODE,
+        "failure_classifications": sorted(failure_classifications),
+        "veto_ids": [DOCUMENT_PUBLICATION_VETO_ID],
         "summary": tree.get("summary"),
         "controller": {
-            "status": controller.get("status"),
-            "reason": controller.get("reason"),
+            "status": compact_status,
+            "raw_status": controller.get("status"),
+            "reason": "Document promotion is quarantined; raw controller status is diagnostic history only.",
+            "raw_reason": controller.get("reason"),
             "attempts_used": controller.get("attempts_used"),
             "exhausted_actions": controller.get("exhausted_actions", []),
-            "promotion": controller.get("promotion", {}),
+            "promotion": _effective_document_promotion(raw_controller_promotion),
             "validation_errors": controller.get("validation_errors", []),
         },
-        "backend_attempts": root.get("backend_attempts", []),
+        "backend_attempts": [
+            _document_attempt_view(attempt)
+            for attempt in root.get("backend_attempts", [])
+            if isinstance(attempt, dict)
+        ],
         "context_graph": root.get("context_graph", {}),
         "typed_repair_obligations": root.get("typed_repair_obligations", []),
         "assumptions": root.get("assumptions", []),
@@ -2120,9 +2898,12 @@ def _compact_tree(tree: dict[str, Any], rendered: dict[str, Any]) -> dict[str, A
         "blockers": root.get("blockers", []),
         "assumption_branches": root.get("assumption_branches", []),
         "branch_ranking": root.get("branch_ranking", {}),
+        "recursive_expansion_ranking": root.get("recursive_expansion_ranking", {}),
+        "final_tree_digest": tree.get("final_tree_digest"),
         "tool_grounded_proposal_compiler": root.get("tool_grounded_proposal_compiler", {}),
         "document_ready_repair_proposals": root.get("document_ready_repair_proposals", []),
         "document_gap_reports": root.get("document_gap_reports", []),
+        "document_partial_evidence_reports": root.get("document_partial_evidence_reports", []),
         "recursive_expansion": {
             "status": tree.get("recursive_expansion", {}).get("status"),
             "expanded_node_count": tree.get("recursive_expansion", {}).get("expanded_node_count", 0),
@@ -2133,7 +2914,7 @@ def _compact_tree(tree: dict[str, Any], rendered: dict[str, Any]) -> dict[str, A
             "boundary": tree.get("recursive_expansion", {}).get("boundary", ""),
         },
         "patch_candidates": root.get("patch_candidates", []),
-        "report_sections": rendered.get("sections", []),
+        "report_sections": _quarantine_report_sections(rendered),
     }
 
 
@@ -2183,9 +2964,11 @@ def _render_document_ready_proposals(lines: list[str], proposals: list[dict[str,
         lines.append(f"- `{_md(proposal.get('id', 'proposal'))}`")
         lines.append(f"  - Contract: `{_md(metadata.get('contract', ''))}`")
         lines.append(f"  - Location: `{_md(proposal.get('location', ''))}`")
-        lines.append(f"  - Top ranked branch: `{_md(proposal.get('top_branch_id', ''))}`")
+        lines.append(f"  - Context branch: `{_md(proposal.get('context_branch_id', ''))}`")
+        lines.append(f"  - Context selection authority: `{_md(proposal.get('context_branch_selection_authority', ''))}`")
+        lines.append(f"  - Nondominated branches: `{_md(proposal.get('nondominated_branch_ids', []))}`")
         if ranking:
-            lines.append(f"  - Ranking outcome: `{_md(ranking.get('outcome', ''))}`, score `{_md(ranking.get('score', ''))}`")
+            lines.append(f"  - Context branch outcome: `{_md(ranking.get('outcome', ''))}`")
         lines.append(f"  - Problem: {_md(proposal.get('problem', ''))}")
         lines.append(f"  - Why this is a derivation problem: {_md(proposal.get('why', ''))}")
         stated = proposal.get("already_stated_assumptions", [])
@@ -2255,9 +3038,11 @@ def _render_document_gap_reports(lines: list[str], reports: list[dict[str, Any]]
         lines.append(f"  - Contract: `{_md(metadata.get('contract', ''))}`")
         lines.append(f"  - Closure status: `{_md(report.get('closure_status', ''))}`")
         lines.append(f"  - Location: `{_md(report.get('location', ''))}`")
-        lines.append(f"  - Top ranked branch: `{_md(report.get('top_branch_id', ''))}`")
+        lines.append(f"  - Context branch: `{_md(report.get('context_branch_id', ''))}`")
+        lines.append(f"  - Context selection authority: `{_md(report.get('context_branch_selection_authority', ''))}`")
+        lines.append(f"  - Nondominated branches: `{_md(report.get('nondominated_branch_ids', []))}`")
         if ranking:
-            lines.append(f"  - Ranking outcome: `{_md(ranking.get('outcome', ''))}`, score `{_md(ranking.get('score', ''))}`")
+            lines.append(f"  - Context branch outcome: `{_md(ranking.get('outcome', ''))}`")
         lines.append(f"  - Problem: {_md(report.get('problem', ''))}")
         lines.append(f"  - Why this is a derivation problem: {_md(report.get('why', ''))}")
         missing = report.get("missing_or_unresolved_assumptions", [])
@@ -2300,6 +3085,47 @@ def _render_document_gap_reports(lines: list[str], reports: list[dict[str, Any]]
         lines.append(f"  - Non-claims: `{_md(report.get('non_claims', []))}`")
 
 
+def _render_document_partial_evidence_reports(lines: list[str], reports: list[dict[str, Any]]) -> None:
+    lines.extend(["", "Document partial-evidence reports (non-repair):"])
+    if not reports:
+        lines.append("- None generated from the ranked branch evidence.")
+        return
+    for report in reports:
+        if not isinstance(report, dict):
+            continue
+        blocked = report.get("candidate_edit_blocked") if isinstance(report.get("candidate_edit_blocked"), dict) else {}
+        lines.append(f"- `{_md(report.get('id', 'partial_evidence'))}`")
+        lines.append(f"  - Contract: `{_md(report.get('metadata', {}).get('contract', ''))}`")
+        lines.append(f"  - Status: `{_md(report.get('status', ''))}`")
+        lines.append(f"  - Publication mode: `{_md(report.get('publication_mode', ''))}`")
+        lines.append(f"  - Closure status: `{_md(report.get('closure_status', ''))}`")
+        lines.append(f"  - Failure classifications: `{_md(report.get('failure_classifications', []))}`")
+        lines.append(f"  - Veto ids: `{_md(report.get('veto_ids', []))}`")
+        lines.append(f"  - Problem: {_md(report.get('problem', ''))}")
+        lines.append(f"  - Why: {_md(report.get('why', ''))}")
+        missing = report.get("missing_or_unresolved_assumptions", [])
+        if isinstance(missing, list) and missing:
+            lines.append("  - Missing or unresolved assumptions retained:")
+            for assumption in missing[:8]:
+                if isinstance(assumption, dict):
+                    lines.append(
+                        f"    - `{_md(assumption.get('id', 'assumption'))}` "
+                        f"status `{_md(assumption.get('status', ''))}`: {_md(assumption.get('text', ''))}"
+                    )
+        blockers = report.get("remaining_blockers_before_certification", [])
+        if isinstance(blockers, list):
+            for blocker in blockers[:8]:
+                if isinstance(blocker, dict):
+                    lines.append(
+                        f"  - Blocker `{_md(blocker.get('kind', 'blocker'))}`: "
+                        f"{_md(blocker.get('problem', ''))} Next: {_md(blocker.get('required_next_evidence', ''))}"
+                    )
+        if blocked:
+            lines.append(f"  - Candidate text applicable: `{_md(blocked.get('applicable', False))}`")
+            lines.append(f"  - Why candidate text is blocked: {_md(blocked.get('reason', ''))}")
+        lines.append(f"  - Non-claims: `{_md(report.get('non_claims', []))}`")
+
+
 def _render_tool_grounded_proposal_compiler(lines: list[str], compiler: dict[str, Any]) -> None:
     lines.extend(["", "Tool-grounded proposal compiler:"])
     if not isinstance(compiler, dict) or not compiler:
@@ -2308,9 +3134,11 @@ def _render_tool_grounded_proposal_compiler(lines: list[str], compiler: dict[str
     metadata = compiler.get("metadata") if isinstance(compiler.get("metadata"), dict) else {}
     lines.append(f"- Contract: `{_md(metadata.get('contract', ''))}`")
     lines.append(f"- Status: `{_md(compiler.get('status', ''))}`")
+    lines.append(f"- Publication mode: `{_md(compiler.get('publication_mode', ''))}`")
     lines.append(f"- Grounding policy: `{_md(compiler.get('grounding_policy', ''))}`")
     lines.append(f"- Repair proposal count: `{_md(compiler.get('repair_proposal_count', 0))}`")
     lines.append(f"- Gap report count: `{_md(compiler.get('gap_report_count', 0))}`")
+    lines.append(f"- Partial-evidence count: `{_md(compiler.get('partial_evidence_count', 0))}`")
     lines.append(f"- Boundary: {_md(compiler.get('boundary', ''))}")
     items = compiler.get("compiled_items", [])
     if isinstance(items, list) and items:
@@ -2322,8 +3150,11 @@ def _render_tool_grounded_proposal_compiler(lines: list[str], compiler: dict[str
                 f"  - `{_md(item.get('id', 'item'))}` type `{_md(item.get('type', ''))}`, "
                 f"closure `{_md(item.get('closure_status', ''))}`, "
                 f"publishable_as_repair=`{_md(item.get('publishable_as_repair', False))}`, "
-                f"publishable_as_gap_report=`{_md(item.get('publishable_as_gap_report', False))}`"
+                f"publishable_as_gap_report=`{_md(item.get('publishable_as_gap_report', False))}`, "
+                f"reportable_as_partial_evidence=`{_md(item.get('reportable_as_partial_evidence', False))}`"
             )
+            lines.append(f"    - Failure classifications: `{_md(item.get('failure_classifications', []))}`")
+            lines.append(f"    - Veto ids: `{_md(item.get('veto_ids', []))}`")
             lines.append(f"    - Evidence refs: `{_md(item.get('evidence_refs', []))}`")
             lines.append(f"    - Remaining blocker ids: `{_md(item.get('remaining_blocker_ids', []))}`")
             if item.get("validation_errors"):
@@ -2366,29 +3197,40 @@ def _target_failure_result(row: dict[str, Any], exc: Exception, *, index: int) -
     row_id = row.get("id")
     blocker = {
         "id": f"blocker_parallel_target_{index}_worker_exception",
-        "kind": "parallel_worker_exception",
-        "problem": "A parallel target worker failed before producing a derivation-tree result.",
+        "kind": "target_worker_exception",
+        "failure_classification": "engineering_error",
+        "problem": "A target worker failed before producing a derivation-tree result.",
         "why": f"{type(exc).__name__}: {exc}",
         "required_next_evidence": "Rerun this target in serial mode or inspect the exception before treating the target as audited.",
         "source": "document_derivation_tree_parallel_executor",
         "evidence_refs": [str(row_id or label or index)],
     }
     return {
+        **_legacy_document_integrity_binding(),
         "label": label,
         "row_id": row_id,
         "row_index": row.get("row_index"),
         "location": str(row.get("file", "")),
         "claim_type": "worker_failure",
         "status": "blocked",
-        "promotion": {"can_promote": False, "errors": ["parallel worker failed"]},
+        "publication_mode": DOCUMENT_PUBLICATION_MODE,
+        "failure_classification": "engineering_error",
+        "failure_classifications": ["engineering_error"],
+        "veto_ids": ["target_worker_exception", DOCUMENT_PUBLICATION_VETO_ID],
+        "promotion": _effective_document_promotion(),
         "semantic_work_packet": {},
         "tree": {
+            **_legacy_document_integrity_binding(),
             "status": "blocked",
+            "publication_mode": DOCUMENT_PUBLICATION_MODE,
+            "failure_classifications": ["engineering_error"],
+            "veto_ids": ["target_worker_exception", DOCUMENT_PUBLICATION_VETO_ID],
             "summary": {"node_count": 0},
             "controller": {
                 "status": "blocked",
-                "reason": "Parallel worker failed before target audit completed.",
-                "validation_errors": ["parallel worker failed"],
+                "reason": "Target worker failed before target audit completed.",
+                "promotion": _effective_document_promotion(),
+                "validation_errors": ["target worker failed"],
             },
             "backend_attempts": [],
             "context_graph": {},
@@ -2400,12 +3242,19 @@ def _target_failure_result(row: dict[str, Any], exc: Exception, *, index: int) -
             "branch_ranking": {},
             "tool_grounded_proposal_compiler": attach_contract(
                 {
+                    **_legacy_document_integrity_binding(),
                     "status": "no_publishable_items",
+                    "publication_mode": DOCUMENT_PUBLICATION_MODE,
+                    "publication_veto_ids": [DOCUMENT_PUBLICATION_VETO_ID, "target_worker_exception"],
                     "grounding_policy": STRICT_GROUNDING_POLICY,
                     "target_label": label,
                     "repair_proposal_count": 0,
                     "gap_report_count": 0,
+                    "partial_evidence_count": 0,
                     "blocked_candidate_count": 0,
+                    "document_ready_repair_proposals": [],
+                    "document_gap_reports": [],
+                    "document_partial_evidence_reports": [],
                     "compiled_items": [],
                     "validation_errors": [{"id": blocker["id"], "type": "worker_failure", "errors": [blocker["why"]]}],
                     "boundary": "Parallel worker failures are blockers, not refutations or repairs.",
@@ -2415,6 +3264,7 @@ def _target_failure_result(row: dict[str, Any], exc: Exception, *, index: int) -
             ),
             "document_ready_repair_proposals": [],
             "document_gap_reports": [],
+            "document_partial_evidence_reports": [],
             "recursive_expansion": {},
             "patch_candidates": [],
             "report_sections": [],
@@ -2428,6 +3278,7 @@ def _target_result_for_row(
     path: Path,
     sections: list[dict[str, Any]],
     rows_by_label: dict[str, list[dict[str, Any]]],
+    rows_by_environment: dict[str, list[dict[str, Any]]],
     latex_index: dict[str, Any],
     displays: list[dict[str, Any]],
     budget_profile: str,
@@ -2436,16 +3287,28 @@ def _target_result_for_row(
     integrations: dict[str, Any],
 ) -> dict[str, Any]:
     label = str(row.get("label", ""))
-    packet = _semantic_packet(
-        row,
-        tex_path=path,
-        sections=sections,
-        rows_for_label=rows_by_label.get(label, [row]),
-        paragraph_context=extract_paragraph_context_for_label(latex_index, label, before=1, after=1)
+    paragraph_context = (
+        extract_paragraph_context_for_label(latex_index, label, before=1, after=1)
         if label
-        else None,
-        display=_display_for_row(row, displays),
+        else None
     )
+    if isinstance(row.get("label_scoped_obligation"), dict):
+        packet = _semantic_packet_from_label_scoped_target(
+            row,
+            tex_path=path,
+            sections=sections,
+            paragraph_context=paragraph_context,
+        )
+    else:
+        packet = _semantic_packet(
+            row,
+            tex_path=path,
+            sections=sections,
+            rows_for_label=rows_by_label.get(label, [row]),
+            rows_for_environment=rows_by_environment.get(str(row.get("environment_id", "")), [row]),
+            paragraph_context=paragraph_context,
+            display=_display_for_row(row, displays),
+        )
     tree = can_derive_with_budget(
         packet["target"],
         lhs=packet.get("lhs"),
@@ -2457,16 +3320,31 @@ def _target_result_for_row(
     )
     _augment_tree(tree, packet)
     rendered = render_derivation_tree_report(tree)
+    raw_promotion = tree.get("controller", {}).get("promotion", {})
+    compact_tree = _compact_tree(tree, rendered)
+    classifications = list(compact_tree.get("failure_classifications", []))
+    if any(
+        str(attempt.get("status", "")).endswith("error")
+        for attempt in compact_tree.get("backend_attempts", [])
+        if isinstance(attempt, dict)
+    ) and "engineering_error" not in classifications:
+        classifications.append("engineering_error")
     return {
+        **_legacy_document_integrity_binding(),
         "label": packet.get("label"),
         "row_id": packet.get("row_id"),
         "row_index": row.get("row_index"),
+        "obligation_id": packet.get("obligation_id"),
+        "obligation_digest": packet.get("obligation_digest"),
         "location": packet["location"],
         "claim_type": packet["claim_type"],
-        "status": tree.get("status"),
-        "promotion": tree.get("controller", {}).get("promotion", {}),
+        "status": compact_tree.get("status"),
+        "publication_mode": DOCUMENT_PUBLICATION_MODE,
+        "failure_classifications": classifications,
+        "veto_ids": [DOCUMENT_PUBLICATION_VETO_ID],
+        "promotion": _effective_document_promotion(raw_promotion),
         "semantic_work_packet": packet,
-        "tree": _compact_tree(tree, rendered),
+        "tree": compact_tree,
     }
 
 
@@ -2476,6 +3354,7 @@ def _ordered_target_results(
     path: Path,
     sections: list[dict[str, Any]],
     rows_by_label: dict[str, list[dict[str, Any]]],
+    rows_by_environment: dict[str, list[dict[str, Any]]],
     latex_index: dict[str, Any],
     displays: list[dict[str, Any]],
     budget_profile: str,
@@ -2492,8 +3371,8 @@ def _ordered_target_results(
         "target_count": len(selected_rows),
         "failure_count": 0,
         "failures": [],
-        "deterministic_order": "source row order",
-        "boundary": "Parallel execution changes scheduling only; logical output is sorted back to source order.",
+        "deterministic_order": "validated selected-target order",
+        "boundary": "Parallel execution changes scheduling only; logical output is restored to selected-target order.",
     }
     if execution["mode"] == "serial":
         results: list[tuple[int, dict[str, Any]]] = []
@@ -2504,6 +3383,7 @@ def _ordered_target_results(
                     path=path,
                     sections=sections,
                     rows_by_label=rows_by_label,
+                    rows_by_environment=rows_by_environment,
                     latex_index=latex_index,
                     displays=displays,
                     budget_profile=budget_profile,
@@ -2528,6 +3408,7 @@ def _ordered_target_results(
                 path=path,
                 sections=sections,
                 rows_by_label=rows_by_label,
+                rows_by_environment=rows_by_environment,
                 latex_index=latex_index,
                 displays=displays,
                 budget_profile=budget_profile,
@@ -2550,6 +3431,107 @@ def _ordered_target_results(
     return [target for _, target in results], attach_contract(execution, PARALLEL_EXECUTION_CONTRACT)
 
 
+def _disabled_document_derivation_tree_result(tex_path: str | Path) -> dict[str, Any]:
+    result = {
+        **_legacy_document_integrity_binding(),
+        "status": DOCUMENT_TOOL_DISABLED_STATUS,
+        "tex_path": str(tex_path),
+        "publication_mode": DOCUMENT_PUBLICATION_MODE,
+        "failure_classification": "engineering_error",
+        "failure_classifications": ["engineering_error"],
+        "veto_ids": [DOCUMENT_TOOL_DISABLED_STATUS, DOCUMENT_PUBLICATION_VETO_ID],
+        "promotion": _effective_document_promotion(),
+        "execution": attach_contract(
+            {
+                "mode": "disabled",
+                "workers_requested": 0,
+                "workers_used": 0,
+                "target_count": 0,
+                "failure_count": 0,
+                "failures": [],
+                "pipeline_entered": False,
+                "boundary": "The emergency kill switch returned before source access or pipeline execution.",
+            },
+            PARALLEL_EXECUTION_CONTRACT,
+        ),
+        "coverage": {
+            "status": "not_run_tool_disabled",
+            "promoted_count": 0,
+            "raw_promoted_count": 0,
+            "document_ready_repair_proposal_count": 0,
+            "document_gap_report_count": 0,
+            "document_partial_evidence_report_count": 0,
+            "tool_grounded_compiler_validation_error_count": 0,
+            "semantic_packet_count": 0,
+        },
+        "tool_uses": [],
+        "targets": [],
+        "context_targets": [],
+        "non_claims": [
+            {
+                "code": "tool_disabled_not_audit",
+                "text": "The document derivation-tree tool is disabled; this response does not inspect or audit the source.",
+            }
+        ],
+    }
+    result = attach_contract(result, DOCUMENT_DERIVATION_TREE_CONTRACT)
+    result["markdown"] = (
+        "# Document Derivation Tree Audit\n\n"
+        f"Status: `{DOCUMENT_TOOL_DISABLED_STATUS}`\n\n"
+        f"Publication mode: `{DOCUMENT_PUBLICATION_MODE}`\n\n"
+        "Failure classification: `engineering_error`\n\n"
+        "The emergency kill switch returned before source access or pipeline execution.\n"
+    )
+    return result
+
+
+def extract_document_derivation_obligations(
+    tex_path: str | Path,
+    *,
+    focus_labels: list[str] | tuple[str, ...] | str,
+) -> dict[str, Any]:
+    """Expose validated obligations without entering semantic/backend work."""
+    path = Path(tex_path).resolve()
+    label_list = [focus_labels] if isinstance(focus_labels, str) else list(focus_labels)
+    index = build_index(path.parent)
+    label_results = [
+        extract_derivation_targets_for_label(index, str(label), file=path.name)
+        for label in label_list
+    ]
+    obligations = [
+        obligation
+        for result in label_results
+        for obligation in result.get("obligations", [])
+        if isinstance(obligation, dict)
+    ]
+    targets = [
+        target
+        for result in label_results
+        for target in result.get("targets", [])
+        if isinstance(target, dict) and target.get("adapter_eligible") is True
+    ]
+    blocked = [result for result in label_results if result.get("status") != "extracted"]
+    return {
+        "schema_version": "p02_document_extraction_boundary@1",
+        "status": "extracted" if obligations and not blocked else "quarantined" if blocked else "not_extracted",
+        "tex_path": str(path),
+        "requested_labels": label_list,
+        "label_results": label_results,
+        "obligations": obligations,
+        "targets": targets,
+        "obligation_count": len(obligations),
+        "adapter_eligible_target_count": len(targets),
+        "backend_request_count": 0,
+        "publication_mode": DOCUMENT_PUBLICATION_MODE,
+        "publication_enabled": DOCUMENT_PUBLICATION_ENABLED,
+        "claim_eligibility": DOCUMENT_CLAIM_ELIGIBILITY,
+        "non_claims": [
+            "Extraction establishes source ownership only; it does not prove, refute, route, or repair an obligation.",
+            "Publication remains disabled and no mathematical backend was requested.",
+        ],
+    }
+
+
 def audit_document_derivation_tree(
     tex_path: str | Path,
     *,
@@ -2565,6 +3547,8 @@ def audit_document_derivation_tree(
     workers: int = 1,
 ) -> dict[str, Any]:
     """Run the generic semantic-packet -> tree-controller document workflow."""
+    if _document_tool_disabled():
+        return _disabled_document_derivation_tree_result(tex_path)
     if search_mode not in {"agent_guided"}:
         raise ValueError("search_mode must be 'agent_guided'")
     if grounding_policy != STRICT_GROUNDING_POLICY:
@@ -2574,13 +3558,22 @@ def audit_document_derivation_tree(
     sections = _section_map(text)
     rows = locate_equations_in_file(path, root=path.parent)
     displays = _display_index(path, text, root=path.parent)
-    selected_rows = _select_label_rows(rows, focus_labels=focus_labels, max_labels=max_labels)
     latex_index = build_index(path.parent)
+    selected_rows, target_extraction = _select_label_scoped_targets(
+        path,
+        rows,
+        focus_labels=focus_labels,
+        max_labels=max_labels,
+        index=latex_index,
+    )
     context_targets = _context_packets_for_missing_focus(path, focus_labels, selected_rows, index=latex_index)
     rows_by_label: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    rows_by_environment: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
         if row.get("label"):
             rows_by_label[str(row["label"])].append(row)
+        if row.get("environment_id"):
+            rows_by_environment[str(row["environment_id"])].append(row)
     with _backend_env_scope(backend_env):
         doctor = doctor_report()
         capabilities = doctor.get("capabilities", {})
@@ -2591,6 +3584,7 @@ def audit_document_derivation_tree(
         path=path,
         sections=sections,
         rows_by_label=rows_by_label,
+        rows_by_environment=rows_by_environment,
         latex_index=latex_index,
         displays=displays,
         budget_profile=budget_profile,
@@ -2631,6 +3625,26 @@ def audit_document_derivation_tree(
             continue
         status = str(obligation.get("diagnostic_status", "unknown"))
         typed_obligation_status_counts[status] = typed_obligation_status_counts.get(status, 0) + 1
+    raw_promoted_count = sum(
+        1
+        for item in target_results
+        if branch_promotion_report(
+            {
+                "status": str(item.get("tree", {}).get("controller", {}).get("raw_status", "partial")),
+                "backend_attempts": [
+                    attempt
+                    for attempt in item.get("tree", {}).get("backend_attempts", [])
+                    if isinstance(attempt, dict)
+                ],
+            }
+        ).get("can_promote")
+        is True
+    )
+    failure_classification_counts: dict[str, int] = {}
+    for item in target_results:
+        for classification in item.get("failure_classifications", []):
+            key = str(classification)
+            failure_classification_counts[key] = failure_classification_counts.get(key, 0) + 1
     coverage = {
         "status": "partial_coverage",
         "target_file_only": True,
@@ -2652,7 +3666,9 @@ def audit_document_derivation_tree(
             int(item["tree"].get("branch_ranking", {}).get("branch_count", 0))
             for item in target_results
         ),
-        "promoted_count": sum(1 for item in target_results if item.get("promotion", {}).get("can_promote")),
+        "promoted_count": 0,
+        "raw_promoted_count": raw_promoted_count,
+        "failure_classification_counts": failure_classification_counts,
         "blocker_count": sum(len(item["tree"].get("blockers", [])) for item in target_results),
         "document_ready_repair_proposal_count": sum(
             len(item["tree"].get("document_ready_repair_proposals", []))
@@ -2660,6 +3676,10 @@ def audit_document_derivation_tree(
         ),
         "document_gap_report_count": sum(
             len(item["tree"].get("document_gap_reports", []))
+            for item in target_results
+        ),
+        "document_partial_evidence_report_count": sum(
+            len(item["tree"].get("document_partial_evidence_reports", []))
             for item in target_results
         ),
         "tool_grounded_compiler_status_counts": {},
@@ -2679,10 +3699,16 @@ def audit_document_derivation_tree(
             len(errors) if isinstance(errors, list) else 0
         )
     result = {
+        **_legacy_document_integrity_binding(),
         "tex_path": str(path),
         "backend_env": backend_env,
         "search_mode": search_mode,
         "grounding_policy": grounding_policy,
+        "publication_mode": DOCUMENT_PUBLICATION_MODE,
+        "publication_veto_ids": [DOCUMENT_PUBLICATION_VETO_ID],
+        "veto_ids": [DOCUMENT_PUBLICATION_VETO_ID],
+        "failure_classifications": sorted(failure_classification_counts),
+        "promotion": _effective_document_promotion(),
         "execution": execution,
         "document_inventory": {
             "line_count": len(text.splitlines()),
@@ -2691,6 +3717,7 @@ def audit_document_derivation_tree(
             "label_ref_hygiene": _label_ref_hygiene(text),
         },
         "coverage": coverage,
+        "target_extraction": target_extraction,
         "tool_uses": [
             _tool_use(
                 "locate_equations_in_file",
@@ -2698,6 +3725,18 @@ def audit_document_derivation_tree(
                 "completed",
                 "equation_rows",
                 {"tex_path": str(path), "root": str(path.parent)},
+            ),
+            _tool_use(
+                "extract_derivation_targets_for_label",
+                "Bind each selected equation label to one complete validated source-owned obligation.",
+                "completed" if target_extraction["failure_count"] == 0 else "quarantined",
+                "derivation_target_extraction_result",
+                {
+                    "requested_equation_labels": target_extraction["requested_equation_labels"],
+                    "selected_target_count": target_extraction["selected_target_count"],
+                    "failure_count": target_extraction["failure_count"],
+                    "fallback_to_locator_row": False,
+                },
             ),
             _tool_use(
                 "build_proposition_context_packet",
@@ -2769,7 +3808,7 @@ def audit_document_derivation_tree(
             ),
             _tool_use(
                 "tool_grounded_proposal_compiler",
-                "Compile backend-closed branches as repair proposals and blocked branches as exact gap reports under the strict grounding policy.",
+                "Quarantine repair publication, compile legacy closure as partial evidence, and keep blocked branches as exact gap reports.",
                 "completed" if coverage["tool_grounded_compiler_validation_error_count"] == 0 else "validation_error",
                 TOOL_GROUNDED_PROPOSAL_COMPILER_CONTRACT,
                 {
@@ -2777,6 +3816,7 @@ def audit_document_derivation_tree(
                     "search_mode": search_mode,
                     "repair_proposal_count": coverage["document_ready_repair_proposal_count"],
                     "gap_report_count": coverage["document_gap_report_count"],
+                    "partial_evidence_count": coverage["document_partial_evidence_report_count"],
                     "validation_error_count": coverage["tool_grounded_compiler_validation_error_count"],
                 },
             ),
@@ -2790,7 +3830,9 @@ def audit_document_derivation_tree(
         ],
         "backend_provenance": {
             "doctor": doctor,
-            "certification_boundary": "Only scoped certifying backend evidence accepted by the promotion guard proves a branch.",
+            "certification_boundary": (
+                "Raw scoped backend evidence remains diagnostic at the document boundary until exact Phase 01 binding exists."
+            ),
         },
         "targets": target_results,
         "context_targets": context_targets,
@@ -2806,6 +3848,10 @@ def audit_document_derivation_tree(
             {
                 "code": "proof_search_not_final_certificate",
                 "text": "LeanDojo, Pantograph, retrieval, route plans, and static extraction are diagnostic until direct Lean or another certifying backend checks the scoped target.",
+            },
+            {
+                "code": "document_repair_publication_quarantined",
+                "text": "No returned candidate is an applicable document edit while publication mode is disabled.",
             },
         ],
     }
@@ -2831,6 +3877,7 @@ def render_document_derivation_tree_markdown(result: dict[str, Any]) -> str:
         f"Target: `{result.get('tex_path', '')}`",
         f"Search mode: `{_md(result.get('search_mode', ''))}`",
         f"Grounding policy: `{_md(result.get('grounding_policy', ''))}`",
+        f"Publication mode: `{_md(result.get('publication_mode', ''))}`",
         f"Execution: `{_md(result.get('execution', {}).get('mode', ''))}` with `{_md(result.get('execution', {}).get('workers_used', 1))}` worker(s)",
         "",
         "## Executive Summary",
@@ -2843,9 +3890,12 @@ def render_document_derivation_tree_markdown(result: dict[str, Any]) -> str:
         f"- Typed repair obligations: `{result.get('coverage', {}).get('typed_repair_obligation_count', 0)}`",
         f"- Typed repair obligation statuses: `{_md(result.get('coverage', {}).get('typed_repair_obligation_status_counts', {}))}`",
         f"- Ranked branches: `{result.get('coverage', {}).get('ranked_branch_count', 0)}`",
-        f"- Promoted branches: `{result.get('coverage', {}).get('promoted_count', 0)}`",
+        f"- Effective promoted branches: `{result.get('coverage', {}).get('promoted_count', 0)}`",
+        f"- Raw promoted branches (diagnostic only): `{result.get('coverage', {}).get('raw_promoted_count', 0)}`",
         f"- Document-ready repair proposals: `{result.get('coverage', {}).get('document_ready_repair_proposal_count', 0)}`",
         f"- Document gap reports: `{result.get('coverage', {}).get('document_gap_report_count', 0)}`",
+        f"- Document partial-evidence reports: `{result.get('coverage', {}).get('document_partial_evidence_report_count', 0)}`",
+        f"- Failure classifications: `{_md(result.get('coverage', {}).get('failure_classification_counts', {}))}`",
         f"- Tool-grounded compiler statuses: `{_md(result.get('coverage', {}).get('tool_grounded_compiler_status_counts', {}))}`",
         f"- Tool-grounded compiler validation errors: `{result.get('coverage', {}).get('tool_grounded_compiler_validation_error_count', 0)}`",
         f"- Parallel execution failures: `{_md(result.get('execution', {}).get('failure_count', 0))}`",
@@ -3018,6 +4068,7 @@ def render_document_derivation_tree_markdown(result: dict[str, Any]) -> str:
             lines.append("- No typed repair obligation was generated.")
         _render_tool_grounded_proposal_compiler(lines, tree.get("tool_grounded_proposal_compiler", {}))
         _render_document_ready_proposals(lines, tree.get("document_ready_repair_proposals", []))
+        _render_document_partial_evidence_reports(lines, tree.get("document_partial_evidence_reports", []))
         _render_document_gap_reports(lines, tree.get("document_gap_reports", []))
         lines.extend(["", "Possible sufficient assumption sets:"])
         sets = packet.get("possible_assumption_sets", [])
@@ -3035,15 +4086,18 @@ def render_document_derivation_tree_markdown(result: dict[str, Any]) -> str:
         lines.extend(["", "Branch ranking:"])
         if isinstance(ranking, dict) and ranking.get("rankings"):
             lines.append(f"- Contract: `{_md(ranking.get('metadata', {}).get('contract', ''))}`")
-            lines.append(f"- Top branch: `{_md(ranking.get('top_branch_id', ''))}`")
+            lines.append(f"- Nondominated branches: `{_md(ranking.get('nondominated_branch_ids', []))}`")
+            lines.append(f"- Unique top branch, only if one exists: `{_md(ranking.get('top_branch_id', ''))}`")
+            lines.append(f"- Selected discriminating action: `{_md(ranking.get('selected_action', {}))}`")
             for item in ranking.get("rankings", []):
                 if not isinstance(item, dict):
                     continue
                 lines.append(
-                    f"- Rank `{_md(item.get('rank', ''))}`: `{_md(item.get('branch_id', ''))}` "
-                    f"outcome `{_md(item.get('outcome', ''))}`, score `{_md(item.get('score', ''))}`"
+                    f"- Serialization position `{_md(item.get('serialization_position', ''))}`: "
+                    f"`{_md(item.get('branch_id', ''))}` outcome `{_md(item.get('outcome', ''))}`, "
+                    f"nondominated `{_md(item.get('nondominated', False))}`"
                 )
-                lines.append(f"  - Components: `{_md(item.get('score_components', {}))}`")
+                lines.append(f"  - Decision dimensions: `{_md(item.get('decision_dimensions', {}))}`")
                 lines.append(f"  - Explanation: {_md(item.get('explanation', ''))}")
         else:
             lines.append("- No branch ranking was generated.")
@@ -3058,7 +4112,10 @@ def render_document_derivation_tree_markdown(result: dict[str, Any]) -> str:
                 evidence = branch.get("backend_evidence", {})
                 if isinstance(evidence, dict) and evidence:
                     lines.append(f"  - Backend evidence status: `{_md(evidence.get('status', ''))}`")
-                    lines.append(f"  - Backend promotion guard: `{_md(evidence.get('promotion', {}))}`")
+                    lines.append(f"  - Raw backend promotion history (diagnostic only): `{_md(evidence.get('raw_promotion', {}))}`")
+                    lines.append(f"  - Effective document promotion: `{_md(evidence.get('effective_document_promotion', {}))}`")
+                    lines.append(f"  - Evidence binding: `{_md(evidence.get('binding_status', ''))}`")
+                    lines.append(f"  - Failure classification: `{_md(evidence.get('failure_classification', ''))}`")
                 lines.append(f"  - Why: {_md(branch.get('mathematical_why', ''))}")
                 assumptions = branch.get("assumptions", [])
                 if isinstance(assumptions, list):
@@ -3150,11 +4207,13 @@ def render_document_derivation_tree_markdown(result: dict[str, Any]) -> str:
         else:
             lines.append("- None recorded.")
         patches = tree.get("patch_candidates", [])
-        lines.extend(["", "Proposed patch candidates:"])
+        lines.extend(["", "Blocked patch candidates (non-applicable):"])
         if patches:
             for patch in patches:
                 lines.append(f"- `{_md(patch.get('id', 'patch'))}` status `{_md(patch.get('validation_status', ''))}`")
-                lines.append(f"  Proposed fix: {_md(patch.get('proposed_text', ''))}")
+                lines.append(f"  Applicable: `{_md(patch.get('applicable', False))}`")
+                lines.append(f"  Blocked candidate text: {_md(patch.get('candidate_text_blocked', ''))}")
+                lines.append(f"  Blocked reason: {_md(patch.get('blocked_reason', ''))}")
                 lines.append(f"  Rationale: {_md(patch.get('rationale', ''))}")
         else:
             lines.append("- None recorded.")

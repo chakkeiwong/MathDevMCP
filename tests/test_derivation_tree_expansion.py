@@ -53,7 +53,8 @@ def test_expand_tree_with_hypotheses_creates_child_nodes_with_parent_provenance(
     children = result["tree"]["root"]["children"]
     assert len(children) == 2
     for child in children:
-        assert child["status"] == "expanded_by_agent"
+        assert child["status"] == "expanded_by_rule"
+        assert child["generator"]["kind"] == "rule_generated"
         assert child["parent_node_id"] == "root"
         assert child["parent_blocker_id"] == "blocker_conditional_law"
         assert child["agent_hypothesis"]["status"] == "candidate_pending_tree_verification"

@@ -27,6 +27,13 @@ from .debug_derivation import debug_derivation as high_level_debug_derivation
 from .derive_from import derive_from as high_level_derive_from
 from .derive_or_refute import derive_or_refute
 from .document_derivation_tree import audit_document_derivation_tree as high_level_audit_document_derivation_tree
+from .document_derivation_response import (
+    build_document_derivation_audit_request,
+    compile_document_derivation_response,
+    load_document_derivation_continuation,
+    resolve_document_derivation_records,
+    validate_document_derivation_response_options,
+)
 from .doctor import doctor_report
 from .equation_code_match import code_implements_equation
 from .external_tool_policy import external_tool_first_plan as high_level_external_tool_first_plan
@@ -885,18 +892,83 @@ def _tool_audit_document_derivation_tree(args: dict[str, Any]) -> dict[str, Any]
     max_label_value = int(max_labels) if max_labels is not None else None
     if max_label_value is not None and max_label_value <= 0:
         max_label_value = None
-    return high_level_audit_document_derivation_tree(
-        _required_string(args, "tex_path"),
-        output_md=args.get("output_md") or None,
-        output_json=args.get("output_json") or None,
+    tex_path = _required_string(args, "tex_path")
+    budget_profile = str(args.get("budget_profile", "standard"))
+    max_attempts = int(args.get("max_attempts", 3))
+    backend_env = str(args.get("backend_env", "mathdevmcp-backends"))
+    search_mode = str(args.get("search_mode", "agent_guided"))
+    grounding_policy = str(args.get("grounding_policy", "strict"))
+    workers = int(args.get("workers", 1))
+    audit_request = build_document_derivation_audit_request(
+        tex_path,
         focus_labels=focus_labels,
         max_labels=max_label_value,
-        budget_profile=str(args.get("budget_profile", "standard")),
-        max_attempts=int(args.get("max_attempts", 3)),
-        backend_env=str(args.get("backend_env", "mathdevmcp-backends")),
-        search_mode=str(args.get("search_mode", "agent_guided")),
-        grounding_policy=str(args.get("grounding_policy", "strict")),
-        workers=int(args.get("workers", 1)),
+        budget_profile=budget_profile,
+        max_attempts=max_attempts,
+        backend_env=backend_env,
+        search_mode=search_mode,
+        grounding_policy=grounding_policy,
+        workers=workers,
+    )
+    response_mode = str(args.get("response_mode", "compact"))
+    artifact_root = args.get("artifact_root") or None
+    target_cursor = args.get("target_cursor") or None
+    if target_cursor is not None and not isinstance(target_cursor, str):
+        raise ValueError("target_cursor must be a string")
+    if artifact_root is not None and not isinstance(artifact_root, str):
+        raise ValueError("artifact_root must be a string")
+    raw_target_limit = args.get("target_limit")
+    target_limit = None if raw_target_limit is None else int(raw_target_limit)
+    validate_document_derivation_response_options(
+        response_mode=response_mode,
+        artifact_root=artifact_root,
+        target_limit=target_limit,
+        target_cursor=target_cursor,
+    )
+    if target_cursor:
+        if args.get("output_md") or args.get("output_json"):
+            raise ValueError("target_cursor cannot be combined with raw output paths")
+        audit = load_document_derivation_continuation(
+            artifact_root,
+            target_cursor,
+            audit_request,
+        )
+    else:
+        audit = high_level_audit_document_derivation_tree(
+            tex_path,
+            output_md=args.get("output_md") or None,
+            output_json=args.get("output_json") or None,
+            focus_labels=focus_labels,
+            max_labels=max_label_value,
+            budget_profile=budget_profile,
+            max_attempts=max_attempts,
+            backend_env=backend_env,
+            search_mode=search_mode,
+            grounding_policy=grounding_policy,
+            workers=workers,
+        )
+    return compile_document_derivation_response(
+        audit,
+        audit_request,
+        response_mode=response_mode,
+        artifact_root=artifact_root,
+        target_limit=target_limit,
+        target_cursor=target_cursor,
+    )
+
+
+def _tool_resolve_document_derivation_records(args: dict[str, Any]) -> dict[str, Any]:
+    artifact_root = _required_string(args, "artifact_root")
+    target_id = args.get("target_id")
+    if target_id is not None and not isinstance(target_id, str):
+        raise ValueError("target_id must be a string or null")
+    return resolve_document_derivation_records(
+        _required_string(args, "page_token"),
+        _required_string(args, "collection"),
+        artifact_root=artifact_root,
+        target_id=target_id or None,
+        offset=int(args.get("offset", 0)),
+        limit=int(args.get("limit", 100)),
     )
 
 
@@ -1217,7 +1289,8 @@ MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
     MCPToolSpec("lean_readiness", _tool_lean_readiness, "Report direct Lean, Lake, and LeanDojo readiness separately.", "lean_readiness", "operational"),
     MCPToolSpec("plan_math_document_rigor_audit", _tool_plan_math_document_rigor_audit, "Plan a focused mathematical rigor audit for one LaTeX file.", "math_document_rigor_audit_plan", "workflow", stability="experimental"),
     MCPToolSpec("audit_math_document_rigor", _tool_audit_math_document_rigor, "Audit one LaTeX file and write a rigor gap/proposal report.", "math_document_rigor_audit", "workflow", stability="experimental", optional_capability="symbolic_backend"),
-    MCPToolSpec("audit_document_derivation_tree", _tool_audit_document_derivation_tree, "Audit LaTeX document targets with semantic work packets and derivation trees.", "document_derivation_tree_audit", "workflow", stability="experimental", optional_capability="symbolic_backend"),
+    MCPToolSpec("audit_document_derivation_tree", _tool_audit_document_derivation_tree, "Audit LaTeX document targets and return a compact evidence-complete response by default; publication remains disabled.", "document_derivation_response", "workflow", stability="experimental", optional_capability="symbolic_backend"),
+    MCPToolSpec("resolve_document_derivation_records", _tool_resolve_document_derivation_records, "Resolve exact persisted audit records authorized by a compact document-derivation page token.", "document_derivation_record_page", "workflow", stability="experimental"),
 )
 
 

@@ -2,11 +2,27 @@ from pathlib import Path
 import subprocess
 import sys
 
-from mathdevmcp.derivation_audit_report import audit_and_propose_derivations
+from mathdevmcp.derivation_audit_report import audit_and_propose_derivations, audit_derivation_extraction_boundary
 
 
 FIXTURES = Path(__file__).resolve().parent.parent / "benchmarks" / "fixtures"
 ROOT = Path(__file__).resolve().parent.parent
+
+
+def test_derivation_audit_extraction_boundary_uses_scoped_obligation_without_backend() -> None:
+    result = audit_derivation_extraction_boundary(
+        ROOT / "docs",
+        ["eq:foc-k", "eq:foc-b"],
+        file="docs/risky-debt-maliar-deep-learning-lecture-note.tex",
+    )
+
+    assert result["status"] == "extracted"
+    assert result["backend_request_count"] == 0
+    assert result["route_plans"] == []
+    assert result["target_results"] == []
+    assert [item["label"] for item in result["obligations"]] == ["eq:foc-k", "eq:foc-b"]
+    assert [target["label"] for target in result["targets"]] == ["eq:foc-k", "eq:foc-b"]
+    assert all(target["adapter_eligible"] is True for target in result["targets"])
 
 
 def test_audit_and_propose_derivations_writes_direct_markdown(tmp_path: Path) -> None:
@@ -39,7 +55,7 @@ def test_audit_and_propose_derivations_writes_direct_markdown(tmp_path: Path) ->
     assert "collect more evidence" not in markdown.lower()
 
 
-def test_audit_and_propose_derivations_uses_label_location(tmp_path: Path) -> None:
+def test_audit_and_propose_derivations_requires_exact_target_before_label_route(tmp_path: Path) -> None:
     output = tmp_path / "label-report.md"
     result = audit_and_propose_derivations(
         "Audit fixture label",
@@ -50,17 +66,21 @@ def test_audit_and_propose_derivations_uses_label_location(tmp_path: Path) -> No
 
     markdown = output.read_text(encoding="utf-8")
 
-    assert result["status"] == "proposal_ready"
+    assert result["status"] == "needs_evidence"
     assert result["tool_uses"][0]["tool"] == "build_index"
     assert result["tool_uses"][1]["tool"] == "extract_derivation_targets_for_label"
-    assert result["tool_uses"][2]["tool"] == "plan_backend_routes"
-    assert result["coverage"]["fallback_target_count"] == 1
-    assert result["target_extraction"]["label_results"][0]["status"] == "fallback_used"
-    assert result["gaps"][0]["location"].startswith("doc_consistency_good.tex > prop:transport-logdet > line")
+    assert len(result["tool_uses"]) == 2
+    assert result["route_plans"] == []
+    assert result["target_results"] == []
+    assert result["coverage"]["fallback_target_count"] == 0
+    assert result["coverage"]["coverage_gaps"] == [
+        "Label `prop:transport-logdet` had no extractable derivation targets."
+    ]
+    assert result["target_extraction"]["label_results"][0]["status"] == "not_extracted"
     assert "prop:transport-logdet" in markdown
-    assert "Extraction status: `fallback_full_block`" in markdown
-    assert "Backend Route Plans" in markdown
-    assert "Evidence refs:" in markdown
+    assert "Backend Route Plans" not in markdown
+    assert "Targets inspected: 0" in markdown
+    assert "had no extractable derivation targets" in markdown
 
 
 def test_audit_and_propose_derivations_uses_extracted_risky_debt_obligations(tmp_path: Path) -> None:

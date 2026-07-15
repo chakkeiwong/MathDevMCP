@@ -3,7 +3,8 @@ from __future__ import annotations
 """Budgeted derivation branch controller over external-tool evidence actions."""
 
 from dataclasses import asdict, dataclass
-from typing import Any, Callable
+from pathlib import Path
+from typing import Any, Callable, Mapping
 
 from .contracts import attach_contract
 from .derivation_search_tree import (
@@ -11,9 +12,12 @@ from .derivation_search_tree import (
     branch_promotion_report,
     build_initial_search_tree,
     summarize_search_tree,
+    validate_branch_record,
     validate_search_tree,
 )
+from .evidence_manifest import content_digest
 from .external_tool_adapters import (
+    EvidenceContext,
     adapt_algebra_check,
     adapt_counterexample_search,
     adapt_lean_check,
@@ -21,6 +25,14 @@ from .external_tool_adapters import (
     adapt_retrieval_evidence,
     adapt_static_extraction_evidence,
 )
+from .external_adapter_contract import reader_verified_claim_evidence_record
+from .failure_ledgers import (
+    build_ledger_entry,
+    build_ledgers,
+    rank_repair_branches_partial_order,
+    select_next_discriminating_action,
+)
+from .lean_check import LeanDiagnosticContext, LeanTargetBinding, validate_lean_target_binding
 
 
 DERIVATION_BRANCH_CONTROLLER_BOUNDARY = (
@@ -30,9 +42,10 @@ DERIVATION_BRANCH_CONTROLLER_BOUNDARY = (
 )
 DERIVATION_BRANCH_RANKING_CONTRACT = "repair_branch_ranking_result"
 DERIVATION_BRANCH_RANKING_BOUNDARY = (
-    "Branch ranking is a deterministic evidence ordering over recorded branch "
-    "attempts, blockers, assumptions, and route evidence. It is not MCTS, "
-    "global optimization, proof, minimality, or scientific validation."
+    "Branch ranking is a validity-gated partial order over recorded branch "
+    "evidence, blockers, assumptions, coverage, and comparable declared cost. "
+    "It is not MCTS, a scalar quality score, global optimization, proof, "
+    "minimality, or scientific validation."
 )
 
 BUDGET_PROFILES: dict[str, dict[str, int]] = {
@@ -104,12 +117,19 @@ def branch_expansion_records(branch: dict[str, Any]) -> list[dict[str, Any]]:
     for group in _as_dict_list(branch.get("agent_hypothesis_expansions")):
         candidates = _as_dict_list(group.get("candidates"))
         for item in candidates:
+            generation = item.get("generation") if isinstance(item.get("generation"), dict) else {}
+            generator_kind = str(generation.get("kind") or item.get("provenance") or "unknown")
+            executed_agent = generator_kind == "agent_generated"
             records.append(
                 {
                     "id": f"expansion_{branch_id}_{item.get('id', 'agent_hypothesis')}",
-                    "kind": "agent_hypothesis_candidate",
+                    "kind": "agent_hypothesis_candidate" if executed_agent else "rule_hypothesis_candidate",
+                    "generator_kind": generator_kind,
                     "status": str(item.get("status", "candidate_pending_tree_verification")),
-                    "summary": str(item.get("proposed_route") or "Agent-generated candidate route."),
+                    "summary": str(
+                        item.get("proposed_route")
+                        or ("Agent-generated candidate route." if executed_agent else "Rule-generated candidate route.")
+                    ),
                     "evidence_refs": _as_text_list(item.get("source_refs")),
                     "boundary": str(item.get("boundary") or DERIVATION_BRANCH_RANKING_BOUNDARY),
                 }
@@ -148,28 +168,6 @@ def branch_expansion_records(branch: dict[str, Any]) -> list[dict[str, Any]]:
     return records
 
 
-def _specific_blockers(branch: dict[str, Any]) -> list[dict[str, Any]]:
-    generic_kinds = {
-        "adapter_diagnostic",
-        "formalization_required",
-        "budget_exhausted",
-        "source_extraction_uncertainty",
-    }
-    blockers: list[dict[str, Any]] = []
-    seen: set[str] = set()
-    for item in [*_as_dict_list(branch.get("translation_blockers")), *_as_dict_list(branch.get("blockers"))]:
-        blocker_id = str(item.get("id", ""))
-        if blocker_id in seen:
-            continue
-        seen.add(blocker_id)
-        kind = str(item.get("kind", ""))
-        if kind in generic_kinds:
-            continue
-        if item.get("problem") and item.get("why") and item.get("required_next_evidence"):
-            blockers.append(item)
-    return blockers
-
-
 def _branch_promotion(branch: dict[str, Any]) -> dict[str, Any]:
     evidence = branch.get("backend_evidence")
     if isinstance(evidence, dict) and isinstance(evidence.get("promotion"), dict):
@@ -182,99 +180,350 @@ def _branch_promotion(branch: dict[str, Any]) -> dict[str, Any]:
     )
 
 
-def _source_support(branch: dict[str, Any]) -> int:
-    refs = set(_as_text_list(branch.get("evidence_refs")))
-    refs.update(_as_text_list(branch.get("typed_obligation_ids")))
-    for item in _as_dict_list(branch.get("external_tool_first_ledger")):
-        if item.get("selected_route"):
-            refs.add(str(item.get("tool", "")))
-    return len([ref for ref in refs if ref])
-
-
-def _rank_components(branch: dict[str, Any]) -> dict[str, Any]:
-    promotion = _branch_promotion(branch)
-    backend_attempts = _as_dict_list(branch.get("backend_attempts"))
-    blockers = _specific_blockers(branch)
-    closes = _as_text_list(branch.get("closes_obligations"))
-    assumptions = _as_text_list(branch.get("assumptions"))
-    if promotion.get("can_promote"):
-        backend_certification = 100
-    elif backend_attempts:
-        backend_certification = 25
-    else:
-        backend_certification = 0
-    closure_strength = min(20, 6 * len(closes))
-    source_support = min(15, 3 * _source_support(branch))
-    blocker_specificity = 0 if promotion.get("can_promote") else min(25, 5 * len(blockers))
-    non_minimality_penalty = max(0, len(assumptions) - 2) * 2
-    if "not_minimal" in str(branch.get("non_claim", "")).lower() or "not minimal" in str(branch.get("non_claim", "")).lower():
-        non_minimality_penalty += 2
-    score = backend_certification + closure_strength + source_support + blocker_specificity - non_minimality_penalty
+def _legacy_scope(branch: dict[str, Any], *, blocker_kind: str) -> dict[str, Any]:
+    branch_id = str(branch.get("id") or "legacy_branch")
+    target = str(branch.get("target") or branch.get("normalized_target") or "").strip()
+    obligation_ids = _as_text_list(branch.get("typed_obligation_ids"))
+    obligation_id = str(branch.get("obligation_id") or branch.get("obligation_digest") or "")
+    if not obligation_id and obligation_ids:
+        obligation_id = obligation_ids[0]
     return {
-        "backend_certification": backend_certification,
-        "closure_strength": closure_strength,
-        "source_support": source_support,
-        "blocker_specificity": blocker_specificity,
-        "non_minimality_penalty": non_minimality_penalty,
-        "score": score,
-        "specific_blocker_count": len(blockers),
-        "backend_attempt_count": len(backend_attempts),
-        "assumption_count": len(assumptions),
+        "obligation_id": obligation_id or None,
+        "target": target or None,
+        "candidate_conclusion": str(branch.get("candidate_conclusion") or target).strip() or None,
+        "branch_ids": [branch_id],
+        "source_spans": [],
+        "closed_blocker_scope": [blocker_kind],
     }
 
 
-def _rank_outcome(branch: dict[str, Any], promotion: dict[str, Any], components: dict[str, Any]) -> str:
-    if promotion.get("can_promote"):
-        supported = str(promotion.get("supported_status") or "certified")
-        return f"scoped_{supported}"
-    if components.get("specific_blocker_count", 0) > 0:
+def _legacy_blocker_ledger_kind(kind: str) -> tuple[str, str]:
+    normalized = kind.strip().lower()
+    engineering_markers = (
+        "adapter_error",
+        "worker_exception",
+        "backend_unavailable",
+        "tool_unavailable",
+        "timeout",
+        "budget_exhausted",
+        "resource",
+        "configuration",
+    )
+    evidence_markers = (
+        "binding",
+        "manifest",
+        "branch_bound_backend_execution",
+        "source_extraction_uncertainty",
+        "request_invalid",
+        "result_record",
+    )
+    mathematical_markers = (
+        "assumption",
+        "formalization",
+        "domain",
+        "shape",
+        "law",
+        "integrability",
+        "expectation",
+        "derivative",
+        "invertib",
+        "conformab",
+        "macro_translation",
+        "external_tool_or_gap_justification",
+        "adapter_diagnostic",
+    )
+    if any(marker in normalized for marker in engineering_markers):
+        return "engineering", normalized or "unclassified_engineering_failure"
+    if any(marker in normalized for marker in evidence_markers):
+        return "evidence_integrity", normalized or "unclassified_evidence_failure"
+    if any(marker in normalized for marker in mathematical_markers):
+        return "mathematical_validity", normalized
+    return "evidence_integrity", "unclassified_legacy_blocker"
+
+
+def _legacy_ledger_entry(
+    branch: dict[str, Any],
+    item: dict[str, Any],
+    *,
+    ledger_kind: str,
+    normalized_kind: str,
+    origin_prefix: str,
+    veto_role: str = "veto",
+) -> dict[str, Any]:
+    branch_id = str(branch.get("id") or "legacy_branch")
+    origin_id = str(item.get("id") or f"{origin_prefix}_{normalized_kind}")
+    required = str(
+        item.get("required_next_evidence")
+        or item.get("next_discriminator")
+        or "Produce an exact scope-bound diagnostic artifact."
+    )
+    return build_ledger_entry(
+        ledger_kind=ledger_kind,
+        kind=normalized_kind,
+        scope=_legacy_scope(branch, blocker_kind=normalized_kind),
+        target_ids=[str(branch.get("target_id") or branch.get("target") or branch_id)],
+        severity="error" if veto_role == "veto" else "info",
+        veto_role=veto_role,
+        source_refs=_as_text_list(item.get("source_refs")),
+        evidence_refs=[
+            *_as_text_list(item.get("evidence_refs")),
+            *([str(item["output_ref"])] if item.get("output_ref") else []),
+        ],
+        problem=str(item.get("problem") or f"Legacy branch input has status {normalized_kind}."),
+        why=str(item.get("why") or item.get("reason") or required),
+        smallest_discriminator={
+            "kind": f"resolve_{normalized_kind}",
+            "description": required,
+            "closes_scope": [normalized_kind],
+        },
+        required_artifact={
+            "kind": f"{normalized_kind}_resolution",
+            "schema_version": "p06_legacy_discriminator@1",
+            "binding_fields": ["branch_id", "target_id", "origin_id"],
+            "path_role": "diagnostic_decision_evidence",
+        },
+        origin_ids=[origin_id],
+        non_claims=[
+            "legacy diagnostic records are not exact Phase 04 claim evidence",
+            "classification does not establish proof, refutation, or publication authority",
+        ],
+    )
+
+
+def _legacy_branch_ledgers(branch: dict[str, Any]) -> dict[str, Any]:
+    entries: list[dict[str, Any]] = []
+    seen_objects: set[tuple[str, str]] = set()
+    for blocker in [
+        *_as_dict_list(branch.get("translation_blockers")),
+        *_as_dict_list(branch.get("blockers")),
+    ]:
+        marker = (str(blocker.get("id", "")), str(blocker.get("kind", "")))
+        if marker in seen_objects:
+            continue
+        seen_objects.add(marker)
+        ledger_kind, normalized_kind = _legacy_blocker_ledger_kind(str(blocker.get("kind", "")))
+        entries.append(
+            _legacy_ledger_entry(
+                branch,
+                blocker,
+                ledger_kind=ledger_kind,
+                normalized_kind=normalized_kind,
+                origin_prefix="blocker",
+            )
+        )
+    for attempt in _as_dict_list(branch.get("backend_attempts")):
+        status = str(attempt.get("status", "unknown")).strip().lower()
+        if status in {
+            "adapter_error",
+            "execution_error",
+            "translation_error",
+            "malformed_output",
+            "truncated_output",
+            "timeout",
+            "unavailable",
+            "backend_unavailable",
+        }:
+            entries.append(
+                _legacy_ledger_entry(
+                    branch,
+                    attempt,
+                    ledger_kind="engineering",
+                    normalized_kind=status,
+                    origin_prefix="attempt",
+                )
+            )
+        entries.append(
+            _legacy_ledger_entry(
+                branch,
+                attempt,
+                ledger_kind="evidence_integrity",
+                normalized_kind="unnormalized_legacy_backend_attempt",
+                origin_prefix="attempt",
+            )
+        )
+        if status in {"proved", "certified", "verified", "refuted"}:
+            entries.append(
+                _legacy_ledger_entry(
+                    branch,
+                    attempt,
+                    ledger_kind="mathematical_validity",
+                    normalized_kind=f"scoped_{status}_diagnostic",
+                    origin_prefix="attempt",
+                    veto_role="supporting",
+                )
+            )
+        elif status in {"unknown", "diagnostic", "missing_assumptions", "missing_assumption"}:
+            entries.append(
+                _legacy_ledger_entry(
+                    branch,
+                    attempt,
+                    ledger_kind="mathematical_validity",
+                    normalized_kind="diagnostic_no_decision",
+                    origin_prefix="attempt",
+                )
+            )
+    return build_ledgers(entries)
+
+
+def _legacy_typed_assumptions(branch: dict[str, Any]) -> list[dict[str, Any]]:
+    typed = branch.get("typed_assumptions")
+    if isinstance(typed, list) and all(isinstance(item, dict) for item in typed):
+        return [dict(item) for item in typed]
+    return [
+        {"id": f"legacy_assumption_{index}", "statement": value, "status": "candidate"}
+        for index, value in enumerate(_as_text_list(branch.get("assumptions")), start=1)
+    ]
+
+
+def _phase06_ranking_input(
+    branch: dict[str, Any],
+    claim_evidence: Any = None,
+) -> dict[str, Any]:
+    branch_id = str(branch.get("id") or "legacy_branch")
+    try:
+        verified_evidence = reader_verified_claim_evidence_record(claim_evidence)
+    except (TypeError, ValueError):
+        verified_evidence = {}
+    obligation_ids = _as_text_list(branch.get("typed_obligation_ids"))
+    obligation_id = (
+        branch.get("obligation_id")
+        or branch.get("obligation_digest")
+        or (obligation_ids[0] if obligation_ids else None)
+    )
+    target = branch.get("target") or branch.get("normalized_target") or ""
+    branch_errors = validate_branch_record(branch)
+    evidence_branch = (
+        verified_evidence.get("branch")
+        if isinstance(verified_evidence.get("branch"), Mapping)
+        else {}
+    )
+    exact_verified = bool(
+        not branch_errors
+        and verified_evidence.get("certifying") is True
+        and evidence_branch.get("id") == branch_id
+        and evidence_branch.get("lineage") == branch.get("lineage")
+        and evidence_branch.get("record_digest") == content_digest(branch)
+        and verified_evidence.get("obligation", {}).get("digest") == obligation_id
+        and verified_evidence.get("obligation", {}).get("target") == target
+        and verified_evidence.get("typed_assumptions")
+        == branch.get("typed_assumptions")
+        and verified_evidence.get("typed_assumption_digests")
+        == branch.get("typed_assumption_digests")
+    )
+    return {
+        "id": branch_id,
+        "obligation_id": obligation_id,
+        "target": target,
+        "candidate_conclusion": branch.get("candidate_conclusion")
+        or branch.get("target")
+        or branch.get("normalized_target")
+        or "",
+        "exact_verified_evidence": exact_verified,
+        "ledgers": _legacy_branch_ledgers(branch),
+        "typed_assumptions": _legacy_typed_assumptions(branch),
+        "covered_obligation_ids": _as_text_list(branch.get("covered_obligation_ids"))
+        or _as_text_list(branch.get("closes_obligations")),
+        "execution_cost": branch.get("execution_cost"),
+    }
+
+
+def _rank_outcome(branch: dict[str, Any], ranking_input: dict[str, Any]) -> str:
+    entries = ranking_input["ledgers"]["deduplicated_entries"]
+    if ranking_input["exact_verified_evidence"] and not ranking_input["ledgers"]["veto_entry_ids"]:
+        return "exact_verified_scoped_evidence"
+    if any(item["veto_role"] == "veto" for item in entries):
         return "blocked_with_specific_next_evidence"
-    if components.get("backend_attempt_count", 0) > 0:
+    if _as_dict_list(branch.get("backend_attempts")):
         return "diagnostic_attempt_only"
     return "open_or_template_only"
 
 
-def rank_repair_branches(branches: list[dict[str, Any]]) -> dict[str, Any]:
-    """Rank repair branches by recorded evidence without inventing repairs."""
+def rank_repair_branches(
+    branches: list[dict[str, Any]],
+    *,
+    claim_evidence_by_branch_id: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Compare repair branches without compensating scalar scores."""
+    source_branches = [item for item in branches if isinstance(item, dict) and item.get("id")]
+    evidence_by_id = (
+        claim_evidence_by_branch_id
+        if isinstance(claim_evidence_by_branch_id, Mapping)
+        else {}
+    )
+    ranking_inputs = [
+        _phase06_ranking_input(branch, evidence_by_id.get(str(branch["id"])))
+        for branch in source_branches
+    ]
+    aggregate_ledgers = build_ledgers(
+        entry
+        for item in ranking_inputs
+        for entry in item["ledgers"]["raw_entries"]
+    )
+    partial = rank_repair_branches_partial_order(ranking_inputs)
+    by_id = {str(branch["id"]): branch for branch in source_branches}
+    input_by_id = {str(item["id"]): item for item in ranking_inputs}
+    nondominated = list(partial["nondominated_branch_ids"])
+    dominated = [branch_id for branch_id in partial["branch_ids"] if branch_id not in nondominated]
+    serialization_ids = [*nondominated, *dominated]
     rankings: list[dict[str, Any]] = []
-    for branch in branches:
-        if not isinstance(branch, dict):
-            continue
-        promotion = _branch_promotion(branch)
-        components = _rank_components(branch)
-        outcome = _rank_outcome(branch, promotion, components)
-        branch_id = str(branch.get("id", f"branch_{len(rankings) + 1}"))
+    for position, branch_id in enumerate(serialization_ids, start=1):
+        branch = by_id[branch_id]
+        ranking_input = input_by_id[branch_id]
+        outcome = _rank_outcome(branch, ranking_input)
         rankings.append(
             {
                 "branch_id": branch_id,
                 "status": str(branch.get("status", "unknown")),
                 "outcome": outcome,
-                "score": components["score"],
-                "score_components": components,
-                "promotion": promotion,
+                "nondominated": branch_id in nondominated,
+                "serialization_position": position,
+                "decision_dimensions": {
+                    "exact_verified_evidence": ranking_input["exact_verified_evidence"],
+                    "veto_entry_ids": ranking_input["ledgers"]["veto_entry_ids"],
+                    "covered_obligation_ids": ranking_input["covered_obligation_ids"],
+                    "typed_assumptions": ranking_input["typed_assumptions"],
+                    "execution_cost": ranking_input["execution_cost"],
+                },
+                "ledger_entry_ids": sorted(
+                    entry["entry_id"]
+                    for entry in ranking_input["ledgers"]["deduplicated_entries"]
+                ),
+                "veto_entry_ids": list(ranking_input["ledgers"]["veto_entry_ids"]),
+                "legacy_promotion_projection": {
+                    "authority": "diagnostic_only",
+                    "value": _branch_promotion(branch),
+                },
                 "expansion_record_count": len(branch_expansion_records(branch)),
                 "explanation": (
-                    f"Ranked as {outcome}: backend={components['backend_certification']}, "
-                    f"closure={components['closure_strength']}, source={components['source_support']}, "
-                    f"blocker_specificity={components['blocker_specificity']}, "
-                    f"non_minimality_penalty={components['non_minimality_penalty']}."
+                    f"{outcome}; relation membership is determined by validity gates and "
+                    "set/comparable-cost relations, never attempt or blocker volume."
                 ),
                 "non_claim": DERIVATION_BRANCH_RANKING_BOUNDARY,
             }
         )
-    rankings.sort(key=lambda item: (-float(item["score"]), item["branch_id"]))
-    for rank, item in enumerate(rankings, start=1):
-        item["rank"] = rank
+    all_entries = aggregate_ledgers["deduplicated_entries"]
+    selected_action = (
+        select_next_discriminating_action(partial, all_entries)
+        if partial["branch_ids"]
+        else None
+    )
     result = {
-        "status": "ranked" if rankings else "no_branches",
+        "status": partial["status"],
         "branch_count": len(rankings),
-        "ranked_branch_ids": [item["branch_id"] for item in rankings],
-        "top_branch_id": rankings[0]["branch_id"] if rankings else None,
+        "ranked_branch_ids": serialization_ids,
+        "serialization_order_authority": "diagnostic_only",
+        "nondominated_branch_ids": nondominated,
+        "top_branch_id": partial["unique_top_branch_id"],
+        "top_branch_id_semantics": "unique_nondominated_only",
+        "relations": partial["relations"],
+        "tie_groups": partial["tie_groups"],
+        "ledgers": aggregate_ledgers,
+        "selected_action": selected_action,
         "rankings": rankings,
         "boundary": DERIVATION_BRANCH_RANKING_BOUNDARY,
         "non_claims": [
-            "Ranking is deterministic evidence ordering only.",
-            "Top-ranked does not mean globally optimal, minimal, proved, or publication-ready.",
+            "Serialization order is deterministic display order only.",
+            "A unique nondominated branch is not globally optimal, minimal, proved, or publication-ready.",
         ],
     }
     return attach_contract(result, DERIVATION_BRANCH_RANKING_CONTRACT)
@@ -291,17 +540,6 @@ def _split_target(target: str, lhs: str | None, rhs: str | None) -> tuple[str | 
     if not left or not right:
         return None, None
     return left, right
-
-
-def _lean_source_binds_target(target: str, lean_source: str) -> bool:
-    normalized_target = " ".join(target.split())
-    normalized_source = " ".join(lean_source.split())
-    if not normalized_target or not normalized_source:
-        return False
-    if normalized_target in normalized_source:
-        return True
-    target_terms = [part.strip() for part in normalized_target.split("=")]
-    return len(target_terms) == 2 and all(term and term in normalized_source for term in target_terms)
 
 
 def _budget(profile: str, max_attempts: int | None) -> dict[str, int]:
@@ -337,6 +575,9 @@ def _record_adapter_result(root: dict[str, Any], adapter_result: dict[str, Any],
     attempt = adapter_result.get("attempt") if isinstance(adapter_result, dict) else None
     if isinstance(attempt, dict):
         root["backend_attempts"].append(attempt)
+        attachment = adapter_result.get("evidence_attachment")
+        if isinstance(attachment, dict):
+            root.setdefault("evidence_attachments", []).append(dict(attachment))
         actions.append(
             asdict(
                 ControllerAction(
@@ -418,9 +659,13 @@ def can_derive_with_budget(
     algebra_runner: Callable[..., dict[str, Any]] | None = None,
     counterexample_runner: Callable[..., dict[str, Any]] | None = None,
     lean_runner: Callable[..., dict[str, Any]] | None = None,
+    lean_target_binding: LeanTargetBinding | None = None,
     retrieval_hits: dict[str, list[dict[str, Any]]] | None = None,
     static_extractions: dict[str, dict[str, Any]] | None = None,
     proof_state_traces: dict[str, list[dict[str, Any]]] | None = None,
+    lean_diagnostic_contexts: dict[str, LeanDiagnosticContext] | None = None,
+    evidence_contexts: dict[str, EvidenceContext] | None = None,
+    artifact_root: str | Path | None = None,
 ) -> dict[str, Any]:
     """Run a small deterministic evidence-action budget and return a tree."""
     budget = _budget(budget_profile, max_attempts)
@@ -452,6 +697,8 @@ def can_derive_with_budget(
 
     left, right = _split_target(target, lhs, rhs)
     selected_tools = _selected_tools(plan)
+    contexts = evidence_contexts or {}
+    diagnostic_contexts = lean_diagnostic_contexts or {}
     candidates: list[tuple[str, Callable[[], dict[str, Any]]]] = []
 
     algebra_tool = "sympy" if "sympy" in selected_tools or not selected_tools else selected_tools[0]
@@ -464,24 +711,53 @@ def can_derive_with_budget(
                 rhs=right,
                 tool=tool,
                 runner=algebra_runner,
+                evidence_context=contexts.get("algebra_check"),
+                artifact_root=artifact_root,
             ),
         )
     )
     lean_action = None
-    lean_bound_to_target = bool(lean_source and _lean_source_binds_target(target, lean_source))
+    lean_binding_validation = (
+        validate_lean_target_binding(lean_source, lean_target_binding)
+        if lean_source and lean_target_binding is not None
+        else None
+    )
+    lean_bound_to_target = bool(
+        lean_binding_validation
+        and lean_binding_validation["can_certify"]
+        and lean_binding_validation["record"]["branch_id"] == str(root.get("id"))
+        and lean_binding_validation["record"]["normalized_target"] == " ".join(target.split())
+    )
     if lean_source and not lean_bound_to_target:
+        binding_errors = (
+            lean_binding_validation["errors"]
+            if lean_binding_validation is not None
+            else ["an explicit LeanTargetBinding was not supplied"]
+        )
         root["blockers"].append(
             _blocker(
                 "blocker_lean_source_target_binding_required",
                 kind="formalization_required",
-                problem="Lean source was supplied but is not conservatively bound to the controller target.",
-                why="A direct Lean check can only certify this branch if the Lean source states the scoped target or contains the target lhs/rhs terms.",
-                required_next_evidence="Supply Lean source that explicitly formalizes the target before using Lean as certifying evidence.",
+                problem="Lean source was supplied without an exact valid branch-target binding.",
+                why=(
+                    "Direct Lean certification requires exact target, assumptions, theorem, imports, source, "
+                    "project, toolchain, and executable identity. " + "; ".join(binding_errors)
+                ),
+                required_next_evidence="Supply a valid LeanTargetBinding for this exact controller branch before direct Lean execution.",
                 source="derivation_branch_controller",
             )
         )
     elif lean_source and lean_bound_to_target:
-        lean_action = ("lean_check", lambda: adapt_lean_check(lean_source, runner=lean_runner))
+        lean_action = (
+            "lean_check",
+            lambda: adapt_lean_check(
+                lean_source,
+                runner=lean_runner,
+                target_binding=lean_target_binding,
+                evidence_context=contexts.get("lean_check"),
+                artifact_root=artifact_root,
+            ),
+        )
     if not lean_source and "lean" in selected_tools:
         root["blockers"].append(
             _blocker(
@@ -497,7 +773,13 @@ def can_derive_with_budget(
         candidates.append(
             (
                 "counterexample_search",
-                lambda: adapt_counterexample_search(left, right, runner=counterexample_runner),
+                lambda: adapt_counterexample_search(
+                    left,
+                    right,
+                    runner=counterexample_runner,
+                    evidence_context=contexts.get("counterexample_search"),
+                    artifact_root=artifact_root,
+                ),
             )
         )
     else:
@@ -513,16 +795,41 @@ def can_derive_with_budget(
         )
 
     for tool, hits in sorted((retrieval_hits or {}).items()):
-        candidates.append(("retrieval", lambda tool=tool, hits=hits: adapt_retrieval_evidence(tool=tool, query=target, hits=hits)))
+        candidates.append(
+            (
+                "retrieval",
+                lambda tool=tool, hits=hits: adapt_retrieval_evidence(
+                    tool=tool,
+                    query=target,
+                    hits=hits,
+                    lean_context=diagnostic_contexts.get(tool),
+                ),
+            )
+        )
     for tool, extracted in sorted((static_extractions or {}).items()):
         candidates.append(
             (
                 "static_extraction",
-                lambda tool=tool, extracted=extracted: adapt_static_extraction_evidence(tool=tool, target=target, extracted=extracted),
+                lambda tool=tool, extracted=extracted: adapt_static_extraction_evidence(
+                    tool=tool,
+                    target=target,
+                    extracted=extracted,
+                    lean_context=diagnostic_contexts.get(tool),
+                ),
             )
         )
     for tool, trace in sorted((proof_state_traces or {}).items()):
-        candidates.append(("proof_state", lambda tool=tool, trace=trace: adapt_proof_state_evidence(tool=tool, target=target, trace=trace)))
+        candidates.append(
+            (
+                "proof_state",
+                lambda tool=tool, trace=trace: adapt_proof_state_evidence(
+                    tool=tool,
+                    target=target,
+                    trace=trace,
+                    lean_context=diagnostic_contexts.get(tool),
+                ),
+            )
+        )
     if lean_action is not None:
         candidates.append(lean_action)
 

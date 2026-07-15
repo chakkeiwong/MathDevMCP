@@ -26,6 +26,52 @@ DERIVATION_AUDIT_REPORT_NON_CLAIM = {
 }
 
 
+def audit_derivation_extraction_boundary(
+    root: str | Path,
+    labels: list[str] | tuple[str, ...] | str,
+    *,
+    file: str | None = None,
+) -> dict[str, Any]:
+    """Audit extraction identities without planning or executing backends."""
+    root_path = Path(root)
+    label_list = [labels] if isinstance(labels, str) else list(labels)
+    index = build_index(root_path)
+    label_results = [
+        extract_derivation_targets_for_label(index, str(label), file=file)
+        for label in label_list
+    ]
+    targets = [
+        target
+        for result in label_results
+        for target in result.get("targets", [])
+        if isinstance(target, dict) and target.get("adapter_eligible") is True
+    ]
+    obligations = [
+        obligation
+        for result in label_results
+        for obligation in result.get("obligations", [])
+        if isinstance(obligation, dict)
+    ]
+    return {
+        "schema_version": "p02_derivation_audit_extraction_boundary@1",
+        "status": "extracted" if obligations and len(targets) == len(obligations) else "quarantined",
+        "root": str(root_path),
+        "file": file,
+        "labels": label_list,
+        "label_results": label_results,
+        "obligations": obligations,
+        "targets": targets,
+        "route_plans": [],
+        "target_results": [],
+        "backend_request_count": 0,
+        "publication_enabled": False,
+        "non_claims": [
+            "No mathematical backend was requested or executed.",
+            "A valid extraction is not a proof, semantic interpretation, or repair proposal.",
+        ],
+    }
+
+
 def _markdown_escape(value: Any) -> str:
     return str(value).replace("|", "\\|").replace("\n", " ")
 

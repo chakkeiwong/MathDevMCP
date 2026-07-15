@@ -1,0 +1,661 @@
+{
+  "schema_version": "p02r2_recovery_oracle@1",
+  "phase": "P02",
+  "revision": "P02R2",
+  "date": "2026-07-12",
+  "base_bindings": {
+    "base_plan_ref": "docs/plans/mathdevmcp-real-document-remediation-phase-02-label-scoped-extraction-subplan-2026-07-11.md",
+    "base_plan_sha256": "3f9cb7ce3c70bdb2b06f41a1ec1510658044c3a3f33acb1593005c2ca2c7c2c8",
+    "base_compact_oracle_ref": "docs/plans/mathdevmcp-real-document-remediation-phase-02-extraction-oracle-2026-07-11.json",
+    "base_compact_oracle_sha256": "3b5792cd82992402e58b6826d6d9b897fa097a7d369e540053179c6a9b910b1c",
+    "base_materialized_oracle_ref": "docs/plans/mathdevmcp-real-document-remediation-phase-02-materialized-obligations-oracle-2026-07-11.json",
+    "base_materialized_oracle_sha256": "ae7aa48fb8c475c7c37c75158a9ed6f83b21a686bc8cd8ca2b28c79b36bcb1ad",
+    "prior_entry_ref": ".local/mathdevmcp/evidence/p02-20260711/entry/entry-record.json",
+    "prior_entry_sha256": "91acda4ce19058350bb3b40500ac33e46b785f8f29d3e1cfe0a8fbe90b2f4e79",
+    "runtime_contract_review_ref": "docs/reviews/mathdevmcp-real-document-remediation-phase-02-runtime-parser-contract-review-r10-result-2026-07-11.md",
+    "runtime_contract_review_sha256": "e455fd0532ff7416339357c2dbc3d532d9f0d42aeaa9d730f79d696bbe75eef1",
+    "pre_round_blocker_ref": "docs/plans/mathdevmcp-real-document-remediation-phase-02-pre-round-parser-contract-blocker-result-2026-07-11.md",
+    "pre_round_blocker_sha256": "b5ccb1ed03a7cdc0d1c2515b24f487ac438891c84c15e6af1b75f62370981148"
+  },
+  "recovery_refs": {
+    "recovery_plan_ref": "docs/plans/mathdevmcp-real-document-remediation-phase-02r2-capability-scoped-parser-recovery-subplan-2026-07-12.md",
+    "recovery_oracle_ref": "docs/plans/mathdevmcp-real-document-remediation-phase-02r2-recovery-oracle-2026-07-12.json",
+    "entry_bootstrap_ref": "docs/plans/p02r2_entry_bootstrap_20260712.py",
+    "evidence_root_ref": ".local/mathdevmcp/evidence/p02r2-20260712",
+    "entry_root_ref": ".local/mathdevmcp/evidence/p02r2-20260712/entry",
+    "entry_record_ref": ".local/mathdevmcp/evidence/p02r2-20260712/entry/entry-record.json",
+    "implementation_entry_manifest_ref": ".local/mathdevmcp/evidence/p02r2-20260712/entry/implementation-entry-sha256.txt",
+    "protected_entry_manifest_ref": ".local/mathdevmcp/evidence/p02r2-20260712/entry/protected-entry-sha256.txt",
+    "immutable_input_manifest_ref": ".local/mathdevmcp/evidence/p02r2-20260712/entry/immutable-input-sha256.txt",
+    "stable_decision_ref": ".local/mathdevmcp/evidence/p02r2-20260712/phase-results/P02-decision.json"
+  },
+  "review_budget": {
+    "consumed_runtime_review_round": 10,
+    "permitted_recovery_plan_rounds": [11, 12, 13, 14],
+    "forbidden_first_round": 15,
+    "review_path_template": "docs/reviews/mathdevmcp-real-document-remediation-phase-02r2-plan-review-rROUND-result-2026-07-12.md",
+    "sequence_rule": "the selected agreeing round is R11 or every earlier R11-through-predecessor result exactly equals one review_history record, reopens at its fixed digest, contains each of that record's seven reviewed-binding lines once, and ends REVISE; skipped rounds, stale bindings, a prior AGREE, R15+, duplicate verdicts, unregistered earlier results, or a later recovery result are forbidden",
+    "review_history": [
+      {
+        "round": 11,
+        "result_ref": "docs/reviews/mathdevmcp-real-document-remediation-phase-02r2-plan-review-r11-result-2026-07-12.md",
+        "result_sha256": "c6a3c2690c4859230c9728b2340932806ae9f74e65a596809d2e2b06403d1226",
+        "verdict": "REVISE",
+        "reviewed_recovery_plan_sha256": "4aa494feea22369eab6c6137e6d873d5a65cb37a2f4906f5cf2217d623a63b16",
+        "reviewed_recovery_oracle_sha256": "d478b2bb8cd0d595df5ed823e5377d6b99ed229cd4a2cdbf7ef6f9b83b44a870",
+        "reviewed_recovery_bootstrap_sha256": "bf28573a42bda21050783de25f17616a53e9649a35919c175c97489e2bbc04f8",
+        "reviewed_base_plan_sha256": "3f9cb7ce3c70bdb2b06f41a1ec1510658044c3a3f33acb1593005c2ca2c7c2c8",
+        "reviewed_base_compact_oracle_sha256": "3b5792cd82992402e58b6826d6d9b897fa097a7d369e540053179c6a9b910b1c",
+        "reviewed_materialized_oracle_sha256": "ae7aa48fb8c475c7c37c75158a9ed6f83b21a686bc8cd8ca2b28c79b36bcb1ad",
+        "reviewed_prior_entry_sha256": "91acda4ce19058350bb3b40500ac33e46b785f8f29d3e1cfe0a8fbe90b2f4e79"
+      },
+      {
+        "round": 12,
+        "result_ref": "docs/reviews/mathdevmcp-real-document-remediation-phase-02r2-plan-review-r12-result-2026-07-12.md",
+        "result_sha256": "f8230e07204d46ef5ab6f1dd64fb809fd30178dbb78599cb021d1285dfd38a97",
+        "verdict": "REVISE",
+        "reviewed_recovery_plan_sha256": "8ec544a1068bb2840ab488ebdc287626bc58f8d5f964b58f8bbe0d858e53d04d",
+        "reviewed_recovery_oracle_sha256": "c953a9373c78ae8530cd23a9740ac4d0a3b1525f86fd8f36c3096bab41745ccf",
+        "reviewed_recovery_bootstrap_sha256": "559ba7703a556ac06aab33e56b35f8ce272c1ca07bafdd0c1fad3590ddbd2180",
+        "reviewed_base_plan_sha256": "3f9cb7ce3c70bdb2b06f41a1ec1510658044c3a3f33acb1593005c2ca2c7c2c8",
+        "reviewed_base_compact_oracle_sha256": "3b5792cd82992402e58b6826d6d9b897fa097a7d369e540053179c6a9b910b1c",
+        "reviewed_materialized_oracle_sha256": "ae7aa48fb8c475c7c37c75158a9ed6f83b21a686bc8cd8ca2b28c79b36bcb1ad",
+        "reviewed_prior_entry_sha256": "91acda4ce19058350bb3b40500ac33e46b785f8f29d3e1cfe0a8fbe90b2f4e79"
+      }
+    ]
+  },
+  "entry_schema": {
+    "schema_version": "p02r2_entry_record@1",
+    "exact_keys": [
+      "schema_version",
+      "phase",
+      "revision",
+      "recovery_plan_ref",
+      "recovery_plan_sha256",
+      "recovery_oracle_ref",
+      "recovery_oracle_sha256",
+      "agreeing_plan_review_ref",
+      "agreeing_plan_review_sha256",
+      "entry_bootstrap_ref",
+      "entry_bootstrap_sha256",
+      "base_plan_ref",
+      "base_plan_sha256",
+      "base_compact_oracle_ref",
+      "base_compact_oracle_sha256",
+      "base_materialized_oracle_ref",
+      "base_materialized_oracle_sha256",
+      "prior_entry_ref",
+      "prior_entry_sha256",
+      "runtime_contract_review_ref",
+      "runtime_contract_review_sha256",
+      "pre_round_blocker_ref",
+      "pre_round_blocker_sha256",
+      "p01_stable_decision_ref",
+      "p01_stable_decision_sha256",
+      "p01_terminal_receipt_index_ref",
+      "p01_terminal_receipt_index_sha256",
+      "implementation_entry_manifest_ref",
+      "implementation_entry_manifest_sha256",
+      "protected_entry_manifest_ref",
+      "protected_entry_manifest_sha256",
+      "immutable_input_manifest_ref",
+      "immutable_input_manifest_sha256"
+    ],
+    "write_order": [
+      ".local/mathdevmcp/evidence/p02r2-20260712/entry/implementation-entry-sha256.txt",
+      ".local/mathdevmcp/evidence/p02r2-20260712/entry/protected-entry-sha256.txt",
+      ".local/mathdevmcp/evidence/p02r2-20260712/entry/immutable-input-sha256.txt",
+      ".local/mathdevmcp/evidence/p02r2-20260712/entry/entry-record.json"
+    ]
+  },
+  "entry_bootstrap_profile": {
+    "schema_version": "p02r2_entry_bootstrap_profile@1",
+    "source_ref": "docs/plans/p02r2_entry_bootstrap_20260712.py",
+    "python": "/home/chakwong/miniconda3/envs/tfgpu/bin/python3",
+    "environment": {
+      "HOME": "/tmp/mathdevmcp-p02r2-entry-home",
+      "LANG": "C.UTF-8",
+      "LC_ALL": "C.UTF-8",
+      "PATH": "/usr/bin:/bin",
+      "PYTHONHASHSEED": "0",
+      "PYTHONPATH": "src"
+    },
+    "external_argv_template": [
+      "/usr/bin/env",
+      "-i",
+      "HOME=/tmp/mathdevmcp-p02r2-entry-home",
+      "LANG=C.UTF-8",
+      "LC_ALL=C.UTF-8",
+      "PATH=/usr/bin:/bin",
+      "PYTHONHASHSEED=0",
+      "PYTHONPATH=src",
+      "/home/chakwong/miniconda3/envs/tfgpu/bin/python3",
+      "-B",
+      "-S",
+      "docs/plans/p02r2_entry_bootstrap_20260712.py",
+      "--agreeing-plan-review-ref",
+      "AGREEING_REVIEW_REF"
+    ],
+    "review_path_regex": "docs/reviews/mathdevmcp-real-document-remediation-phase-02r2-plan-review-r(11|12|13|14)-result-2026-07-12\\.md",
+    "only_parameter": "--agreeing-plan-review-ref followed by one exact R11-R14 result ref; abbreviations, equal-sign form, repeats, positional values, missing or extra tokens are forbidden",
+    "base_validator_binding": {
+      "ref": "docs/plans/p02_entry_bootstrap_20260711.py",
+      "sha256": "6fe84454491fe76e52daf789292ea4a44d695acb244fcdcf78838356bf2b55ec",
+      "permitted_reuse": [
+        "strict source/environment/materialized validation",
+        "implementation/source manifest construction",
+        "fixed read-only git status parser",
+        "manifest grammar and implementation allowlist"
+      ]
+    },
+    "failure_rule": "reject a pre-existing p02r2 phase root before reading mutable inputs; before first mkdir fail without write; after any phase-root mkdir, no-replace, reopen, or scope-reconstruction failure preserve partial state and forbid retry without human recovery"
+  },
+  "profile_patch": [
+    {
+      "path": "/governance_action_profile/fixed_artifact_refs/stable_decision",
+      "expected_base_value": ".local/mathdevmcp/evidence/p02-20260711/phase-results/P02-decision.json",
+      "replacement": ".local/mathdevmcp/evidence/p02r2-20260712/phase-results/P02-decision.json"
+    },
+    {
+      "path": "/governance_action_profile/fixed_artifact_refs/human_result",
+      "expected_base_value": "docs/plans/mathdevmcp-real-document-remediation-phase-02-label-scoped-extraction-result-RESULT_ROUND-2026-07-11.md",
+      "replacement": "docs/plans/mathdevmcp-real-document-remediation-phase-02r2-label-scoped-extraction-result-RESULT_ROUND-2026-07-12.md"
+    },
+    {
+      "path": "/governance_action_profile/fixed_artifact_refs/result_review",
+      "expected_base_value": "docs/reviews/mathdevmcp-real-document-remediation-phase-02-result-review-RESULT_ROUND-result-2026-07-11.md",
+      "replacement": "docs/reviews/mathdevmcp-real-document-remediation-phase-02r2-result-review-RESULT_ROUND-result-2026-07-12.md"
+    },
+    {
+      "path": "/governance_action_profile/fixed_artifact_refs/final_seal_audit",
+      "expected_base_value": "docs/reviews/mathdevmcp-real-document-remediation-phase-02-final-seal-audit-RESULT_ROUND-result-2026-07-11.md",
+      "replacement": "docs/reviews/mathdevmcp-real-document-remediation-phase-02r2-final-seal-audit-RESULT_ROUND-result-2026-07-12.md"
+    },
+    {
+      "path": "/governance_action_profile/human_result_profile/fixed_ref_template",
+      "expected_base_value": "docs/plans/mathdevmcp-real-document-remediation-phase-02-label-scoped-extraction-result-RESULT_ROUND-2026-07-11.md",
+      "replacement": "docs/plans/mathdevmcp-real-document-remediation-phase-02r2-label-scoped-extraction-result-RESULT_ROUND-2026-07-12.md"
+    },
+    {
+      "path": "/governance_action_profile/actions/result_review_binding/artifact_ref_template",
+      "expected_base_value": "docs/reviews/mathdevmcp-real-document-remediation-phase-02-result-review-RESULT_ROUND-result-2026-07-11.md",
+      "replacement": "docs/reviews/mathdevmcp-real-document-remediation-phase-02r2-result-review-RESULT_ROUND-result-2026-07-12.md"
+    },
+    {
+      "path": "/governance_action_profile/actions/final_seal_audit_binding/artifact_ref_template",
+      "expected_base_value": "docs/reviews/mathdevmcp-real-document-remediation-phase-02-final-seal-audit-RESULT_ROUND-result-2026-07-11.md",
+      "replacement": "docs/reviews/mathdevmcp-real-document-remediation-phase-02r2-final-seal-audit-RESULT_ROUND-result-2026-07-12.md"
+    },
+    {
+      "path": "/governance_action_profile/actions/compile/child_argv_template",
+      "expected_base_value": [
+        "/home/chakwong/miniconda3/envs/tfgpu/bin/python3",
+        "-m",
+        "py_compile",
+        "scripts/generate_p02_extraction_evidence.py",
+        "scripts/p02_governance.py",
+        "src/mathdevmcp/derivation_audit_report.py",
+        "src/mathdevmcp/derivation_target_extraction.py",
+        "src/mathdevmcp/document_derivation_tree.py",
+        "src/mathdevmcp/equation_locator.py",
+        "src/mathdevmcp/extraction_evidence.py",
+        "src/mathdevmcp/label_scoped_obligation.py",
+        "src/mathdevmcp/latex_index.py",
+        "src/mathdevmcp/parser_benchmark.py",
+        "src/mathdevmcp/parser_policy.py",
+        "tests/p02_no_backend_guard.py",
+        "tests/test_derivation_audit_report.py",
+        "tests/test_derivation_target_extraction.py",
+        "tests/test_document_derivation_real_regressions.py",
+        "tests/test_document_derivation_tree.py",
+        "tests/test_document_publication_quarantine.py",
+        "tests/test_extraction_evidence.py",
+        "tests/test_label_scoped_obligation.py",
+        "tests/test_latex_index.py",
+        "tests/test_parser_benchmark.py",
+        "tests/test_parser_policy.py"
+      ],
+      "replacement": [
+        "/home/chakwong/miniconda3/envs/tfgpu/bin/python3",
+        "-m",
+        "py_compile",
+        "scripts/generate_p02_extraction_evidence.py",
+        "scripts/p02_governance.py",
+        "src/mathdevmcp/derivation_audit_report.py",
+        "src/mathdevmcp/derivation_target_extraction.py",
+        "src/mathdevmcp/document_derivation_tree.py",
+        "src/mathdevmcp/equation_locator.py",
+        "src/mathdevmcp/extraction_evidence.py",
+        "src/mathdevmcp/label_scoped_obligation.py",
+        "src/mathdevmcp/latex_index.py",
+        "src/mathdevmcp/parser_benchmark.py",
+        "src/mathdevmcp/parser_capability_extractors.py",
+        "src/mathdevmcp/parser_policy.py",
+        "tests/p02_no_backend_guard.py",
+        "tests/test_derivation_audit_report.py",
+        "tests/test_derivation_target_extraction.py",
+        "tests/test_document_derivation_real_regressions.py",
+        "tests/test_document_derivation_tree.py",
+        "tests/test_document_publication_quarantine.py",
+        "tests/test_extraction_evidence.py",
+        "tests/test_label_scoped_obligation.py",
+        "tests/test_latex_index.py",
+        "tests/test_parser_benchmark.py",
+        "tests/test_parser_policy.py"
+      ]
+    },
+    {
+      "path": "/parser_fidelity_profile/field_scoring",
+      "expected_base_value": "each field is 1 only for exact compact-oracle equality, 0 otherwise; unavailable or not source-mappable is 0",
+      "replacement": "current fields are 1 only for exact compact/materialized/source equality; specialist diagnostic observations are populated only from bound specialist raw output, unobserved fields are null rather than zero, and promotional fields require valid_source_mappable status"
+    },
+    {
+      "path": "/parser_fidelity_profile/selection_rule",
+      "expected_base_value": "compare seven-bit vectors lexicographically in priority order; a specialist is materially better only when it has 1 at the first differing field where current has 0 and every higher-priority field is equal; equal vectors retain current; no scalar sum, label count, parse success, output size, or runtime tie-breaker",
+      "replacement": "only valid_source_mappable specialists with independent raw provenance for every claimed leading-prefix field enter lexicographic comparison; diagnostic-only observations may veto a genuine contradiction but cannot promote; frozen identities never rewrite in place and proxy metrics never break ties"
+    },
+    {
+      "path": "/parser_fidelity_profile/veto_rule",
+      "expected_base_value": "any specialist/current ownership disagreement, non-source-mappable output, malformed output, timeout, nonzero exit, executable/version mismatch, argv/environment mismatch, missing raw artifact, or mutation of a source makes the reviewed case inconclusive or ambiguous and cannot promote a parser",
+      "replacement": "current reconstruction drift, missing or mismatched invocation/raw evidence, source mutation, unclassified capability, limitation promoted or omitted, claimed field without independent provenance, valid independent contradiction, or unjustified selection is a phase veto; correctly classified specialist limitation alone blocks that specialist but does not refute exact current reconstruction"
+    },
+    {
+      "path": "/governance_action_profile/round_close_schema/veto_diagnostic_sources/parser_fidelity_or_provenance_failure",
+      "expected_base_value": "parser profile or comparison reports executable/version/argv/environment/source/output mismatch, timeout/nonzero/malformed result, ownership disagreement, or unjustified selection",
+      "replacement": "current compact/materialized/source drift; missing, duplicate, unreviewed, or mismatched invocation/raw artifact; source mutation; unclassified capability; limitation omitted or promoted; claimed observation without independent provenance; valid specialist contradiction on an independently observed field; frozen identity rewrite; or unjustified specialist selection"
+    }
+  ],
+  "parser_capability_contract": {
+    "schema_version": "p02r2_parser_capability_contract@1",
+    "primary_backend": "current",
+    "primary_version": "p02_lightweight_locator@1",
+    "primary_current_rule": "all reviewed current-parser obligations and all seven fidelity fields must equal the compact/materialized/source reconstruction; any mismatch is a veto",
+    "capability_status_enum": [
+      "valid_source_mappable",
+      "valid_not_source_mappable",
+      "malformed_output",
+      "timed_out",
+      "nonzero_exit",
+      "version_mismatch",
+      "invocation_mismatch",
+      "source_mutated",
+      "missing_artifact"
+    ],
+    "limitation_codes": [
+      "no_independent_source_offsets",
+      "global_label_set_only",
+      "collapsed_row_ownership",
+      "malformed_label_ownership",
+      "undefined_environment",
+      "undefined_macro_affecting_target",
+      "error_node_in_target_output",
+      "timeout",
+      "nonzero_exit",
+      "version_mismatch",
+      "invocation_mismatch",
+      "source_mutated",
+      "missing_artifact"
+    ],
+    "observable_fields": [
+      "exact_requested_label_set",
+      "exact_owner_label_spans",
+      "exact_owned_row_spans",
+      "exact_excluded_sibling_spans",
+      "exact_nested_environment_stack",
+      "exact_source_byte_roundtrip",
+      "explicit_uncertainty_localization"
+    ],
+    "independence_rule": "a specialist raw observation is the document-wide structural label set derived only from that specialist's bound raw output/log plus fixed invocation metadata; current-scanner output and compact/materialized requested labels or source spans are forbidden extractor inputs; the requested-label projection enters only in the later comparison",
+    "pure_extractor_module_contract": {
+      "schema_version": "p02r2_pure_extractor_module_contract@1",
+      "module_ref": "src/mathdevmcp/parser_capability_extractors.py",
+      "creation_boundary": "the module must be absent through the one-shot P02R2 entry snapshot and may be created only as a post-entry implementation artifact on the reviewed effective allowlist",
+      "top_level_statement_order": [
+        "import json",
+        "import re",
+        "import xml.etree.ElementTree as ET",
+        "def _p02r2_extract_latexml_structural_label_set",
+        "def _p02r2_extract_pandoc_math_label_set"
+      ],
+      "allowed_imports": [
+        {"form": "import", "module": "json", "alias": null},
+        {"form": "import", "module": "re", "alias": null},
+        {"form": "import", "module": "xml.etree.ElementTree", "alias": "ET"}
+      ],
+      "module_body_rule": "the decoded strict-UTF-8 module AST has exactly the ordered imports and two function definitions above; no docstring, assignment, annotated assignment, expression, import-from, star import, project import, relative import, conditional import, try-import, module data, data loading, or import-time call is permitted",
+      "function_shape_rule": "each registered function is synchronous and top-level with exactly its positional parameters, no positional-only or keyword-only parameters, varargs, kwargs, decorators, defaults, keyword defaults, return annotation, parameter annotations, type comments, nested function/class, lambda, comprehension, generator, yield, async, global, or nonlocal statement",
+      "store_target_rule": "inside each function every Store context is a lexical-local Name or a tuple/list recursively containing only lexical-local Names; Attribute, Subscript, Starred, imported-name, referenced-global, referenced-builtin, and any Del target are forbidden, including in assignment, augmented assignment, annotated assignment, for targets, exception targets, and named expressions",
+      "module_global_rule": "after loading the statically accepted bytes, the module namespace has exactly __builtins__, __cached__, __doc__, __file__, __loader__, __name__, __package__, __spec__, json, re, ET, and the two registered function names; __doc__ is None; __builtins__ is the runtime builtins dictionary; json, re, and ET are the exact imported standard-library modules with non-workspace origins; each registered imported attribute resolves from its named module with its expected standard-library __module__; each function __globals__ is this exact module namespace; no other module data or preloaded project/current/oracle/source binding is present",
+      "forbidden_ast_nodes": [
+        "AsyncFunctionDef",
+        "Await",
+        "ClassDef",
+        "Delete",
+        "Global",
+        "ImportFrom",
+        "Lambda",
+        "ListComp",
+        "SetComp",
+        "DictComp",
+        "GeneratorExp",
+        "NamedExpr",
+        "Nonlocal",
+        "With",
+        "AsyncWith",
+        "Yield",
+        "YieldFrom"
+      ],
+      "forbidden_capability_roots": [
+        "__builtins__",
+        "__import__",
+        "breakpoint",
+        "compile",
+        "eval",
+        "exec",
+        "globals",
+        "locals",
+        "open",
+        "input",
+        "os",
+        "pathlib",
+        "shutil",
+        "socket",
+        "subprocess",
+        "sys",
+        "tempfile",
+        "urllib",
+        "requests",
+        "importlib",
+        "marshal",
+        "pickle"
+      ],
+      "static_name_and_call_rule": "for each function, lexical locals are its parameters and names admitted by store_target_rule; every loaded nonlocal Name is exactly one registered referenced_global or referenced_builtin; every Attribute load is exactly a registered imported_attribute_allowlist chain, registered non-dunder value_attribute_read_allowlist name, or the receiver of a registered non-dunder value-method call; every call is exactly a registered builtin name, registered imported dotted callable, or registered value-method name; dunder attributes and calls through subscripts, call results, aliases, default values, decorators, unregistered attributes, or unregistered local/helper callables are forbidden",
+      "runtime_function_rule": "after loading only the already statically accepted module bytes, each registry name resolves to type FunctionType, __module__ is mathdevmcp.parser_capability_extractors, __name__ and __qualname__ equal the registered function name, __closure__ is None, __defaults__ is None, __kwdefaults__ is None, __annotations__ is the exact empty dict, co_freevars and co_cellvars are empty tuples, and inspect.signature exposes only the registered positional parameters",
+      "function_contracts": {
+        "_p02r2_extract_latexml_structural_label_set": {
+          "positional_parameters": ["specialist_output_xml", "specialist_log"],
+          "referenced_globals": ["ET"],
+          "referenced_builtins": ["UnicodeDecodeError", "ValueError", "bytes", "sorted", "str", "type"],
+          "builtin_callable_allowlist": ["ValueError", "sorted", "type"],
+          "imported_attribute_allowlist": ["ET.ParseError", "ET.fromstring"],
+          "imported_callable_allowlist": ["ET.fromstring"],
+          "value_attribute_read_allowlist": ["attrib", "tag"],
+          "value_method_call_allowlist": ["append", "decode", "items", "iter", "rsplit", "split", "startswith"],
+          "callable_dependency_allowlist": []
+        },
+        "_p02r2_extract_pandoc_math_label_set": {
+          "positional_parameters": ["specialist_stdout_json"],
+          "referenced_globals": ["json", "re"],
+          "referenced_builtins": ["UnicodeDecodeError", "ValueError", "bytes", "dict", "len", "list", "set", "sorted", "str", "type"],
+          "builtin_callable_allowlist": ["ValueError", "len", "list", "set", "sorted", "type"],
+          "imported_attribute_allowlist": ["json.loads", "re.finditer"],
+          "imported_callable_allowlist": ["json.loads", "re.finditer"],
+          "value_attribute_read_allowlist": [],
+          "value_method_call_allowlist": ["add", "append", "decode", "extend", "group", "items", "pop"],
+          "callable_dependency_allowlist": []
+        }
+      }
+    },
+    "extractor_registry": {
+      "p02r2_latexml_structural_label_set_v1": {
+        "backend": "latexml",
+        "function_name": "_p02r2_extract_latexml_structural_label_set",
+        "module_ref": "src/mathdevmcp/parser_capability_extractors.py",
+        "input_roles": ["specialist_output_xml", "specialist_log"],
+        "input_value_types": ["bytes", "bytes"],
+        "input_receipt_artifact_fields": ["output", "log"],
+        "output_exact_keys": ["raw_observable_field", "observed_value"],
+        "raw_observable_field": "document_structural_label_set",
+        "observed_value_schema": "sorted unique strict-UTF-8 document-wide label strings collected only from structurally parsed LaTeXML labels attributes after malformed checks pass; remove exactly one leading LABEL: token; reject malformed XML, duplicate label attributes, invalid strings, ERROR elements, or Error:/undefined-environment diagnostics; the extractor does not know or filter to requested labels",
+        "promotion_capable": false,
+        "forbidden_inputs": ["source_bytes", "source_ref_contents", "expected_labels", "expected_spans", "current_parser_record", "compact_oracle", "materialized_oracle", "filesystem_path", "subprocess", "network"]
+      },
+      "p02r2_pandoc_math_label_set_v1": {
+        "backend": "pandoc",
+        "function_name": "_p02r2_extract_pandoc_math_label_set",
+        "module_ref": "src/mathdevmcp/parser_capability_extractors.py",
+        "input_roles": ["specialist_stdout_json"],
+        "input_value_types": ["bytes"],
+        "input_receipt_artifact_fields": ["stdout"],
+        "output_exact_keys": ["raw_observable_field", "observed_value"],
+        "raw_observable_field": "document_structural_label_set",
+        "observed_value_schema": "sorted unique strict-UTF-8 document-wide explicit label values parsed from LaTeX label tokens inside Pandoc Math payload strings after strict JSON structure validation; reject duplicate label tokens, malformed JSON, wrong node shapes, or non-string math payloads; the extractor does not know or filter to requested labels",
+        "promotion_capable": false,
+        "forbidden_inputs": ["source_bytes", "source_ref_contents", "expected_labels", "expected_spans", "current_parser_record", "compact_oracle", "materialized_oracle", "filesystem_path", "subprocess", "network"]
+      }
+    },
+    "extractor_execution_rule": "governance first verifies the pure_extractor_module_contract against strict-UTF-8 module bytes bound by the round implementation manifest, then loads only those accepted bytes and verifies the runtime function closure; it reopens every raw input and its canonical raw invocation receipt no-follow, validates the exact raw_input_entry_schema and receipt artifact-field binding, and passes only those bytes positionally in registry order; the raw-only return must satisfy raw_extractor_output_schema; any module/import/global/closure/AST/call/signature/digest/input/receipt/output mismatch or forbidden lineage is a veto",
+    "raw_artifact_binding_schema": {
+      "schema_version": "p02r2_raw_artifact_binding@1",
+      "exact_keys_in_canonical_order": ["byte_count", "present", "ref", "sha256"],
+      "exact_types": {
+        "ref": "workspace_relative_str",
+        "present": "bool",
+        "sha256": "lowercase_sha256_str_or_null",
+        "byte_count": "nonnegative_int_not_bool_or_null"
+      },
+      "binding_rule": "ref is the exact expected path below the validated result-round parser root; when present is true it is a regular no-follow file whose reopened bytes exactly match non-null sha256 and byte_count; when present is false the path is absent no-follow and sha256 and byte_count are both null; stdout and stderr are always captured as present files, while output/log presence is measured rather than inferred"
+    },
+    "source_invocation_receipt_schema": {
+      "schema_version": "p02r2_parser_source_invocation_receipt@1",
+      "fixed_ref_template": "RR/parser/receipts/BACKEND-CASE-raw.json",
+      "exact_keys_in_canonical_order": [
+        "argv",
+        "backend",
+        "case_token",
+        "environment",
+        "exit_code",
+        "log",
+        "output",
+        "schema_version",
+        "source_ref",
+        "source_sha256_after",
+        "source_sha256_before",
+        "stderr",
+        "stdout",
+        "timed_out",
+        "timeout_seconds",
+        "version_receipt_ref",
+        "version_receipt_sha256",
+        "wall_time_ns"
+      ],
+      "exact_types": {
+        "schema_version": "str_exact_p02r2_parser_source_invocation_receipt@1",
+        "backend": "str_enum_latexml_pandoc",
+        "source_ref": "workspace_relative_str",
+        "source_sha256_before": "lowercase_sha256_str",
+        "source_sha256_after": "lowercase_sha256_str",
+        "case_token": "lowercase_sha256_str",
+        "argv": "list[str]",
+        "environment": "object[str,str]",
+        "timeout_seconds": "positive_int_not_bool",
+        "exit_code": "int_or_null_not_bool",
+        "timed_out": "bool",
+        "wall_time_ns": "nonnegative_int_not_bool",
+        "stdout": "p02r2_raw_artifact_binding@1",
+        "stderr": "p02r2_raw_artifact_binding@1",
+        "output": "p02r2_raw_artifact_binding@1",
+        "log": "p02r2_raw_artifact_binding@1_or_null",
+        "version_receipt_ref": "workspace_relative_str",
+        "version_receipt_sha256": "lowercase_sha256_str"
+      },
+      "binding_rule": "receipt bytes are strict P01-canonical JSON at the fixed ref; BACKEND and CASE equal backend and SHA-256(source_ref); argv, environment, timeout, source allowlist, executable, version receipt, and all raw artifact bindings reconstruct from the exact profile; output equals the LaTeXML XML artifact for latexml and exactly equals stdout for pandoc; log is the LaTeXML log binding for latexml and null for pandoc; source before/after mismatch is a veto; the receipt contains no expected label/value/span, current-parser output, extractor result, comparison, capability conclusion, oracle object, or observation provenance"
+    },
+    "raw_input_entry_schema": {
+      "schema_version": "p02r2_raw_input_entry@1",
+      "exact_keys_in_canonical_order": [
+        "artifact_byte_count",
+        "artifact_ref",
+        "artifact_sha256",
+        "invocation_receipt_ref",
+        "invocation_receipt_sha256",
+        "role",
+        "value_type"
+      ],
+      "exact_types": {
+        "role": "str",
+        "value_type": "str_exact_bytes",
+        "artifact_ref": "workspace_relative_str",
+        "artifact_sha256": "lowercase_sha256_str",
+        "artifact_byte_count": "nonnegative_int_not_bool",
+        "invocation_receipt_ref": "workspace_relative_str",
+        "invocation_receipt_sha256": "lowercase_sha256_str"
+      },
+      "array_rule": "raw_inputs is a JSON array with exactly one entry per registry input_roles item in that exact order; role, value_type, and the parallel input_receipt_artifact_fields item equal the registry values at the same index; duplicate roles, refs, or registry omissions are forbidden",
+      "artifact_rule": "artifact_ref is a regular no-follow file below the same validated result-round parser root, and reopened bytes exactly match artifact_sha256 and artifact_byte_count",
+      "invocation_receipt_rule": "every entry for one observation names the same regular no-follow receipt satisfying source_invocation_receipt_schema; its digest equals invocation_receipt_sha256, and the registry input_receipt_artifact_fields item names a receipt raw-artifact binding whose present is true and whose ref, sha256, and byte_count exactly equal artifact_ref, artifact_sha256, and artifact_byte_count in this entry"
+    },
+    "raw_extractor_output_schema": {
+      "schema_version": "p02r2_raw_extractor_output@1",
+      "exact_keys_in_canonical_order": ["observed_value", "raw_observable_field"],
+      "exact_types": {
+        "observed_value": "list[str]",
+        "raw_observable_field": "str_exact_document_structural_label_set"
+      },
+      "value_rule": "raw_observable_field equals the registry field; observed_value is the document-wide sorted-unique-by-UTF8 array of strict structural label strings derived only from the ordered reopened raw input bytes; requested labels, expected values, filtering to an expected subset, and comparison booleans are forbidden output fields"
+    },
+    "expected_value_projection_schema": {
+      "schema_version": "p02r2_expected_label_value_projection@1",
+      "fixed_ref_template": "RR/parser/expected-values/CASE-exact-requested-label-set.json",
+      "exact_keys_in_canonical_order": [
+        "expected_value",
+        "observable_field",
+        "schema_version",
+        "source_ref",
+        "source_sha256"
+      ],
+      "exact_types": {
+        "schema_version": "str_exact_p02r2_expected_label_value_projection@1",
+        "source_ref": "workspace_relative_str",
+        "source_sha256": "lowercase_sha256_str",
+        "observable_field": "str_exact_exact_requested_label_set",
+        "expected_value": "list[str]"
+      },
+      "projection_rule": "governance writes no-replace P01-canonical bytes at the fixed ref only after every raw invocation receipt and raw-only extractor output for the source case is sealed; CASE is SHA-256(source_ref); values come only from the frozen compact/materialized label projection for exactly that source case; expected_value is sorted unique by UTF-8, source_ref/source_sha256 reopen against the frozen allowlist, and no span, ownership, environment, current output, specialist output, or comparison field is present"
+    },
+    "comparison_rule": "after raw-only extraction, governance independently reopens the canonical requested-label projection for that source case and applies p02r2_requested_label_coverage_comparison_v1: matched_requested_value is the sorted intersection of projection.expected_value and raw_output.observed_value, missing_requested_value is the sorted expected-minus-raw set, unscoped_extra_value is the sorted raw-minus-expected set, and matches_expected is true exactly when missing_requested_value is empty and matched_requested_value equals expected_value; unscoped extras are explanatory and never contradictions or promotion evidence; expected spans, row ownership, current output, and oracle paths are not comparison inputs; raw observation provenance and requested-value comparison provenance are separate exact objects",
+    "real_document_label_scope_audit": {
+      "schema_version": "p02r2_real_document_label_scope_audit@1",
+      "distinct_label_token_regex": "\\\\label\\s*\\{([^{}]+)\\}",
+      "entries": [
+        {
+          "source_ref": "docs/credit-card-npv-component-proposal/credit_card_npv_component_proposal_final_submission.tex",
+          "source_distinct_label_token_count": 298,
+          "requested_label_count": 2,
+          "unscoped_extra_label_token_count": 296
+        },
+        {
+          "source_ref": "docs/risky-debt-maliar-deep-learning-lecture-note.tex",
+          "source_distinct_label_token_count": 116,
+          "requested_label_count": 2,
+          "unscoped_extra_label_token_count": 114
+        }
+      ],
+      "audit_rule": "entry bootstrap and production governance strict-decode each bound source, compute the distinct regex label-token set without using current-parser output, derive the requested-label set only from the frozen compact/materialized projection, require requested labels to be a subset, and reproduce every exact count; this audit establishes that raw document-label equality to the requested projection is invalid, but source-token extras are not specialist observations and are never promotion or contradiction evidence"
+    },
+    "record_contract": {
+      "required_fields": [
+        "capability_status",
+        "limitation_codes",
+        "diagnostic_observations",
+        "observation_provenance",
+        "comparison_provenance",
+        "promotional_fields",
+        "contradictions",
+        "eligible_for_selection"
+      ],
+      "diagnostic_observations": "exact object whose keys are a subset of observable_fields and whose values have exact type bool; its ordered keys exactly equal observation_provenance and comparison_provenance keys, and every value equals the corresponding comparison_provenance.matches_expected",
+      "observation_provenance_schema": {
+        "exact_keys_in_canonical_order": [
+          "extractor_id",
+          "extractor_module_ref",
+          "extractor_module_sha256",
+          "forbidden_lineage",
+          "raw_inputs",
+          "raw_output"
+        ],
+        "exact_types": {
+          "extractor_id": "str",
+          "extractor_module_ref": "workspace_relative_str",
+          "extractor_module_sha256": "lowercase_sha256_str",
+          "raw_inputs": "list[p02r2_raw_input_entry@1]",
+          "raw_output": "p02r2_raw_extractor_output@1",
+          "forbidden_lineage": "list[str]_exact_empty"
+        },
+        "binding_rule": "extractor_id is registered for the record backend; module ref equals the registry and pure-module ref; module digest equals the reopened round implementation manifest; raw_inputs and raw_output satisfy their exact schemas; forbidden_lineage is exactly []; no expected value, comparison result, source bytes, current record, oracle object, path handle, callable, or unregistered field is present"
+      },
+      "comparison_provenance_schema": {
+        "exact_keys_in_canonical_order": [
+          "comparison_id",
+          "expected_value",
+          "expected_value_ref",
+          "expected_value_sha256",
+          "matched_requested_value",
+          "matches_expected",
+          "missing_requested_value",
+          "raw_observed_value",
+          "unscoped_extra_value"
+        ],
+        "exact_types": {
+          "comparison_id": "str_exact_p02r2_requested_label_coverage_comparison_v1",
+          "expected_value_ref": "workspace_relative_str",
+          "expected_value_sha256": "lowercase_sha256_str",
+          "expected_value": "list[str]",
+          "matched_requested_value": "list[str]",
+          "matches_expected": "bool",
+          "missing_requested_value": "list[str]",
+          "raw_observed_value": "list[str]",
+          "unscoped_extra_value": "list[str]"
+        },
+        "binding_rule": "raw_observed_value exactly equals the separately validated document-wide raw_output.observed_value; expected_value_ref is a regular no-follow canonical projection satisfying expected_value_projection_schema for the same source case, its reopened digest equals expected_value_sha256, and expected_value equals that requested projection; matched/missing/unscoped-extra arrays reconstruct by exact set intersection and differences and are sorted unique by UTF-8; matches_expected is true exactly when missing is empty and matched equals expected, regardless of unscoped extras; no extractor id, raw input, current-parser value, span, ownership, or environment field is present"
+      },
+      "promotional_fields": "ordered leading prefix of observable_fields, nonempty only for valid_source_mappable, with the same values and provenance as diagnostic_observations",
+      "contradictions": "ordered subset of diagnostic_observations whose independently observed value is false against the frozen expected true field; any nonempty contradictions list sets the parser veto",
+      "eligible_for_selection": "true only for valid_source_mappable with a nonempty valid promotional_fields prefix, no contradiction, exact invocation/source/version evidence, and no limitation"
+    },
+    "status_precedence": [
+      "source_mutated",
+      "invocation_mismatch",
+      "missing_artifact",
+      "version_mismatch",
+      "timed_out",
+      "nonzero_exit",
+      "malformed_output",
+      "valid_source_mappable",
+      "valid_not_source_mappable"
+    ],
+    "status_field_rules": "source_mutated through malformed_output require a matching nonempty limitation and have empty promotional_fields; malformed_output has no diagnostic observations from malformed content; valid_not_source_mappable has at least one limitation, may carry independently supported diagnostic observations, has empty promotional_fields, and is never eligible; valid_source_mappable has no limitation, has a nonempty leading promotional prefix, and is eligible only when contradictions is empty",
+    "malformed_rule": "LaTeXML Error nodes, Error log diagnostics, undefined environments or target-affecting macros, absent output, or structurally collapsed label ownership classify malformed_output even when exit code is zero",
+    "non_source_mappable_rule": "valid output without an independent source-byte mapping records valid_not_source_mappable, an empty promotional field set, explicit limitations, and eligible_for_selection false",
+    "limitation_boundary": "correctly classified malformed or non-source-mappable specialist output is explanatory, blocks that specialist's promotion, and does not by itself veto an independently exact current reconstruction",
+    "contradiction_rule": "a contradiction is phase-vetoing only when a structurally valid specialist observation is missing one or more requested labels under the exact coverage comparison for a declared observable field; document-wide unscoped extra labels are explanatory and never contradictory; valid_not_source_mappable may expose this diagnostic requested-label coverage contradiction, while malformed content exposes no observation; bare substring presence, exit zero, counts, size, runtime, and oracle/current-derived extractor filtering cannot establish contradiction",
+    "selection_rule": "only valid_source_mappable records with raw provenance for every claimed field enter lexicographic comparison; frozen identities are never rewritten in place and materially better evidence requires a new reviewed oracle",
+    "required_invocation_count": 28,
+    "required_version_invocation_count": 2,
+    "required_source_invocation_count": 26,
+    "proxy_metrics": [
+      "availability",
+      "exit_zero",
+      "requested_label_substring_count",
+      "output_byte_count",
+      "wall_time_ns",
+      "scalar_fidelity_sum"
+    ],
+    "veto_id": "parser_fidelity_or_provenance_failure"
+  },
+  "downstream_binding_contract": {
+    "schema_version": "p02r2_downstream_binding_contract@1",
+    "inherited_reviewed_plan_fields": "bind entry.recovery_plan_ref and entry.recovery_plan_sha256 in init_round bindings, phase result, run manifest plan_ref/plan_sha256, candidate reviewed_plan fields, round close transitive reconstruction, final reconstruction, and stable reconstruction",
+    "inherited_reviewed_compact_oracle_fields": "bind entry.recovery_oracle_ref and entry.recovery_oracle_sha256 in init_round bindings, phase result, candidate reviewed_compact_oracle fields, round close transitive reconstruction, final reconstruction, and stable reconstruction",
+    "inherited_reviewed_materialized_oracle_fields": "bind entry.base_materialized_oracle_ref and entry.base_materialized_oracle_sha256 wherever the inherited schema names reviewed_materialized_oracle",
+    "transitive_base_rule": "every reconstruction that consumes the recovery oracle revalidates every base_bindings ref/digest and prior-entry four-file tree; copied entry or candidate values are not authority",
+    "forbidden_aliases": "base_plan and base_compact_oracle may not populate inherited reviewed_plan or reviewed_compact_oracle fields; recovery plan/oracle may not populate base_* fields",
+    "result_schema_rule": "the inherited exact key sets remain unchanged; their reviewed_* names use only this mapping, so no implementation-defined field or omission is permitted",
+    "run_manifest_rule": "run_manifest.plan_ref/sha256 binds the recovery plan; recovery oracle and all base bindings remain transitively bound through the entry record, phase result, candidate, and artifact inventory",
+    "candidate_rule": "candidate directly binds recovery plan, recovery oracle, frozen materialized oracle, new entry, and all inherited evidence; it verifies base plan/compact/old entry transitively from the reopened recovery oracle",
+    "final_rule": "final reconstruction reopens the candidate and recovery oracle and reruns the same direct/transitive binding checks before accepting review or audit"
+  },
+  "namespace_rule": "all formal result-round, stable, guard, parser, bundle, and governance artifacts are below p02r2-20260712 or use the exact revised docs refs; the p02-20260711 tree is protected immutable predecessor evidence and never a pass predecessor",
+  "effective_profile_rule": "strictly verify all base_bindings, deep-copy the base compact oracle, require every profile_patch expected_base_value at its exact JSON pointer, apply each replacement once, replace the base entry_snapshot_schema and entry_bootstrap_profile with this oracle's entry_schema and entry_bootstrap_profile for entry verification, and use parser_capability_contract for specialist record validation; reject any other effective-profile difference",
+  "unchanged_contract": "all base compact-oracle values not listed in profile_patch or replaced wholesale by entry_schema, entry_bootstrap_profile, or parser_capability_contract remain exact and authoritative"
+}

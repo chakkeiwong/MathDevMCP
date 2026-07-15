@@ -2,10 +2,13 @@ from __future__ import annotations
 
 """Serializable derivation-search tree records with proof-claim guards."""
 
+from copy import deepcopy
 from dataclasses import asdict, dataclass
+import re
 from typing import Any
 
 from .contracts import attach_contract
+from .evidence_manifest import content_digest
 from .external_tool_policy import external_tool_first_plan
 
 
@@ -58,8 +61,43 @@ NODE_STATUSES = {
     "proved",
     "refuted",
     "expanded_by_agent",
+    "expanded_by_rule",
     "backend_ready",
 }
+
+P04_BRANCH_SCHEMA_VERSION = "p04_branch_record@1"
+P04_BRANCH_STATES = frozenset(
+    {
+        "open",
+        "formalization_blocked",
+        "ready",
+        "running",
+        "diagnostic",
+        "proved",
+        "refuted",
+        "failed",
+        "budget_exhausted",
+    }
+)
+P04_TERMINAL_BRANCH_STATES = frozenset(
+    {"diagnostic", "proved", "refuted", "failed", "budget_exhausted"}
+)
+P04_BRANCH_TRANSITIONS = {
+    "open": frozenset({"formalization_blocked", "ready", "failed", "budget_exhausted"}),
+    "formalization_blocked": frozenset({"ready", "diagnostic", "failed", "budget_exhausted"}),
+    "ready": frozenset({"running", "diagnostic", "failed", "budget_exhausted"}),
+    "running": frozenset({"diagnostic", "proved", "refuted", "failed", "budget_exhausted"}),
+    "diagnostic": frozenset({"ready", "failed", "budget_exhausted"}),
+    "proved": frozenset(),
+    "refuted": frozenset(),
+    "failed": frozenset(),
+    "budget_exhausted": frozenset(),
+}
+P04_GENERATOR_KINDS = frozenset(
+    {"root", "rule_generated", "agent_generated", "legacy_rule_generated"}
+)
+_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+_UTC_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 
 
 @dataclass(frozen=True)
@@ -141,6 +179,365 @@ class SearchNode:
     patch_candidates: list[dict[str, Any]]
     children: list[dict[str, Any]]
     score: float = 0.0
+
+
+def _p04_digest(value: Any) -> str:
+    return content_digest(value)
+
+
+def _p04_assumption_digests(typed_assumptions: list[dict[str, Any]]) -> list[str]:
+    if not isinstance(typed_assumptions, list) or any(
+        not isinstance(item, dict) for item in typed_assumptions
+    ):
+        raise ValueError("typed_assumptions must be a list of objects")
+    return [_p04_digest(item) for item in typed_assumptions]
+
+
+def validate_branch_generator(generator: Any) -> list[str]:
+    """Validate honest branch-generator provenance without certifying output."""
+    if not isinstance(generator, dict):
+        return ["generator must be an object"]
+    errors: list[str] = []
+    kind = generator.get("kind")
+    if kind not in P04_GENERATOR_KINDS:
+        return [f"generator.kind must be one of {sorted(P04_GENERATOR_KINDS)}"]
+    if kind == "root":
+        if set(generator) != {"kind"}:
+            errors.append("root generator must contain only kind")
+    elif kind == "rule_generated":
+        if set(generator) != {"kind", "rule_id", "source_refs"}:
+            errors.append("rule_generated generator keys mismatch")
+        if not isinstance(generator.get("rule_id"), str) or not generator.get("rule_id"):
+            errors.append("rule_generated generator needs rule_id")
+        if not isinstance(generator.get("source_refs"), list):
+            errors.append("rule_generated generator source_refs must be a list")
+    elif kind == "legacy_rule_generated":
+        if set(generator) != {"kind", "legacy_label", "source_refs", "non_claim"}:
+            errors.append("legacy_rule_generated generator keys mismatch")
+        if generator.get("legacy_label") != "agent_generated_candidate":
+            errors.append("legacy rule generator must preserve the historical label")
+        if not isinstance(generator.get("source_refs"), list):
+            errors.append("legacy rule generator source_refs must be a list")
+        if "not agent execution" not in str(generator.get("non_claim", "")).lower():
+            errors.append("legacy rule generator must state it is not agent execution")
+    else:
+        expected = {
+            "kind",
+            "executor",
+            "provider",
+            "model",
+            "request_digest",
+            "response_digest",
+            "timestamp",
+            "budget",
+            "source_refs",
+        }
+        if set(generator) != expected:
+            errors.append("agent_generated generator keys mismatch")
+        for key in ("executor", "request_digest", "response_digest", "timestamp"):
+            if not isinstance(generator.get(key), str) or not generator.get(key):
+                errors.append(f"agent_generated generator needs {key}")
+        for key in ("request_digest", "response_digest"):
+            if not _SHA256_RE.fullmatch(str(generator.get(key, ""))):
+                errors.append(f"agent_generated {key} must be a SHA-256")
+        if not _UTC_RE.fullmatch(str(generator.get("timestamp", ""))):
+            errors.append("agent_generated timestamp must be UTC second precision")
+        if generator.get("provider") is not None and not isinstance(generator.get("provider"), str):
+            errors.append("agent_generated provider must be null or a string")
+        if generator.get("model") is not None and not isinstance(generator.get("model"), str):
+            errors.append("agent_generated model must be null or a string")
+        if not isinstance(generator.get("budget"), dict) or not generator.get("budget"):
+            errors.append("agent_generated budget must be a non-empty object")
+        if not isinstance(generator.get("source_refs"), list):
+            errors.append("agent_generated source_refs must be a list")
+    return errors
+
+
+def branch_semantic_id(
+    *,
+    obligation_digest: str,
+    target: str,
+    typed_assumptions: list[dict[str, Any]],
+    parent_id: str | None,
+    parent_lineage: list[str],
+    generator: dict[str, Any],
+    formalization_plan: dict[str, Any],
+) -> str:
+    """Derive a branch id from every material branch-local input."""
+    if not _SHA256_RE.fullmatch(str(obligation_digest)):
+        raise ValueError("obligation_digest must be a lowercase SHA-256")
+    if not isinstance(target, str) or not target.strip():
+        raise ValueError("target must be non-empty")
+    if not isinstance(parent_lineage, list) or any(
+        not isinstance(item, str) or not item for item in parent_lineage
+    ):
+        raise ValueError("parent_lineage must contain non-empty ids")
+    if parent_id is None and parent_lineage:
+        raise ValueError("root branch cannot have parent lineage")
+    if parent_id is not None and (not parent_lineage or parent_lineage[-1] != parent_id):
+        raise ValueError("parent_lineage must end at parent_id")
+    generator_errors = validate_branch_generator(generator)
+    if generator_errors:
+        raise ValueError("; ".join(generator_errors))
+    if not isinstance(formalization_plan, dict):
+        raise ValueError("formalization_plan must be an object")
+    payload = {
+        "obligation_digest": obligation_digest,
+        "target": " ".join(target.split()),
+        "typed_assumption_digests": _p04_assumption_digests(typed_assumptions),
+        "parent_id": parent_id,
+        "parent_lineage": list(parent_lineage),
+        "generator": generator,
+        "formalization_plan": formalization_plan,
+    }
+    return "branch_" + _p04_digest(payload)
+
+
+def build_branch_record(
+    *,
+    obligation_digest: str,
+    target: str,
+    typed_assumptions: list[dict[str, Any]],
+    generator: dict[str, Any],
+    formalization_plan: dict[str, Any],
+    state: str = "open",
+    parent: dict[str, Any] | None = None,
+    blockers: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Create a v1 branch with immutable identity inputs and local ledgers."""
+    if state not in P04_BRANCH_STATES:
+        raise ValueError(f"unsupported branch state: {state}")
+    parent_id = parent.get("id") if isinstance(parent, dict) else None
+    parent_lineage = list(parent.get("lineage", [])) if isinstance(parent, dict) else []
+    branch_id = branch_semantic_id(
+        obligation_digest=obligation_digest,
+        target=target,
+        typed_assumptions=typed_assumptions,
+        parent_id=parent_id,
+        parent_lineage=parent_lineage,
+        generator=generator,
+        formalization_plan=formalization_plan,
+    )
+    return {
+        "schema_version": P04_BRANCH_SCHEMA_VERSION,
+        "id": branch_id,
+        "obligation_digest": obligation_digest,
+        "target": " ".join(target.split()),
+        "typed_assumptions": deepcopy(typed_assumptions),
+        "typed_assumption_digests": _p04_assumption_digests(typed_assumptions),
+        "parent_id": parent_id,
+        "lineage": [*parent_lineage, branch_id],
+        "depth": len(parent_lineage),
+        "generator": deepcopy(generator),
+        "formalization_plan": deepcopy(formalization_plan),
+        "initial_state": state,
+        "state": state,
+        "attempt_refs": [],
+        "result_refs": [],
+        "blockers": deepcopy(blockers or []),
+        "children": [],
+        "transitions": [],
+    }
+
+
+def transition_branch(
+    branch: dict[str, Any],
+    to_state: str,
+    *,
+    reason: str,
+    request_ref: str | None = None,
+    result_ref: str | None = None,
+    blocker_ids: list[str] | None = None,
+) -> dict[str, Any]:
+    """Apply one legal state transition and return a detached branch copy."""
+    errors = validate_branch_record(branch)
+    if errors:
+        raise ValueError("invalid branch before transition: " + "; ".join(errors))
+    from_state = branch["state"]
+    if to_state not in P04_BRANCH_TRANSITIONS[from_state]:
+        raise ValueError(f"illegal branch transition: {from_state} -> {to_state}")
+    if not isinstance(reason, str) or not reason.strip():
+        raise ValueError("transition reason must be non-empty")
+    result = deepcopy(branch)
+    transition = {
+        "sequence": len(result["transitions"]) + 1,
+        "from_state": from_state,
+        "to_state": to_state,
+        "reason": reason,
+        "request_ref": request_ref,
+        "result_ref": result_ref,
+        "blocker_ids": list(blocker_ids or []),
+    }
+    transition["transition_digest"] = _p04_digest(
+        [result["id"], transition]
+    )
+    result["state"] = to_state
+    result["transitions"].append(transition)
+    if request_ref is not None and request_ref not in result["attempt_refs"]:
+        result["attempt_refs"].append(request_ref)
+    if result_ref is not None and result_ref not in result["result_refs"]:
+        result["result_refs"].append(result_ref)
+    return result
+
+
+def validate_branch_record(branch: Any) -> list[str]:
+    expected = {
+        "schema_version",
+        "id",
+        "obligation_digest",
+        "target",
+        "typed_assumptions",
+        "typed_assumption_digests",
+        "parent_id",
+        "lineage",
+        "depth",
+        "generator",
+        "formalization_plan",
+        "initial_state",
+        "state",
+        "attempt_refs",
+        "result_refs",
+        "blockers",
+        "children",
+        "transitions",
+    }
+    if not isinstance(branch, dict):
+        return ["branch must be an object"]
+    errors: list[str] = []
+    if set(branch) != expected:
+        errors.append("branch keys mismatch")
+        return errors
+    if branch.get("schema_version") != P04_BRANCH_SCHEMA_VERSION:
+        errors.append("branch schema_version mismatch")
+    if branch.get("initial_state") not in {"open", "formalization_blocked", "ready"}:
+        errors.append("branch initial_state is invalid")
+    if branch.get("state") not in P04_BRANCH_STATES:
+        errors.append("branch state is invalid")
+    errors.extend(validate_branch_generator(branch.get("generator")))
+    for field in (
+        "typed_assumptions",
+        "typed_assumption_digests",
+        "lineage",
+        "attempt_refs",
+        "result_refs",
+        "blockers",
+        "children",
+        "transitions",
+    ):
+        if not isinstance(branch.get(field), list):
+            errors.append(f"branch {field} must be a list")
+    if errors:
+        return errors
+    try:
+        expected_id = branch_semantic_id(
+            obligation_digest=branch["obligation_digest"],
+            target=branch["target"],
+            typed_assumptions=branch["typed_assumptions"],
+            parent_id=branch["parent_id"],
+            parent_lineage=branch["lineage"][:-1],
+            generator=branch["generator"],
+            formalization_plan=branch["formalization_plan"],
+        )
+    except ValueError as exc:
+        errors.append(str(exc))
+        expected_id = None
+    if branch["id"] != expected_id or branch["lineage"][-1:] != [branch["id"]]:
+        errors.append("branch id/lineage does not match semantic identity")
+    if branch["typed_assumption_digests"] != _p04_assumption_digests(
+        branch["typed_assumptions"]
+    ):
+        errors.append("typed assumption digest projection mismatch")
+    if branch["depth"] != len(branch["lineage"]) - 1:
+        errors.append("branch depth/lineage mismatch")
+    previous_state = branch["initial_state"]
+    for index, transition in enumerate(branch["transitions"], start=1):
+        if not isinstance(transition, dict) or set(transition) != {
+            "sequence",
+            "from_state",
+            "to_state",
+            "reason",
+            "request_ref",
+            "result_ref",
+            "blocker_ids",
+            "transition_digest",
+        }:
+            errors.append("branch transition keys mismatch")
+            continue
+        if transition["sequence"] != index or transition["from_state"] != previous_state:
+            errors.append("branch transition sequence/state chain mismatch")
+        if transition["to_state"] not in P04_BRANCH_TRANSITIONS.get(previous_state, frozenset()):
+            errors.append("branch transition is illegal")
+        expected_transition_digest = _p04_digest(
+            [
+                branch["id"],
+                {key: value for key, value in transition.items() if key != "transition_digest"},
+            ]
+        )
+        if transition["transition_digest"] != expected_transition_digest:
+            errors.append("branch transition digest mismatch")
+        previous_state = transition["to_state"]
+    if branch["transitions"] and previous_state != branch["state"]:
+        errors.append("branch state does not match final transition")
+    if not branch["transitions"] and branch["state"] != branch["initial_state"]:
+        errors.append("branch state must equal initial_state without transitions")
+    return errors
+
+
+def validate_branch_tree(root: Any) -> list[str]:
+    """Validate lineage, uniqueness, and branch-local mutable ledgers."""
+    errors: list[str] = []
+    seen_ids: set[str] = set()
+    ledger_owners: dict[int, tuple[str, str]] = {}
+
+    def walk(branch: Any, parent: dict[str, Any] | None = None) -> None:
+        if not isinstance(branch, dict):
+            errors.append("tree child must be a branch object")
+            return
+        branch_id = str(branch.get("id", "<missing>"))
+        errors.extend(f"branch {branch_id}: {item}" for item in validate_branch_record(branch))
+        if branch_id in seen_ids:
+            errors.append(f"duplicate branch id: {branch_id}")
+        seen_ids.add(branch_id)
+        if parent is None:
+            if branch.get("parent_id") is not None or branch.get("depth") != 0:
+                errors.append("root branch parent/depth mismatch")
+        elif (
+            branch.get("parent_id") != parent.get("id")
+            or branch.get("lineage", [])[:-1] != parent.get("lineage")
+        ):
+            errors.append(f"branch {branch_id} parent lineage mismatch")
+        for field in ("typed_assumptions", "attempt_refs", "result_refs", "blockers", "children", "transitions"):
+            value = branch.get(field)
+            if isinstance(value, list):
+                owner = ledger_owners.setdefault(id(value), (branch_id, field))
+                if owner != (branch_id, field):
+                    errors.append(
+                        f"shared mutable ledger: {owner[0]}.{owner[1]} and {branch_id}.{field}"
+                    )
+        for child in branch.get("children", []) if isinstance(branch.get("children"), list) else []:
+            walk(child, branch)
+
+    walk(root)
+    return errors
+
+
+def branch_tree_semantic_digest(root: dict[str, Any]) -> str:
+    """Return a schedule-independent digest of the complete branch tree."""
+    errors = validate_branch_tree(root)
+    if errors:
+        raise ValueError("invalid branch tree: " + "; ".join(errors))
+
+    def project(branch: dict[str, Any]) -> dict[str, Any]:
+        value = deepcopy(branch)
+        value["children"] = sorted(
+            (project(child) for child in branch["children"]),
+            key=lambda child: child["id"],
+        )
+        value["attempt_refs"] = sorted(value["attempt_refs"])
+        value["result_refs"] = sorted(value["result_refs"])
+        return value
+
+    return _p04_digest(project(root))
 
 
 def _clean_dict(payload: dict[str, Any]) -> dict[str, Any]:
@@ -514,6 +911,19 @@ def validate_search_tree(tree: dict[str, Any]) -> list[str]:
                 continue
             if attempt.get("evidence_kind") == "backend_unavailable" and attempt.get("status") in PROMOTABLE_REFUTATION_STATUSES:
                 errors.append(f"node {node_id} backend_unavailable cannot be a refutation")
+            schema_version = attempt.get("evidence_schema_version")
+            if schema_version == "1.0":
+                attachment = attempt.get("evidence_attachment")
+                if not isinstance(attachment, dict):
+                    errors.append(f"node {node_id} v1 backend_attempt needs a compact evidence attachment")
+                elif (
+                    attachment.get("integrity_state") != "verified"
+                    or attachment.get("claim_eligibility") != "ineligible"
+                    or attachment.get("publication_enabled") is not False
+                ):
+                    errors.append(f"node {node_id} v1 attachment violates P01 integrity/publication boundary")
+            elif schema_version not in {None, "0-legacy"}:
+                errors.append(f"node {node_id} backend_attempt evidence schema is unsupported")
         for patch in node.get("patch_candidates", []):
             if not isinstance(patch, dict):
                 errors.append(f"node {node_id} patch_candidate must be a dict")

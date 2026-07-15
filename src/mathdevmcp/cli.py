@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import sys
 
 from .benchmarks import (
     benchmark_gate_report,
@@ -19,12 +20,21 @@ from .benchmarks import (
 from .code_search import search_files
 from .claim_support import build_claim_support_packet
 from .consistency import compare_files, compare_label_to_code
+from .contracts import error_result
 from .derivation import derive_step_for_label, derive_step_from_files
 from .derivation_audit_report import audit_and_propose_derivations as high_level_audit_and_propose_derivations
 from .derive_from import derive_from as high_level_derive_from
 from .derive_or_refute import derive_or_refute
 from .doctor import doctor_report
 from .document_derivation_tree import audit_document_derivation_tree as high_level_audit_document_derivation_tree
+from .document_derivation_response import (
+    build_document_derivation_audit_request,
+    canonical_document_derivation_response_bytes,
+    compile_document_derivation_response,
+    load_document_derivation_continuation,
+    resolve_document_derivation_records,
+    validate_document_derivation_response_options,
+)
 from .domain_templates import generate_obligations_from_template, list_domain_templates, suggest_domain_templates
 from .equation_code_match import code_implements_equation
 from .external_tool_policy import external_tool_first_plan
@@ -470,12 +480,26 @@ def _cmd_audit_math_document_rigor(args: argparse.Namespace) -> int:
     return 0
 
 
+def _document_derivation_cli_invalid_arguments() -> int:
+    payload = error_result(
+        "invalid_arguments",
+        "Document derivation request or persisted artifact failed validation.",
+    )
+    sys.stderr.buffer.write(canonical_document_derivation_response_bytes(payload) + b"\n")
+    return 2
+
+
 def _cmd_audit_document_derivation_tree(args: argparse.Namespace) -> int:
+    try:
+        return _cmd_audit_document_derivation_tree_validated(args)
+    except ValueError:
+        return _document_derivation_cli_invalid_arguments()
+
+
+def _cmd_audit_document_derivation_tree_validated(args: argparse.Namespace) -> int:
     max_labels = None if args.max_labels is not None and args.max_labels <= 0 else args.max_labels
-    result = high_level_audit_document_derivation_tree(
+    audit_request = build_document_derivation_audit_request(
         args.tex_path,
-        output_md=Path(args.output_md) if args.output_md else None,
-        output_json=Path(args.output_json) if args.output_json else None,
         focus_labels=args.focus_label or None,
         max_labels=max_labels,
         budget_profile=args.budget_profile,
@@ -485,12 +509,74 @@ def _cmd_audit_document_derivation_tree(args: argparse.Namespace) -> int:
         grounding_policy=args.grounding_policy,
         workers=args.workers,
     )
+    artifact_root = Path(args.artifact_root) if args.artifact_root else None
+    validate_document_derivation_response_options(
+        response_mode=args.response_mode,
+        artifact_root=artifact_root,
+        target_limit=args.target_limit,
+        target_cursor=args.target_cursor or None,
+    )
+    if args.target_cursor:
+        if args.output_md or args.output_json or args.print_markdown:
+            raise ValueError(
+                "target_cursor cannot be combined with raw output or Markdown options"
+            )
+        result = load_document_derivation_continuation(
+            artifact_root,
+            args.target_cursor,
+            audit_request,
+        )
+    else:
+        result = high_level_audit_document_derivation_tree(
+            args.tex_path,
+            output_md=Path(args.output_md) if args.output_md else None,
+            output_json=Path(args.output_json) if args.output_json else None,
+            focus_labels=args.focus_label or None,
+            max_labels=max_labels,
+            budget_profile=args.budget_profile,
+            max_attempts=args.max_attempts,
+            backend_env=args.backend_env,
+            search_mode=args.search_mode,
+            grounding_policy=args.grounding_policy,
+            workers=args.workers,
+        )
     if args.print_markdown:
         print(result["markdown"])
         return 0
-    serializable = dict(result)
-    serializable.pop("markdown", None)
-    print(json.dumps(serializable, indent=2))
+    response = compile_document_derivation_response(
+        result,
+        audit_request,
+        response_mode=args.response_mode,
+        artifact_root=artifact_root,
+        target_limit=args.target_limit,
+        target_cursor=args.target_cursor or None,
+    )
+    if args.response_mode == "compact":
+        sys.stdout.buffer.write(canonical_document_derivation_response_bytes(response) + b"\n")
+    else:
+        print(json.dumps(response, indent=2))
+    return 0
+
+
+def _cmd_resolve_document_derivation_records(args: argparse.Namespace) -> int:
+    try:
+        return _cmd_resolve_document_derivation_records_validated(args)
+    except ValueError:
+        return _document_derivation_cli_invalid_arguments()
+
+
+def _cmd_resolve_document_derivation_records_validated(
+    args: argparse.Namespace,
+) -> int:
+    response = resolve_document_derivation_records(
+        args.page_token,
+        args.collection,
+        artifact_root=Path(args.artifact_root),
+        target_id=args.target_id or None,
+        offset=args.offset,
+        limit=args.limit,
+    )
+    sys.stdout.buffer.write(canonical_document_derivation_response_bytes(response) + b"\n")
     return 0
 
 
@@ -1144,8 +1230,33 @@ def make_parser() -> argparse.ArgumentParser:
     p_doc_tree.add_argument("--search-mode", choices=["agent_guided"], default="agent_guided", help="Search mode for blocker expansion and tree verification")
     p_doc_tree.add_argument("--grounding-policy", choices=["strict"], default="strict", help="Proposal compiler grounding policy")
     p_doc_tree.add_argument("--workers", type=int, default=1, help="Parallel target workers; 1 preserves serial execution")
+    p_doc_tree.add_argument(
+        "--response-mode",
+        choices=["compact", "detailed", "artifact_only"],
+        default="compact",
+        help="Transport response view; compact is the default",
+    )
+    p_doc_tree.add_argument(
+        "--artifact-root",
+        default="",
+        help="Optional local root for the exact detailed audit artifact; required for artifact_only and continuation",
+    )
+    p_doc_tree.add_argument("--target-limit", type=int, default=None, help="Compact target cap (1-100); continuation omission reuses the page token value")
+    p_doc_tree.add_argument("--target-cursor", default="", help="Phase 08 page token from the preceding compact page")
     p_doc_tree.add_argument("--print-markdown", action="store_true", help="Print Markdown instead of JSON")
     p_doc_tree.set_defaults(func=_cmd_audit_document_derivation_tree)
+
+    p_doc_records = sub.add_parser(
+        "resolve-document-derivation-records",
+        help="Resolve one record collection authorized by a Phase 08 page token",
+    )
+    p_doc_records.add_argument("page_token", help="Phase 08 compact page token")
+    p_doc_records.add_argument("collection", help="Closed resolver collection name")
+    p_doc_records.add_argument("--artifact-root", required=True, help="Root containing the verified detailed artifact")
+    p_doc_records.add_argument("--target-id", default="", help="Exact page target ID; omit only for global collections")
+    p_doc_records.add_argument("--offset", type=int, default=0, help="Record offset")
+    p_doc_records.add_argument("--limit", type=int, default=100, help="Maximum records to return (1-100)")
+    p_doc_records.set_defaults(func=_cmd_resolve_document_derivation_records)
 
     p_matrix = sub.add_parser("tool-matrix", help="Print the current tool matrix")
     p_matrix.set_defaults(func=_cmd_tool_matrix)

@@ -1,0 +1,2336 @@
+{
+  "schema_version": "p02_materialized_obligations_oracle@1",
+  "normalization_version": "p02_latex_surface_normalization@1",
+  "materialization_version": "p02_obligation_materialization@1",
+  "obligation_count": 17,
+  "obligations": [
+    {
+      "oracle_path": "/fixtures/0/expected/0",
+      "identity_payload": {
+        "schema_version": "1.0",
+        "document": {
+          "logical_id": "p02-fixture/one_label_equation",
+          "file": "tests/fixtures/label_scoped_obligations/one_label_equation.tex",
+          "source_digest": "4eb4d4458dceb4e729364a31a2e68cc16e8e41498f64bf72a6088a694f1785b5",
+          "corpus_version": "p02-reviewed-fixture-20260711"
+        },
+        "label": "eq:one",
+        "environment": {
+          "environment_id": "env_67f7384c71c0c43105cdedd9cbe1ae162cb90942f7ac1c5c0b1b5aa1d7b08392",
+          "kind": "equation",
+          "starred": false,
+          "environment_stack": [
+            {
+              "environment_id": "env_67f7384c71c0c43105cdedd9cbe1ae162cb90942f7ac1c5c0b1b5aa1d7b08392",
+              "kind": "equation",
+              "starred": false,
+              "start_byte": 0,
+              "end_byte": 52
+            }
+          ],
+          "start_byte": 0,
+          "end_byte": 52,
+          "line_start": 1,
+          "line_end": 4,
+          "parser_backend": "current",
+          "parser_version": "p02_lightweight_locator@1",
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "owned_rows": [
+          {
+            "row_id": "row_0f9edd80b8034c36538493d74c1b21b6e5375ad39abe277942d13dbb2755fc3d",
+            "row_index": 0,
+            "start_byte": 17,
+            "end_byte": 37,
+            "line_start": 2,
+            "line_end": 3,
+            "explicit_label": "eq:one",
+            "label_span": {
+              "start_byte": 17,
+              "end_byte": 31,
+              "line_start": 2,
+              "line_end": 2
+            },
+            "row_shape": "complete_relation",
+            "grouping_reason": "explicit_label_seed",
+            "has_nonumber": false,
+            "environment_stack": [
+              "env_67f7384c71c0c43105cdedd9cbe1ae162cb90942f7ac1c5c0b1b5aa1d7b08392"
+            ],
+            "raw_source_sha256": "54c0a7dc781de009679140fe1fe31460963765ff6a30fe38ce92291912b66472"
+          }
+        ],
+        "owned_spans": [
+          {
+            "start_byte": 17,
+            "end_byte": 37,
+            "line_start": 2,
+            "line_end": 3
+          }
+        ],
+        "continuation_spans": [],
+        "excluded_spans": [],
+        "source_math": "\\label{eq:one}\nx = y",
+        "normalized_target": {
+          "kind": "equality",
+          "members": [
+            "x",
+            "y"
+          ],
+          "display_text": "x = y",
+          "complete_lhs_rhs": true,
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "operator_inventory": [
+          "equality"
+        ],
+        "symbol_inventory": {
+          "latex_commands": [],
+          "bare_identifiers": [
+            "x",
+            "y"
+          ]
+        },
+        "extraction_state": "valid_complete",
+        "adapter_eligible": true,
+        "ambiguities": [],
+        "uncertainties": [],
+        "provenance_refs": [
+          {
+            "kind": "file",
+            "ref": "tests/fixtures/label_scoped_obligations/one_label_equation.tex",
+            "sha256": "4eb4d4458dceb4e729364a31a2e68cc16e8e41498f64bf72a6088a694f1785b5"
+          },
+          {
+            "kind": "environment",
+            "ref": "env_67f7384c71c0c43105cdedd9cbe1ae162cb90942f7ac1c5c0b1b5aa1d7b08392",
+            "start_byte": 0,
+            "end_byte": 52
+          },
+          {
+            "kind": "label",
+            "ref": "eq:one",
+            "start_byte": 17,
+            "end_byte": 31
+          },
+          {
+            "kind": "owned_row",
+            "ref": "row_0f9edd80b8034c36538493d74c1b21b6e5375ad39abe277942d13dbb2755fc3d",
+            "start_byte": 17,
+            "end_byte": 37
+          }
+        ]
+      },
+      "canonical_byte_count": 2375,
+      "obligation_digest": "f33683e1a14962db2c3713952311df87f34a84b0a75163b21ec1c526b4571d5e",
+      "obligation_id": "obl_f33683e1a14962db2c3713952311df87f34a84b0a75163b21ec1c526b4571d5e"
+    },
+    {
+      "oracle_path": "/fixtures/1/expected/0",
+      "identity_payload": {
+        "schema_version": "1.0",
+        "document": {
+          "logical_id": "p02-fixture/one_label_continuation",
+          "file": "tests/fixtures/label_scoped_obligations/one_label_continuation.tex",
+          "source_digest": "3713805a792fbbbf31c0672669494fd1ddaf7c70c2bdaca7516dc2ed0ad04116",
+          "corpus_version": "p02-reviewed-fixture-20260711"
+        },
+        "label": "eq:continued",
+        "environment": {
+          "environment_id": "env_1d0146c1416995fd32d54528417be6b0825458bbc2eab6b3328cc9a7741f8bc2",
+          "kind": "align",
+          "starred": false,
+          "environment_stack": [
+            {
+              "environment_id": "env_1d0146c1416995fd32d54528417be6b0825458bbc2eab6b3328cc9a7741f8bc2",
+              "kind": "align",
+              "starred": false,
+              "start_byte": 0,
+              "end_byte": 80
+            }
+          ],
+          "start_byte": 0,
+          "end_byte": 80,
+          "line_start": 1,
+          "line_end": 7,
+          "parser_backend": "current",
+          "parser_version": "p02_lightweight_locator@1",
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "owned_rows": [
+          {
+            "row_id": "row_8279461cdb7e2faedca950f3c9e84798c9a4f4aa5047246f48941d65efefb7df",
+            "row_index": 0,
+            "start_byte": 14,
+            "end_byte": 34,
+            "line_start": 2,
+            "line_end": 4,
+            "explicit_label": null,
+            "label_span": null,
+            "row_shape": "relation_head",
+            "grouping_reason": "backward_number_suppressed_relation_head",
+            "has_nonumber": true,
+            "environment_stack": [
+              "env_1d0146c1416995fd32d54528417be6b0825458bbc2eab6b3328cc9a7741f8bc2"
+            ],
+            "raw_source_sha256": "9331bc1a385401e145bcf882786cd1d24ca28740ebdddd12070f69108b3f7446"
+          },
+          {
+            "row_id": "row_1454d62308fbab8eec9136305e344d4e1e2f264ddfc8a414ec20da651b3d0fbb",
+            "row_index": 1,
+            "start_byte": 37,
+            "end_byte": 68,
+            "line_start": 5,
+            "line_end": 6,
+            "explicit_label": "eq:continued",
+            "label_span": {
+              "start_byte": 48,
+              "end_byte": 68,
+              "line_start": 6,
+              "line_end": 6
+            },
+            "row_shape": "relation_continuation",
+            "grouping_reason": "explicit_label_seed",
+            "has_nonumber": false,
+            "environment_stack": [
+              "env_1d0146c1416995fd32d54528417be6b0825458bbc2eab6b3328cc9a7741f8bc2"
+            ],
+            "raw_source_sha256": "65ab712256150f569031cf1abc0976ebbfdcbc29b7c1a9416162cf75d51a48d3"
+          }
+        ],
+        "owned_spans": [
+          {
+            "start_byte": 14,
+            "end_byte": 34,
+            "line_start": 2,
+            "line_end": 4
+          },
+          {
+            "start_byte": 37,
+            "end_byte": 68,
+            "line_start": 5,
+            "line_end": 6
+          }
+        ],
+        "continuation_spans": [
+          {
+            "start_byte": 14,
+            "end_byte": 34,
+            "line_start": 2,
+            "line_end": 4
+          }
+        ],
+        "excluded_spans": [],
+        "source_math": "a\n&= b + c\n\\nonumber\\\\\n&\\quad + d\n\\label{eq:continued}",
+        "normalized_target": {
+          "kind": "equality",
+          "members": [
+            "a",
+            "b + c + d"
+          ],
+          "display_text": "a = b + c + d",
+          "complete_lhs_rhs": true,
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "operator_inventory": [
+          "equality"
+        ],
+        "symbol_inventory": {
+          "latex_commands": [],
+          "bare_identifiers": [
+            "a",
+            "b",
+            "c",
+            "d"
+          ]
+        },
+        "extraction_state": "valid_complete",
+        "adapter_eligible": true,
+        "ambiguities": [],
+        "uncertainties": [],
+        "provenance_refs": [
+          {
+            "kind": "file",
+            "ref": "tests/fixtures/label_scoped_obligations/one_label_continuation.tex",
+            "sha256": "3713805a792fbbbf31c0672669494fd1ddaf7c70c2bdaca7516dc2ed0ad04116"
+          },
+          {
+            "kind": "environment",
+            "ref": "env_1d0146c1416995fd32d54528417be6b0825458bbc2eab6b3328cc9a7741f8bc2",
+            "start_byte": 0,
+            "end_byte": 80
+          },
+          {
+            "kind": "label",
+            "ref": "eq:continued",
+            "start_byte": 48,
+            "end_byte": 68
+          },
+          {
+            "kind": "owned_row",
+            "ref": "row_8279461cdb7e2faedca950f3c9e84798c9a4f4aa5047246f48941d65efefb7df",
+            "start_byte": 14,
+            "end_byte": 34
+          },
+          {
+            "kind": "owned_row",
+            "ref": "row_1454d62308fbab8eec9136305e344d4e1e2f264ddfc8a414ec20da651b3d0fbb",
+            "start_byte": 37,
+            "end_byte": 68
+          }
+        ]
+      },
+      "canonical_byte_count": 3198,
+      "obligation_digest": "c3d5148026df33253384b8bfabc97fd4bda8d4d4424a562b35bd18cb0f2793f0",
+      "obligation_id": "obl_c3d5148026df33253384b8bfabc97fd4bda8d4d4424a562b35bd18cb0f2793f0"
+    },
+    {
+      "oracle_path": "/fixtures/2/expected/0",
+      "identity_payload": {
+        "schema_version": "1.0",
+        "document": {
+          "logical_id": "p02-fixture/two_label_align",
+          "file": "tests/fixtures/label_scoped_obligations/two_label_align.tex",
+          "source_digest": "d9fb778e12ac9d622398f1c376a345cf32b924f735e190fa2ba5cca5b84846f4",
+          "corpus_version": "p02-reviewed-fixture-20260711"
+        },
+        "label": "eq:first",
+        "environment": {
+          "environment_id": "env_defd8548ff965b5bd305e8fba72beb5375befb4931358e0f860d706aa9abd598",
+          "kind": "align",
+          "starred": false,
+          "environment_stack": [
+            {
+              "environment_id": "env_defd8548ff965b5bd305e8fba72beb5375befb4931358e0f860d706aa9abd598",
+              "kind": "align",
+              "starred": false,
+              "start_byte": 0,
+              "end_byte": 76
+            }
+          ],
+          "start_byte": 0,
+          "end_byte": 76,
+          "line_start": 1,
+          "line_end": 4,
+          "parser_backend": "current",
+          "parser_version": "p02_lightweight_locator@1",
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "owned_rows": [
+          {
+            "row_id": "row_303a0d454c26e57125a98d9589af24cae2e94c627bc4deb6ec38e6e7472e53c3",
+            "row_index": 0,
+            "start_byte": 14,
+            "end_byte": 37,
+            "line_start": 2,
+            "line_end": 2,
+            "explicit_label": "eq:first",
+            "label_span": {
+              "start_byte": 21,
+              "end_byte": 37,
+              "line_start": 2,
+              "line_end": 2
+            },
+            "row_shape": "complete_relation",
+            "grouping_reason": "explicit_label_seed",
+            "has_nonumber": false,
+            "environment_stack": [
+              "env_defd8548ff965b5bd305e8fba72beb5375befb4931358e0f860d706aa9abd598"
+            ],
+            "raw_source_sha256": "fdc79c2baee89ecae7246ceaaa8476937dd5ab604b62fd0b38163414c21d94b2"
+          }
+        ],
+        "owned_spans": [
+          {
+            "start_byte": 14,
+            "end_byte": 37,
+            "line_start": 2,
+            "line_end": 2
+          }
+        ],
+        "continuation_spans": [],
+        "excluded_spans": [
+          {
+            "start_byte": 40,
+            "end_byte": 64,
+            "line_start": 3,
+            "line_end": 3,
+            "excluded_sibling_label": "eq:second",
+            "reason": "excluded_sibling_label"
+          }
+        ],
+        "source_math": "x &= y \\label{eq:first}",
+        "normalized_target": {
+          "kind": "equality",
+          "members": [
+            "x",
+            "y"
+          ],
+          "display_text": "x = y",
+          "complete_lhs_rhs": true,
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "operator_inventory": [
+          "equality"
+        ],
+        "symbol_inventory": {
+          "latex_commands": [],
+          "bare_identifiers": [
+            "x",
+            "y"
+          ]
+        },
+        "extraction_state": "valid_complete",
+        "adapter_eligible": true,
+        "ambiguities": [],
+        "uncertainties": [],
+        "provenance_refs": [
+          {
+            "kind": "file",
+            "ref": "tests/fixtures/label_scoped_obligations/two_label_align.tex",
+            "sha256": "d9fb778e12ac9d622398f1c376a345cf32b924f735e190fa2ba5cca5b84846f4"
+          },
+          {
+            "kind": "environment",
+            "ref": "env_defd8548ff965b5bd305e8fba72beb5375befb4931358e0f860d706aa9abd598",
+            "start_byte": 0,
+            "end_byte": 76
+          },
+          {
+            "kind": "label",
+            "ref": "eq:first",
+            "start_byte": 21,
+            "end_byte": 37
+          },
+          {
+            "kind": "owned_row",
+            "ref": "row_303a0d454c26e57125a98d9589af24cae2e94c627bc4deb6ec38e6e7472e53c3",
+            "start_byte": 14,
+            "end_byte": 37
+          }
+        ]
+      },
+      "canonical_byte_count": 2498,
+      "obligation_digest": "17861fda37786a16c2308212d14aca6e1597899658b6ab34cdf3762f3cb9012b",
+      "obligation_id": "obl_17861fda37786a16c2308212d14aca6e1597899658b6ab34cdf3762f3cb9012b"
+    },
+    {
+      "oracle_path": "/fixtures/2/expected/1",
+      "identity_payload": {
+        "schema_version": "1.0",
+        "document": {
+          "logical_id": "p02-fixture/two_label_align",
+          "file": "tests/fixtures/label_scoped_obligations/two_label_align.tex",
+          "source_digest": "d9fb778e12ac9d622398f1c376a345cf32b924f735e190fa2ba5cca5b84846f4",
+          "corpus_version": "p02-reviewed-fixture-20260711"
+        },
+        "label": "eq:second",
+        "environment": {
+          "environment_id": "env_defd8548ff965b5bd305e8fba72beb5375befb4931358e0f860d706aa9abd598",
+          "kind": "align",
+          "starred": false,
+          "environment_stack": [
+            {
+              "environment_id": "env_defd8548ff965b5bd305e8fba72beb5375befb4931358e0f860d706aa9abd598",
+              "kind": "align",
+              "starred": false,
+              "start_byte": 0,
+              "end_byte": 76
+            }
+          ],
+          "start_byte": 0,
+          "end_byte": 76,
+          "line_start": 1,
+          "line_end": 4,
+          "parser_backend": "current",
+          "parser_version": "p02_lightweight_locator@1",
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "owned_rows": [
+          {
+            "row_id": "row_223ceae1182c55f93493b802f0fe6f69e5d97c3f1e034d19f2013aa3cacbc946",
+            "row_index": 1,
+            "start_byte": 40,
+            "end_byte": 64,
+            "line_start": 3,
+            "line_end": 3,
+            "explicit_label": "eq:second",
+            "label_span": {
+              "start_byte": 47,
+              "end_byte": 64,
+              "line_start": 3,
+              "line_end": 3
+            },
+            "row_shape": "complete_relation",
+            "grouping_reason": "explicit_label_seed",
+            "has_nonumber": false,
+            "environment_stack": [
+              "env_defd8548ff965b5bd305e8fba72beb5375befb4931358e0f860d706aa9abd598"
+            ],
+            "raw_source_sha256": "6c622e39576bc44387f8ec2e29f3c24bbbc37e5ef93085005e1afd93dba4dfd6"
+          }
+        ],
+        "owned_spans": [
+          {
+            "start_byte": 40,
+            "end_byte": 64,
+            "line_start": 3,
+            "line_end": 3
+          }
+        ],
+        "continuation_spans": [],
+        "excluded_spans": [
+          {
+            "start_byte": 14,
+            "end_byte": 37,
+            "line_start": 2,
+            "line_end": 2,
+            "excluded_sibling_label": "eq:first",
+            "reason": "excluded_sibling_label"
+          }
+        ],
+        "source_math": "u &= v \\label{eq:second}",
+        "normalized_target": {
+          "kind": "equality",
+          "members": [
+            "u",
+            "v"
+          ],
+          "display_text": "u = v",
+          "complete_lhs_rhs": true,
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "operator_inventory": [
+          "equality"
+        ],
+        "symbol_inventory": {
+          "latex_commands": [],
+          "bare_identifiers": [
+            "u",
+            "v"
+          ]
+        },
+        "extraction_state": "valid_complete",
+        "adapter_eligible": true,
+        "ambiguities": [],
+        "uncertainties": [],
+        "provenance_refs": [
+          {
+            "kind": "file",
+            "ref": "tests/fixtures/label_scoped_obligations/two_label_align.tex",
+            "sha256": "d9fb778e12ac9d622398f1c376a345cf32b924f735e190fa2ba5cca5b84846f4"
+          },
+          {
+            "kind": "environment",
+            "ref": "env_defd8548ff965b5bd305e8fba72beb5375befb4931358e0f860d706aa9abd598",
+            "start_byte": 0,
+            "end_byte": 76
+          },
+          {
+            "kind": "label",
+            "ref": "eq:second",
+            "start_byte": 47,
+            "end_byte": 64
+          },
+          {
+            "kind": "owned_row",
+            "ref": "row_223ceae1182c55f93493b802f0fe6f69e5d97c3f1e034d19f2013aa3cacbc946",
+            "start_byte": 40,
+            "end_byte": 64
+          }
+        ]
+      },
+      "canonical_byte_count": 2501,
+      "obligation_digest": "884188812e4548f1dd5d124df7273fa584d697081bc03e87b07de50dd9f186ff",
+      "obligation_id": "obl_884188812e4548f1dd5d124df7273fa584d697081bc03e87b07de50dd9f186ff"
+    },
+    {
+      "oracle_path": "/fixtures/3/expected/0",
+      "identity_payload": {
+        "schema_version": "1.0",
+        "document": {
+          "logical_id": "p02-fixture/chained_equalities",
+          "file": "tests/fixtures/label_scoped_obligations/chained_equalities.tex",
+          "source_digest": "4864e85e9391efbb2897c73e8f01c8a3ab6208f03e3f323c52fac20fc4e0a21b",
+          "corpus_version": "p02-reviewed-fixture-20260711"
+        },
+        "label": "eq:chain",
+        "environment": {
+          "environment_id": "env_259abc30dfe6f40641ea16d302e0839556a5d405df619abf3b1824a9f577cb28",
+          "kind": "align",
+          "starred": false,
+          "environment_stack": [
+            {
+              "environment_id": "env_259abc30dfe6f40641ea16d302e0839556a5d405df619abf3b1824a9f577cb28",
+              "kind": "align",
+              "starred": false,
+              "start_byte": 0,
+              "end_byte": 68
+            }
+          ],
+          "start_byte": 0,
+          "end_byte": 68,
+          "line_start": 1,
+          "line_end": 4,
+          "parser_backend": "current",
+          "parser_version": "p02_lightweight_locator@1",
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "owned_rows": [
+          {
+            "row_id": "row_f83844486d01fe3788f48c13ade55bafd299388d36d6a01605ddde39a8ae149c",
+            "row_index": 0,
+            "start_byte": 14,
+            "end_byte": 37,
+            "line_start": 2,
+            "line_end": 2,
+            "explicit_label": "eq:chain",
+            "label_span": {
+              "start_byte": 21,
+              "end_byte": 37,
+              "line_start": 2,
+              "line_end": 2
+            },
+            "row_shape": "complete_relation",
+            "grouping_reason": "explicit_label_seed",
+            "has_nonumber": false,
+            "environment_stack": [
+              "env_259abc30dfe6f40641ea16d302e0839556a5d405df619abf3b1824a9f577cb28"
+            ],
+            "raw_source_sha256": "186cd3918e84d3dcf15cd8c9b8c56219fdb3c5603782822f280771e468e367f8"
+          },
+          {
+            "row_id": "row_afe01789162d65471b40ee14ea1ba11d153dba6eb89733d9d4a75ae8b06744b0",
+            "row_index": 1,
+            "start_byte": 42,
+            "end_byte": 56,
+            "line_start": 3,
+            "line_end": 3,
+            "explicit_label": null,
+            "label_span": null,
+            "row_shape": "relation_chain_continuation",
+            "grouping_reason": "forward_relation_continuation",
+            "has_nonumber": true,
+            "environment_stack": [
+              "env_259abc30dfe6f40641ea16d302e0839556a5d405df619abf3b1824a9f577cb28"
+            ],
+            "raw_source_sha256": "3713171aad9c71029d9223aaca168b94d202a91b8a8d2072fd04cb42885ba065"
+          }
+        ],
+        "owned_spans": [
+          {
+            "start_byte": 14,
+            "end_byte": 37,
+            "line_start": 2,
+            "line_end": 2
+          },
+          {
+            "start_byte": 42,
+            "end_byte": 56,
+            "line_start": 3,
+            "line_end": 3
+          }
+        ],
+        "continuation_spans": [
+          {
+            "start_byte": 42,
+            "end_byte": 56,
+            "line_start": 3,
+            "line_end": 3
+          }
+        ],
+        "excluded_spans": [],
+        "source_math": "x &= y \\label{eq:chain}\\\\\n  &= z \\nonumber",
+        "normalized_target": {
+          "kind": "equality_chain",
+          "members": [
+            "x",
+            "y",
+            "z"
+          ],
+          "display_text": "x = y = z",
+          "complete_lhs_rhs": true,
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "operator_inventory": [
+          "equality"
+        ],
+        "symbol_inventory": {
+          "latex_commands": [],
+          "bare_identifiers": [
+            "x",
+            "y",
+            "z"
+          ]
+        },
+        "extraction_state": "valid_complete",
+        "adapter_eligible": true,
+        "ambiguities": [],
+        "uncertainties": [],
+        "provenance_refs": [
+          {
+            "kind": "file",
+            "ref": "tests/fixtures/label_scoped_obligations/chained_equalities.tex",
+            "sha256": "4864e85e9391efbb2897c73e8f01c8a3ab6208f03e3f323c52fac20fc4e0a21b"
+          },
+          {
+            "kind": "environment",
+            "ref": "env_259abc30dfe6f40641ea16d302e0839556a5d405df619abf3b1824a9f577cb28",
+            "start_byte": 0,
+            "end_byte": 68
+          },
+          {
+            "kind": "label",
+            "ref": "eq:chain",
+            "start_byte": 21,
+            "end_byte": 37
+          },
+          {
+            "kind": "owned_row",
+            "ref": "row_f83844486d01fe3788f48c13ade55bafd299388d36d6a01605ddde39a8ae149c",
+            "start_byte": 14,
+            "end_byte": 37
+          },
+          {
+            "kind": "owned_row",
+            "ref": "row_afe01789162d65471b40ee14ea1ba11d153dba6eb89733d9d4a75ae8b06744b0",
+            "start_byte": 42,
+            "end_byte": 56
+          }
+        ]
+      },
+      "canonical_byte_count": 3151,
+      "obligation_digest": "fd568f602ad5c4a29bce5f9565797d5f79c7f723aff29a2eba74da397eb9a46a",
+      "obligation_id": "obl_fd568f602ad5c4a29bce5f9565797d5f79c7f723aff29a2eba74da397eb9a46a"
+    },
+    {
+      "oracle_path": "/fixtures/4/expected/0",
+      "identity_payload": {
+        "schema_version": "1.0",
+        "document": {
+          "logical_id": "p02-fixture/nested_aligned",
+          "file": "tests/fixtures/label_scoped_obligations/nested_aligned.tex",
+          "source_digest": "63b1f2ed6ab70f142c19e0893bec9716fa058e9f65a10f56648383961ca55b0f",
+          "corpus_version": "p02-reviewed-fixture-20260711"
+        },
+        "label": "eq:nested",
+        "environment": {
+          "environment_id": "env_820946362cdb4bb8927bb93de11367de18fc81f7bc6ee77e5f0745c9caa89536",
+          "kind": "aligned",
+          "starred": false,
+          "environment_stack": [
+            {
+              "environment_id": "env_0a8664e5d5bcde6021536f33500da9f4260335590057eb0d7184973a68842dd3",
+              "kind": "equation",
+              "starred": false,
+              "start_byte": 0,
+              "end_byte": 105
+            },
+            {
+              "environment_id": "env_820946362cdb4bb8927bb93de11367de18fc81f7bc6ee77e5f0745c9caa89536",
+              "kind": "aligned",
+              "starred": false,
+              "start_byte": 17,
+              "end_byte": 90
+            }
+          ],
+          "start_byte": 17,
+          "end_byte": 90,
+          "line_start": 2,
+          "line_end": 5,
+          "parser_backend": "current",
+          "parser_version": "p02_lightweight_locator@1",
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "owned_rows": [
+          {
+            "row_id": "row_a33f0b9e1230f2037cb871710f9b2e6dc105af04829bc096567a65f494752d5c",
+            "row_index": 0,
+            "start_byte": 33,
+            "end_byte": 46,
+            "line_start": 3,
+            "line_end": 3,
+            "explicit_label": null,
+            "label_span": null,
+            "row_shape": "complete_relation",
+            "grouping_reason": "nested_aligned_same_relation",
+            "has_nonumber": false,
+            "environment_stack": [
+              "env_0a8664e5d5bcde6021536f33500da9f4260335590057eb0d7184973a68842dd3",
+              "env_820946362cdb4bb8927bb93de11367de18fc81f7bc6ee77e5f0745c9caa89536"
+            ],
+            "raw_source_sha256": "057da875ea90343d7ddb5e97bab4b7f2d2c23bfa6293c60432a3645761311454"
+          },
+          {
+            "row_id": "row_701e4b122094c52f1fc3f899f05be7fad4089f66c18218f0548ffb2f5f937763",
+            "row_index": 1,
+            "start_byte": 54,
+            "end_byte": 76,
+            "line_start": 4,
+            "line_end": 4,
+            "explicit_label": "eq:nested",
+            "label_span": {
+              "start_byte": 59,
+              "end_byte": 76,
+              "line_start": 4,
+              "line_end": 4
+            },
+            "row_shape": "relation_chain_continuation",
+            "grouping_reason": "explicit_label_seed",
+            "has_nonumber": false,
+            "environment_stack": [
+              "env_0a8664e5d5bcde6021536f33500da9f4260335590057eb0d7184973a68842dd3",
+              "env_820946362cdb4bb8927bb93de11367de18fc81f7bc6ee77e5f0745c9caa89536"
+            ],
+            "raw_source_sha256": "4a6deb004bd185fa840ace6ef7eaba07725f4837a2faa20b5389eb3da0d8190d"
+          }
+        ],
+        "owned_spans": [
+          {
+            "start_byte": 33,
+            "end_byte": 46,
+            "line_start": 3,
+            "line_end": 3
+          },
+          {
+            "start_byte": 54,
+            "end_byte": 76,
+            "line_start": 4,
+            "line_end": 4
+          }
+        ],
+        "continuation_spans": [
+          {
+            "start_byte": 33,
+            "end_byte": 46,
+            "line_start": 3,
+            "line_end": 3
+          }
+        ],
+        "excluded_spans": [],
+        "source_math": "f(x) &= x + 1\\\\\n     &= y \\label{eq:nested}",
+        "normalized_target": {
+          "kind": "equality_chain",
+          "members": [
+            "f(x)",
+            "x + 1",
+            "y"
+          ],
+          "display_text": "f(x) = x + 1 = y",
+          "complete_lhs_rhs": true,
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "operator_inventory": [
+          "equality"
+        ],
+        "symbol_inventory": {
+          "latex_commands": [],
+          "bare_identifiers": [
+            "f",
+            "x",
+            "y"
+          ]
+        },
+        "extraction_state": "valid_complete",
+        "adapter_eligible": true,
+        "ambiguities": [],
+        "uncertainties": [],
+        "provenance_refs": [
+          {
+            "kind": "file",
+            "ref": "tests/fixtures/label_scoped_obligations/nested_aligned.tex",
+            "sha256": "63b1f2ed6ab70f142c19e0893bec9716fa058e9f65a10f56648383961ca55b0f"
+          },
+          {
+            "kind": "environment",
+            "ref": "env_820946362cdb4bb8927bb93de11367de18fc81f7bc6ee77e5f0745c9caa89536",
+            "start_byte": 17,
+            "end_byte": 90
+          },
+          {
+            "kind": "label",
+            "ref": "eq:nested",
+            "start_byte": 59,
+            "end_byte": 76
+          },
+          {
+            "kind": "owned_row",
+            "ref": "row_a33f0b9e1230f2037cb871710f9b2e6dc105af04829bc096567a65f494752d5c",
+            "start_byte": 33,
+            "end_byte": 46
+          },
+          {
+            "kind": "owned_row",
+            "ref": "row_701e4b122094c52f1fc3f899f05be7fad4089f66c18218f0548ffb2f5f937763",
+            "start_byte": 54,
+            "end_byte": 76
+          }
+        ]
+      },
+      "canonical_byte_count": 3459,
+      "obligation_digest": "38a03727fb0bcea791d0e5a4d2b5d22188ceac8590767cdff7e2f8f063cde39e",
+      "obligation_id": "obl_38a03727fb0bcea791d0e5a4d2b5d22188ceac8590767cdff7e2f8f063cde39e"
+    },
+    {
+      "oracle_path": "/fixtures/5/expected/0",
+      "identity_payload": {
+        "schema_version": "1.0",
+        "document": {
+          "logical_id": "p02-fixture/macros_comments_nonumber",
+          "file": "tests/fixtures/label_scoped_obligations/macros_comments_nonumber.tex",
+          "source_digest": "bb7f138151f91c86f4ec9ba35e7e5c9dd4d0a231c7520f97b42af121fcb2f201",
+          "corpus_version": "p02-reviewed-fixture-20260711"
+        },
+        "label": "eq:macro-end",
+        "environment": {
+          "environment_id": "env_939922fab9940a234c0b64d4256a9d2d430d474eda8253dbdbecefe3ad9d7986",
+          "kind": "align",
+          "starred": true,
+          "environment_stack": [
+            {
+              "environment_id": "env_939922fab9940a234c0b64d4256a9d2d430d474eda8253dbdbecefe3ad9d7986",
+              "kind": "align",
+              "starred": true,
+              "start_byte": 0,
+              "end_byte": 162
+            }
+          ],
+          "start_byte": 0,
+          "end_byte": 162,
+          "line_start": 1,
+          "line_end": 6,
+          "parser_backend": "current",
+          "parser_version": "p02_lightweight_locator@1",
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "owned_rows": [
+          {
+            "row_id": "row_e9865773569506608483c2f4bd35572975aa37f45905780e9900c62ddca2d2f3",
+            "row_index": 0,
+            "start_byte": 15,
+            "end_byte": 98,
+            "line_start": 2,
+            "line_end": 3,
+            "explicit_label": null,
+            "label_span": null,
+            "row_shape": "relation_head",
+            "grouping_reason": "backward_number_suppressed_relation_head",
+            "has_nonumber": true,
+            "environment_stack": [
+              "env_939922fab9940a234c0b64d4256a9d2d430d474eda8253dbdbecefe3ad9d7986"
+            ],
+            "raw_source_sha256": "81339819a5ba394a992a8f9075bd60544ff7b3f99618b40a9832f86539c26a23"
+          },
+          {
+            "row_id": "row_811a581bc1a9ac36041f30f1e37efa7e78c75ac6ffe68cdd41220e7b842a82b1",
+            "row_index": 1,
+            "start_byte": 101,
+            "end_byte": 149,
+            "line_start": 4,
+            "line_end": 5,
+            "explicit_label": "eq:macro-end",
+            "label_span": {
+              "start_byte": 129,
+              "end_byte": 149,
+              "line_start": 5,
+              "line_end": 5
+            },
+            "row_shape": "relation_continuation",
+            "grouping_reason": "explicit_label_seed",
+            "has_nonumber": false,
+            "environment_stack": [
+              "env_939922fab9940a234c0b64d4256a9d2d430d474eda8253dbdbecefe3ad9d7986"
+            ],
+            "raw_source_sha256": "e47c2cb51ef9fd6266d4f638fbf3fc4eacaff8426fd79303e55b8f89d68b8bd8"
+          }
+        ],
+        "owned_spans": [
+          {
+            "start_byte": 15,
+            "end_byte": 98,
+            "line_start": 2,
+            "line_end": 3
+          },
+          {
+            "start_byte": 101,
+            "end_byte": 149,
+            "line_start": 4,
+            "line_end": 5
+          }
+        ],
+        "continuation_spans": [
+          {
+            "start_byte": 15,
+            "end_byte": 98,
+            "line_start": 2,
+            "line_end": 3
+          }
+        ],
+        "excluded_spans": [],
+        "source_math": "q(x) &= \\Macro{x} % cafe-accent: café, escaped row separator follows: \\\\\n\\nonumber\\\\\n&\\quad + \\sum_{j=1}^{n} z_j\n\\label{eq:macro-end}",
+        "normalized_target": {
+          "kind": "equality",
+          "members": [
+            "q(x)",
+            "\\Macro{x} + \\sum_{j=1}^{n} z_j"
+          ],
+          "display_text": "q(x) = \\Macro{x} + \\sum_{j=1}^{n} z_j",
+          "complete_lhs_rhs": true,
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "operator_inventory": [
+          "equality",
+          "summation"
+        ],
+        "symbol_inventory": {
+          "latex_commands": [
+            "\\Macro"
+          ],
+          "bare_identifiers": [
+            "j",
+            "n",
+            "q",
+            "x",
+            "z"
+          ]
+        },
+        "extraction_state": "valid_complete",
+        "adapter_eligible": true,
+        "ambiguities": [],
+        "uncertainties": [],
+        "provenance_refs": [
+          {
+            "kind": "file",
+            "ref": "tests/fixtures/label_scoped_obligations/macros_comments_nonumber.tex",
+            "sha256": "bb7f138151f91c86f4ec9ba35e7e5c9dd4d0a231c7520f97b42af121fcb2f201"
+          },
+          {
+            "kind": "environment",
+            "ref": "env_939922fab9940a234c0b64d4256a9d2d430d474eda8253dbdbecefe3ad9d7986",
+            "start_byte": 0,
+            "end_byte": 162
+          },
+          {
+            "kind": "label",
+            "ref": "eq:macro-end",
+            "start_byte": 129,
+            "end_byte": 149
+          },
+          {
+            "kind": "owned_row",
+            "ref": "row_e9865773569506608483c2f4bd35572975aa37f45905780e9900c62ddca2d2f3",
+            "start_byte": 15,
+            "end_byte": 98
+          },
+          {
+            "kind": "owned_row",
+            "ref": "row_811a581bc1a9ac36041f30f1e37efa7e78c75ac6ffe68cdd41220e7b842a82b1",
+            "start_byte": 101,
+            "end_byte": 149
+          }
+        ]
+      },
+      "canonical_byte_count": 3375,
+      "obligation_digest": "a35e2fc02132ca17b6415e0ec7fecd0b11c7d6c2fb5a57e538efe9610cfc0783",
+      "obligation_id": "obl_a35e2fc02132ca17b6415e0ec7fecd0b11c7d6c2fb5a57e538efe9610cfc0783"
+    },
+    {
+      "oracle_path": "/fixtures/6/expected/0",
+      "identity_payload": {
+        "schema_version": "1.0",
+        "document": {
+          "logical_id": "p02-fixture/aligned_definition",
+          "file": "tests/fixtures/label_scoped_obligations/aligned_definition.tex",
+          "source_digest": "d766bbd4be75ebfa0a851d9785980d6bfd89ecd7dc41eae25a182d6273c8b2b7",
+          "corpus_version": "p02-reviewed-fixture-20260711"
+        },
+        "label": "eq:definition",
+        "environment": {
+          "environment_id": "env_1d4a605b0b1392d2815d5c8830e31b49113d62f0dc7d0a6dc322dfda0742cf0e",
+          "kind": "align",
+          "starred": false,
+          "environment_stack": [
+            {
+              "environment_id": "env_1d4a605b0b1392d2815d5c8830e31b49113d62f0dc7d0a6dc322dfda0742cf0e",
+              "kind": "align",
+              "starred": false,
+              "start_byte": 0,
+              "end_byte": 89
+            }
+          ],
+          "start_byte": 0,
+          "end_byte": 89,
+          "line_start": 1,
+          "line_end": 6,
+          "parser_backend": "current",
+          "parser_version": "p02_lightweight_locator@1",
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "owned_rows": [
+          {
+            "row_id": "row_42a90a71aeb312439ec9d1be75dab585f8892e0cc128404f20a06fe65a52aed2",
+            "row_index": 0,
+            "start_byte": 14,
+            "end_byte": 42,
+            "line_start": 2,
+            "line_end": 3,
+            "explicit_label": null,
+            "label_span": null,
+            "row_shape": "definition_head",
+            "grouping_reason": "backward_number_suppressed_relation_head",
+            "has_nonumber": true,
+            "environment_stack": [
+              "env_1d4a605b0b1392d2815d5c8830e31b49113d62f0dc7d0a6dc322dfda0742cf0e"
+            ],
+            "raw_source_sha256": "d1b6699cf916aebe83bc731593f82c9e8d2f8260e15c9cf1a5bb76812442642c"
+          },
+          {
+            "row_id": "row_279a953eeb378364c8189d0fc50dc54dc2febb8fc469e679be361fd2acdbfaa2",
+            "row_index": 1,
+            "start_byte": 45,
+            "end_byte": 77,
+            "line_start": 4,
+            "line_end": 5,
+            "explicit_label": "eq:definition",
+            "label_span": {
+              "start_byte": 56,
+              "end_byte": 77,
+              "line_start": 5,
+              "line_end": 5
+            },
+            "row_shape": "relation_continuation",
+            "grouping_reason": "explicit_label_seed",
+            "has_nonumber": false,
+            "environment_stack": [
+              "env_1d4a605b0b1392d2815d5c8830e31b49113d62f0dc7d0a6dc322dfda0742cf0e"
+            ],
+            "raw_source_sha256": "a01ad144ac3759bd9d7bc1b8deb8a7348367c24d311ae36208cabf169532db31"
+          }
+        ],
+        "owned_spans": [
+          {
+            "start_byte": 14,
+            "end_byte": 42,
+            "line_start": 2,
+            "line_end": 3
+          },
+          {
+            "start_byte": 45,
+            "end_byte": 77,
+            "line_start": 4,
+            "line_end": 5
+          }
+        ],
+        "continuation_spans": [
+          {
+            "start_byte": 14,
+            "end_byte": 42,
+            "line_start": 2,
+            "line_end": 3
+          }
+        ],
+        "excluded_spans": [],
+        "source_math": "F(x) \\coloneqq x^2\n\\nonumber\\\\\n&\\quad + 1\n\\label{eq:definition}",
+        "normalized_target": {
+          "kind": "aligned_definition",
+          "members": [
+            "F(x)",
+            "x^2 + 1"
+          ],
+          "display_text": "F(x) \\coloneqq x^2 + 1",
+          "complete_lhs_rhs": true,
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "operator_inventory": [
+          "definition"
+        ],
+        "symbol_inventory": {
+          "latex_commands": [
+            "\\coloneqq"
+          ],
+          "bare_identifiers": [
+            "F",
+            "x"
+          ]
+        },
+        "extraction_state": "valid_complete",
+        "adapter_eligible": true,
+        "ambiguities": [],
+        "uncertainties": [],
+        "provenance_refs": [
+          {
+            "kind": "file",
+            "ref": "tests/fixtures/label_scoped_obligations/aligned_definition.tex",
+            "sha256": "d766bbd4be75ebfa0a851d9785980d6bfd89ecd7dc41eae25a182d6273c8b2b7"
+          },
+          {
+            "kind": "environment",
+            "ref": "env_1d4a605b0b1392d2815d5c8830e31b49113d62f0dc7d0a6dc322dfda0742cf0e",
+            "start_byte": 0,
+            "end_byte": 89
+          },
+          {
+            "kind": "label",
+            "ref": "eq:definition",
+            "start_byte": 56,
+            "end_byte": 77
+          },
+          {
+            "kind": "owned_row",
+            "ref": "row_42a90a71aeb312439ec9d1be75dab585f8892e0cc128404f20a06fe65a52aed2",
+            "start_byte": 14,
+            "end_byte": 42
+          },
+          {
+            "kind": "owned_row",
+            "ref": "row_279a953eeb378364c8189d0fc50dc54dc2febb8fc469e679be361fd2acdbfaa2",
+            "start_byte": 45,
+            "end_byte": 77
+          }
+        ]
+      },
+      "canonical_byte_count": 3227,
+      "obligation_digest": "fd79b9d81532632a3ccceee7925aa1f6697425171074fb22ea537afb430ccae9",
+      "obligation_id": "obl_fd79b9d81532632a3ccceee7925aa1f6697425171074fb22ea537afb430ccae9"
+    },
+    {
+      "oracle_path": "/fixtures/7/expected/0",
+      "identity_payload": {
+        "schema_version": "1.0",
+        "document": {
+          "logical_id": "p02-fixture/ambiguous_label_ownership",
+          "file": "tests/fixtures/label_scoped_obligations/ambiguous_label_ownership.tex",
+          "source_digest": "cb8ff8edb8a4de9fde787c9bdd5d0a7db59e2bc7bf572e3ed86a45942af5f11a",
+          "corpus_version": "p02-reviewed-fixture-20260711"
+        },
+        "label": "eq:ambiguous-a",
+        "environment": {
+          "environment_id": "env_480a582df766c4c179221d0c14cc2abaac6d0e87f0dbafda10b407eb345e9270",
+          "kind": "align",
+          "starred": false,
+          "environment_stack": [
+            {
+              "environment_id": "env_480a582df766c4c179221d0c14cc2abaac6d0e87f0dbafda10b407eb345e9270",
+              "kind": "align",
+              "starred": false,
+              "start_byte": 0,
+              "end_byte": 77
+            }
+          ],
+          "start_byte": 0,
+          "end_byte": 77,
+          "line_start": 1,
+          "line_end": 3,
+          "parser_backend": "current",
+          "parser_version": "p02_lightweight_locator@1",
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "owned_rows": [],
+        "owned_spans": [],
+        "continuation_spans": [],
+        "excluded_spans": [],
+        "source_math": "",
+        "normalized_target": {
+          "kind": "unavailable",
+          "members": [],
+          "display_text": "",
+          "complete_lhs_rhs": false,
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "operator_inventory": [],
+        "symbol_inventory": {
+          "latex_commands": [],
+          "bare_identifiers": []
+        },
+        "extraction_state": "ambiguous",
+        "adapter_eligible": false,
+        "ambiguities": [
+          {
+            "code": "multiple_explicit_labels_on_one_row",
+            "source_spans": [
+              {
+                "file": "tests/fixtures/label_scoped_obligations/ambiguous_label_ownership.tex",
+                "start_byte": 14,
+                "end_byte": 65
+              }
+            ],
+            "candidate_interpretations": [
+              "owner:eq:ambiguous-a",
+              "owner:eq:ambiguous-b"
+            ],
+            "required_discriminator": "retain exactly one explicit owning label or split the mathematical row into separately labeled rows"
+          }
+        ],
+        "uncertainties": [],
+        "provenance_refs": [
+          {
+            "kind": "file",
+            "ref": "tests/fixtures/label_scoped_obligations/ambiguous_label_ownership.tex",
+            "sha256": "cb8ff8edb8a4de9fde787c9bdd5d0a7db59e2bc7bf572e3ed86a45942af5f11a"
+          },
+          {
+            "kind": "environment",
+            "ref": "env_480a582df766c4c179221d0c14cc2abaac6d0e87f0dbafda10b407eb345e9270",
+            "start_byte": 0,
+            "end_byte": 77
+          },
+          {
+            "kind": "label",
+            "ref": "eq:ambiguous-a",
+            "start_byte": 21,
+            "end_byte": 43
+          }
+        ]
+      },
+      "canonical_byte_count": 2020,
+      "obligation_digest": "9d87e9ce3511a54fd44a36e68dfa6d7f3064c55b5b5491d3df9a38a913b54ebd",
+      "obligation_id": "obl_9d87e9ce3511a54fd44a36e68dfa6d7f3064c55b5b5491d3df9a38a913b54ebd"
+    },
+    {
+      "oracle_path": "/fixtures/7/expected/1",
+      "identity_payload": {
+        "schema_version": "1.0",
+        "document": {
+          "logical_id": "p02-fixture/ambiguous_label_ownership",
+          "file": "tests/fixtures/label_scoped_obligations/ambiguous_label_ownership.tex",
+          "source_digest": "cb8ff8edb8a4de9fde787c9bdd5d0a7db59e2bc7bf572e3ed86a45942af5f11a",
+          "corpus_version": "p02-reviewed-fixture-20260711"
+        },
+        "label": "eq:ambiguous-b",
+        "environment": {
+          "environment_id": "env_480a582df766c4c179221d0c14cc2abaac6d0e87f0dbafda10b407eb345e9270",
+          "kind": "align",
+          "starred": false,
+          "environment_stack": [
+            {
+              "environment_id": "env_480a582df766c4c179221d0c14cc2abaac6d0e87f0dbafda10b407eb345e9270",
+              "kind": "align",
+              "starred": false,
+              "start_byte": 0,
+              "end_byte": 77
+            }
+          ],
+          "start_byte": 0,
+          "end_byte": 77,
+          "line_start": 1,
+          "line_end": 3,
+          "parser_backend": "current",
+          "parser_version": "p02_lightweight_locator@1",
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "owned_rows": [],
+        "owned_spans": [],
+        "continuation_spans": [],
+        "excluded_spans": [],
+        "source_math": "",
+        "normalized_target": {
+          "kind": "unavailable",
+          "members": [],
+          "display_text": "",
+          "complete_lhs_rhs": false,
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "operator_inventory": [],
+        "symbol_inventory": {
+          "latex_commands": [],
+          "bare_identifiers": []
+        },
+        "extraction_state": "ambiguous",
+        "adapter_eligible": false,
+        "ambiguities": [
+          {
+            "code": "multiple_explicit_labels_on_one_row",
+            "source_spans": [
+              {
+                "file": "tests/fixtures/label_scoped_obligations/ambiguous_label_ownership.tex",
+                "start_byte": 14,
+                "end_byte": 65
+              }
+            ],
+            "candidate_interpretations": [
+              "owner:eq:ambiguous-a",
+              "owner:eq:ambiguous-b"
+            ],
+            "required_discriminator": "retain exactly one explicit owning label or split the mathematical row into separately labeled rows"
+          }
+        ],
+        "uncertainties": [],
+        "provenance_refs": [
+          {
+            "kind": "file",
+            "ref": "tests/fixtures/label_scoped_obligations/ambiguous_label_ownership.tex",
+            "sha256": "cb8ff8edb8a4de9fde787c9bdd5d0a7db59e2bc7bf572e3ed86a45942af5f11a"
+          },
+          {
+            "kind": "environment",
+            "ref": "env_480a582df766c4c179221d0c14cc2abaac6d0e87f0dbafda10b407eb345e9270",
+            "start_byte": 0,
+            "end_byte": 77
+          },
+          {
+            "kind": "label",
+            "ref": "eq:ambiguous-b",
+            "start_byte": 43,
+            "end_byte": 65
+          }
+        ]
+      },
+      "canonical_byte_count": 2020,
+      "obligation_digest": "c23bf779e1334467d95857a8e1c73df76f6d555a9e5952cdf0c2e67a7e298de3",
+      "obligation_id": "obl_c23bf779e1334467d95857a8e1c73df76f6d555a9e5952cdf0c2e67a7e298de3"
+    },
+    {
+      "oracle_path": "/fixtures/8/expected_lookup/file_scoped_obligations/0",
+      "identity_payload": {
+        "schema_version": "1.0",
+        "document": {
+          "logical_id": "p02-fixture/duplicate_label_a",
+          "file": "tests/fixtures/label_scoped_obligations/duplicate_label_a.tex",
+          "source_digest": "fef1b001a84c67a12c86b6081718b9a49aee86660c7c0ed73f032df35da9544a",
+          "corpus_version": "p02-reviewed-fixture-20260711"
+        },
+        "label": "eq:duplicate",
+        "environment": {
+          "environment_id": "env_ce29fb873a55021ea12d5279d1a04dc9adcb04730d42748667c106cb3348794c",
+          "kind": "equation",
+          "starred": false,
+          "environment_stack": [
+            {
+              "environment_id": "env_ce29fb873a55021ea12d5279d1a04dc9adcb04730d42748667c106cb3348794c",
+              "kind": "equation",
+              "starred": false,
+              "start_byte": 0,
+              "end_byte": 58
+            }
+          ],
+          "start_byte": 0,
+          "end_byte": 58,
+          "line_start": 1,
+          "line_end": 4,
+          "parser_backend": "current",
+          "parser_version": "p02_lightweight_locator@1",
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "owned_rows": [
+          {
+            "row_id": "row_e6bb9dbfa25c2b9e8e2982285d1c840f82732cd1926e55631580e7b99993dfa9",
+            "row_index": 0,
+            "start_byte": 17,
+            "end_byte": 43,
+            "line_start": 2,
+            "line_end": 3,
+            "explicit_label": "eq:duplicate",
+            "label_span": {
+              "start_byte": 23,
+              "end_byte": 43,
+              "line_start": 3,
+              "line_end": 3
+            },
+            "row_shape": "complete_relation",
+            "grouping_reason": "explicit_label_seed",
+            "has_nonumber": false,
+            "environment_stack": [
+              "env_ce29fb873a55021ea12d5279d1a04dc9adcb04730d42748667c106cb3348794c"
+            ],
+            "raw_source_sha256": "80b36acf395313f2215e248a191727f1be8de6d612555b9bacca17801b4e6b0c"
+          }
+        ],
+        "owned_spans": [
+          {
+            "start_byte": 17,
+            "end_byte": 43,
+            "line_start": 2,
+            "line_end": 3
+          }
+        ],
+        "continuation_spans": [],
+        "excluded_spans": [],
+        "source_math": "x = 1\n\\label{eq:duplicate}",
+        "normalized_target": {
+          "kind": "equality",
+          "members": [
+            "x",
+            "1"
+          ],
+          "display_text": "x = 1",
+          "complete_lhs_rhs": true,
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "operator_inventory": [
+          "equality"
+        ],
+        "symbol_inventory": {
+          "latex_commands": [],
+          "bare_identifiers": [
+            "x"
+          ]
+        },
+        "extraction_state": "valid_complete",
+        "adapter_eligible": true,
+        "ambiguities": [],
+        "uncertainties": [],
+        "provenance_refs": [
+          {
+            "kind": "file",
+            "ref": "tests/fixtures/label_scoped_obligations/duplicate_label_a.tex",
+            "sha256": "fef1b001a84c67a12c86b6081718b9a49aee86660c7c0ed73f032df35da9544a"
+          },
+          {
+            "kind": "environment",
+            "ref": "env_ce29fb873a55021ea12d5279d1a04dc9adcb04730d42748667c106cb3348794c",
+            "start_byte": 0,
+            "end_byte": 58
+          },
+          {
+            "kind": "label",
+            "ref": "eq:duplicate",
+            "start_byte": 23,
+            "end_byte": 43
+          },
+          {
+            "kind": "owned_row",
+            "ref": "row_e6bb9dbfa25c2b9e8e2982285d1c840f82732cd1926e55631580e7b99993dfa9",
+            "start_byte": 17,
+            "end_byte": 43
+          }
+        ]
+      },
+      "canonical_byte_count": 2392,
+      "obligation_digest": "3806265ce70a57e1841245dad58065e1d118c81bc0b9dfb6954cf781c26805f2",
+      "obligation_id": "obl_3806265ce70a57e1841245dad58065e1d118c81bc0b9dfb6954cf781c26805f2"
+    },
+    {
+      "oracle_path": "/fixtures/8/expected_lookup/file_scoped_obligations/1",
+      "identity_payload": {
+        "schema_version": "1.0",
+        "document": {
+          "logical_id": "p02-fixture/duplicate_label_b",
+          "file": "tests/fixtures/label_scoped_obligations/duplicate_label_b.tex",
+          "source_digest": "5ff82fe2ce6f97bf0cc45f6afdcc3288604cfa39dc034255d582a6719eb12b72",
+          "corpus_version": "p02-reviewed-fixture-20260711"
+        },
+        "label": "eq:duplicate",
+        "environment": {
+          "environment_id": "env_ffcaadbc103eacc795f7e3493bd76ba4572e32fc13f7b1e881ab4f24960eef29",
+          "kind": "equation",
+          "starred": false,
+          "environment_stack": [
+            {
+              "environment_id": "env_ffcaadbc103eacc795f7e3493bd76ba4572e32fc13f7b1e881ab4f24960eef29",
+              "kind": "equation",
+              "starred": false,
+              "start_byte": 0,
+              "end_byte": 58
+            }
+          ],
+          "start_byte": 0,
+          "end_byte": 58,
+          "line_start": 1,
+          "line_end": 4,
+          "parser_backend": "current",
+          "parser_version": "p02_lightweight_locator@1",
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "owned_rows": [
+          {
+            "row_id": "row_0d339bdb68ba04acff83db0724c71374e1ca675bf3c5491826876804f900b052",
+            "row_index": 0,
+            "start_byte": 17,
+            "end_byte": 43,
+            "line_start": 2,
+            "line_end": 3,
+            "explicit_label": "eq:duplicate",
+            "label_span": {
+              "start_byte": 23,
+              "end_byte": 43,
+              "line_start": 3,
+              "line_end": 3
+            },
+            "row_shape": "complete_relation",
+            "grouping_reason": "explicit_label_seed",
+            "has_nonumber": false,
+            "environment_stack": [
+              "env_ffcaadbc103eacc795f7e3493bd76ba4572e32fc13f7b1e881ab4f24960eef29"
+            ],
+            "raw_source_sha256": "41e617f83176ffe2df2c8c851e80e3b2fe04c400ae93a4376ae39aa38c3a9b2b"
+          }
+        ],
+        "owned_spans": [
+          {
+            "start_byte": 17,
+            "end_byte": 43,
+            "line_start": 2,
+            "line_end": 3
+          }
+        ],
+        "continuation_spans": [],
+        "excluded_spans": [],
+        "source_math": "x = 2\n\\label{eq:duplicate}",
+        "normalized_target": {
+          "kind": "equality",
+          "members": [
+            "x",
+            "2"
+          ],
+          "display_text": "x = 2",
+          "complete_lhs_rhs": true,
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "operator_inventory": [
+          "equality"
+        ],
+        "symbol_inventory": {
+          "latex_commands": [],
+          "bare_identifiers": [
+            "x"
+          ]
+        },
+        "extraction_state": "valid_complete",
+        "adapter_eligible": true,
+        "ambiguities": [],
+        "uncertainties": [],
+        "provenance_refs": [
+          {
+            "kind": "file",
+            "ref": "tests/fixtures/label_scoped_obligations/duplicate_label_b.tex",
+            "sha256": "5ff82fe2ce6f97bf0cc45f6afdcc3288604cfa39dc034255d582a6719eb12b72"
+          },
+          {
+            "kind": "environment",
+            "ref": "env_ffcaadbc103eacc795f7e3493bd76ba4572e32fc13f7b1e881ab4f24960eef29",
+            "start_byte": 0,
+            "end_byte": 58
+          },
+          {
+            "kind": "label",
+            "ref": "eq:duplicate",
+            "start_byte": 23,
+            "end_byte": 43
+          },
+          {
+            "kind": "owned_row",
+            "ref": "row_0d339bdb68ba04acff83db0724c71374e1ca675bf3c5491826876804f900b052",
+            "start_byte": 17,
+            "end_byte": 43
+          }
+        ]
+      },
+      "canonical_byte_count": 2392,
+      "obligation_digest": "bfa0612134d04e730389868b05d04b5919b3de43c0ccabc53365af796e617a84",
+      "obligation_id": "obl_bfa0612134d04e730389868b05d04b5919b3de43c0ccabc53365af796e617a84"
+    },
+    {
+      "oracle_path": "/fixtures/9/expected/0",
+      "identity_payload": {
+        "schema_version": "1.0",
+        "document": {
+          "logical_id": "p02-fixture/orphan_continuation",
+          "file": "tests/fixtures/label_scoped_obligations/orphan_continuation.tex",
+          "source_digest": "cfab8c75560245b4562651ce60c0524b23188a84f98339168dcab518472cf2b8",
+          "corpus_version": "p02-reviewed-fixture-20260711"
+        },
+        "label": "eq:orphan",
+        "environment": {
+          "environment_id": "env_120a6de5d55f63177a20baa78b01055ecac9250c5661b4bf7179e5037a3b6de4",
+          "kind": "align",
+          "starred": false,
+          "environment_stack": [
+            {
+              "environment_id": "env_120a6de5d55f63177a20baa78b01055ecac9250c5661b4bf7179e5037a3b6de4",
+              "kind": "align",
+              "starred": false,
+              "start_byte": 0,
+              "end_byte": 54
+            }
+          ],
+          "start_byte": 0,
+          "end_byte": 54,
+          "line_start": 1,
+          "line_end": 3,
+          "parser_backend": "current",
+          "parser_version": "p02_lightweight_locator@1",
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "owned_rows": [],
+        "owned_spans": [],
+        "continuation_spans": [],
+        "excluded_spans": [],
+        "source_math": "",
+        "normalized_target": {
+          "kind": "unavailable",
+          "members": [],
+          "display_text": "",
+          "complete_lhs_rhs": false,
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "operator_inventory": [],
+        "symbol_inventory": {
+          "latex_commands": [],
+          "bare_identifiers": []
+        },
+        "extraction_state": "orphaned",
+        "adapter_eligible": false,
+        "ambiguities": [
+          {
+            "code": "missing_relation_head",
+            "source_spans": [
+              {
+                "file": "tests/fixtures/label_scoped_obligations/orphan_continuation.tex",
+                "start_byte": 14,
+                "end_byte": 42
+              }
+            ],
+            "candidate_interpretations": [
+              "attach_to_explicit_preceding_relation_head",
+              "remain_orphaned"
+            ],
+            "required_discriminator": "supply one adjacent number-suppressed relation head in the same environment stack"
+          }
+        ],
+        "uncertainties": [],
+        "provenance_refs": [
+          {
+            "kind": "file",
+            "ref": "tests/fixtures/label_scoped_obligations/orphan_continuation.tex",
+            "sha256": "cfab8c75560245b4562651ce60c0524b23188a84f98339168dcab518472cf2b8"
+          },
+          {
+            "kind": "environment",
+            "ref": "env_120a6de5d55f63177a20baa78b01055ecac9250c5661b4bf7179e5037a3b6de4",
+            "start_byte": 0,
+            "end_byte": 54
+          },
+          {
+            "kind": "label",
+            "ref": "eq:orphan",
+            "start_byte": 25,
+            "end_byte": 42
+          }
+        ]
+      },
+      "canonical_byte_count": 1970,
+      "obligation_digest": "7e435122ec358dc535f6a3554f297bef9204198c55a31d1532ccf93cccea200a",
+      "obligation_id": "obl_7e435122ec358dc535f6a3554f297bef9204198c55a31d1532ccf93cccea200a"
+    },
+    {
+      "oracle_path": "/frozen_sources/0",
+      "identity_payload": {
+        "schema_version": "1.0",
+        "document": {
+          "logical_id": "p02-frozen/dada009a7bdc08c8bb14fd8be5bb2ac737fc0d02f82b25638677e7535845cbf8",
+          "file": "docs/credit-card-npv-component-proposal/credit_card_npv_component_proposal_final_submission.tex",
+          "source_digest": "dada009a7bdc08c8bb14fd8be5bb2ac737fc0d02f82b25638677e7535845cbf8",
+          "corpus_version": "p02-frozen-20260711"
+        },
+        "label": "eq:incremental-cash-flow",
+        "environment": {
+          "environment_id": "env_e1c102922bf8788b37bac5862e650360a88d3009f39c0f28474c1485138c74d3",
+          "kind": "align",
+          "starred": false,
+          "environment_stack": [
+            {
+              "environment_id": "env_e1c102922bf8788b37bac5862e650360a88d3009f39c0f28474c1485138c74d3",
+              "kind": "align",
+              "starred": false,
+              "start_byte": 45275,
+              "end_byte": 45809
+            }
+          ],
+          "start_byte": 45275,
+          "end_byte": 45809,
+          "line_start": 840,
+          "line_end": 862,
+          "parser_backend": "current",
+          "parser_version": "p02_lightweight_locator@1",
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "owned_rows": [
+          {
+            "row_id": "row_0e62ad6f7307a60c52353d46ee1cfecec3f399ce19e5d78379159e792fc129a6",
+            "row_index": 0,
+            "start_byte": 45291,
+            "end_byte": 45429,
+            "line_start": 841,
+            "line_end": 846,
+            "explicit_label": null,
+            "label_span": null,
+            "row_shape": "relation_head",
+            "grouping_reason": "backward_number_suppressed_relation_head",
+            "has_nonumber": true,
+            "environment_stack": [
+              "env_e1c102922bf8788b37bac5862e650360a88d3009f39c0f28474c1485138c74d3"
+            ],
+            "raw_source_sha256": "dcf794ad17b4af7e0662e054febe532efc4552c6b606587472cef6a6ee9f5e29"
+          },
+          {
+            "row_id": "row_f9ebaf0165a4321876ebb438e692e19986b413536dd29826fa95cd41a91dee2d",
+            "row_index": 1,
+            "start_byte": 45434,
+            "end_byte": 45545,
+            "line_start": 847,
+            "line_end": 850,
+            "explicit_label": "eq:incremental-cash-flow",
+            "label_span": {
+              "start_byte": 45513,
+              "end_byte": 45545,
+              "line_start": 850,
+              "line_end": 850
+            },
+            "row_shape": "relation_continuation",
+            "grouping_reason": "explicit_label_seed",
+            "has_nonumber": false,
+            "environment_stack": [
+              "env_e1c102922bf8788b37bac5862e650360a88d3009f39c0f28474c1485138c74d3"
+            ],
+            "raw_source_sha256": "bfb87878d6c9c7f132a20055f7ba826917e511f5a26baa0588a321a680b86beb"
+          }
+        ],
+        "owned_spans": [
+          {
+            "start_byte": 45291,
+            "end_byte": 45429,
+            "line_start": 841,
+            "line_end": 846
+          },
+          {
+            "start_byte": 45434,
+            "end_byte": 45545,
+            "line_start": 847,
+            "line_end": 850
+          }
+        ],
+        "continuation_spans": [
+          {
+            "start_byte": 45291,
+            "end_byte": 45429,
+            "line_start": 841,
+            "line_end": 846
+          }
+        ],
+        "excluded_spans": [
+          {
+            "start_byte": 45550,
+            "end_byte": 45797,
+            "line_start": 851,
+            "line_end": 861,
+            "excluded_sibling_label": "eq:incremental-npv",
+            "reason": "excluded_sibling_label"
+          }
+        ],
+        "source_math": "\\Delta CF_{i,t+h}(a,\\pi;s)\n  &=\n  \\Delta PPNR_{i,t+h}(a,\\pi;s)\n  - \\Delta EL_{i,t+h}(a,\\pi;s)\n  - \\Delta Kchg_{i,t+h}(a,\\pi;s)\n  \\nonumber\\\\\n  &\\quad\n  - \\Delta Tax_{i,t+h}(a,\\pi;s)\n  + \\Delta RelValue_{i,t+h}(a,\\pi;s),\n  \\label{eq:incremental-cash-flow}",
+        "normalized_target": {
+          "kind": "equality",
+          "members": [
+            "\\Delta CF_{i,t+h}(a,\\pi;s)",
+            "\\Delta PPNR_{i,t+h}(a,\\pi;s) - \\Delta EL_{i,t+h}(a,\\pi;s) - \\Delta Kchg_{i,t+h}(a,\\pi;s) - \\Delta Tax_{i,t+h}(a,\\pi;s) + \\Delta RelValue_{i,t+h}(a,\\pi;s)"
+          ],
+          "display_text": "\\Delta CF_{i,t+h}(a,\\pi;s) = \\Delta PPNR_{i,t+h}(a,\\pi;s) - \\Delta EL_{i,t+h}(a,\\pi;s) - \\Delta Kchg_{i,t+h}(a,\\pi;s) - \\Delta Tax_{i,t+h}(a,\\pi;s) + \\Delta RelValue_{i,t+h}(a,\\pi;s)",
+          "complete_lhs_rhs": true,
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "operator_inventory": [
+          "equality"
+        ],
+        "symbol_inventory": {
+          "latex_commands": [
+            "\\Delta",
+            "\\pi"
+          ],
+          "bare_identifiers": [
+            "CF",
+            "EL",
+            "Kchg",
+            "PPNR",
+            "RelValue",
+            "Tax",
+            "a",
+            "h",
+            "i",
+            "s",
+            "t"
+          ]
+        },
+        "extraction_state": "valid_complete",
+        "adapter_eligible": true,
+        "ambiguities": [],
+        "uncertainties": [],
+        "provenance_refs": [
+          {
+            "kind": "file",
+            "ref": "docs/credit-card-npv-component-proposal/credit_card_npv_component_proposal_final_submission.tex",
+            "sha256": "dada009a7bdc08c8bb14fd8be5bb2ac737fc0d02f82b25638677e7535845cbf8"
+          },
+          {
+            "kind": "environment",
+            "ref": "env_e1c102922bf8788b37bac5862e650360a88d3009f39c0f28474c1485138c74d3",
+            "start_byte": 45275,
+            "end_byte": 45809
+          },
+          {
+            "kind": "label",
+            "ref": "eq:incremental-cash-flow",
+            "start_byte": 45513,
+            "end_byte": 45545
+          },
+          {
+            "kind": "owned_row",
+            "ref": "row_0e62ad6f7307a60c52353d46ee1cfecec3f399ce19e5d78379159e792fc129a6",
+            "start_byte": 45291,
+            "end_byte": 45429
+          },
+          {
+            "kind": "owned_row",
+            "ref": "row_f9ebaf0165a4321876ebb438e692e19986b413536dd29826fa95cd41a91dee2d",
+            "start_byte": 45434,
+            "end_byte": 45545
+          }
+        ]
+      },
+      "canonical_byte_count": 4215,
+      "obligation_digest": "7301b910ea0fe118e3ad38d2d69c6c9cd6e924aba15fb1e1147e710bdfe2b5a0",
+      "obligation_id": "obl_7301b910ea0fe118e3ad38d2d69c6c9cd6e924aba15fb1e1147e710bdfe2b5a0"
+    },
+    {
+      "oracle_path": "/frozen_sources/1",
+      "identity_payload": {
+        "schema_version": "1.0",
+        "document": {
+          "logical_id": "p02-frozen/dada009a7bdc08c8bb14fd8be5bb2ac737fc0d02f82b25638677e7535845cbf8",
+          "file": "docs/credit-card-npv-component-proposal/credit_card_npv_component_proposal_final_submission.tex",
+          "source_digest": "dada009a7bdc08c8bb14fd8be5bb2ac737fc0d02f82b25638677e7535845cbf8",
+          "corpus_version": "p02-frozen-20260711"
+        },
+        "label": "eq:incremental-npv",
+        "environment": {
+          "environment_id": "env_e1c102922bf8788b37bac5862e650360a88d3009f39c0f28474c1485138c74d3",
+          "kind": "align",
+          "starred": false,
+          "environment_stack": [
+            {
+              "environment_id": "env_e1c102922bf8788b37bac5862e650360a88d3009f39c0f28474c1485138c74d3",
+              "kind": "align",
+              "starred": false,
+              "start_byte": 45275,
+              "end_byte": 45809
+            }
+          ],
+          "start_byte": 45275,
+          "end_byte": 45809,
+          "line_start": 840,
+          "line_end": 862,
+          "parser_backend": "current",
+          "parser_version": "p02_lightweight_locator@1",
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "owned_rows": [
+          {
+            "row_id": "row_55f37c61f50a9abe1e955816fcb420f17384bf7cc8085a64daabf4d3c149601d",
+            "row_index": 2,
+            "start_byte": 45550,
+            "end_byte": 45797,
+            "line_start": 851,
+            "line_end": 861,
+            "explicit_label": "eq:incremental-npv",
+            "label_span": {
+              "start_byte": 45771,
+              "end_byte": 45797,
+              "line_start": 861,
+              "line_end": 861
+            },
+            "row_shape": "complete_relation",
+            "grouping_reason": "explicit_label_seed",
+            "has_nonumber": false,
+            "environment_stack": [
+              "env_e1c102922bf8788b37bac5862e650360a88d3009f39c0f28474c1485138c74d3"
+            ],
+            "raw_source_sha256": "c7b9f7c5259de03a60cee004e638e7a312cb94d27dccc58873dc7462a08272d7"
+          }
+        ],
+        "owned_spans": [
+          {
+            "start_byte": 45550,
+            "end_byte": 45797,
+            "line_start": 851,
+            "line_end": 861
+          }
+        ],
+        "continuation_spans": [],
+        "excluded_spans": [
+          {
+            "start_byte": 45291,
+            "end_byte": 45429,
+            "line_start": 841,
+            "line_end": 846,
+            "excluded_sibling_label": "eq:incremental-cash-flow",
+            "reason": "excluded_sibling_label"
+          },
+          {
+            "start_byte": 45434,
+            "end_byte": 45545,
+            "line_start": 847,
+            "line_end": 850,
+            "excluded_sibling_label": "eq:incremental-cash-flow",
+            "reason": "excluded_sibling_label"
+          }
+        ],
+        "source_math": "\\Delta \\NPV_i(a;d,s,\\pi)\n  &=\n  - C_i^{\\mathrm{acq}}(a)\n  +\n  \\E\\left[\n    \\sum_{h=0}^{H}\n      \\delta_h\\,\\Delta CF_{i,t+h}(a,\\pi;s)\n    + \\delta_H\\Delta TV_{i,t+H}(a,\\pi;s)\n    \\,\\middle|\\, \\mathcal{I}_{id}\n  \\right].\n  \\label{eq:incremental-npv}",
+        "normalized_target": {
+          "kind": "equality",
+          "members": [
+            "\\Delta \\NPV_i(a;d,s,\\pi)",
+            "- C_i^{\\mathrm{acq}}(a) + \\E\\left[ \\sum_{h=0}^{H} \\delta_h\\,\\Delta CF_{i,t+h}(a,\\pi;s) + \\delta_H\\Delta TV_{i,t+H}(a,\\pi;s) \\,\\middle|\\, \\mathcal{I}_{id} \\right]"
+          ],
+          "display_text": "\\Delta \\NPV_i(a;d,s,\\pi) = - C_i^{\\mathrm{acq}}(a) + \\E\\left[ \\sum_{h=0}^{H} \\delta_h\\,\\Delta CF_{i,t+h}(a,\\pi;s) + \\delta_H\\Delta TV_{i,t+H}(a,\\pi;s) \\,\\middle|\\, \\mathcal{I}_{id} \\right]",
+          "complete_lhs_rhs": true,
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "operator_inventory": [
+          "equality",
+          "conditional_expectation",
+          "conditional_bar",
+          "summation"
+        ],
+        "symbol_inventory": {
+          "latex_commands": [
+            "\\Delta",
+            "\\E",
+            "\\NPV",
+            "\\delta",
+            "\\pi"
+          ],
+          "bare_identifiers": [
+            "C",
+            "CF",
+            "H",
+            "I",
+            "TV",
+            "a",
+            "acq",
+            "d",
+            "h",
+            "i",
+            "id",
+            "s",
+            "t"
+          ]
+        },
+        "extraction_state": "valid_complete",
+        "adapter_eligible": true,
+        "ambiguities": [],
+        "uncertainties": [],
+        "provenance_refs": [
+          {
+            "kind": "file",
+            "ref": "docs/credit-card-npv-component-proposal/credit_card_npv_component_proposal_final_submission.tex",
+            "sha256": "dada009a7bdc08c8bb14fd8be5bb2ac737fc0d02f82b25638677e7535845cbf8"
+          },
+          {
+            "kind": "environment",
+            "ref": "env_e1c102922bf8788b37bac5862e650360a88d3009f39c0f28474c1485138c74d3",
+            "start_byte": 45275,
+            "end_byte": 45809
+          },
+          {
+            "kind": "label",
+            "ref": "eq:incremental-npv",
+            "start_byte": 45771,
+            "end_byte": 45797
+          },
+          {
+            "kind": "owned_row",
+            "ref": "row_55f37c61f50a9abe1e955816fcb420f17384bf7cc8085a64daabf4d3c149601d",
+            "start_byte": 45550,
+            "end_byte": 45797
+          }
+        ]
+      },
+      "canonical_byte_count": 3688,
+      "obligation_digest": "d9f072ac09016b17d5630556329bc871e79386a442c8c26587ef39a0134eeaac",
+      "obligation_id": "obl_d9f072ac09016b17d5630556329bc871e79386a442c8c26587ef39a0134eeaac"
+    },
+    {
+      "oracle_path": "/frozen_sources/2",
+      "identity_payload": {
+        "schema_version": "1.0",
+        "document": {
+          "logical_id": "p02-frozen/d66501516115493b9ffe6d0cc9b2eb85964dc352aba6539768b81fd6ad6923c1",
+          "file": "docs/risky-debt-maliar-deep-learning-lecture-note.tex",
+          "source_digest": "d66501516115493b9ffe6d0cc9b2eb85964dc352aba6539768b81fd6ad6923c1",
+          "corpus_version": "p02-frozen-20260711"
+        },
+        "label": "eq:foc-k",
+        "environment": {
+          "environment_id": "env_eef694d9669aecdcb2f1c4944f39edc460b3bc49ab3110725d5af3a9dc79336e",
+          "kind": "align",
+          "starred": false,
+          "environment_stack": [
+            {
+              "environment_id": "env_eef694d9669aecdcb2f1c4944f39edc460b3bc49ab3110725d5af3a9dc79336e",
+              "kind": "align",
+              "starred": false,
+              "start_byte": 29171,
+              "end_byte": 29396
+            }
+          ],
+          "start_byte": 29171,
+          "end_byte": 29396,
+          "line_start": 775,
+          "line_end": 786,
+          "parser_backend": "current",
+          "parser_version": "p02_lightweight_locator@1",
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "owned_rows": [
+          {
+            "row_id": "row_9974d7ba795f20157844d2c133cd87c81a42075344fe3476ec7478fdf0c4c4e3",
+            "row_index": 0,
+            "start_byte": 29187,
+            "end_byte": 29283,
+            "line_start": 776,
+            "line_end": 780,
+            "explicit_label": "eq:foc-k",
+            "label_span": {
+              "start_byte": 29267,
+              "end_byte": 29283,
+              "line_start": 780,
+              "line_end": 780
+            },
+            "row_shape": "complete_relation",
+            "grouping_reason": "explicit_label_seed",
+            "has_nonumber": false,
+            "environment_stack": [
+              "env_eef694d9669aecdcb2f1c4944f39edc460b3bc49ab3110725d5af3a9dc79336e"
+            ],
+            "raw_source_sha256": "409e717171f928234feda476f84dea1a15993b181e7b7f40053f8b3424a24695"
+          }
+        ],
+        "owned_spans": [
+          {
+            "start_byte": 29187,
+            "end_byte": 29283,
+            "line_start": 776,
+            "line_end": 780
+          }
+        ],
+        "continuation_spans": [],
+        "excluded_spans": [
+          {
+            "start_byte": 29288,
+            "end_byte": 29384,
+            "line_start": 781,
+            "line_end": 785,
+            "excluded_sibling_label": "eq:foc-b",
+            "reason": "excluded_sibling_label"
+          }
+        ],
+        "source_math": "0\n  &=\n  m(\\bar e)\\frac{d\\bar e}{dk'}\n  +\\beta \\E[V^\\star_k(k',b',z')\\mid z],\n  \\label{eq:foc-k}",
+        "normalized_target": {
+          "kind": "equality",
+          "members": [
+            "0",
+            "m(\\bar e)\\frac{d\\bar e}{dk'} +\\beta \\E[V^\\star_k(k',b',z')\\mid z]"
+          ],
+          "display_text": "0 = m(\\bar e)\\frac{d\\bar e}{dk'} +\\beta \\E[V^\\star_k(k',b',z')\\mid z]",
+          "complete_lhs_rhs": true,
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "operator_inventory": [
+          "equality",
+          "conditional_expectation",
+          "conditional_bar",
+          "derivative"
+        ],
+        "symbol_inventory": {
+          "latex_commands": [
+            "\\E",
+            "\\beta"
+          ],
+          "bare_identifiers": [
+            "V",
+            "b",
+            "d",
+            "dk",
+            "e",
+            "k",
+            "m",
+            "z"
+          ]
+        },
+        "extraction_state": "valid_complete",
+        "adapter_eligible": true,
+        "ambiguities": [],
+        "uncertainties": [],
+        "provenance_refs": [
+          {
+            "kind": "file",
+            "ref": "docs/risky-debt-maliar-deep-learning-lecture-note.tex",
+            "sha256": "d66501516115493b9ffe6d0cc9b2eb85964dc352aba6539768b81fd6ad6923c1"
+          },
+          {
+            "kind": "environment",
+            "ref": "env_eef694d9669aecdcb2f1c4944f39edc460b3bc49ab3110725d5af3a9dc79336e",
+            "start_byte": 29171,
+            "end_byte": 29396
+          },
+          {
+            "kind": "label",
+            "ref": "eq:foc-k",
+            "start_byte": 29267,
+            "end_byte": 29283
+          },
+          {
+            "kind": "owned_row",
+            "ref": "row_9974d7ba795f20157844d2c133cd87c81a42075344fe3476ec7478fdf0c4c4e3",
+            "start_byte": 29187,
+            "end_byte": 29283
+          }
+        ]
+      },
+      "canonical_byte_count": 2922,
+      "obligation_digest": "d987e605da2d4e509d0d65289a56e9b7f5d121273543bdf74276b9fb4c23bba5",
+      "obligation_id": "obl_d987e605da2d4e509d0d65289a56e9b7f5d121273543bdf74276b9fb4c23bba5"
+    },
+    {
+      "oracle_path": "/frozen_sources/3",
+      "identity_payload": {
+        "schema_version": "1.0",
+        "document": {
+          "logical_id": "p02-frozen/d66501516115493b9ffe6d0cc9b2eb85964dc352aba6539768b81fd6ad6923c1",
+          "file": "docs/risky-debt-maliar-deep-learning-lecture-note.tex",
+          "source_digest": "d66501516115493b9ffe6d0cc9b2eb85964dc352aba6539768b81fd6ad6923c1",
+          "corpus_version": "p02-frozen-20260711"
+        },
+        "label": "eq:foc-b",
+        "environment": {
+          "environment_id": "env_eef694d9669aecdcb2f1c4944f39edc460b3bc49ab3110725d5af3a9dc79336e",
+          "kind": "align",
+          "starred": false,
+          "environment_stack": [
+            {
+              "environment_id": "env_eef694d9669aecdcb2f1c4944f39edc460b3bc49ab3110725d5af3a9dc79336e",
+              "kind": "align",
+              "starred": false,
+              "start_byte": 29171,
+              "end_byte": 29396
+            }
+          ],
+          "start_byte": 29171,
+          "end_byte": 29396,
+          "line_start": 775,
+          "line_end": 786,
+          "parser_backend": "current",
+          "parser_version": "p02_lightweight_locator@1",
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "owned_rows": [
+          {
+            "row_id": "row_61e50abbdd1958b1ba8a0056fa075cc03c13a8ec1a73431822e48fba3548fc72",
+            "row_index": 1,
+            "start_byte": 29288,
+            "end_byte": 29384,
+            "line_start": 781,
+            "line_end": 785,
+            "explicit_label": "eq:foc-b",
+            "label_span": {
+              "start_byte": 29368,
+              "end_byte": 29384,
+              "line_start": 785,
+              "line_end": 785
+            },
+            "row_shape": "complete_relation",
+            "grouping_reason": "explicit_label_seed",
+            "has_nonumber": false,
+            "environment_stack": [
+              "env_eef694d9669aecdcb2f1c4944f39edc460b3bc49ab3110725d5af3a9dc79336e"
+            ],
+            "raw_source_sha256": "cd3f156d7b568e0854c3177599d2774087060575267a05bb1cbab74ae7df5f5a"
+          }
+        ],
+        "owned_spans": [
+          {
+            "start_byte": 29288,
+            "end_byte": 29384,
+            "line_start": 781,
+            "line_end": 785
+          }
+        ],
+        "continuation_spans": [],
+        "excluded_spans": [
+          {
+            "start_byte": 29187,
+            "end_byte": 29283,
+            "line_start": 776,
+            "line_end": 780,
+            "excluded_sibling_label": "eq:foc-k",
+            "reason": "excluded_sibling_label"
+          }
+        ],
+        "source_math": "0\n  &=\n  m(\\bar e)\\frac{d\\bar e}{db'}\n  +\\beta \\E[V^\\star_b(k',b',z')\\mid z].\n  \\label{eq:foc-b}",
+        "normalized_target": {
+          "kind": "equality",
+          "members": [
+            "0",
+            "m(\\bar e)\\frac{d\\bar e}{db'} +\\beta \\E[V^\\star_b(k',b',z')\\mid z]"
+          ],
+          "display_text": "0 = m(\\bar e)\\frac{d\\bar e}{db'} +\\beta \\E[V^\\star_b(k',b',z')\\mid z]",
+          "complete_lhs_rhs": true,
+          "normalization_version": "p02_latex_surface_normalization@1"
+        },
+        "operator_inventory": [
+          "equality",
+          "conditional_expectation",
+          "conditional_bar",
+          "derivative"
+        ],
+        "symbol_inventory": {
+          "latex_commands": [
+            "\\E",
+            "\\beta"
+          ],
+          "bare_identifiers": [
+            "V",
+            "b",
+            "d",
+            "db",
+            "e",
+            "k",
+            "m",
+            "z"
+          ]
+        },
+        "extraction_state": "valid_complete",
+        "adapter_eligible": true,
+        "ambiguities": [],
+        "uncertainties": [],
+        "provenance_refs": [
+          {
+            "kind": "file",
+            "ref": "docs/risky-debt-maliar-deep-learning-lecture-note.tex",
+            "sha256": "d66501516115493b9ffe6d0cc9b2eb85964dc352aba6539768b81fd6ad6923c1"
+          },
+          {
+            "kind": "environment",
+            "ref": "env_eef694d9669aecdcb2f1c4944f39edc460b3bc49ab3110725d5af3a9dc79336e",
+            "start_byte": 29171,
+            "end_byte": 29396
+          },
+          {
+            "kind": "label",
+            "ref": "eq:foc-b",
+            "start_byte": 29368,
+            "end_byte": 29384
+          },
+          {
+            "kind": "owned_row",
+            "ref": "row_61e50abbdd1958b1ba8a0056fa075cc03c13a8ec1a73431822e48fba3548fc72",
+            "start_byte": 29288,
+            "end_byte": 29384
+          }
+        ]
+      },
+      "canonical_byte_count": 2922,
+      "obligation_digest": "8d04797cf7e394624890ab2e0b0688f22d86d9194de94af3aa1407fb1a45edca",
+      "obligation_id": "obl_8d04797cf7e394624890ab2e0b0688f22d86d9194de94af3aa1407fb1a45edca"
+    }
+  ]
+}

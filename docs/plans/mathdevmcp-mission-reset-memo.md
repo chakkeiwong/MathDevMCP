@@ -1,18 +1,24 @@
 # MathDevMCP Mission Reset Memo
 
 Date: 2026-07-04
+Mission wording amended: 2026-07-10
 
-Status: `READ_THIS_FIRST_FOR_MISSION_ALIGNMENT_REVIEW_AGREED`
+Status: `READ_THIS_FIRST_REAL_DOCUMENT_AUDIT_OPEN_GAPS_2026_07_16`
 
 ## Read This First
 
 The benchmark is an instrument, not the mission.
 
-The mission is to build a conservative agent-facing math-development tool,
-exposed through CLI/MCP, that helps agents and colleagues audit mathematical
-code and documents, locate proof gaps, missing assumptions, implementation
-mismatches, and backend limitations, while never mistaking diagnostics for
-proof.
+The mission is to build an exploratory, high-standard, rigorous, agent-facing
+mathematical development system, exposed through CLI/MCP, that helps agents
+and colleagues audit and develop mathematical code and documents, locate proof
+gaps, missing assumptions, implementation mismatches, and backend limitations,
+and investigate candidate repairs while never mistaking diagnostics or
+hypotheses for proof.
+
+The system is exploratory in search and rigorous at the claim boundary:
+candidate branches may be speculative, but published repairs and verified
+claims require explicit assumptions and reproducible supporting evidence.
 
 Before starting any substantial lane, read:
 
@@ -21,11 +27,51 @@ Before starting any substantial lane, read:
 - `docs/plans/mathdevmcp-evidence-to-implementation-ledger.md`
 - `docs/plans/mathdevmcp-agent-consumable-gap-proposal-mission-control-2026-07-06.md`
 
-Sonnet max read-only review agreed with this mission spine:
+Sonnet max read-only review agreed with the 2026-07-04 wording of this mission
+spine:
 `REVIEW_STATUS=agreed`, `VERDICT=AGREE`,
 `RUN_DIR=.claude_reviews/20260704-021100-mathdevmcp-mission-spine-sonnet-r1`.
+The 2026-07-10 wording amendment has not inherited that review verdict; it
+preserves the reviewed evidence and claim-boundary rules.
 
 ## Current Direction
+
+The 2026-07-16 full public-surface mission audit against the credit-card NPV
+proposal has final status `MISSION_NOT_YET_ACCOMPLISHED`; see
+`docs/plans/mathdevmcp-credit-card-full-mission-audit-result-2026-07-16.md`.
+All 57 public MCP tools were accounted for, 48 were invoked with valid bounded
+inputs, and 9 were explicitly inapplicable because the document does not bind
+their required code, literature, or temporal inputs. The strongest repaired
+lane is substantively useful, but the audit found claim-boundary and workflow
+vetoes: a source definition is falsely refuted as a theorem, high-level tools
+do not share one complete extraction contract, duplicate labels are not safely
+bound everywhere, and branches stop before source-faithful specialist
+execution. The full suite also remains non-clean at 1531 passed, 33 failed, and
+4 skipped.
+
+The next program should be a focused semantic target-unification and execution
+repair, not another benchmark or governance cycle:
+
+1. carry typed claim roles and exact file/content identity through extraction,
+   packets, proof routing, and reports;
+2. make every high-level document workflow consume the repaired label-scoped
+   complete-row obligation;
+3. prohibit definition/identity targets from entering free-variable theorem
+   refutation routes;
+4. add expression-aware assumption discharge;
+5. execute one reviewed discounted-cash-flow/valuation obligation end to end
+   through an installed specialist backend;
+6. repair the independent full-suite checker, isolation, FOC, and pilot
+   failures, then rerun this credit-card audit as the regression test.
+
+The real-document remediation program completed Phases 00-09 on 2026-07-15
+with final bounded status `SAFE_AND_SUBSTANTIVELY_USEFUL`; see
+`docs/plans/mathdevmcp-real-document-remediation-phase-09-final-red-team-and-decision-result-2026-07-15.md`.
+The result establishes one exact `backend_checked` real-document subclaim and
+an actionable two-document compact workflow. It does not establish proof,
+broad corpus validity, publication, release, defaults, or full-suite health.
+Do not reopen that program absent a newly identified defect; start the next
+scientific/product lane with a fresh evidence contract.
 
 The v2 downstream-agent usefulness collection is closed as a bounded local
 diagnostic with final Sonnet review agreement.
@@ -79,21 +125,24 @@ source label or code path
 Draft and execute a mission-aligned implementation plan:
 
 ```text
-Review/Handoff Packet Product Improvement
+Source-Bound Semantic Target Unification And Valuation Execution
 ```
 
 Likely scope:
 
-- inspect current review-packet and handoff-packet builders;
-- map the v2 winning case to missing product behavior;
-- add or refine a compact packet schema if needed;
-- implement focused improvements in the existing workflow surfaces;
-- add tests for packet actionability, non-claim discipline, provenance,
-  route-gap clarity, and CLI/MCP output shape;
-- run targeted tests and the relevant benchmark/regression guard.
+- define and preserve typed claim roles, especially definition versus theorem;
+- require exact file/content identity for ambiguous labels;
+- route every high-level document workflow through the complete label-scoped
+  obligation contract;
+- normalize expression-specific assumptions against backend preconditions;
+- add one reviewed discounted-cash-flow or valuation formalization and execute
+  it through an installed specialist backend;
+- repair the full-suite root failures relevant to checkers, isolation, the FOC
+  regression, and the real-local pilot;
+- rerun the credit-card mission audit as the end-to-end regression.
 
-Stop if the plan turns back into "make v3 benchmark" without a concrete
-product workflow change.
+Stop if the plan turns back into benchmark or governance expansion without a
+concrete source-bound semantic or execution repair.
 
 ## 2026-07-06 Derivation Target Extraction/Routing Handoff
 

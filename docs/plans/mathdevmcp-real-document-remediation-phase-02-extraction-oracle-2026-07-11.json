@@ -1,0 +1,2232 @@
+{
+  "schema_version": "p02_reviewed_extraction_oracle@1",
+  "normalization_version": "p02_latex_surface_normalization@1",
+  "inventory_version": "p02_scoped_inventory@1",
+  "row_shape_version": "p02_row_shape@1",
+  "materialized_obligations_oracle": {
+    "ref": "docs/plans/mathdevmcp-real-document-remediation-phase-02-materialized-obligations-oracle-2026-07-11.json",
+    "sha256": "ae7aa48fb8c475c7c37c75158a9ed6f83b21a686bc8cd8ca2b28c79b36bcb1ad",
+    "schema_version": "p02_materialized_obligations_oracle@1",
+    "obligation_count": 17
+  },
+  "governance_action_profile": {
+    "schema_version": "p02_governance_action_profile@1",
+    "python": "/home/chakwong/miniconda3/envs/tfgpu/bin/python3",
+    "governance_script": "scripts/p02_governance.py",
+    "action_order": [
+      "init_round",
+      "localizer_tests",
+      "obligation_tests",
+      "target_integration_tests",
+      "parser_fidelity_tests",
+      "frozen_regressions",
+      "p00_quarantine",
+      "generate_extraction_bundle",
+      "mutation_ambiguity_gate",
+      "zero_backend_source_edit_gate",
+      "compile",
+      "protected_check",
+      "implementation_exit",
+      "allowlist",
+      "diff",
+      "bind_result",
+      "build_run_manifest",
+      "build_candidate",
+      "candidate_gate",
+      "result_review_binding",
+      "build_final_candidate",
+      "final_candidate_gate",
+      "final_seal_audit_binding",
+      "stable_publication"
+    ],
+    "failure_suffix_order": [
+      "bind_scoped_repair",
+      "close_round"
+    ],
+    "registered_action_ids_rule": "the actions object keys are exactly action_order followed by failure_suffix_order; each action's success_sequence is its fixed position on the full pass path or null for a failure-only action; receipt.sequence is always the next positive integer in the actual verified trace and is never taken from success_sequence",
+    "external_argv_templates": {
+      "init_round": [
+        "/usr/bin/env",
+        "PYTHONPATH=src",
+        "/home/chakwong/miniconda3/envs/tfgpu/bin/python3",
+        "scripts/p02_governance.py",
+        "init-round",
+        "--round-root",
+        "RR"
+      ],
+      "run": [
+        "/usr/bin/env",
+        "PYTHONPATH=src",
+        "/home/chakwong/miniconda3/envs/tfgpu/bin/python3",
+        "scripts/p02_governance.py",
+        "run",
+        "--round-root",
+        "RR",
+        "--action",
+        "ACTION"
+      ],
+      "run_with_artifact_ref": [
+        "/usr/bin/env",
+        "PYTHONPATH=src",
+        "/home/chakwong/miniconda3/envs/tfgpu/bin/python3",
+        "scripts/p02_governance.py",
+        "run",
+        "--round-root",
+        "RR",
+        "--action",
+        "ACTION",
+        "--artifact-ref",
+        "ARTIFACT_REF"
+      ]
+    },
+    "argument_rule": "init_round is accepted only by the distinct init-round operation; actions 2 through 24 and the two conditionally selected failure-suffix actions are accepted only by run --action; only result_review_binding and final_seal_audit_binding accept one artifact-ref and it must equal the action's exact round-specific template; bind_scoped_repair and close_round read only their fixed round-local inputs; no other option, positional argument, abbreviation, repeated argument, or action not selected by failure_state_machine is accepted",
+    "dispatch_depth": {
+      "environment_key": "MATHDEVMCP_P02_DISPATCH_DEPTH",
+      "caller_required_value": null,
+      "scoped_value": "1",
+      "guard_stage": "before round-root creation, mutation, log creation, handler invocation, child launch, or receipt allocation",
+      "reentry_rule": "any present caller value or any direct or indirect governance re-entry fails at guard_stage and creates no receipt"
+    },
+    "derived_environment": {
+      "rejected_caller_keys": [
+        "MATHDEVMCP_P02_ACTION",
+        "MATHDEVMCP_P02_DISPATCH_DEPTH",
+        "MATHDEVMCP_P02_ROUND_ROOT"
+      ],
+      "derivation_rule": "after validated no-symlink round-root and exact action selection, governance alone derives ACTION, RR, and dispatch depth"
+    },
+    "child_environment": {
+      "inheritance": "none",
+      "template": {
+        "HOME": "RR/governance/home",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "MATHDEVMCP_P02_ACTION": "ACTION",
+        "MATHDEVMCP_P02_DISPATCH_DEPTH": "1",
+        "MATHDEVMCP_P02_ROUND_ROOT": "RR",
+        "PATH": "/usr/bin:/bin",
+        "PYTHONHASHSEED": "0",
+        "PYTHONPATH": "src",
+        "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
+        "TMPDIR": "RR/governance/tmp"
+      },
+      "directory_rule": "init_round creates the no-symlink HOME and TMPDIR below RR before any subprocess action; later actions reject a missing, symlinked, or non-directory component",
+      "digest_rule": "child_environment_sha256 is SHA-256 of P01-canonical JSON bytes of the exact fully substituted child environment object",
+      "parser_exception": "parser subprocesses started by parser_fidelity_tests replace this environment with parser_fidelity_profile.environment and have their own exact invocation ledger"
+    },
+    "receipt_execution_fields": [
+      "execution_class",
+      "handler_id",
+      "external_argv",
+      "child_argv",
+      "child_environment_sha256"
+    ],
+    "receipt_execution_rule": "subprocess requires null handler_id plus non-null child_argv and child_environment_sha256; governance_native requires exact non-null handler_id and requires both child_argv and child_environment_sha256 to be null; init_round follows governance_native nullability; external_argv is always populated and must not equal a non-null child_argv",
+    "native_handler_rule": "invoke the named handler exactly once in the current process; a native handler never invokes p02_governance.py, allocates a nested receipt, or launches any subprocess; the outer initializer or dispatcher alone writes the action receipt after the handler returns",
+    "subprocess_rule": "launch exactly one direct child with shell false, fixed cwd at workspace root, exact child argv, exact child environment, captured stdout and stderr, no retry, and no alternate executable",
+    "fixed_artifact_refs": {
+      "human_result": "docs/plans/mathdevmcp-real-document-remediation-phase-02-label-scoped-extraction-result-RESULT_ROUND-2026-07-11.md",
+      "machine_result": "RR/P02-result.json",
+      "run_manifest": "RR/run-manifest.json",
+      "candidate": "RR/P02-candidate-decision.json",
+      "candidate_validation_log": "RR/logs/candidate-validation.json",
+      "result_review": "docs/reviews/mathdevmcp-real-document-remediation-phase-02-result-review-RESULT_ROUND-result-2026-07-11.md",
+      "final_candidate": "RR/P02-final-decision-candidate.json",
+      "final_validation_log": "RR/logs/final-candidate-validation.json",
+      "final_seal_audit": "docs/reviews/mathdevmcp-real-document-remediation-phase-02-final-seal-audit-RESULT_ROUND-result-2026-07-11.md",
+      "scoped_repair": "RR/inputs/scoped-repair.json",
+      "round_close": "RR/round-close.json",
+      "round_implementation_manifest": "RR/implementation-round-sha256.txt",
+      "stable_decision": ".local/mathdevmcp/evidence/p02-20260711/phase-results/P02-decision.json"
+    },
+    "entry_snapshot_schema": {
+      "schema_version": "p02_entry_record@1",
+      "root": ".local/mathdevmcp/evidence/p02-20260711/entry",
+      "fixed_ref": ".local/mathdevmcp/evidence/p02-20260711/entry/entry-record.json",
+      "exact_keys": [
+        "schema_version",
+        "phase",
+        "reviewed_plan_ref",
+        "reviewed_plan_sha256",
+        "reviewed_compact_oracle_ref",
+        "reviewed_compact_oracle_sha256",
+        "reviewed_materialized_oracle_ref",
+        "reviewed_materialized_oracle_sha256",
+        "agreeing_plan_review_ref",
+        "agreeing_plan_review_sha256",
+        "entry_bootstrap_ref",
+        "entry_bootstrap_sha256",
+        "p01_stable_decision_ref",
+        "p01_stable_decision_sha256",
+        "p01_terminal_receipt_index_ref",
+        "p01_terminal_receipt_index_sha256",
+        "implementation_entry_manifest_ref",
+        "implementation_entry_manifest_sha256",
+        "protected_entry_manifest_ref",
+        "protected_entry_manifest_sha256",
+        "immutable_input_manifest_ref",
+        "immutable_input_manifest_sha256"
+      ],
+      "constants": {
+        "phase": "P02",
+        "reviewed_plan_ref": "docs/plans/mathdevmcp-real-document-remediation-phase-02-label-scoped-extraction-subplan-2026-07-11.md",
+        "reviewed_compact_oracle_ref": "docs/plans/mathdevmcp-real-document-remediation-phase-02-extraction-oracle-2026-07-11.json",
+        "reviewed_materialized_oracle_ref": "docs/plans/mathdevmcp-real-document-remediation-phase-02-materialized-obligations-oracle-2026-07-11.json",
+        "entry_bootstrap_ref": "docs/plans/p02_entry_bootstrap_20260711.py",
+        "p01_stable_decision_ref": ".local/mathdevmcp/evidence/p01-20260711/phase-results/P01-decision.json",
+        "p01_stable_decision_sha256": "7abc4b00714d0a216aa506cf3308d25a454443eb7316293ea05ec89f3d54a39a",
+        "p01_terminal_receipt_index_ref": ".local/mathdevmcp/evidence/p01-20260711/result-rounds/rr03/receipts/receipt-index-23.json",
+        "p01_terminal_receipt_index_sha256": "5781ab4a7ba23ff865847dd496839a4f827aee78462166606243ad4da591846a",
+        "implementation_entry_manifest_ref": ".local/mathdevmcp/evidence/p02-20260711/entry/implementation-entry-sha256.txt",
+        "protected_entry_manifest_ref": ".local/mathdevmcp/evidence/p02-20260711/entry/protected-entry-sha256.txt",
+        "immutable_input_manifest_ref": ".local/mathdevmcp/evidence/p02-20260711/entry/immutable-input-sha256.txt"
+      },
+      "creation_rule": "after the exact agreeing R9 plan review and before any implementation edit, require the Phase 02 phase root, entry root, and all four targets to be absent, then create the phase root, entry root, and all four files with no-overwrite writes; any pre-existing phase root, entry root, or target ref is preserved as partial or conflicting state and fails entry creation without retry; R10 and later are outside the human-authorized review budget and forbidden",
+      "manifest_line_rule": "lower-case SHA-256, two ASCII spaces, normalized workspace-relative ref, LF; records sorted by UTF-8 ref bytes with no duplicate ref, symlink, directory, cache, pyc, or pyo entry",
+      "implementation_manifest_scope": "every regular non-symlink non-cache file below src, tests, and scripts",
+      "immutable_input_manifest_scope": "compact oracle, materialized oracle, every parser_fidelity_profile.source_allowlist fixture/frozen source, with duplicate refs emitted once",
+      "protected_manifest_scope": "all pre-existing dirty files outside the reviewed implementation allowlist plus sealed P00/P01 records, mission/master/runbook/ledger/reset/anti-drift plans, every prior P02 plan-review bundle/result, and the reviewed plan itself; compact/materialized oracles and immutable sources are additionally bound by immutable_input_manifest",
+      "agreeing_plan_review_path_regex": "docs/reviews/mathdevmcp-real-document-remediation-phase-02-plan-review-r9-result-2026-07-11\\.md",
+      "agreeing_plan_review_required_lines": [
+        "Reviewed plan SHA-256: `<reviewed_plan_sha256>`",
+        "Reviewed compact oracle SHA-256: `<reviewed_compact_oracle_sha256>`",
+        "Reviewed materialized oracle SHA-256: `<reviewed_materialized_oracle_sha256>`",
+        "Reviewed entry bootstrap SHA-256: `<entry_bootstrap_sha256>`",
+        "VERDICT: AGREE"
+      ],
+      "agreeing_plan_review_grammar": "strict UTF-8, LF only, no BOM/NUL/CR, at most 131072 bytes; each required line occurs exactly once as a complete line; VERDICT is the final nonempty line; no other VERDICT line exists; each digest is recomputed from the exact entry-bound file",
+      "init_round_rule": "accept no entry/review/manifest override argument; read only fixed_ref, strict-load and canonical-byte-check it, reopen every bound ref no-follow, verify all manifest lines and agreeing review grammar, then apply predecessor checks before RR creation"
+    },
+    "entry_bootstrap_profile": {
+      "schema_version": "p02_entry_bootstrap_profile@1",
+      "role": "one-time supervisor bootstrap after plan AGREE and before implementation; not a production action or phase evidence",
+      "cwd": "workspace root",
+      "python": "/home/chakwong/miniconda3/envs/tfgpu/bin/python3",
+      "pythonpath": "src",
+      "source_ref": "docs/plans/p02_entry_bootstrap_20260711.py",
+      "source_binding_rule": "the final-budget R9 review bundle and agreeing review each bind the exact source SHA-256; the entry record copies that ref/digest after recomputing both source and agreeing-review lines; the digest is not embedded recursively in the compact oracle",
+      "implementation": "reviewed standalone Python imports only EvidenceValidationError, canonical_json_bytes, content_digest, validate_logical_path, read_bytes_no_follow, and atomic_write_bytes_no_replace from sealed P01 evidence_manifest; it implements no extraction, parser, backend, or proof logic; it requires exact sys.orig_argv, exact six-key process environment, no bytecode writes, and no site initialization, and rejects source/profile disagreement for external argv, Git argv, child environment, or write order before mkdir; it derives the exact 13 unique source refs/digests from fixtures and frozen_sources, requires set equality with parser_fidelity_profile.source_allowlist, strict-decodes each source, applies environment_locator.comment_rule, pairs every supported begin/end token by exact name and rejects crossed/unclosed stacks, reconstructs source-derived ancestry, requires the declared ordered outer environment_span plus inherited nested_environment_span when present to equal that ancestry, verifies label token/value and all label/owned/excluded spans against the selected final environment, rehashes every owned span, strict-loads all 17 materialized records, verifies their canonical byte counts/digests/ids and exact compact-path set, reconstructs canonical environment stack descriptors/ids and selected descriptor/span/line bounds from source, requires exact equality with each materialized identity environment plus document source ref/digest and label, and creates the phase/entry directories through no-follow directory descriptors",
+      "external_argv_template": [
+        "/usr/bin/env",
+        "-i",
+        "HOME=/tmp/mathdevmcp-p02-entry-home",
+        "LANG=C.UTF-8",
+        "LC_ALL=C.UTF-8",
+        "PATH=/usr/bin:/bin",
+        "PYTHONHASHSEED=0",
+        "PYTHONPATH=src",
+        "/home/chakwong/miniconda3/envs/tfgpu/bin/python3",
+        "-B",
+        "-S",
+        "docs/plans/p02_entry_bootstrap_20260711.py",
+        "--agreeing-plan-review-ref",
+        "AGREEING_REVIEW_REF"
+      ],
+      "only_parameter": "AGREEING_REVIEW_REF matching entry_snapshot_schema.agreeing_plan_review_path_regex; argparse abbreviation, repeated option, positional values, and every other option are rejected",
+      "fixed_readonly_child_argv": [
+        "/usr/bin/git",
+        "status",
+        "--porcelain=v1",
+        "-z",
+        "--untracked-files=all"
+      ],
+      "child_environment": {
+        "HOME": "/tmp/mathdevmcp-p02-entry-home",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "PATH": "/usr/bin:/bin",
+        "PYTHONHASHSEED": "0",
+        "PYTHONPATH": "src"
+      },
+      "dirty_path_rule": "parse porcelain v1 -z exactly, including rename two-path records; every returned normalized workspace-relative path outside the implementation allowlist enters protected_entry_manifest, while every protected plan/record required by entry_snapshot_schema.protected_manifest_scope is added even when clean",
+      "protected_static_refs": [
+        "AGENTS.md",
+        "docs/plans/mathdevmcp-anti-drift-gate.md",
+        "docs/plans/mathdevmcp-evidence-to-implementation-ledger.md",
+        "docs/plans/mathdevmcp-mission-charter.md",
+        "docs/plans/mathdevmcp-mission-reset-memo.md",
+        "docs/plans/mathdevmcp-reboot-reset-memo-2026-07-10.md",
+        "docs/plans/mathdevmcp-real-document-mission-remediation-master-plan-2026-07-10.md",
+        "docs/plans/mathdevmcp-real-document-remediation-phase-00-publication-quarantine-result-2026-07-11.md",
+        "docs/plans/mathdevmcp-real-document-remediation-phase-00-publication-quarantine-subplan-2026-07-11.md",
+        "docs/plans/mathdevmcp-real-document-remediation-phase-01-evidence-integrity-close-2026-07-11.md",
+        "docs/plans/mathdevmcp-real-document-remediation-phase-01-evidence-integrity-subplan-2026-07-11.md",
+        "docs/plans/mathdevmcp-real-document-remediation-phase-02-label-scoped-extraction-subplan-2026-07-11.md",
+        "docs/plans/mathdevmcp-real-document-remediation-visible-execution-ledger-2026-07-11.md",
+        "docs/plans/mathdevmcp-real-document-remediation-visible-gated-execution-runbook-2026-07-11.md",
+        "docs/plans/mathdevmcp-real-document-remediation-visible-stop-handoff-2026-07-11.md",
+        "docs/plans/p02_entry_bootstrap_20260711.py"
+      ],
+      "protected_review_ref_rule": "add every regular no-follow file directly below docs/reviews whose filename starts mathdevmcp-real-document-remediation-phase-00-, phase-01-, or phase-02-plan-review- and ends -2026-07-11.md; reject symlinks and special files",
+      "write_order": [
+        ".local/mathdevmcp/evidence/p02-20260711/entry/implementation-entry-sha256.txt",
+        ".local/mathdevmcp/evidence/p02-20260711/entry/protected-entry-sha256.txt",
+        ".local/mathdevmcp/evidence/p02-20260711/entry/immutable-input-sha256.txt",
+        ".local/mathdevmcp/evidence/p02-20260711/entry/entry-record.json"
+      ],
+      "precondition": "the workspace root has real non-symlink .git, src, src/mathdevmcp, tests, scripts, docs, docs/reviews, .local, .local/mathdevmcp, and .local/mathdevmcp/evidence directories; formal Phase 02 phase root, entry root, and every target path are absent; reject any pre-existing phase root before loading the compact oracle or reading snapshot inputs; compact-oracle bootstrap source_ref matches the running script; the agreeing R9 review binds current plan, compact oracle, materialized oracle, and running bootstrap-source digests; all 13 unique reviewed sources equal the parser source allowlist and their strict UTF-8, comment-masked supported-environment pairing, exact outer-to-selected environment chain including inherited nested_environment_span, descriptor, label token/value, selected-environment containment, owned, excluded, and owned-span-digest projections verify; all 17 materialized records have exact canonical identities/path coverage and their document source/label plus reconstructed environment stacks, ids, selected descriptor/span, and line bounds equal the source-derived compact projections; every input is regular, no-follow, within workspace trust root, and verified before no-follow mkdir traversal",
+      "postcondition": "require the Phase 02 phase root to contain exactly one regular non-symlink entry directory and that directory to contain exactly the four expected regular non-symlink outputs; reopen and byte-verify all four no-follow files, strictly parse each reopened manifest, re-enumerate each complete implementation/protected/immutable scope, reopen every current input no-follow, reconstruct each manifest from the current membership and bytes, and require byte equality with the reopened written manifest; the four exact bootstrap outputs are excluded from the post-write dirty-path set because they were absent at entry capture and are verified separately, while any other new phase-root or dirty path fails; this detects both record-byte and scope-membership drift; print only canonical JSON containing entry_record_ref and its recomputed sha256",
+      "failure_rule": "before the first mkdir, fail with no write; after the Phase 02 phase-root mkdir or any later mkdir/no-replace/reopen/reconstruction failure, preserve all partial directories and bytes, perform no deletion/overwrite/retry, and require human recovery direction; a later invocation rejects the preserved phase root before snapshot reads"
+    },
+    "human_result_profile": {
+      "schema_version": "p02_human_result_profile@1",
+      "fixed_ref_template": "docs/plans/mathdevmcp-real-document-remediation-phase-02-label-scoped-extraction-result-RESULT_ROUND-2026-07-11.md",
+      "encoding_rule": "strict UTF-8, LF only, no BOM/NUL/CR, at most 262144 bytes",
+      "required_sections": [
+        "Decision",
+        "Master Decision Table",
+        "Evidence Contract Result",
+        "Bound State",
+        "Actual Commands And Receipts",
+        "Evidence Ledgers",
+        "External-Tool Consideration Ledger",
+        "Default And Assumption Audit",
+        "Post-Run Red Team",
+        "Veto Status",
+        "Non-Claims",
+        "Next Action"
+      ],
+      "footer_lines_in_order": [
+        "Result round: `RESULT_ROUND`",
+        "Claimed decision: `DECISION`",
+        "Pre-result receipt-index SHA-256: `SHA256`",
+        "Publication mode: `disabled`"
+      ],
+      "footer_rule": "each footer line occurs exactly once as a complete line in the declared order and they are the final four nonempty lines; RESULT_ROUND equals the round root; SHA256 equals the verified receipt-index head immediately before bind_result; DECISION is candidate_pass_pending_independent_result_review exactly when all reached required checks through diff have zero exit and every reconstructed criterion passes, otherwise blocked; prose outside the footer is narrative only",
+      "decision_enum": [
+        "candidate_pass_pending_independent_result_review",
+        "blocked"
+      ]
+    },
+    "phase_result_schema": {
+      "schema_version": "p02_phase_result@1",
+      "fixed_ref": "RR/P02-result.json",
+      "exact_keys": [
+        "schema_version",
+        "phase",
+        "result_round",
+        "decision",
+        "publication_mode",
+        "claim_eligibility",
+        "human_result_ref",
+        "human_result_sha256",
+        "pre_result_receipt_index_ref",
+        "pre_result_receipt_index_sha256",
+        "entry_record_ref",
+        "entry_record_sha256",
+        "p01_stable_decision_ref",
+        "p01_stable_decision_sha256",
+        "p01_terminal_receipt_index_ref",
+        "p01_terminal_receipt_index_sha256",
+        "reviewed_plan_ref",
+        "reviewed_plan_sha256",
+        "reviewed_compact_oracle_ref",
+        "reviewed_compact_oracle_sha256",
+        "reviewed_materialized_oracle_ref",
+        "reviewed_materialized_oracle_sha256",
+        "extraction_bundle_index_ref",
+        "extraction_bundle_index_sha256",
+        "parser_comparison_ref",
+        "parser_comparison_sha256",
+        "mutation_ambiguity_matrix_ref",
+        "mutation_ambiguity_matrix_sha256",
+        "backend_request_count",
+        "source_edit_count",
+        "primary_criterion",
+        "vetoes",
+        "non_claims"
+      ],
+      "constants": {
+        "phase": "P02",
+        "publication_mode": "disabled",
+        "claim_eligibility": "ineligible"
+      },
+      "decision_rule": "candidate_pass_pending_independent_result_review only when every required action through diff exists with zero exit, every required raw artifact reopens, all primary_criterion values including all_pass are true, and all vetoes are false; otherwise blocked",
+      "artifact_pair_rule": "bundle/parser/mutation refs and digests are both non-null only after their generating action succeeded and otherwise both null; no failed or absent artifact is represented by a fabricated empty record",
+      "count_rule": "backend_request_count and source_edit_count are independently recomputed nonnegative integers and are both zero for a candidate decision",
+      "primary_criterion_keys": [
+        "all_17_materialized_obligations_exact",
+        "all_reviewed_source_spans_exact",
+        "all_grouping_and_ambiguity_outcomes_exact",
+        "all_normalized_targets_and_inventories_exact",
+        "all_identity_and_mutation_checks_pass",
+        "frozen_positive_obligations_exact",
+        "proposition_container_exact",
+        "parser_fidelity_contract_pass",
+        "zero_backend_requests",
+        "zero_source_edits",
+        "publication_quarantine_pass",
+        "allowlist_and_protected_state_pass",
+        "all_pass"
+      ],
+      "primary_criterion_rule": "exact boolean map in primary_criterion_keys order; all_pass is the conjunction of the preceding twelve and is never accepted from the Markdown result",
+      "veto_keys_ref": "governance_action_profile.round_close_schema.veto_keys",
+      "veto_rule": "exact boolean map independently reconstructed from round_close_schema.veto_diagnostic_sources; candidate decision requires all false",
+      "non_claims_ref": "governance_action_profile.round_close_schema.non_claims"
+    },
+    "failure_state_machine": {
+      "receipt_measurement_rule": "every invoked action appends exactly one receipt/index even for nonzero underlying exit; dispatcher success reports durable measurement only; a receipt/index write or immediate-verification failure creates no trusted successor",
+      "init_round_failure_rule": "all path, entry, predecessor, reviewed-binding, and manifest validation occurs before creating RR; a pre-allocation failure creates no RR and no receipt and may be rerun only after correcting the external precondition; once RR is created, failure to create and verify its init_round receipt/index is an unrecoverable governance-chain stop for that round root",
+      "first_failure_rule": "the first nonzero receipt fixes the measured-failure trigger; no later success-path action is accepted except the local-check evidence suffix below",
+      "success_successor": {
+        "init_round": "localizer_tests",
+        "localizer_tests": "obligation_tests",
+        "obligation_tests": "target_integration_tests",
+        "target_integration_tests": "parser_fidelity_tests",
+        "parser_fidelity_tests": "frozen_regressions",
+        "frozen_regressions": "p00_quarantine",
+        "p00_quarantine": "generate_extraction_bundle",
+        "generate_extraction_bundle": "mutation_ambiguity_gate",
+        "mutation_ambiguity_gate": "zero_backend_source_edit_gate",
+        "zero_backend_source_edit_gate": "compile",
+        "compile": "protected_check",
+        "protected_check": "implementation_exit",
+        "implementation_exit": "allowlist",
+        "allowlist": "diff",
+        "diff": "bind_result",
+        "bind_result": "build_run_manifest",
+        "build_run_manifest": "build_candidate",
+        "build_candidate": "candidate_gate",
+        "candidate_gate": "result_review_binding",
+        "result_review_binding": "build_final_candidate",
+        "build_final_candidate": "final_candidate_gate",
+        "final_candidate_gate": "final_seal_audit_binding",
+        "final_seal_audit_binding": "stable_publication",
+        "stable_publication": null
+      },
+      "local_check_action_ids": [
+        "localizer_tests",
+        "obligation_tests",
+        "target_integration_tests",
+        "parser_fidelity_tests",
+        "frozen_regressions",
+        "p00_quarantine",
+        "generate_extraction_bundle",
+        "mutation_ambiguity_gate",
+        "zero_backend_source_edit_gate",
+        "compile",
+        "protected_check",
+        "implementation_exit",
+        "allowlist",
+        "diff"
+      ],
+      "construction_or_gate_action_ids": [
+        "bind_result",
+        "build_run_manifest",
+        "build_candidate",
+        "candidate_gate",
+        "result_review_binding",
+        "build_final_candidate",
+        "final_candidate_gate",
+        "final_seal_audit_binding",
+        "stable_publication"
+      ],
+      "local_check_failure_suffix": [
+        "bind_result",
+        "build_run_manifest",
+        "bind_scoped_repair",
+        "close_round"
+      ],
+      "local_check_suffix_rule": "after the first failed local check, stop all remaining checks; accept bind_result, then build_run_manifest only after zero-exit bind_result, then bind_scoped_repair; a nonzero bind_result or build_run_manifest skips directly to bind_scoped_repair",
+      "later_failure_suffix": [
+        "bind_scoped_repair",
+        "close_round"
+      ],
+      "later_failure_rule": "a nonzero construction_or_gate action accepts only bind_scoped_repair, except stable_publication with an existing stable path is an out-of-chain human-recovery stop",
+      "review_revise_rule": "a zero-exit result_review_binding with strictly parsed REVISE or zero-exit final_seal_audit_binding with strictly parsed REVISE accepts only bind_scoped_repair; the triggering review or audit remains a reached non-null stage",
+      "outcome_transition_table": [
+        {
+          "current_class": "success_path_except_review_audit_publication",
+          "outcome": "exit_zero_no_prior_failure",
+          "next": "success_successor[current_action]"
+        },
+        {
+          "current_class": "local_check_action",
+          "outcome": "exit_nonzero",
+          "next": "bind_result"
+        },
+        {
+          "current_class": "bind_result_after_failed_local_check",
+          "outcome": "exit_zero",
+          "next": "build_run_manifest"
+        },
+        {
+          "current_class": "build_run_manifest_after_failed_local_check",
+          "outcome": "exit_zero",
+          "next": "bind_scoped_repair"
+        },
+        {
+          "current_class": "bind_result_or_build_run_manifest_after_failed_local_check",
+          "outcome": "exit_nonzero",
+          "next": "bind_scoped_repair"
+        },
+        {
+          "current_class": "construction_or_gate_except_review_audit_publication",
+          "outcome": "exit_nonzero",
+          "next": "bind_scoped_repair"
+        },
+        {
+          "current_class": "result_review_binding",
+          "outcome": "exit_zero_and_verdict_AGREE",
+          "next": "build_final_candidate"
+        },
+        {
+          "current_class": "result_review_binding",
+          "outcome": "exit_zero_and_verdict_REVISE",
+          "next": "bind_scoped_repair"
+        },
+        {
+          "current_class": "result_review_binding",
+          "outcome": "exit_nonzero",
+          "next": "bind_scoped_repair"
+        },
+        {
+          "current_class": "final_seal_audit_binding",
+          "outcome": "exit_zero_and_verdict_AGREE",
+          "next": "stable_publication"
+        },
+        {
+          "current_class": "final_seal_audit_binding",
+          "outcome": "exit_zero_and_verdict_REVISE",
+          "next": "bind_scoped_repair"
+        },
+        {
+          "current_class": "final_seal_audit_binding",
+          "outcome": "exit_nonzero",
+          "next": "bind_scoped_repair"
+        },
+        {
+          "current_class": "stable_publication",
+          "outcome": "exit_zero_same_inode_true_same_digest_true",
+          "next": null
+        },
+        {
+          "current_class": "stable_publication",
+          "outcome": "exit_nonzero_and_stable_path_absent",
+          "next": "bind_scoped_repair"
+        },
+        {
+          "current_class": "stable_publication",
+          "outcome": "stable_path_exists_and_any_publication_or_receipt_failure",
+          "next": "HUMAN_RECOVERY_STOP"
+        },
+        {
+          "current_class": "bind_scoped_repair",
+          "outcome": "exit_zero",
+          "next": "close_round"
+        },
+        {
+          "current_class": "bind_scoped_repair",
+          "outcome": "exit_nonzero",
+          "next": "HUMAN_RECOVERY_STOP"
+        },
+        {
+          "current_class": "close_round",
+          "outcome": "exit_zero_and_terminal_index_verified",
+          "next": null
+        },
+        {
+          "current_class": "close_round",
+          "outcome": "exit_nonzero_or_terminal_index_unverified",
+          "next": "HUMAN_RECOVERY_STOP"
+        },
+        {
+          "current_class": "any_action",
+          "outcome": "receipt_or_index_append_or_immediate_verification_failure",
+          "next": "HUMAN_RECOVERY_STOP"
+        }
+      ],
+      "transition_precedence": "apply post-link stable-path and receipt/index failure rows first, then prior-local-failure suffix rows, then exact current-action review/audit/publication rows, then ordinary exit outcome; exactly one row must match or governance rejects the chain",
+      "bind_repair_successor": "close_round",
+      "terminal_actions": [
+        "stable_publication",
+        "close_round"
+      ],
+      "no_retry_actions": [
+        "bind_scoped_repair",
+        "close_round",
+        "stable_publication"
+      ],
+      "post_link_rule": "if the stable path exists after any publication or receipt/index failure, preserve it, claim no pass, append no repair or close receipt, forbid retry, and require human recovery",
+      "chain_failure_rule": "a nonzero bind_scoped_repair or close_round receipt, or inability to append/verify any receipt/index, has no accepted successor and requires human recovery"
+    },
+    "scoped_repair_schema": {
+      "schema_version": "p02_scoped_repair@1",
+      "fixed_ref": "RR/inputs/scoped-repair.json",
+      "exact_keys": [
+        "schema_version",
+        "phase",
+        "result_round",
+        "close_reason",
+        "failed_actions",
+        "source_artifact_ref",
+        "source_artifact_sha256",
+        "source_receipt_index_ref",
+        "source_receipt_index_sha256",
+        "repairs"
+      ],
+      "phase": "P02",
+      "close_reasons": [
+        "measured_action_failure",
+        "result_review_revise",
+        "final_seal_audit_revise"
+      ],
+      "failed_actions_rule": "for measured_action_failure, exact receipt order of every nonzero action and nonempty; for either revise reason, exactly empty because the binding action succeeded and measured a REVISE verdict",
+      "source_artifact_rule": "first failed canonical receipt for measured_action_failure; exact bound result-review file for result_review_revise; exact bound final-seal-audit file for final_seal_audit_revise",
+      "source_receipt_index_rule": "the immutable receipt-index snapshot whose head is the triggering failed receipt, result_review_binding receipt, or final_seal_audit_binding receipt respectively",
+      "repair_entry_exact_keys": [
+        "finding_id",
+        "source_stage",
+        "severity",
+        "affected_paths",
+        "required_change",
+        "required_check_ids",
+        "non_claim"
+      ],
+      "repair_source_stage_enum": [
+        "formal_check",
+        "construction",
+        "candidate_gate",
+        "result_review",
+        "final_seal_audit",
+        "stable_publication"
+      ],
+      "repair_severity_enum": [
+        "high",
+        "medium",
+        "low"
+      ],
+      "affected_paths_rule": "sorted unique workspace-relative paths, each in the reviewed implementation allowlist; a required plan/oracle/source or other protected-path edit cannot be represented and stops for a newly reviewed entry contract",
+      "required_check_ids_rule": "ordered unique nonempty subset of action_order positions 2 through 23; a repair may require the exact failed construction, candidate, review-binding, or final-audit-binding action in the next full round, while init_round and stable_publication are never repair-validation claims",
+      "non_claim_literal": "A scoped repair requirement is not evidence that the finding is resolved.",
+      "repairs_rule": "nonempty ordered list with unique finding_id"
+    },
+    "round_close_schema": {
+      "schema_version": "p02_round_close@1",
+      "fixed_ref": "RR/round-close.json",
+      "exact_keys": [
+        "schema_version",
+        "phase",
+        "result_round",
+        "decision",
+        "publication_mode",
+        "close_reason",
+        "failed_actions",
+        "human_result_ref",
+        "human_result_sha256",
+        "entry_implementation_manifest_ref",
+        "entry_implementation_manifest_sha256",
+        "round_implementation_manifest_ref",
+        "round_implementation_manifest_sha256",
+        "entry_protected_manifest_ref",
+        "entry_protected_manifest_sha256",
+        "entry_immutable_input_manifest_ref",
+        "entry_immutable_input_manifest_sha256",
+        "p01_stable_decision_ref",
+        "p01_stable_decision_sha256",
+        "p01_terminal_receipt_index_ref",
+        "p01_terminal_receipt_index_sha256",
+        "predecessor_round_close_ref",
+        "predecessor_round_close_sha256",
+        "predecessor_terminal_receipt_index_ref",
+        "predecessor_terminal_receipt_index_sha256",
+        "scoped_repair_ref",
+        "scoped_repair_sha256",
+        "source_artifact_ref",
+        "source_artifact_sha256",
+        "source_receipt_index_ref",
+        "source_receipt_index_sha256",
+        "receipt_index_before_repair_ref",
+        "receipt_index_before_repair_sha256",
+        "receipt_index_before_close_ref",
+        "receipt_index_before_close_sha256",
+        "result_ref",
+        "result_sha256",
+        "run_manifest_ref",
+        "run_manifest_sha256",
+        "candidate_ref",
+        "candidate_sha256",
+        "candidate_validation_log_ref",
+        "candidate_validation_log_sha256",
+        "result_review_ref",
+        "result_review_sha256",
+        "result_review_verdict",
+        "final_candidate_ref",
+        "final_candidate_sha256",
+        "final_validation_log_ref",
+        "final_validation_log_sha256",
+        "final_seal_audit_ref",
+        "final_seal_audit_sha256",
+        "final_seal_audit_verdict",
+        "log_inventory",
+        "vetoes",
+        "non_claims",
+        "repairs"
+      ],
+      "constants": {
+        "phase": "P02",
+        "decision": "blocked",
+        "publication_mode": "disabled"
+      },
+      "nullable_stage_pairs_in_order": [
+        ["human_result_ref", "human_result_sha256"],
+        ["result_ref", "result_sha256"],
+        ["run_manifest_ref", "run_manifest_sha256"],
+        ["candidate_ref", "candidate_sha256"],
+        ["candidate_validation_log_ref", "candidate_validation_log_sha256"],
+        ["result_review_ref", "result_review_sha256"],
+        ["final_candidate_ref", "final_candidate_sha256"],
+        ["final_validation_log_ref", "final_validation_log_sha256"],
+        ["final_seal_audit_ref", "final_seal_audit_sha256"]
+      ],
+      "stage_pair_rule": "human-result and machine-result pairs become non-null together only after zero-exit bind_result; every pair is both null before the corresponding successful receipt and both non-null after it; once a pair is null every later stage pair is null, except a failed candidate/final gate may have its input candidate pair non-null while its validation-log pair is null; verified REVISE review/audit pairs remain non-null",
+      "verdict_rule": "result_review_verdict is null exactly when result_review_ref is null and otherwise AGREE or REVISE; final_seal_audit_verdict is null exactly when final_seal_audit_ref is null and otherwise AGREE or REVISE",
+      "predecessor_rule": "all four predecessor close/index fields are null for rr01 and non-null for rr02 through rr05, naming the immediately previous round's canonical close and terminal close-round receipt-index",
+      "log_entry_exact_keys": [
+        "logical_ref",
+        "sha256",
+        "byte_count",
+        "role",
+        "exit_code"
+      ],
+      "log_inventory_rule": "ordered by receipt sequence then stdout before stderr; includes every reached receipt log before close; exit_code equals that receipt's measured exit",
+      "veto_keys": [
+        "predecessor_binding_failure",
+        "frozen_source_digest_failure",
+        "row_span_or_roundtrip_failure",
+        "label_or_file_ownership_failure",
+        "continuation_or_ambiguity_failure",
+        "duplicate_or_drifting_identity",
+        "cross_label_contamination",
+        "incomplete_target_routed",
+        "parser_fidelity_or_provenance_failure",
+        "artifact_or_bundle_integrity_failure",
+        "oracle_materialization_failure",
+        "independent_review_not_agreed",
+        "backend_execution_detected",
+        "source_edit_detected",
+        "publication_quarantine_failure",
+        "unexpected_implementation_path",
+        "protected_baseline_drift",
+        "governance_chain_failure"
+      ],
+      "veto_diagnostic_sources": {
+        "predecessor_binding_failure": "init_round or protected_check independently fails exact P01 or prior-P02 close/index reconstruction",
+        "frozen_source_digest_failure": "immutable-input comparison reports either frozen document source digest changed",
+        "row_span_or_roundtrip_failure": "localizer or extraction summaries report any reviewed environment, row, label, owned, excluded, or source envelope span mismatch",
+        "label_or_file_ownership_failure": "extraction summaries report an implicit label, wrong file, duplicate lookup selection, missing exact-file lookup, or owned-row mismatch",
+        "continuation_or_ambiguity_failure": "extraction summaries report a grouping transition, reason, ambiguity code, orphan state, overlap allocation, or uncertainty mismatch",
+        "duplicate_or_drifting_identity": "complete-obligation reconstruction reports duplicate ids or any canonical byte-count, digest, id, environment-id, or row-id mismatch",
+        "cross_label_contamination": "scoped source, excluded span, normalized target, or inventory comparison reports sibling-label content",
+        "incomplete_target_routed": "integration ledger reports any non-valid, ambiguous, orphaned, incomplete, fallback, or manufactured target entered an adapter-capable route",
+        "parser_fidelity_or_provenance_failure": "parser profile or comparison reports executable/version/argv/environment/source/output mismatch, timeout/nonzero/malformed result, ownership disagreement, or unjustified selection",
+        "artifact_or_bundle_integrity_failure": "any measured action has nonzero exit, or any required artifact/ref/digest/schema/reopen comparison fails",
+        "oracle_materialization_failure": "compact/materialized/source reconstruction, scanner, normalizer, or identity mutation summary reports mismatch",
+        "independent_review_not_agreed": "strict result-review or final-seal-audit verdict is REVISE",
+        "backend_execution_detected": "independent total of forbidden-attempt ledger entries is nonzero, including blocked attempts",
+        "source_edit_detected": "immutable-input entry/exit comparison reports any fixture, oracle, or frozen-source byte change",
+        "publication_quarantine_failure": "quarantine tests or reconstructed result report publication enabled/eligible or extraction bypass",
+        "unexpected_implementation_path": "entry/exit implementation delta contains a path outside the reviewed allowlist",
+        "protected_baseline_drift": "protected entry/exit comparison reports any unrelated dirty, sealed P00/P01, or protected path changed",
+        "governance_chain_failure": "receipt/index append or verification, bind_scoped_repair, close_round, or post-link sealing fails; this veto cannot appear in a trusted canonical close because no trusted close successor exists"
+      },
+      "veto_rule": "exact boolean map in veto_keys order reconstructed only from veto_diagnostic_sources; measured_action_failure always sets artifact_or_bundle_integrity_failure true and sets every other source whose exact diagnostic is observed; either revise reason sets independent_review_not_agreed true; at least one veto is true; unobserved vetoes are false; governance_chain_failure is false because a chain failure cannot produce a trusted canonical close",
+      "non_claims": [
+        "no_mathematical_certification",
+        "no_semantic_resolution",
+        "no_backend_execution",
+        "no_publication_eligibility",
+        "no_source_document_edit",
+        "no_complete_latex_coverage",
+        "no_phase03_execution",
+        "no_release_readiness"
+      ],
+      "repair_rule": "repairs equals scoped_repair_schema.repairs exactly"
+    },
+    "successor_round_rule": "rr01 has null predecessor fields; rr02 through rr05 require immediately prior rrNN round-close and terminal receipt-index; terminal index must end in zero-exit close_round whose bindings recompute the supplied close digest and preceding bind_scoped_repair index; the close must bind that repair receipt head; skipped ids, success-path indexes, nonterminal indexes, and any digest mismatch are rejected",
+    "actions": {
+      "init_round": {
+        "success_sequence": 1,
+        "external_operation": "init_round",
+        "execution_class": "governance_native",
+        "handler_id": "p02_native_init_round_v1",
+        "child_argv_template": null,
+        "artifact_ref_template": null
+      },
+      "localizer_tests": {
+        "success_sequence": 2,
+        "external_operation": "run",
+        "execution_class": "subprocess",
+        "handler_id": null,
+        "child_argv_template": [
+          "/home/chakwong/miniconda3/envs/tfgpu/bin/python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "tests.p02_no_backend_guard",
+          "tests/test_latex_index.py"
+        ],
+        "artifact_ref_template": null
+      },
+      "obligation_tests": {
+        "success_sequence": 3,
+        "external_operation": "run",
+        "execution_class": "subprocess",
+        "handler_id": null,
+        "child_argv_template": [
+          "/home/chakwong/miniconda3/envs/tfgpu/bin/python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "tests.p02_no_backend_guard",
+          "tests/test_label_scoped_obligation.py",
+          "tests/test_extraction_evidence.py"
+        ],
+        "artifact_ref_template": null
+      },
+      "target_integration_tests": {
+        "success_sequence": 4,
+        "external_operation": "run",
+        "execution_class": "subprocess",
+        "handler_id": null,
+        "child_argv_template": [
+          "/home/chakwong/miniconda3/envs/tfgpu/bin/python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "tests.p02_no_backend_guard",
+          "tests/test_derivation_target_extraction.py",
+          "tests/test_document_derivation_tree.py::test_document_tree_consumes_label_scoped_obligation_without_backend",
+          "tests/test_document_derivation_tree.py::test_document_tree_prop_container_keeps_foc_children_separate_without_backend",
+          "tests/test_derivation_audit_report.py::test_derivation_audit_extraction_boundary_uses_scoped_obligation_without_backend"
+        ],
+        "artifact_ref_template": null
+      },
+      "parser_fidelity_tests": {
+        "success_sequence": 5,
+        "external_operation": "run",
+        "execution_class": "subprocess",
+        "handler_id": null,
+        "child_argv_template": [
+          "/home/chakwong/miniconda3/envs/tfgpu/bin/python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "tests.p02_no_backend_guard",
+          "tests/test_parser_policy.py",
+          "tests/test_parser_benchmark.py"
+        ],
+        "artifact_ref_template": null
+      },
+      "frozen_regressions": {
+        "success_sequence": 6,
+        "external_operation": "run",
+        "execution_class": "subprocess",
+        "handler_id": null,
+        "child_argv_template": [
+          "/home/chakwong/miniconda3/envs/tfgpu/bin/python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "tests.p02_no_backend_guard",
+          "tests/test_document_derivation_real_regressions.py"
+        ],
+        "artifact_ref_template": null
+      },
+      "p00_quarantine": {
+        "success_sequence": 7,
+        "external_operation": "run",
+        "execution_class": "subprocess",
+        "handler_id": null,
+        "child_argv_template": [
+          "/home/chakwong/miniconda3/envs/tfgpu/bin/python3",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "tests.p02_no_backend_guard",
+          "tests/test_document_publication_quarantine.py::test_edit_target_mismatch_cannot_bypass_compiler_quarantine",
+          "tests/test_document_publication_quarantine.py::test_p02_extraction_paths_remain_quarantined_without_backend_calls"
+        ],
+        "artifact_ref_template": null
+      },
+      "generate_extraction_bundle": {
+        "success_sequence": 8,
+        "external_operation": "run",
+        "execution_class": "subprocess",
+        "handler_id": null,
+        "child_argv_template": [
+          "/home/chakwong/miniconda3/envs/tfgpu/bin/python3",
+          "scripts/generate_p02_extraction_evidence.py",
+          "--round-root",
+          "RR"
+        ],
+        "artifact_ref_template": null
+      },
+      "mutation_ambiguity_gate": {
+        "success_sequence": 9,
+        "external_operation": "run",
+        "execution_class": "governance_native",
+        "handler_id": "p02_native_mutation_ambiguity_gate_v1",
+        "child_argv_template": null,
+        "artifact_ref_template": null
+      },
+      "zero_backend_source_edit_gate": {
+        "success_sequence": 10,
+        "external_operation": "run",
+        "execution_class": "governance_native",
+        "handler_id": "p02_native_zero_backend_source_edit_gate_v1",
+        "child_argv_template": null,
+        "artifact_ref_template": null
+      },
+      "compile": {
+        "success_sequence": 11,
+        "external_operation": "run",
+        "execution_class": "subprocess",
+        "handler_id": null,
+        "child_argv_template": [
+          "/home/chakwong/miniconda3/envs/tfgpu/bin/python3",
+          "-m",
+          "py_compile",
+          "scripts/generate_p02_extraction_evidence.py",
+          "scripts/p02_governance.py",
+          "src/mathdevmcp/derivation_audit_report.py",
+          "src/mathdevmcp/derivation_target_extraction.py",
+          "src/mathdevmcp/document_derivation_tree.py",
+          "src/mathdevmcp/equation_locator.py",
+          "src/mathdevmcp/extraction_evidence.py",
+          "src/mathdevmcp/label_scoped_obligation.py",
+          "src/mathdevmcp/latex_index.py",
+          "src/mathdevmcp/parser_benchmark.py",
+          "src/mathdevmcp/parser_policy.py",
+          "tests/p02_no_backend_guard.py",
+          "tests/test_derivation_audit_report.py",
+          "tests/test_derivation_target_extraction.py",
+          "tests/test_document_derivation_real_regressions.py",
+          "tests/test_document_derivation_tree.py",
+          "tests/test_document_publication_quarantine.py",
+          "tests/test_extraction_evidence.py",
+          "tests/test_label_scoped_obligation.py",
+          "tests/test_latex_index.py",
+          "tests/test_parser_benchmark.py",
+          "tests/test_parser_policy.py"
+        ],
+        "artifact_ref_template": null
+      },
+      "protected_check": {
+        "success_sequence": 12,
+        "external_operation": "run",
+        "execution_class": "governance_native",
+        "handler_id": "p02_native_protected_check_v1",
+        "child_argv_template": null,
+        "artifact_ref_template": null
+      },
+      "implementation_exit": {
+        "success_sequence": 13,
+        "external_operation": "run",
+        "execution_class": "governance_native",
+        "handler_id": "p02_native_implementation_exit_v1",
+        "child_argv_template": null,
+        "artifact_ref_template": null
+      },
+      "allowlist": {
+        "success_sequence": 14,
+        "external_operation": "run",
+        "execution_class": "governance_native",
+        "handler_id": "p02_native_allowlist_v1",
+        "child_argv_template": null,
+        "artifact_ref_template": null
+      },
+      "diff": {
+        "success_sequence": 15,
+        "external_operation": "run",
+        "execution_class": "subprocess",
+        "handler_id": null,
+        "child_argv_template": [
+          "/usr/bin/git",
+          "diff",
+          "--check"
+        ],
+        "artifact_ref_template": null
+      },
+      "bind_result": {
+        "success_sequence": 16,
+        "external_operation": "run",
+        "execution_class": "governance_native",
+        "handler_id": "p02_native_bind_result_v1",
+        "child_argv_template": null,
+        "artifact_ref_template": null
+      },
+      "build_run_manifest": {
+        "success_sequence": 17,
+        "external_operation": "run",
+        "execution_class": "governance_native",
+        "handler_id": "p02_native_build_run_manifest_v1",
+        "child_argv_template": null,
+        "artifact_ref_template": null
+      },
+      "build_candidate": {
+        "success_sequence": 18,
+        "external_operation": "run",
+        "execution_class": "governance_native",
+        "handler_id": "p02_native_build_candidate_v1",
+        "child_argv_template": null,
+        "artifact_ref_template": null
+      },
+      "candidate_gate": {
+        "success_sequence": 19,
+        "external_operation": "run",
+        "execution_class": "governance_native",
+        "handler_id": "p02_native_candidate_gate_v1",
+        "child_argv_template": null,
+        "artifact_ref_template": null
+      },
+      "result_review_binding": {
+        "success_sequence": 20,
+        "external_operation": "run_with_artifact_ref",
+        "execution_class": "governance_native",
+        "handler_id": "p02_native_result_review_binding_v1",
+        "child_argv_template": null,
+        "artifact_ref_template": "docs/reviews/mathdevmcp-real-document-remediation-phase-02-result-review-RESULT_ROUND-result-2026-07-11.md"
+      },
+      "build_final_candidate": {
+        "success_sequence": 21,
+        "external_operation": "run",
+        "execution_class": "governance_native",
+        "handler_id": "p02_native_build_final_candidate_v1",
+        "child_argv_template": null,
+        "artifact_ref_template": null
+      },
+      "final_candidate_gate": {
+        "success_sequence": 22,
+        "external_operation": "run",
+        "execution_class": "governance_native",
+        "handler_id": "p02_native_final_candidate_gate_v1",
+        "child_argv_template": null,
+        "artifact_ref_template": null
+      },
+      "final_seal_audit_binding": {
+        "success_sequence": 23,
+        "external_operation": "run_with_artifact_ref",
+        "execution_class": "governance_native",
+        "handler_id": "p02_native_final_seal_audit_binding_v1",
+        "child_argv_template": null,
+        "artifact_ref_template": "docs/reviews/mathdevmcp-real-document-remediation-phase-02-final-seal-audit-RESULT_ROUND-result-2026-07-11.md"
+      },
+      "stable_publication": {
+        "success_sequence": 24,
+        "external_operation": "run",
+        "execution_class": "governance_native",
+        "handler_id": "p02_native_stable_publication_v1",
+        "child_argv_template": null,
+        "artifact_ref_template": null
+      },
+      "bind_scoped_repair": {
+        "success_sequence": null,
+        "external_operation": "run",
+        "execution_class": "governance_native",
+        "handler_id": "p02_native_bind_scoped_repair_v1",
+        "child_argv_template": null,
+        "artifact_ref_template": null
+      },
+      "close_round": {
+        "success_sequence": null,
+        "external_operation": "run",
+        "execution_class": "governance_native",
+        "handler_id": "p02_native_close_round_v1",
+        "child_argv_template": null,
+        "artifact_ref_template": null
+      }
+    },
+    "receipt_binding_keys": {
+      "init_round": [
+        "entry_record_ref",
+        "entry_record_sha256",
+        "entry_implementation_manifest_ref",
+        "entry_implementation_manifest_sha256",
+        "round_implementation_manifest_ref",
+        "round_implementation_manifest_sha256",
+        "entry_protected_manifest_ref",
+        "entry_protected_manifest_sha256",
+        "entry_immutable_input_manifest_ref",
+        "entry_immutable_input_manifest_sha256",
+        "p01_stable_decision_ref",
+        "p01_stable_decision_sha256",
+        "p01_terminal_receipt_index_ref",
+        "p01_terminal_receipt_index_sha256",
+        "reviewed_plan_ref",
+        "reviewed_plan_sha256",
+        "reviewed_compact_oracle_ref",
+        "reviewed_compact_oracle_sha256",
+        "reviewed_materialized_oracle_ref",
+        "reviewed_materialized_oracle_sha256",
+        "agreeing_plan_review_ref",
+        "agreeing_plan_review_sha256",
+        "predecessor_round_close_ref",
+        "predecessor_round_close_sha256",
+        "predecessor_terminal_receipt_index_ref",
+        "predecessor_terminal_receipt_index_sha256"
+      ],
+      "localizer_tests": [],
+      "obligation_tests": [],
+      "target_integration_tests": [],
+      "parser_fidelity_tests": [],
+      "frozen_regressions": [],
+      "p00_quarantine": [],
+      "generate_extraction_bundle": [
+        "bundle_index_ref",
+        "bundle_index_sha256"
+      ],
+      "mutation_ambiguity_gate": [
+        "mutation_matrix_ref",
+        "mutation_matrix_sha256"
+      ],
+      "zero_backend_source_edit_gate": [
+        "backend_ledger_index_ref",
+        "backend_ledger_index_sha256",
+        "immutable_input_exit_manifest_ref",
+        "immutable_input_exit_manifest_sha256"
+      ],
+      "compile": [],
+      "protected_check": [
+        "protected_exit_manifest_ref",
+        "protected_exit_manifest_sha256"
+      ],
+      "implementation_exit": [
+        "round_implementation_manifest_ref",
+        "round_implementation_manifest_sha256"
+      ],
+      "allowlist": [
+        "touched_paths_ref",
+        "touched_paths_sha256",
+        "unexpected_paths_ref",
+        "unexpected_paths_sha256"
+      ],
+      "diff": [],
+      "bind_result": [
+        "human_result_ref",
+        "human_result_sha256",
+        "result_ref",
+        "result_sha256"
+      ],
+      "build_run_manifest": [
+        "run_manifest_ref",
+        "run_manifest_sha256",
+        "bound_receipt_index_ref",
+        "bound_receipt_index_sha256"
+      ],
+      "build_candidate": [
+        "candidate_ref",
+        "candidate_sha256",
+        "run_manifest_ref",
+        "run_manifest_sha256",
+        "bound_receipt_index_ref",
+        "bound_receipt_index_sha256"
+      ],
+      "candidate_gate": [
+        "candidate_ref",
+        "candidate_sha256",
+        "validation_log_ref",
+        "validation_log_sha256",
+        "validated_receipt_index_ref",
+        "validated_receipt_index_sha256"
+      ],
+      "result_review_binding": [
+        "review_ref",
+        "review_sha256",
+        "review_verdict",
+        "candidate_ref",
+        "candidate_sha256",
+        "reviewed_receipt_index_ref",
+        "reviewed_receipt_index_sha256"
+      ],
+      "build_final_candidate": [
+        "final_candidate_ref",
+        "final_candidate_sha256",
+        "review_ref",
+        "review_sha256",
+        "reviewed_receipt_index_ref",
+        "reviewed_receipt_index_sha256"
+      ],
+      "final_candidate_gate": [
+        "final_candidate_ref",
+        "final_candidate_sha256",
+        "validation_log_ref",
+        "validation_log_sha256",
+        "validated_receipt_index_ref",
+        "validated_receipt_index_sha256"
+      ],
+      "final_seal_audit_binding": [
+        "audit_ref",
+        "audit_sha256",
+        "audit_verdict",
+        "final_candidate_ref",
+        "final_candidate_sha256",
+        "candidate_ref",
+        "candidate_sha256",
+        "review_ref",
+        "review_sha256",
+        "validation_log_ref",
+        "validation_log_sha256",
+        "audited_receipt_index_ref",
+        "audited_receipt_index_sha256"
+      ],
+      "stable_publication": [
+        "stable_ref",
+        "stable_sha256",
+        "final_candidate_ref",
+        "final_candidate_sha256",
+        "audit_ref",
+        "audit_sha256",
+        "validation_log_ref",
+        "validation_log_sha256",
+        "same_inode",
+        "same_digest"
+      ],
+      "bind_scoped_repair": [
+        "scoped_repair_ref",
+        "scoped_repair_sha256",
+        "source_artifact_ref",
+        "source_artifact_sha256",
+        "source_receipt_index_ref",
+        "source_receipt_index_sha256",
+        "receipt_index_before_repair_ref",
+        "receipt_index_before_repair_sha256"
+      ],
+      "close_round": [
+        "scoped_repair_ref",
+        "scoped_repair_sha256",
+        "round_close_ref",
+        "round_close_sha256",
+        "receipt_index_before_close_ref",
+        "receipt_index_before_close_sha256"
+      ]
+    },
+    "receipt_binding_rule": "receipt bindings have exactly the keys listed for check_id; on a handler exception before a binding exists each listed value is null and exit is nonzero; close_round and stable_publication require every listed value non-null, with same_inode and same_digest true for stable_publication"
+  },
+  "environment_locator": {
+    "schema_version": "p02_environment_locator@1",
+    "source_encoding": "UTF-8 strict",
+    "environment_token_regex": "\\\\(begin|end)\\{([A-Za-z]+\\*?)\\}",
+    "supported_environment_names": ["equation", "equation*", "align", "align*", "aligned", "aligned*"],
+    "comment_rule": "mask from each unescaped percent sign through but not including LF; percent is unescaped exactly when immediately preceded by an even count of consecutive backslashes",
+    "brace_rule": "environment tokens are recognized only outside masked comments; begin/end tokens are paired by exact captured name using a stack and unbalanced or crossed pairs are invalid",
+    "environment_span_rule": "half-open bytes from the first backslash byte of begin through the closing brace byte of the matching end; a following LF is excluded",
+    "nesting_rule": "retain every supported nested environment; an obligation selects the innermost environment containing all its owned spans and records every supported ancestor outermost first",
+    "row_content_rule": "within the selected environment, exclude its begin/end token bytes and split the remaining bytes at row separators using row_classifier.row_separator_rule; child-environment begin/end token bytes are structural and excluded from child row content",
+    "row_trim_rule": "remove only leading and trailing ASCII bytes space, tab, CR, LF, form feed, and vertical tab from each split part; never trim internal bytes",
+    "empty_row_rule": "a trimmed empty split part is a blank-math-row stop and is not an owned row",
+    "line_rule": "line_start or line_end equals one plus the count of LF bytes strictly before the corresponding half-open byte offset",
+    "failure_rule": "invalid UTF-8, unbalanced/crossed supported environments, invalid brace depth, or an owned span outside its selected environment fails closed as invalid"
+  },
+  "row_classifier": {
+    "schema_version": "p02_row_classifier@1",
+    "input_scope": "one byte-preserving row after top-level separator splitting and outer ASCII-whitespace trimming",
+    "comment_rule": "from each unescaped percent sign through LF is masked for classification; percent is unescaped exactly when immediately preceded by an even count of consecutive backslashes",
+    "top_level_rule": "brace depth zero in the currently scanned environment and outside every child environment nested inside it; when scanning the inner aligned environment its own content is top level",
+    "row_separator_rule": "two consecutive backslash bytes at top level outside a masked comment; separator bytes are not part of either row",
+    "has_number_suppressor_regex": "\\\\(?:nonumber|notag)(?![A-Za-z])",
+    "had_row_terminator_rule": "true exactly when this row ended at a recognized row separator",
+    "label_regex": "\\\\label\\s*\\{([^{}]+)\\}",
+    "spacing_command_regex": "\\\\(?:quad|qquad)(?![A-Za-z])",
+    "grammar_removals": [
+      "masked comments",
+      "all label_regex matches",
+      "all has_number_suppressor_regex matches",
+      "all ampersand bytes at top level",
+      "all spacing_command_regex matches"
+    ],
+    "ascii_whitespace_regex": "[ \\t\\r\\n\\f\\v]+",
+    "terminal_punctuation_rule": "remove at most one terminal comma or period after ASCII-whitespace collapse",
+    "relation_tokens_in_longest_first_order": [
+      "\\coloneqq",
+      "\\equiv",
+      "\\le",
+      "\\ge",
+      "=",
+      "<",
+      ">"
+    ],
+    "relation_command_boundary": "(?![A-Za-z])",
+    "continuation_prefix_regex": "(?:[+\\-*/]|\\\\(?:cdot|times)(?![A-Za-z]))",
+    "classification_precedence": [
+      {"priority": 1, "when": "explicit_label_count >= 2", "shape": "multi_label_conflict"},
+      {"priority": 2, "when": "grammar_text is empty", "shape": "label_only"},
+      {"priority": 3, "when": "invalid braces or nesting, any top-level relation other than equality or definition, both equality and definition, or relation_count != 1 when any relation exists", "shape": "unknown"},
+      {"priority": 4, "when": "one leading equality, empty lhs, and nonempty rhs", "shape": "relation_chain_continuation"},
+      {"priority": 5, "when": "no top-level relation and continuation_prefix_regex matches at offset zero", "shape": "relation_continuation"},
+      {"priority": 6, "when": "one equality with nonempty lhs/rhs and has_number_suppressor and had_row_terminator", "shape": "relation_head"},
+      {"priority": 7, "when": "one definition with nonempty lhs/rhs and has_number_suppressor and had_row_terminator", "shape": "definition_head"},
+      {"priority": 8, "when": "one equality with nonempty lhs/rhs", "shape": "complete_relation"},
+      {"priority": 9, "when": "one definition with nonempty lhs/rhs", "shape": "complete_definition"},
+      {"priority": 10, "when": "otherwise", "shape": "unknown"}
+    ],
+    "closed_shapes": [
+      "complete_relation",
+      "complete_definition",
+      "relation_head",
+      "definition_head",
+      "relation_continuation",
+      "relation_chain_continuation",
+      "label_only",
+      "multi_label_conflict",
+      "unknown"
+    ]
+  },
+  "grouping_grammar": {
+    "schema_version": "p02_grouping_grammar@1",
+    "candidate_unit": "one explicit label after classification",
+    "transitions": [
+      {"seed_shape": "complete_relation", "direction": "forward", "accepted_sequence": "zero or more immediately following unlabeled relation_chain_continuation rows in the same non-nested environment stack", "candidate": "seed plus maximal accepted sequence"},
+      {"seed_shape": "complete_definition", "direction": "none", "accepted_sequence": "empty", "candidate": "seed"},
+      {"seed_shape": "relation_head", "direction": "forward", "accepted_sequence": "one or more immediately following unlabeled relation_continuation rows", "candidate": "seed plus maximal accepted sequence"},
+      {"seed_shape": "definition_head", "direction": "forward", "accepted_sequence": "one or more immediately following unlabeled relation_continuation rows", "candidate": "seed plus maximal accepted sequence"},
+      {"seed_shape": "relation_continuation", "direction": "backward", "accepted_sequence": "zero or more immediately preceding unlabeled relation_continuation rows then exactly one immediately preceding unlabeled relation_head or definition_head", "candidate": "head through seed"},
+      {"seed_shape": "relation_chain_continuation", "direction": "backward", "accepted_sequence": "only nested_aligned_exception", "candidate": "exception pair"},
+      {"seed_shape": "label_only", "direction": "none", "accepted_sequence": "empty", "candidate": "none"},
+      {"seed_shape": "unknown", "direction": "none", "accepted_sequence": "empty", "candidate": "none"}
+    ],
+    "nested_aligned_exception": "exactly one immediately preceding unlabeled complete_relation with the same exact outer equation and inner aligned stack and only row-separator bytes plus ASCII whitespace in the intervening source",
+    "stop_before": [
+      "any explicit label not equal to the candidate seed",
+      "any shape not named by the active transition",
+      "environment stack change",
+      "blank math row",
+      "multi_label_conflict",
+      "unknown"
+    ],
+    "scan_policy": "maximal contiguous scan; never skip a row; never cross an environment boundary; classify once; no iterative reclassification",
+    "commit_policy": "compute every candidate before commitment; commit disjoint sets in source order; every overlapping set becomes ambiguous with code competing_owner_sets; no distance or first-wins tie-breaker",
+    "diagnostic_state_by_seed": {
+      "multi_label_conflict": "ambiguous:multiple_explicit_labels_on_one_row",
+      "unknown": "ambiguous:unknown_row_shape",
+      "label_only_without_complete_candidate": "orphaned:missing_relation_head",
+      "relation_continuation_without_head": "orphaned:missing_relation_head",
+      "relation_chain_continuation_without_exception": "orphaned:missing_relation_head"
+    },
+    "reason_assignment": {
+      "explicit_label_seed": "the seed row",
+      "backward_number_suppressed_relation_head": "an unlabeled relation_head or definition_head attached by a backward transition",
+      "forward_relation_continuation": "an unlabeled relation_chain_continuation or relation_continuation attached by a forward transition",
+      "nested_aligned_same_relation": "the preceding complete_relation in nested_aligned_exception",
+      "excluded_sibling_label": "a disjoint row owned by another valid label in the same source/environment",
+      "orphan_no_unique_owner": "a seed for which no complete candidate exists",
+      "ambiguous_competing_owner": "either two or more explicit labels compete for the same classified row before allocation, or two or more computed candidate owner sets overlap after allocation; the ambiguity code distinguishes multiple_explicit_labels_on_one_row from competing_owner_sets",
+      "ambiguous_parser_disagreement": "the parser fidelity route disagrees on ownership or exact byte mapping"
+    }
+  },
+  "target_normalizer": {
+    "schema_version": "p02_latex_surface_normalization@1",
+    "input_rule": "process each owned raw row independently in source order; never read excluded spans",
+    "row_transform_order": [
+      "remove masked comments using row_classifier.comment_rule",
+      "remove every row_classifier.label_regex match",
+      "remove every row_classifier.has_number_suppressor_regex match",
+      "remove a terminal top-level row separator when present",
+      "remove all top-level ampersand bytes",
+      "remove every row_classifier.spacing_command_regex match",
+      "collapse each maximal row_classifier.ascii_whitespace_regex match to one ASCII space",
+      "strip leading and trailing ASCII space",
+      "remove at most one terminal comma or period and strip trailing ASCII space again"
+    ],
+    "token_preservation": "preserve all other bytes exactly after UTF-8 decoding and NFC normalization; do not expand macros, normalize command spelling, insert operator spacing, simplify algebra, or reorder terms",
+    "composition_by_owned_row_shapes": [
+      {"shapes": ["complete_relation"], "kind": "equality", "rule": "the transformed row is display_text and its one top-level equality split gives two members"},
+      {"shapes": ["complete_definition"], "kind": "aligned_definition", "rule": "the transformed row is display_text and its one top-level definition split gives two members"},
+      {"shapes": ["relation_head", "relation_continuation"], "kind": "equality", "rule": "append one ASCII space plus each transformed continuation row to the transformed head in source order; split the result at its one top-level equality"},
+      {"shapes": ["definition_head", "relation_continuation"], "kind": "aligned_definition", "rule": "append one ASCII space plus each transformed continuation row to the transformed head in source order; split the result at its one top-level definition"},
+      {"shapes": ["complete_relation", "relation_chain_continuation"], "kind": "equality_chain", "rule": "append one ASCII space plus each transformed chain row to the transformed first row in source order; split at every top-level equality in source order"},
+      {"shapes": [], "kind": "unavailable", "rule": "display_text is empty, members is empty, and complete_lhs_rhs is false"}
+    ],
+    "top_level_split_rule": "use row_classifier.top_level_rule and longest-first relation tokens; delimiter bytes are omitted and each member is stripped of leading/trailing ASCII space",
+    "validity_rule": "the exact owned shape sequence must match one composition entry, the declared delimiter type/count must match, and every member must be nonempty; otherwise normalized_target is unavailable and the record cannot be adapter eligible",
+    "display_text_rule": "join the stripped members with one ASCII-space-delimiter-space, using equals for equality/equality_chain and backslash-coloneqq for aligned_definition",
+    "normalization_version": "p02_latex_surface_normalization@1"
+  },
+  "parser_fidelity_profile": {
+    "schema_version": "p02_parser_fidelity_profile@1",
+    "scope": "differential extraction validation only; never mathematical backend evidence",
+    "executables": {
+      "latexml": {
+        "path": "/usr/bin/latexml",
+        "measured_version": "0.8.6",
+        "version_argv": ["/usr/bin/latexml", "--VERSION"],
+        "fidelity_argv_template": [
+          "/usr/bin/latexml",
+          "--quiet",
+          "--nocomments",
+          "--log=RR/parser/latexml/CASE.log",
+          "--destination=RR/parser/latexml/CASE.xml",
+          "SOURCE"
+        ],
+        "timeout_seconds": 60
+      },
+      "pandoc": {
+        "path": "/usr/bin/pandoc",
+        "measured_version": "2.9.2.1",
+        "version_argv": ["/usr/bin/pandoc", "--version"],
+        "fidelity_argv_template": [
+          "/usr/bin/pandoc",
+          "--from=latex",
+          "--to=json",
+          "--wrap=none",
+          "SOURCE"
+        ],
+        "timeout_seconds": 30
+      }
+    },
+    "source_allowlist": [
+      "tests/fixtures/label_scoped_obligations/one_label_equation.tex",
+      "tests/fixtures/label_scoped_obligations/one_label_continuation.tex",
+      "tests/fixtures/label_scoped_obligations/two_label_align.tex",
+      "tests/fixtures/label_scoped_obligations/chained_equalities.tex",
+      "tests/fixtures/label_scoped_obligations/nested_aligned.tex",
+      "tests/fixtures/label_scoped_obligations/macros_comments_nonumber.tex",
+      "tests/fixtures/label_scoped_obligations/aligned_definition.tex",
+      "tests/fixtures/label_scoped_obligations/ambiguous_label_ownership.tex",
+      "tests/fixtures/label_scoped_obligations/duplicate_label_a.tex",
+      "tests/fixtures/label_scoped_obligations/duplicate_label_b.tex",
+      "tests/fixtures/label_scoped_obligations/orphan_continuation.tex",
+      "docs/credit-card-npv-component-proposal/credit_card_npv_component_proposal_final_submission.tex",
+      "docs/risky-debt-maliar-deep-learning-lecture-note.tex"
+    ],
+    "case_token_rule": "CASE is the lower-case SHA-256 of the workspace-relative SOURCE string",
+    "round_root_rule": "RR is the validated no-symlink result-round root; every parser output, log, temporary directory, cache, and HOME is below RR/parser",
+    "cwd_rule": "workspace root",
+    "environment": {
+      "PATH": "/usr/bin:/bin",
+      "HOME": "RR/parser/home",
+      "LANG": "C.UTF-8",
+      "LC_ALL": "C.UTF-8"
+    },
+    "forbidden_environment_prefixes": [
+      "MATHDEVMCP_",
+      "ANTHROPIC_",
+      "OPENAI_",
+      "HTTP_",
+      "HTTPS_",
+      "ALL_PROXY",
+      "NO_PROXY",
+      "TEXINPUTS",
+      "PERL5LIB"
+    ],
+    "invocation_rule": "run each version argv exactly once and each fidelity argv exactly once per source; no shell, stdin, directory recursion, glob, backend_bin lookup, executable override, extra argv, retry, or source outside source_allowlist",
+    "artifact_rule": "capture immutable stdout, stderr, exit code, timeout state, exact argv/environment, output/log bytes when applicable, and SHA-256 of SOURCE before and after invocation; source mutation is a veto",
+    "fidelity_vector_fields_in_priority_order": [
+      "exact_requested_label_set",
+      "exact_owner_label_spans",
+      "exact_owned_row_spans",
+      "exact_excluded_sibling_spans",
+      "exact_nested_environment_stack",
+      "exact_source_byte_roundtrip",
+      "explicit_uncertainty_localization"
+    ],
+    "field_scoring": "each field is 1 only for exact compact-oracle equality, 0 otherwise; unavailable or not source-mappable is 0",
+    "selection_rule": "compare seven-bit vectors lexicographically in priority order; a specialist is materially better only when it has 1 at the first differing field where current has 0 and every higher-priority field is equal; equal vectors retain current; no scalar sum, label count, parse success, output size, or runtime tie-breaker",
+    "veto_rule": "any specialist/current ownership disagreement, non-source-mappable output, malformed output, timeout, nonzero exit, executable/version mismatch, argv/environment mismatch, missing raw artifact, or mutation of a source makes the reviewed case inconclusive or ambiguous and cannot promote a parser",
+    "network_and_backend_boundary": "no network, filters, Lua, PDF engines, shell escape, bibliography execution, mathematical adapter, proof backend, or recursive corpus scan is authorized"
+  },
+  "inventory_scanner": {
+    "schema_version": "p02_scoped_inventory_scanner@1",
+    "input_json_pointer": "/normalized_target/display_text",
+    "unicode_normalization": "NFC",
+    "case_sensitive": true,
+    "macro_expansion": false,
+    "operator_match_mode": "regex_search_emit_once_in_registry_order",
+    "operator_patterns": [
+      {"operator": "definition", "regex": "\\\\coloneqq"},
+      {"operator": "equality", "regex": "(?<![\\\\:<>])="},
+      {"operator": "conditional_expectation", "regex": "\\\\E(?![A-Za-z])|\\\\mathbb\\{E\\}"},
+      {"operator": "conditional_bar", "regex": "\\\\mid(?![A-Za-z])|\\\\middle\\s*\\|"},
+      {"operator": "summation", "regex": "\\\\sum(?![A-Za-z])"},
+      {"operator": "maximum", "regex": "\\\\max(?![A-Za-z])"},
+      {"operator": "minimum", "regex": "\\\\min(?![A-Za-z])"},
+      {"operator": "derivative", "regex": "\\\\partial(?![A-Za-z])|\\\\frac\\s*\\{d(?:\\s|\\\\[A-Za-z]+)*[^}]*\\}\\s*\\{d|\\\\frac\\s*\\{\\\\partial[^}]*\\}\\s*\\{\\\\partial"},
+      {"operator": "indicator", "regex": "\\\\1\\s*\\{"},
+      {"operator": "transpose", "regex": "\\\\top(?![A-Za-z])"},
+      {"operator": "integral", "regex": "\\\\int(?![A-Za-z])"}
+    ],
+    "latex_command_token_regex": "\\\\([A-Za-z]+)",
+    "latex_command_output_prefix": "\\",
+    "excluded_latex_command_names": [
+      "begin", "end", "label", "nonumber", "notag", "left", "right",
+      "middle", "mid", "quad", "qquad", "hspace", "vspace", "mathrm",
+      "mathcal", "mathbf", "mathbb", "text", "operatorname", "frac",
+      "dfrac", "tfrac", "partial", "sum", "max", "min", "int", "prod",
+      "lim", "equiv", "le", "ge", "lt", "gt", "cdot", "times", "bar",
+      "overline", "underline", "hat", "widehat", "tilde", "widetilde",
+      "star", "top"
+    ],
+    "bare_identifier_preprocessing": "replace_each_full_latex_command_token_match_with_one_ascii_space_preserve_brace_arguments",
+    "bare_identifier_regex": "(?<![\\\\A-Za-z0-9])([A-Za-z][A-Za-z0-9]*)(?![A-Za-z0-9])",
+    "excluded_bare_identifiers": ["begin", "end", "label", "nonumber", "notag"],
+    "identifier_underscore_policy": "separator",
+    "inventory_uniqueness": "exact_token",
+    "inventory_sort": "ascending_utf8_bytes",
+    "forbidden_input_scopes": [
+      "source_math",
+      "excluded_spans",
+      "comments",
+      "labels",
+      "whole_display_text"
+    ]
+  },
+  "obligation_materialization": {
+    "schema_version": "p02_obligation_materialization@1",
+    "applies_to": [
+      "/fixtures/*/expected/*",
+      "/fixtures/*/expected_lookup/file_scoped_obligations/*",
+      "/frozen_sources/*"
+    ],
+    "source_ref_field": "nearest source_ref inherited from the item, then its containing case",
+    "source_digest_field": "nearest source_sha256 inherited from the item, then its containing case; duplicate-file items resolve against the parallel containing source_refs/source_sha256s entry",
+    "document_logical_id": {
+      "fixture_rule": "p02-fixture/ plus the POSIX source filename stem",
+      "frozen_rule": "p02-frozen/ plus the lower-case source SHA-256"
+    },
+    "document_corpus_version": {
+      "fixture": "p02-reviewed-fixture-20260711",
+      "frozen": "p02-frozen-20260711"
+    },
+    "environment_spans": "ordered outer environment_span followed by nested_environment_span when present; duplicate-file items own their environment_span; the selected environment is the final span",
+    "environment_descriptor_regex_at_span_start": "\\\\begin\\{([A-Za-z]+\\*?)\\}",
+    "environment_kind_rule": "captured name with one terminal star removed",
+    "environment_starred_rule": "true exactly when the captured name has a terminal star",
+    "environment_identity_payload": ["source_digest", "start_byte", "end_byte", "environment_stack"],
+    "environment_identity_stack_item_keys": ["kind", "starred"],
+    "environment_id_rule": "env_ plus SHA-256 of P01-canonical environment_identity_payload for each outer-to-current stack prefix",
+    "canonical_parser_backend": "current",
+    "canonical_parser_version": "p02_lightweight_locator@1",
+    "parser_field_boundary": "for these 17 reviewed obligations the two canonical parser values are stable obligation-schema tokens; LaTeXML/Pandoc discovery, comparison, version, and disagreement records live outside their identity and may veto but never rewrite them; materially better specialist fidelity requires a reviewed compact/full oracle amendment before result rerun; a new non-frozen input may use a specialist selected by the reviewed fidelity rubric and must bind that selected backend/version in its new identity",
+    "line_start_rule": "1 plus the count of LF bytes in source_bytes[0:start_byte]",
+    "line_end_rule": "1 plus the count of LF bytes in source_bytes[0:end_byte]",
+    "row_universe_rule": "row_index is the zero-based source-order position among every nonempty localized math row in the selected environment; for every reviewed valid case the sorted unique union of owned_spans plus excluded_spans must equal that complete localized row universe, allowing independent oracle materialization without implementation output",
+    "owned_row_rule": "when owned_spans is nonempty, owned_spans, owned_span_sha256s, row_shapes, and grouping_reasons must have equal length and zip in source order; when owned_spans is empty, owned_rows is empty and row_shapes/grouping_reasons are oracle-only classifier diagnostics whose source is bound by ambiguities; explicit_label and label_span are the owner label/span exactly when the label span is contained in an owned row, otherwise null; has_nonumber is true exactly when comment-masked row bytes contain command token \\\\nonumber or \\\\notag; environment_stack is the ordered environment-id list",
+    "row_identity_payload": ["source_digest", "environment_id", "row_index", "start_byte", "end_byte"],
+    "row_id_rule": "row_ plus SHA-256 of P01-canonical row_identity_payload",
+    "owned_span_rule": "map each owned interval to exact start_byte, end_byte, line_start, and line_end",
+    "continuation_span_rule": "the owned span at each position whose grouping_reason is not explicit_label_seed, preserving source order",
+    "excluded_span_rule": "map each excluded interval to its line span, excluded_sibling_label equal to the unique other valid expected obligation in the same source/environment whose owned_spans contains that exact interval, and reason excluded_sibling_label; zero or multiple matches invalidates the oracle",
+    "source_math_rule": "empty string when owned_spans is empty; otherwise UTF-8 decode the exact source byte envelope from the first owned start_byte through the last owned end_byte, including unchanged intervening row separators and whitespace; any excluded span overlapping that envelope invalidates materialization",
+    "provenance_rule": "ordered file ref with source SHA-256, selected environment ref/span, owner-label ref/span, then one ref/span for each owned row",
+    "copied_projection_fields": [
+      "label",
+      "normalized_target",
+      "operator_inventory",
+      "symbol_inventory",
+      "extraction_state",
+      "adapter_eligible",
+      "ambiguities",
+      "uncertainties"
+    ],
+    "identity_payload_rule": "strict schema_version 1.0 record materialized by these rules, excluding derived obligation_id and obligation_digest and excluding oracle-only projection/hash fields",
+    "obligation_digest_rule": "SHA-256 of P01-canonical identity_payload bytes",
+    "obligation_id_rule": "obl_ plus obligation_digest",
+    "expected_digest_fields": ["expected_canonical_byte_count", "expected_obligation_digest", "expected_obligation_id"],
+    "bare_duplicate_lookup_boundary": "expected_lookup ambiguity is a lookup result outside LabelScopedObligation identity; each file_scoped_obligation is materialized independently"
+  },
+  "fixtures": [
+    {
+      "case_id": "one_label_equation",
+      "source_ref": "tests/fixtures/label_scoped_obligations/one_label_equation.tex",
+      "source_sha256": "4eb4d4458dceb4e729364a31a2e68cc16e8e41498f64bf72a6088a694f1785b5",
+      "environment_span": [0, 52],
+      "expected": [
+        {
+          "label": "eq:one",
+          "label_span": [17, 31],
+          "extraction_state": "valid_complete",
+          "owned_spans": [[17, 37]],
+          "owned_span_sha256s": ["54c0a7dc781de009679140fe1fe31460963765ff6a30fe38ce92291912b66472"],
+          "excluded_spans": [],
+          "row_shapes": ["complete_relation"],
+          "grouping_reasons": ["explicit_label_seed"],
+          "normalized_target": {"kind": "equality", "members": ["x", "y"], "display_text": "x = y", "complete_lhs_rhs": true, "normalization_version": "p02_latex_surface_normalization@1"},
+          "operator_inventory": ["equality"],
+          "symbol_inventory": {"latex_commands": [], "bare_identifiers": ["x", "y"]},
+          "adapter_eligible": true,
+          "ambiguities": [],
+          "uncertainties": [],
+          "expected_canonical_byte_count": 2375,
+          "expected_obligation_digest": "f33683e1a14962db2c3713952311df87f34a84b0a75163b21ec1c526b4571d5e",
+          "expected_obligation_id": "obl_f33683e1a14962db2c3713952311df87f34a84b0a75163b21ec1c526b4571d5e"
+        }
+      ]
+    },
+    {
+      "case_id": "one_label_backward_continuation",
+      "source_ref": "tests/fixtures/label_scoped_obligations/one_label_continuation.tex",
+      "source_sha256": "3713805a792fbbbf31c0672669494fd1ddaf7c70c2bdaca7516dc2ed0ad04116",
+      "environment_span": [0, 80],
+      "expected": [
+        {
+          "label": "eq:continued",
+          "label_span": [48, 68],
+          "extraction_state": "valid_complete",
+          "owned_spans": [[14, 34], [37, 68]],
+          "owned_span_sha256s": ["9331bc1a385401e145bcf882786cd1d24ca28740ebdddd12070f69108b3f7446", "65ab712256150f569031cf1abc0976ebbfdcbc29b7c1a9416162cf75d51a48d3"],
+          "excluded_spans": [],
+          "row_shapes": ["relation_head", "relation_continuation"],
+          "grouping_reasons": ["backward_number_suppressed_relation_head", "explicit_label_seed"],
+          "normalized_target": {"kind": "equality", "members": ["a", "b + c + d"], "display_text": "a = b + c + d", "complete_lhs_rhs": true, "normalization_version": "p02_latex_surface_normalization@1"},
+          "operator_inventory": ["equality"],
+          "symbol_inventory": {"latex_commands": [], "bare_identifiers": ["a", "b", "c", "d"]},
+          "adapter_eligible": true,
+          "ambiguities": [],
+          "uncertainties": [],
+          "expected_canonical_byte_count": 3198,
+          "expected_obligation_digest": "c3d5148026df33253384b8bfabc97fd4bda8d4d4424a562b35bd18cb0f2793f0",
+          "expected_obligation_id": "obl_c3d5148026df33253384b8bfabc97fd4bda8d4d4424a562b35bd18cb0f2793f0"
+        }
+      ]
+    },
+    {
+      "case_id": "two_label_align",
+      "source_ref": "tests/fixtures/label_scoped_obligations/two_label_align.tex",
+      "source_sha256": "d9fb778e12ac9d622398f1c376a345cf32b924f735e190fa2ba5cca5b84846f4",
+      "environment_span": [0, 76],
+      "expected": [
+        {
+          "label": "eq:first",
+          "label_span": [21, 37],
+          "extraction_state": "valid_complete",
+          "owned_spans": [[14, 37]],
+          "owned_span_sha256s": ["fdc79c2baee89ecae7246ceaaa8476937dd5ab604b62fd0b38163414c21d94b2"],
+          "excluded_spans": [[40, 64]],
+          "row_shapes": ["complete_relation"],
+          "grouping_reasons": ["explicit_label_seed"],
+          "normalized_target": {"kind": "equality", "members": ["x", "y"], "display_text": "x = y", "complete_lhs_rhs": true, "normalization_version": "p02_latex_surface_normalization@1"},
+          "operator_inventory": ["equality"],
+          "symbol_inventory": {"latex_commands": [], "bare_identifiers": ["x", "y"]},
+          "adapter_eligible": true,
+          "ambiguities": [],
+          "uncertainties": [],
+          "expected_canonical_byte_count": 2498,
+          "expected_obligation_digest": "17861fda37786a16c2308212d14aca6e1597899658b6ab34cdf3762f3cb9012b",
+          "expected_obligation_id": "obl_17861fda37786a16c2308212d14aca6e1597899658b6ab34cdf3762f3cb9012b"
+        },
+        {
+          "label": "eq:second",
+          "label_span": [47, 64],
+          "extraction_state": "valid_complete",
+          "owned_spans": [[40, 64]],
+          "owned_span_sha256s": ["6c622e39576bc44387f8ec2e29f3c24bbbc37e5ef93085005e1afd93dba4dfd6"],
+          "excluded_spans": [[14, 37]],
+          "row_shapes": ["complete_relation"],
+          "grouping_reasons": ["explicit_label_seed"],
+          "normalized_target": {"kind": "equality", "members": ["u", "v"], "display_text": "u = v", "complete_lhs_rhs": true, "normalization_version": "p02_latex_surface_normalization@1"},
+          "operator_inventory": ["equality"],
+          "symbol_inventory": {"latex_commands": [], "bare_identifiers": ["u", "v"]},
+          "adapter_eligible": true,
+          "ambiguities": [],
+          "uncertainties": [],
+          "expected_canonical_byte_count": 2501,
+          "expected_obligation_digest": "884188812e4548f1dd5d124df7273fa584d697081bc03e87b07de50dd9f186ff",
+          "expected_obligation_id": "obl_884188812e4548f1dd5d124df7273fa584d697081bc03e87b07de50dd9f186ff"
+        }
+      ]
+    },
+    {
+      "case_id": "forward_equality_chain",
+      "source_ref": "tests/fixtures/label_scoped_obligations/chained_equalities.tex",
+      "source_sha256": "4864e85e9391efbb2897c73e8f01c8a3ab6208f03e3f323c52fac20fc4e0a21b",
+      "environment_span": [0, 68],
+      "expected": [
+        {
+          "label": "eq:chain",
+          "label_span": [21, 37],
+          "extraction_state": "valid_complete",
+          "owned_spans": [[14, 37], [42, 56]],
+          "owned_span_sha256s": ["186cd3918e84d3dcf15cd8c9b8c56219fdb3c5603782822f280771e468e367f8", "3713171aad9c71029d9223aaca168b94d202a91b8a8d2072fd04cb42885ba065"],
+          "excluded_spans": [],
+          "row_shapes": ["complete_relation", "relation_chain_continuation"],
+          "grouping_reasons": ["explicit_label_seed", "forward_relation_continuation"],
+          "normalized_target": {"kind": "equality_chain", "members": ["x", "y", "z"], "display_text": "x = y = z", "complete_lhs_rhs": true, "normalization_version": "p02_latex_surface_normalization@1"},
+          "operator_inventory": ["equality"],
+          "symbol_inventory": {"latex_commands": [], "bare_identifiers": ["x", "y", "z"]},
+          "adapter_eligible": true,
+          "ambiguities": [],
+          "uncertainties": [],
+          "expected_canonical_byte_count": 3151,
+          "expected_obligation_digest": "fd568f602ad5c4a29bce5f9565797d5f79c7f723aff29a2eba74da397eb9a46a",
+          "expected_obligation_id": "obl_fd568f602ad5c4a29bce5f9565797d5f79c7f723aff29a2eba74da397eb9a46a"
+        }
+      ]
+    },
+    {
+      "case_id": "nested_aligned_chain",
+      "source_ref": "tests/fixtures/label_scoped_obligations/nested_aligned.tex",
+      "source_sha256": "63b1f2ed6ab70f142c19e0893bec9716fa058e9f65a10f56648383961ca55b0f",
+      "environment_span": [0, 105],
+      "nested_environment_span": [17, 90],
+      "expected": [
+        {
+          "label": "eq:nested",
+          "label_span": [59, 76],
+          "extraction_state": "valid_complete",
+          "owned_spans": [[33, 46], [54, 76]],
+          "owned_span_sha256s": ["057da875ea90343d7ddb5e97bab4b7f2d2c23bfa6293c60432a3645761311454", "4a6deb004bd185fa840ace6ef7eaba07725f4837a2faa20b5389eb3da0d8190d"],
+          "excluded_spans": [],
+          "row_shapes": ["complete_relation", "relation_chain_continuation"],
+          "grouping_reasons": ["nested_aligned_same_relation", "explicit_label_seed"],
+          "normalized_target": {"kind": "equality_chain", "members": ["f(x)", "x + 1", "y"], "display_text": "f(x) = x + 1 = y", "complete_lhs_rhs": true, "normalization_version": "p02_latex_surface_normalization@1"},
+          "operator_inventory": ["equality"],
+          "symbol_inventory": {"latex_commands": [], "bare_identifiers": ["f", "x", "y"]},
+          "adapter_eligible": true,
+          "ambiguities": [],
+          "uncertainties": [],
+          "expected_canonical_byte_count": 3459,
+          "expected_obligation_digest": "38a03727fb0bcea791d0e5a4d2b5d22188ceac8590767cdff7e2f8f063cde39e",
+          "expected_obligation_id": "obl_38a03727fb0bcea791d0e5a4d2b5d22188ceac8590767cdff7e2f8f063cde39e"
+        }
+      ]
+    },
+    {
+      "case_id": "comments_macros_nonumber_starred",
+      "source_ref": "tests/fixtures/label_scoped_obligations/macros_comments_nonumber.tex",
+      "source_sha256": "bb7f138151f91c86f4ec9ba35e7e5c9dd4d0a231c7520f97b42af121fcb2f201",
+      "environment_span": [0, 162],
+      "expected": [
+        {
+          "label": "eq:macro-end",
+          "label_span": [129, 149],
+          "extraction_state": "valid_complete",
+          "owned_spans": [[15, 98], [101, 149]],
+          "owned_span_sha256s": ["81339819a5ba394a992a8f9075bd60544ff7b3f99618b40a9832f86539c26a23", "e47c2cb51ef9fd6266d4f638fbf3fc4eacaff8426fd79303e55b8f89d68b8bd8"],
+          "excluded_spans": [],
+          "row_shapes": ["relation_head", "relation_continuation"],
+          "grouping_reasons": ["backward_number_suppressed_relation_head", "explicit_label_seed"],
+          "normalized_target": {"kind": "equality", "members": ["q(x)", "\\Macro{x} + \\sum_{j=1}^{n} z_j"], "display_text": "q(x) = \\Macro{x} + \\sum_{j=1}^{n} z_j", "complete_lhs_rhs": true, "normalization_version": "p02_latex_surface_normalization@1"},
+          "operator_inventory": ["equality", "summation"],
+          "symbol_inventory": {"latex_commands": ["\\Macro"], "bare_identifiers": ["j", "n", "q", "x", "z"]},
+          "adapter_eligible": true,
+          "ambiguities": [],
+          "uncertainties": [],
+          "expected_canonical_byte_count": 3375,
+          "expected_obligation_digest": "a35e2fc02132ca17b6415e0ec7fecd0b11c7d6c2fb5a57e538efe9610cfc0783",
+          "expected_obligation_id": "obl_a35e2fc02132ca17b6415e0ec7fecd0b11c7d6c2fb5a57e538efe9610cfc0783"
+        }
+      ]
+    },
+    {
+      "case_id": "aligned_definition",
+      "source_ref": "tests/fixtures/label_scoped_obligations/aligned_definition.tex",
+      "source_sha256": "d766bbd4be75ebfa0a851d9785980d6bfd89ecd7dc41eae25a182d6273c8b2b7",
+      "environment_span": [0, 89],
+      "expected": [
+        {
+          "label": "eq:definition",
+          "label_span": [56, 77],
+          "extraction_state": "valid_complete",
+          "owned_spans": [[14, 42], [45, 77]],
+          "owned_span_sha256s": ["d1b6699cf916aebe83bc731593f82c9e8d2f8260e15c9cf1a5bb76812442642c", "a01ad144ac3759bd9d7bc1b8deb8a7348367c24d311ae36208cabf169532db31"],
+          "excluded_spans": [],
+          "row_shapes": ["definition_head", "relation_continuation"],
+          "grouping_reasons": ["backward_number_suppressed_relation_head", "explicit_label_seed"],
+          "normalized_target": {"kind": "aligned_definition", "members": ["F(x)", "x^2 + 1"], "display_text": "F(x) \\coloneqq x^2 + 1", "complete_lhs_rhs": true, "normalization_version": "p02_latex_surface_normalization@1"},
+          "operator_inventory": ["definition"],
+          "symbol_inventory": {"latex_commands": ["\\coloneqq"], "bare_identifiers": ["F", "x"]},
+          "adapter_eligible": true,
+          "ambiguities": [],
+          "uncertainties": [],
+          "expected_canonical_byte_count": 3227,
+          "expected_obligation_digest": "fd79b9d81532632a3ccceee7925aa1f6697425171074fb22ea537afb430ccae9",
+          "expected_obligation_id": "obl_fd79b9d81532632a3ccceee7925aa1f6697425171074fb22ea537afb430ccae9"
+        }
+      ]
+    },
+    {
+      "case_id": "two_explicit_labels_one_row",
+      "source_ref": "tests/fixtures/label_scoped_obligations/ambiguous_label_ownership.tex",
+      "source_sha256": "cb8ff8edb8a4de9fde787c9bdd5d0a7db59e2bc7bf572e3ed86a45942af5f11a",
+      "environment_span": [0, 77],
+      "expected": [
+        {
+          "label": "eq:ambiguous-a",
+          "label_span": [21, 43],
+          "extraction_state": "ambiguous",
+          "owned_spans": [],
+          "excluded_spans": [],
+          "row_shapes": ["multi_label_conflict"],
+          "grouping_reasons": ["ambiguous_competing_owner"],
+          "normalized_target": {"kind": "unavailable", "members": [], "display_text": "", "complete_lhs_rhs": false, "normalization_version": "p02_latex_surface_normalization@1"},
+          "operator_inventory": [],
+          "symbol_inventory": {"latex_commands": [], "bare_identifiers": []},
+          "adapter_eligible": false,
+          "ambiguities": [
+            {
+              "code": "multiple_explicit_labels_on_one_row",
+              "source_spans": [{"file": "tests/fixtures/label_scoped_obligations/ambiguous_label_ownership.tex", "start_byte": 14, "end_byte": 65}],
+              "candidate_interpretations": ["owner:eq:ambiguous-a", "owner:eq:ambiguous-b"],
+              "required_discriminator": "retain exactly one explicit owning label or split the mathematical row into separately labeled rows"
+            }
+          ],
+          "uncertainties": [],
+          "expected_canonical_byte_count": 2020,
+          "expected_obligation_digest": "9d87e9ce3511a54fd44a36e68dfa6d7f3064c55b5b5491d3df9a38a913b54ebd",
+          "expected_obligation_id": "obl_9d87e9ce3511a54fd44a36e68dfa6d7f3064c55b5b5491d3df9a38a913b54ebd"
+        },
+        {
+          "label": "eq:ambiguous-b",
+          "label_span": [43, 65],
+          "extraction_state": "ambiguous",
+          "owned_spans": [],
+          "excluded_spans": [],
+          "row_shapes": ["multi_label_conflict"],
+          "grouping_reasons": ["ambiguous_competing_owner"],
+          "normalized_target": {"kind": "unavailable", "members": [], "display_text": "", "complete_lhs_rhs": false, "normalization_version": "p02_latex_surface_normalization@1"},
+          "operator_inventory": [],
+          "symbol_inventory": {"latex_commands": [], "bare_identifiers": []},
+          "adapter_eligible": false,
+          "ambiguities": [
+            {
+              "code": "multiple_explicit_labels_on_one_row",
+              "source_spans": [{"file": "tests/fixtures/label_scoped_obligations/ambiguous_label_ownership.tex", "start_byte": 14, "end_byte": 65}],
+              "candidate_interpretations": ["owner:eq:ambiguous-a", "owner:eq:ambiguous-b"],
+              "required_discriminator": "retain exactly one explicit owning label or split the mathematical row into separately labeled rows"
+            }
+          ],
+          "uncertainties": [],
+          "expected_canonical_byte_count": 2020,
+          "expected_obligation_digest": "c23bf779e1334467d95857a8e1c73df76f6d555a9e5952cdf0c2e67a7e298de3",
+          "expected_obligation_id": "obl_c23bf779e1334467d95857a8e1c73df76f6d555a9e5952cdf0c2e67a7e298de3"
+        }
+      ]
+    },
+    {
+      "case_id": "duplicate_label_across_files",
+      "source_refs": [
+        "tests/fixtures/label_scoped_obligations/duplicate_label_a.tex",
+        "tests/fixtures/label_scoped_obligations/duplicate_label_b.tex"
+      ],
+      "source_sha256s": [
+        "fef1b001a84c67a12c86b6081718b9a49aee86660c7c0ed73f032df35da9544a",
+        "5ff82fe2ce6f97bf0cc45f6afdcc3288604cfa39dc034255d582a6719eb12b72"
+      ],
+      "expected_lookup": {
+        "label": "eq:duplicate",
+        "bare_lookup_state": "ambiguous",
+        "file_scoped_obligations": [
+          {
+            "source_ref": "tests/fixtures/label_scoped_obligations/duplicate_label_a.tex",
+            "environment_span": [0, 58],
+            "label": "eq:duplicate",
+            "label_span": [23, 43],
+            "owned_spans": [[17, 43]],
+            "owned_span_sha256s": ["80b36acf395313f2215e248a191727f1be8de6d612555b9bacca17801b4e6b0c"],
+            "excluded_spans": [],
+            "row_shapes": ["complete_relation"],
+            "grouping_reasons": ["explicit_label_seed"],
+            "extraction_state": "valid_complete",
+            "normalized_target": {"kind": "equality", "members": ["x", "1"], "display_text": "x = 1", "complete_lhs_rhs": true, "normalization_version": "p02_latex_surface_normalization@1"},
+            "operator_inventory": ["equality"],
+            "symbol_inventory": {"latex_commands": [], "bare_identifiers": ["x"]},
+            "adapter_eligible": true,
+            "ambiguities": [],
+            "uncertainties": [],
+            "expected_canonical_byte_count": 2392,
+            "expected_obligation_digest": "3806265ce70a57e1841245dad58065e1d118c81bc0b9dfb6954cf781c26805f2",
+            "expected_obligation_id": "obl_3806265ce70a57e1841245dad58065e1d118c81bc0b9dfb6954cf781c26805f2"
+          },
+          {
+            "source_ref": "tests/fixtures/label_scoped_obligations/duplicate_label_b.tex",
+            "environment_span": [0, 58],
+            "label": "eq:duplicate",
+            "label_span": [23, 43],
+            "owned_spans": [[17, 43]],
+            "owned_span_sha256s": ["41e617f83176ffe2df2c8c851e80e3b2fe04c400ae93a4376ae39aa38c3a9b2b"],
+            "excluded_spans": [],
+            "row_shapes": ["complete_relation"],
+            "grouping_reasons": ["explicit_label_seed"],
+            "extraction_state": "valid_complete",
+            "normalized_target": {"kind": "equality", "members": ["x", "2"], "display_text": "x = 2", "complete_lhs_rhs": true, "normalization_version": "p02_latex_surface_normalization@1"},
+            "operator_inventory": ["equality"],
+            "symbol_inventory": {"latex_commands": [], "bare_identifiers": ["x"]},
+            "adapter_eligible": true,
+            "ambiguities": [],
+            "uncertainties": [],
+            "expected_canonical_byte_count": 2392,
+            "expected_obligation_digest": "bfa0612134d04e730389868b05d04b5919b3de43c0ccabc53365af796e617a84",
+            "expected_obligation_id": "obl_bfa0612134d04e730389868b05d04b5919b3de43c0ccabc53365af796e617a84"
+          }
+        ],
+        "ambiguities": [
+          {
+            "code": "duplicate_label_across_files",
+            "source_spans": [
+              {"file": "tests/fixtures/label_scoped_obligations/duplicate_label_a.tex", "start_byte": 23, "end_byte": 43},
+              {"file": "tests/fixtures/label_scoped_obligations/duplicate_label_b.tex", "start_byte": 23, "end_byte": 43}
+            ],
+            "candidate_interpretations": [
+              "file:tests/fixtures/label_scoped_obligations/duplicate_label_a.tex",
+              "file:tests/fixtures/label_scoped_obligations/duplicate_label_b.tex"
+            ],
+            "required_discriminator": "supply the exact workspace-relative source file together with label eq:duplicate"
+          }
+        ],
+        "uncertainties": []
+      }
+    },
+    {
+      "case_id": "orphan_labeled_continuation",
+      "source_ref": "tests/fixtures/label_scoped_obligations/orphan_continuation.tex",
+      "source_sha256": "cfab8c75560245b4562651ce60c0524b23188a84f98339168dcab518472cf2b8",
+      "environment_span": [0, 54],
+      "expected": [
+        {
+          "label": "eq:orphan",
+          "label_span": [25, 42],
+          "extraction_state": "orphaned",
+          "owned_spans": [],
+          "excluded_spans": [],
+          "row_shapes": ["relation_continuation"],
+          "grouping_reasons": ["orphan_no_unique_owner"],
+          "normalized_target": {"kind": "unavailable", "members": [], "display_text": "", "complete_lhs_rhs": false, "normalization_version": "p02_latex_surface_normalization@1"},
+          "operator_inventory": [],
+          "symbol_inventory": {"latex_commands": [], "bare_identifiers": []},
+          "adapter_eligible": false,
+          "ambiguities": [
+            {
+              "code": "missing_relation_head",
+              "source_spans": [{"file": "tests/fixtures/label_scoped_obligations/orphan_continuation.tex", "start_byte": 14, "end_byte": 42}],
+              "candidate_interpretations": ["attach_to_explicit_preceding_relation_head", "remain_orphaned"],
+              "required_discriminator": "supply one adjacent number-suppressed relation head in the same environment stack"
+            }
+          ],
+          "uncertainties": [],
+          "expected_canonical_byte_count": 1970,
+          "expected_obligation_digest": "7e435122ec358dc535f6a3554f297bef9204198c55a31d1532ccf93cccea200a",
+          "expected_obligation_id": "obl_7e435122ec358dc535f6a3554f297bef9204198c55a31d1532ccf93cccea200a"
+        }
+      ]
+    }
+  ],
+  "frozen_sources": [
+    {
+      "case_id": "card_cash_flow",
+      "source_ref": "docs/credit-card-npv-component-proposal/credit_card_npv_component_proposal_final_submission.tex",
+      "source_sha256": "dada009a7bdc08c8bb14fd8be5bb2ac737fc0d02f82b25638677e7535845cbf8",
+      "label": "eq:incremental-cash-flow",
+      "environment_span": [45275, 45809],
+      "label_span": [45513, 45545],
+      "owned_spans": [[45291, 45429], [45434, 45545]],
+      "owned_span_sha256s": ["dcf794ad17b4af7e0662e054febe532efc4552c6b606587472cef6a6ee9f5e29", "bfb87878d6c9c7f132a20055f7ba826917e511f5a26baa0588a321a680b86beb"],
+      "excluded_spans": [[45550, 45797]],
+      "row_shapes": ["relation_head", "relation_continuation"],
+      "grouping_reasons": ["backward_number_suppressed_relation_head", "explicit_label_seed"],
+      "extraction_state": "valid_complete",
+      "normalized_target": {"kind": "equality", "members": ["\\Delta CF_{i,t+h}(a,\\pi;s)", "\\Delta PPNR_{i,t+h}(a,\\pi;s) - \\Delta EL_{i,t+h}(a,\\pi;s) - \\Delta Kchg_{i,t+h}(a,\\pi;s) - \\Delta Tax_{i,t+h}(a,\\pi;s) + \\Delta RelValue_{i,t+h}(a,\\pi;s)"], "display_text": "\\Delta CF_{i,t+h}(a,\\pi;s) = \\Delta PPNR_{i,t+h}(a,\\pi;s) - \\Delta EL_{i,t+h}(a,\\pi;s) - \\Delta Kchg_{i,t+h}(a,\\pi;s) - \\Delta Tax_{i,t+h}(a,\\pi;s) + \\Delta RelValue_{i,t+h}(a,\\pi;s)", "complete_lhs_rhs": true, "normalization_version": "p02_latex_surface_normalization@1"},
+      "operator_inventory": ["equality"],
+      "symbol_inventory": {"latex_commands": ["\\Delta", "\\pi"], "bare_identifiers": ["CF", "EL", "Kchg", "PPNR", "RelValue", "Tax", "a", "h", "i", "s", "t"]},
+      "adapter_eligible": true,
+      "ambiguities": [],
+      "uncertainties": [],
+      "expected_canonical_byte_count": 4215,
+      "expected_obligation_digest": "7301b910ea0fe118e3ad38d2d69c6c9cd6e924aba15fb1e1147e710bdfe2b5a0",
+      "expected_obligation_id": "obl_7301b910ea0fe118e3ad38d2d69c6c9cd6e924aba15fb1e1147e710bdfe2b5a0"
+    },
+    {
+      "case_id": "card_incremental_npv",
+      "source_ref": "docs/credit-card-npv-component-proposal/credit_card_npv_component_proposal_final_submission.tex",
+      "source_sha256": "dada009a7bdc08c8bb14fd8be5bb2ac737fc0d02f82b25638677e7535845cbf8",
+      "label": "eq:incremental-npv",
+      "environment_span": [45275, 45809],
+      "label_span": [45771, 45797],
+      "owned_spans": [[45550, 45797]],
+      "owned_span_sha256s": ["c7b9f7c5259de03a60cee004e638e7a312cb94d27dccc58873dc7462a08272d7"],
+      "excluded_spans": [[45291, 45429], [45434, 45545]],
+      "row_shapes": ["complete_relation"],
+      "grouping_reasons": ["explicit_label_seed"],
+      "extraction_state": "valid_complete",
+      "normalized_target": {"kind": "equality", "members": ["\\Delta \\NPV_i(a;d,s,\\pi)", "- C_i^{\\mathrm{acq}}(a) + \\E\\left[ \\sum_{h=0}^{H} \\delta_h\\,\\Delta CF_{i,t+h}(a,\\pi;s) + \\delta_H\\Delta TV_{i,t+H}(a,\\pi;s) \\,\\middle|\\, \\mathcal{I}_{id} \\right]"], "display_text": "\\Delta \\NPV_i(a;d,s,\\pi) = - C_i^{\\mathrm{acq}}(a) + \\E\\left[ \\sum_{h=0}^{H} \\delta_h\\,\\Delta CF_{i,t+h}(a,\\pi;s) + \\delta_H\\Delta TV_{i,t+H}(a,\\pi;s) \\,\\middle|\\, \\mathcal{I}_{id} \\right]", "complete_lhs_rhs": true, "normalization_version": "p02_latex_surface_normalization@1"},
+      "operator_inventory": ["equality", "conditional_expectation", "conditional_bar", "summation"],
+      "symbol_inventory": {"latex_commands": ["\\Delta", "\\E", "\\NPV", "\\delta", "\\pi"], "bare_identifiers": ["C", "CF", "H", "I", "TV", "a", "acq", "d", "h", "i", "id", "s", "t"]},
+      "adapter_eligible": true,
+      "ambiguities": [],
+      "uncertainties": [],
+      "expected_canonical_byte_count": 3688,
+      "expected_obligation_digest": "d9f072ac09016b17d5630556329bc871e79386a442c8c26587ef39a0134eeaac",
+      "expected_obligation_id": "obl_d9f072ac09016b17d5630556329bc871e79386a442c8c26587ef39a0134eeaac"
+    },
+    {
+      "case_id": "risky_foc_k",
+      "source_ref": "docs/risky-debt-maliar-deep-learning-lecture-note.tex",
+      "source_sha256": "d66501516115493b9ffe6d0cc9b2eb85964dc352aba6539768b81fd6ad6923c1",
+      "label": "eq:foc-k",
+      "environment_span": [29171, 29396],
+      "label_span": [29267, 29283],
+      "owned_spans": [[29187, 29283]],
+      "owned_span_sha256s": ["409e717171f928234feda476f84dea1a15993b181e7b7f40053f8b3424a24695"],
+      "excluded_spans": [[29288, 29384]],
+      "row_shapes": ["complete_relation"],
+      "grouping_reasons": ["explicit_label_seed"],
+      "extraction_state": "valid_complete",
+      "normalized_target": {"kind": "equality", "members": ["0", "m(\\bar e)\\frac{d\\bar e}{dk'} +\\beta \\E[V^\\star_k(k',b',z')\\mid z]"], "display_text": "0 = m(\\bar e)\\frac{d\\bar e}{dk'} +\\beta \\E[V^\\star_k(k',b',z')\\mid z]", "complete_lhs_rhs": true, "normalization_version": "p02_latex_surface_normalization@1"},
+      "operator_inventory": ["equality", "conditional_expectation", "conditional_bar", "derivative"],
+      "symbol_inventory": {"latex_commands": ["\\E", "\\beta"], "bare_identifiers": ["V", "b", "d", "dk", "e", "k", "m", "z"]},
+      "adapter_eligible": true,
+      "ambiguities": [],
+      "uncertainties": [],
+      "expected_canonical_byte_count": 2922,
+      "expected_obligation_digest": "d987e605da2d4e509d0d65289a56e9b7f5d121273543bdf74276b9fb4c23bba5",
+      "expected_obligation_id": "obl_d987e605da2d4e509d0d65289a56e9b7f5d121273543bdf74276b9fb4c23bba5"
+    },
+    {
+      "case_id": "risky_foc_b",
+      "source_ref": "docs/risky-debt-maliar-deep-learning-lecture-note.tex",
+      "source_sha256": "d66501516115493b9ffe6d0cc9b2eb85964dc352aba6539768b81fd6ad6923c1",
+      "label": "eq:foc-b",
+      "environment_span": [29171, 29396],
+      "label_span": [29368, 29384],
+      "owned_spans": [[29288, 29384]],
+      "owned_span_sha256s": ["cd3f156d7b568e0854c3177599d2774087060575267a05bb1cbab74ae7df5f5a"],
+      "excluded_spans": [[29187, 29283]],
+      "row_shapes": ["complete_relation"],
+      "grouping_reasons": ["explicit_label_seed"],
+      "extraction_state": "valid_complete",
+      "normalized_target": {"kind": "equality", "members": ["0", "m(\\bar e)\\frac{d\\bar e}{db'} +\\beta \\E[V^\\star_b(k',b',z')\\mid z]"], "display_text": "0 = m(\\bar e)\\frac{d\\bar e}{db'} +\\beta \\E[V^\\star_b(k',b',z')\\mid z]", "complete_lhs_rhs": true, "normalization_version": "p02_latex_surface_normalization@1"},
+      "operator_inventory": ["equality", "conditional_expectation", "conditional_bar", "derivative"],
+      "symbol_inventory": {"latex_commands": ["\\E", "\\beta"], "bare_identifiers": ["V", "b", "d", "db", "e", "k", "m", "z"]},
+      "adapter_eligible": true,
+      "ambiguities": [],
+      "uncertainties": [],
+      "expected_canonical_byte_count": 2922,
+      "expected_obligation_digest": "8d04797cf7e394624890ab2e0b0688f22d86d9194de94af3aa1407fb1a45edca",
+      "expected_obligation_id": "obl_8d04797cf7e394624890ab2e0b0688f22d86d9194de94af3aa1407fb1a45edca"
+    }
+  ],
+  "proposition_container": {
+    "source_ref": "docs/risky-debt-maliar-deep-learning-lecture-note.tex",
+    "source_sha256": "d66501516115493b9ffe6d0cc9b2eb85964dc352aba6539768b81fd6ad6923c1",
+    "label": "prop:interior-foc",
+    "expected_state": "context_container",
+    "ordered_child_labels": ["eq:foc-k", "eq:foc-b"],
+    "adapter_eligible_target_count": 0,
+    "merged_target_forbidden": true
+  },
+  "golden_identity_vector": {
+    "case_id": "one_label_equation",
+    "environment_identity_payload": {
+      "source_digest": "4eb4d4458dceb4e729364a31a2e68cc16e8e41498f64bf72a6088a694f1785b5",
+      "start_byte": 0,
+      "end_byte": 52,
+      "environment_stack": [{"kind": "equation", "starred": false}]
+    },
+    "environment_id": "env_67f7384c71c0c43105cdedd9cbe1ae162cb90942f7ac1c5c0b1b5aa1d7b08392",
+    "row_identity_payload": {
+      "source_digest": "4eb4d4458dceb4e729364a31a2e68cc16e8e41498f64bf72a6088a694f1785b5",
+      "environment_id": "env_67f7384c71c0c43105cdedd9cbe1ae162cb90942f7ac1c5c0b1b5aa1d7b08392",
+      "row_index": 0,
+      "start_byte": 17,
+      "end_byte": 37
+    },
+    "row_id": "row_0f9edd80b8034c36538493d74c1b21b6e5375ad39abe277942d13dbb2755fc3d",
+    "identity_payload": {
+      "schema_version": "1.0",
+      "document": {
+        "logical_id": "p02-fixture/one_label_equation",
+        "file": "tests/fixtures/label_scoped_obligations/one_label_equation.tex",
+        "source_digest": "4eb4d4458dceb4e729364a31a2e68cc16e8e41498f64bf72a6088a694f1785b5",
+        "corpus_version": "p02-reviewed-fixture-20260711"
+      },
+      "label": "eq:one",
+      "environment": {
+        "environment_id": "env_67f7384c71c0c43105cdedd9cbe1ae162cb90942f7ac1c5c0b1b5aa1d7b08392",
+        "kind": "equation",
+        "starred": false,
+        "environment_stack": [
+          {
+            "environment_id": "env_67f7384c71c0c43105cdedd9cbe1ae162cb90942f7ac1c5c0b1b5aa1d7b08392",
+            "kind": "equation",
+            "starred": false,
+            "start_byte": 0,
+            "end_byte": 52
+          }
+        ],
+        "start_byte": 0,
+        "end_byte": 52,
+        "line_start": 1,
+        "line_end": 4,
+        "parser_backend": "current",
+        "parser_version": "p02_lightweight_locator@1",
+        "normalization_version": "p02_latex_surface_normalization@1"
+      },
+      "owned_rows": [
+        {
+          "row_id": "row_0f9edd80b8034c36538493d74c1b21b6e5375ad39abe277942d13dbb2755fc3d",
+          "row_index": 0,
+          "start_byte": 17,
+          "end_byte": 37,
+          "line_start": 2,
+          "line_end": 3,
+          "explicit_label": "eq:one",
+          "label_span": {"start_byte": 17, "end_byte": 31, "line_start": 2, "line_end": 2},
+          "row_shape": "complete_relation",
+          "grouping_reason": "explicit_label_seed",
+          "has_nonumber": false,
+          "environment_stack": ["env_67f7384c71c0c43105cdedd9cbe1ae162cb90942f7ac1c5c0b1b5aa1d7b08392"],
+          "raw_source_sha256": "54c0a7dc781de009679140fe1fe31460963765ff6a30fe38ce92291912b66472"
+        }
+      ],
+      "owned_spans": [
+        {"start_byte": 17, "end_byte": 37, "line_start": 2, "line_end": 3}
+      ],
+      "continuation_spans": [],
+      "excluded_spans": [],
+      "source_math": "\\label{eq:one}\nx = y",
+      "normalized_target": {
+        "kind": "equality",
+        "members": ["x", "y"],
+        "display_text": "x = y",
+        "complete_lhs_rhs": true,
+        "normalization_version": "p02_latex_surface_normalization@1"
+      },
+      "operator_inventory": ["equality"],
+      "symbol_inventory": {"latex_commands": [], "bare_identifiers": ["x", "y"]},
+      "extraction_state": "valid_complete",
+      "adapter_eligible": true,
+      "ambiguities": [],
+      "uncertainties": [],
+      "provenance_refs": [
+        {"kind": "file", "ref": "tests/fixtures/label_scoped_obligations/one_label_equation.tex", "sha256": "4eb4d4458dceb4e729364a31a2e68cc16e8e41498f64bf72a6088a694f1785b5"},
+        {"kind": "environment", "ref": "env_67f7384c71c0c43105cdedd9cbe1ae162cb90942f7ac1c5c0b1b5aa1d7b08392", "start_byte": 0, "end_byte": 52},
+        {"kind": "label", "ref": "eq:one", "start_byte": 17, "end_byte": 31},
+        {"kind": "owned_row", "ref": "row_0f9edd80b8034c36538493d74c1b21b6e5375ad39abe277942d13dbb2755fc3d", "start_byte": 17, "end_byte": 37}
+      ]
+    },
+    "canonical_byte_count": 2375,
+    "canonical_bytes_sha256": "f33683e1a14962db2c3713952311df87f34a84b0a75163b21ec1c526b4571d5e",
+    "obligation_digest": "f33683e1a14962db2c3713952311df87f34a84b0a75163b21ec1c526b4571d5e",
+    "obligation_id": "obl_f33683e1a14962db2c3713952311df87f34a84b0a75163b21ec1c526b4571d5e",
+    "exclude_from_identity_payload": ["obligation_id", "obligation_digest", "artifact_refs", "timestamps", "run_id"],
+    "identity_mutation_protocol": {
+      "path_syntax": "RFC6901_JSON_Pointer",
+      "must_change_root": "identity_payload",
+      "must_not_change_root": "non_identity_test_envelope",
+      "coverage_rule": "every must-change path is replaced independently in a fresh copy of identity_payload; every must-not-change path is replaced independently in a fresh copy of non_identity_test_envelope while identity_payload remains byte-identical",
+      "replacement_by_json_type": {
+        "string": "append literal #p02-identity-mutation",
+        "integer": "add 1",
+        "boolean": "logical negation",
+        "null": "replace with literal string #p02-identity-mutation",
+        "array": "append literal string #p02-identity-mutation",
+        "object": "add key #p02-identity-mutation with boolean value true"
+      },
+      "validation_boundary": "digest-sensitivity mutations may be schema-invalid; strict-schema rejection is tested separately and mutation hashing must not silently filter fields"
+    },
+    "non_identity_test_envelope": {
+      "obligation_id": "obl_f33683e1a14962db2c3713952311df87f34a84b0a75163b21ec1c526b4571d5e",
+      "obligation_digest": "f33683e1a14962db2c3713952311df87f34a84b0a75163b21ec1c526b4571d5e",
+      "artifact_refs": ["artifacts/example.json"],
+      "timestamps": ["2026-07-11T00:00:00Z"],
+      "run_id": "p02-non-identity-test"
+    },
+    "mutations_that_must_change_digest": [
+      "/schema_version",
+      "/document",
+      "/document/logical_id",
+      "/document/file",
+      "/document/source_digest",
+      "/document/corpus_version",
+      "/label",
+      "/environment",
+      "/environment/environment_id",
+      "/environment/kind",
+      "/environment/starred",
+      "/environment/environment_stack",
+      "/environment/environment_stack/0",
+      "/environment/environment_stack/0/environment_id",
+      "/environment/environment_stack/0/kind",
+      "/environment/environment_stack/0/starred",
+      "/environment/environment_stack/0/start_byte",
+      "/environment/environment_stack/0/end_byte",
+      "/environment/start_byte",
+      "/environment/end_byte",
+      "/environment/line_start",
+      "/environment/line_end",
+      "/environment/parser_backend",
+      "/environment/parser_version",
+      "/environment/normalization_version",
+      "/owned_rows",
+      "/owned_rows/0",
+      "/owned_rows/0/row_id",
+      "/owned_rows/0/row_index",
+      "/owned_rows/0/start_byte",
+      "/owned_rows/0/end_byte",
+      "/owned_rows/0/line_start",
+      "/owned_rows/0/line_end",
+      "/owned_rows/0/explicit_label",
+      "/owned_rows/0/label_span",
+      "/owned_rows/0/label_span/start_byte",
+      "/owned_rows/0/label_span/end_byte",
+      "/owned_rows/0/label_span/line_start",
+      "/owned_rows/0/label_span/line_end",
+      "/owned_rows/0/row_shape",
+      "/owned_rows/0/grouping_reason",
+      "/owned_rows/0/has_nonumber",
+      "/owned_rows/0/environment_stack",
+      "/owned_rows/0/environment_stack/0",
+      "/owned_rows/0/raw_source_sha256",
+      "/owned_spans",
+      "/owned_spans/0",
+      "/owned_spans/0/start_byte",
+      "/owned_spans/0/end_byte",
+      "/owned_spans/0/line_start",
+      "/owned_spans/0/line_end",
+      "/continuation_spans",
+      "/excluded_spans",
+      "/source_math",
+      "/normalized_target",
+      "/normalized_target/kind",
+      "/normalized_target/members",
+      "/normalized_target/members/0",
+      "/normalized_target/members/1",
+      "/normalized_target/display_text",
+      "/normalized_target/complete_lhs_rhs",
+      "/normalized_target/normalization_version",
+      "/operator_inventory",
+      "/operator_inventory/0",
+      "/symbol_inventory",
+      "/symbol_inventory/latex_commands",
+      "/symbol_inventory/bare_identifiers",
+      "/symbol_inventory/bare_identifiers/0",
+      "/symbol_inventory/bare_identifiers/1",
+      "/extraction_state",
+      "/adapter_eligible",
+      "/ambiguities",
+      "/uncertainties",
+      "/provenance_refs",
+      "/provenance_refs/0",
+      "/provenance_refs/0/kind",
+      "/provenance_refs/0/ref",
+      "/provenance_refs/0/sha256",
+      "/provenance_refs/1",
+      "/provenance_refs/1/kind",
+      "/provenance_refs/1/ref",
+      "/provenance_refs/1/start_byte",
+      "/provenance_refs/1/end_byte",
+      "/provenance_refs/2",
+      "/provenance_refs/2/kind",
+      "/provenance_refs/2/ref",
+      "/provenance_refs/2/start_byte",
+      "/provenance_refs/2/end_byte",
+      "/provenance_refs/3",
+      "/provenance_refs/3/kind",
+      "/provenance_refs/3/ref",
+      "/provenance_refs/3/start_byte",
+      "/provenance_refs/3/end_byte"
+    ],
+    "mutations_that_must_not_change_digest": [
+      "/obligation_id",
+      "/obligation_digest",
+      "/artifact_refs",
+      "/timestamps",
+      "/run_id"
+    ]
+  }
+}

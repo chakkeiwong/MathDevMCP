@@ -8,11 +8,23 @@ from typing import Any
 
 from .contracts import attach_contract
 from .equation_locator import locate_equations_in_text
-from .latex_index import build_index, extract_paragraph_context_for_label
+from .label_scoped_obligation import (
+    FIXTURE_CORPUS_VERSION,
+    FROZEN_CORPUS_VERSION,
+    extract_label_scoped_obligations,
+    lookup_label_scoped_obligation,
+)
+from .latex_index import build_index, extract_paragraph_context_for_label, resolve_label_occurrences
 
 
 DERIVATION_TARGET_EXTRACTION_CONTRACT = "derivation_target_extraction_result"
 PROPOSITION_CONTEXT_PACKET_CONTRACT = "proposition_context_packet_result"
+FROZEN_SOURCE_REFS = frozenset(
+    {
+        "docs/credit-card-npv-component-proposal/credit_card_npv_component_proposal_final_submission.tex",
+        "docs/risky-debt-maliar-deep-learning-lecture-note.tex",
+    }
+)
 
 
 def _normalize_math_text(text: str) -> str:
@@ -123,33 +135,203 @@ def extract_derivation_targets_from_block(block: dict[str, Any]) -> list[dict[st
     return targets
 
 
-def extract_derivation_targets_for_label(index: dict[str, Any], label: str) -> dict[str, Any]:
-    """Extract source-local derivation targets for one indexed label."""
-    block = index.get("labels", {}).get(label) if isinstance(index.get("labels"), dict) else None
+def _workspace_root(path: Path) -> Path:
+    current = path.resolve()
+    for candidate in (current, *current.parents):
+        if (candidate / ".git").exists():
+            return candidate
+    return current
+
+
+def _workspace_source(index: dict[str, Any], occurrence: dict[str, Any]) -> tuple[Path, str, str]:
+    index_root = Path(index["root"]).resolve()
+    source_path = (index_root / str(occurrence["file"])).resolve()
+    workspace = _workspace_root(index_root)
+    try:
+        source_ref = source_path.relative_to(workspace).as_posix()
+    except ValueError:
+        source_ref = source_path.relative_to(index_root).as_posix()
+    corpus_version = FROZEN_CORPUS_VERSION if source_ref in FROZEN_SOURCE_REFS else FIXTURE_CORPUS_VERSION
+    return source_path, source_ref, corpus_version
+
+
+def _resolve_occurrence(index: dict[str, Any], label: str, file: str | None) -> dict[str, Any]:
+    if file is None:
+        return resolve_label_occurrences(index, label)
+    direct = resolve_label_occurrences(index, label, file=file)
+    if direct["status"] != "label_not_found":
+        return direct
+    matches: list[dict[str, Any]] = []
+    for occurrence in index.get("label_occurrences", {}).get(label, []):
+        if not isinstance(occurrence, dict):
+            continue
+        _, source_ref, _ = _workspace_source(index, occurrence)
+        if source_ref == file:
+            matches.append(occurrence)
+    if len(matches) == 1:
+        return {"status": "resolved", "label": label, "file": file, "occurrence": matches[0], "occurrences": matches}
+    if len(matches) > 1:
+        return {"status": "ambiguous", "label": label, "file": file, "occurrence": None, "occurrences": matches}
+    return direct
+
+
+def _obligation_for_occurrence(index: dict[str, Any], occurrence: dict[str, Any], label: str) -> dict[str, Any]:
+    source_path, source_ref, corpus_version = _workspace_source(index, occurrence)
+    obligations = extract_label_scoped_obligations(
+        source_path,
+        source_ref=source_ref,
+        corpus_version=corpus_version,
+    )
+    return lookup_label_scoped_obligation(obligations, label, file=source_ref)
+
+
+def _target_from_obligation(
+    obligation: dict[str, Any],
+    *,
+    parent: dict[str, Any],
+) -> dict[str, Any]:
+    normalized = obligation["normalized_target"]
+    members = list(normalized["members"])
+    lhs = members[0] if members else ""
+    delimiter = r" \coloneqq " if normalized["kind"] == "aligned_definition" else " = "
+    rhs = delimiter.join(members[1:]) if len(members) > 1 else ""
+    rows = obligation["owned_rows"]
+    return {
+        "id": f"{parent.get('block_id', obligation['document']['file'])}:target:{obligation['label']}",
+        "target": normalized["display_text"],
+        "lhs": lhs,
+        "rhs": rhs,
+        "source_text": obligation["source_math"],
+        "file": parent.get("file") or obligation["document"]["file"],
+        "source_file": obligation["document"]["file"],
+        "line_start": rows[0]["line_start"] if rows else obligation["environment"]["line_start"],
+        "line_end": rows[-1]["line_end"] if rows else obligation["environment"]["line_end"],
+        "label": obligation["label"],
+        "parent_label": parent.get("label"),
+        "parent_block_id": parent.get("block_id"),
+        "section_path": list(parent.get("section_path", [])),
+        "environment": obligation["environment"]["kind"],
+        "row_index": rows[0]["row_index"] if rows else None,
+        "extraction_status": "extracted",
+        "localization_status": "label_scoped_valid_complete",
+        "uncertainty": (
+            ["alignment_markers_preserved"]
+            if obligation["environment"]["kind"] in {"align", "alignat", "aligned"}
+            else []
+        ),
+        "adapter_eligible": True,
+        "obligation_id": obligation["obligation_id"],
+        "obligation_digest": obligation["obligation_digest"],
+        "owned_spans": obligation["owned_spans"],
+        "excluded_spans": obligation["excluded_spans"],
+        "normalized_target": normalized,
+        "operator_inventory": obligation["operator_inventory"],
+        "symbol_inventory": obligation["symbol_inventory"],
+        "label_scoped_obligation": obligation,
+    }
+
+
+def _parent_block(block: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "file": block.get("file"),
+        "line_start": block.get("line_start"),
+        "line_end": block.get("line_end"),
+        "label": block.get("label"),
+        "block_id": block.get("block_id"),
+        "section_path": block.get("section_path", []),
+    }
+
+
+def extract_derivation_targets_for_label(
+    index: dict[str, Any],
+    label: str,
+    *,
+    file: str | None = None,
+) -> dict[str, Any]:
+    """Extract validated label-scoped targets without fallback routing."""
+    resolution = _resolve_occurrence(index, label, file)
+    if resolution["status"] == "ambiguous":
+        return {
+            "label": label,
+            "status": "ambiguous",
+            "reason": "The label has multiple source occurrences; exact file identity is required.",
+            "parent_block": None,
+            "targets": [],
+            "obligations": [],
+            "fallback_count": 0,
+            "ambiguities": [
+                {
+                    "code": "duplicate_label_across_files",
+                    "candidate_files": [str(item.get("file")) for item in resolution["occurrences"]],
+                    "required_discriminator": "supply the exact workspace-relative source file",
+                }
+            ],
+        }
+    block = resolution.get("occurrence")
     if not isinstance(block, dict):
         return {
             "label": label,
             "status": "label_not_found",
             "reason": f"Label `{label}` was not found in the index.",
+            "parent_block": None,
             "targets": [],
+            "obligations": [],
             "fallback_count": 0,
+            "ambiguities": [],
         }
-    targets = extract_derivation_targets_from_block(block)
-    fallback_count = sum(1 for target in targets if target.get("extraction_status") == "fallback_full_block")
+
+    child_labels: list[str]
+    if block.get("kind") in {"theorem", "proposition", "lemma", "corollary", "definition", "assumption"}:
+        child_labels = []
+        for row in index.get("equation_rows", []):
+            if (
+                row.get("file") == block.get("file")
+                and int(block.get("line_start", 0)) <= int(row.get("line_start", -1))
+                and int(row.get("line_end", -1)) <= int(block.get("line_end", 0))
+            ):
+                for child in row.get("explicit_labels", []):
+                    if child not in child_labels:
+                        child_labels.append(child)
+    else:
+        child_labels = [label]
+
+    obligations: list[dict[str, Any]] = []
+    ambiguities: list[dict[str, Any]] = []
+    for child_label in child_labels:
+        child_resolution = _resolve_occurrence(index, child_label, str(block.get("file")))
+        child_occurrence = child_resolution.get("occurrence")
+        if not isinstance(child_occurrence, dict):
+            ambiguities.append({"code": "child_label_not_uniquely_resolved", "label": child_label})
+            continue
+        lookup = _obligation_for_occurrence(index, child_occurrence, child_label)
+        obligation = lookup.get("obligation")
+        if isinstance(obligation, dict):
+            obligations.append(obligation)
+        else:
+            ambiguities.extend(lookup.get("ambiguities", []))
+
+    parent = dict(block)
+    parent["label"] = label
+    targets = [
+        _target_from_obligation(obligation, parent=parent)
+        for obligation in obligations
+        if obligation["adapter_eligible"] and obligation["extraction_state"] == "valid_complete"
+    ]
+    blocked = [obligation for obligation in obligations if not obligation["adapter_eligible"]]
+    status = "extracted" if targets and not blocked and not ambiguities else "quarantined" if blocked or ambiguities else "not_extracted"
     return {
         "label": label,
-        "status": "extracted" if targets and fallback_count == 0 else "fallback_used" if targets else "not_extracted",
-        "reason": "Extracted equation-row derivation targets." if targets and fallback_count == 0 else "Used explicit full-block fallback.",
-        "parent_block": {
-            "file": block.get("file"),
-            "line_start": block.get("line_start"),
-            "line_end": block.get("line_end"),
-            "label": block.get("label"),
-            "block_id": block.get("block_id"),
-            "section_path": block.get("section_path", []),
-        },
+        "status": status,
+        "reason": (
+            "Extracted validated label-scoped obligations."
+            if status == "extracted"
+            else "No adapter target was emitted for ambiguous, orphaned, invalid, or incomplete extraction."
+        ),
+        "parent_block": _parent_block(parent),
         "targets": targets,
-        "fallback_count": fallback_count,
+        "obligations": obligations,
+        "fallback_count": 0,
+        "ambiguities": ambiguities + [item for obligation in blocked for item in obligation["ambiguities"]],
     }
 
 

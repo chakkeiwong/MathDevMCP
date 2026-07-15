@@ -8,7 +8,8 @@ Status: `MISSION_ALIGNMENT_GATE`
 
 This gate keeps future plans attached to the MathDevMCP mission charter:
 
-- conservative agent-facing mathematical review;
+- exploratory, high-standard, rigorous, agent-facing mathematical development;
+- broad candidate search with strict claim-boundary verification;
 - CLI/MCP usability;
 - structured evidence and explicit abstention;
 - no diagnostic promoted to proof without deterministic backend evidence.
@@ -64,8 +65,9 @@ Stop and repair the plan if:
 - the result would not change implementation, release readiness, or regression
   protection;
 - the plan relies on proxy metrics as promotion criteria;
-- the plan would weaken conservative abstention or backend-evidence
-  boundaries.
+- the plan would weaken rigorous abstention or backend-evidence boundaries;
+- the plan suppresses useful candidate exploration merely to minimize
+  unresolved branches.
 
 ## Closeout Rule
 

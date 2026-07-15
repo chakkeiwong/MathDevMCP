@@ -65,6 +65,21 @@ def test_reconcile_notation_reports_unresolved_alias() -> None:
     assert result["unresolved_symbols"][0]["human_decision_required"] is True
 
 
+def test_duplicate_alias_candidates_are_not_first_match_resolved() -> None:
+    result = reconcile_notation(
+        [{"symbol": "Sigma", "alias_of": "S", "orientation": "matrix"}],
+        [
+            {"symbol": "S", "orientation": "matrix", "domain": "state"},
+            {"symbol": "S", "orientation": "matrix", "domain": "observation"},
+        ],
+    )
+
+    assert result["status"] == "unresolved"
+    assert result["matched_aliases"] == []
+    assert len(result["candidate_matches"]) == 2
+    assert result["ambiguous_aliases"][0]["left_symbol"] == "Sigma"
+
+
 def test_reconcile_notation_mcp_facade_exposes_workflow() -> None:
     names = {tool["name"] for tool in list_mcp_tools()}
     result = call_mcp_tool(

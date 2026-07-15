@@ -117,3 +117,40 @@ def test_build_proposition_context_packet_for_interior_foc() -> None:
     assert any("differentiable" in item for item in packet["hypotheses"])
     assert "This proposition context packet localizes source evidence" in packet["non_claim"]
     assert "context_packet_not_proof" in {item["code"] for item in result["non_claims"]}
+
+
+def test_phase02_exact_file_label_returns_one_validated_obligation() -> None:
+    index = build_index(DOCS)
+    result = extract_derivation_targets_for_label(
+        index,
+        "eq:incremental-cash-flow",
+        file="docs/credit-card-npv-component-proposal/credit_card_npv_component_proposal_final_submission.tex",
+    )
+
+    assert result["status"] == "extracted"
+    assert len(result["targets"]) == len(result["obligations"]) == 1
+    target = result["targets"][0]
+    assert target["obligation_digest"] == "7301b910ea0fe118e3ad38d2d69c6c9cd6e924aba15fb1e1147e710bdfe2b5a0"
+    assert target["operator_inventory"] == ["equality"]
+    assert target["excluded_spans"][0]["excluded_sibling_label"] == "eq:incremental-npv"
+
+
+def test_phase02_prop_container_keeps_foc_children_as_distinct_obligations() -> None:
+    result = extract_derivation_targets_for_label(build_index(DOCS), "prop:interior-foc")
+
+    assert [item["label"] for item in result["obligations"]] == ["eq:foc-k", "eq:foc-b"]
+    assert len({item["obligation_digest"] for item in result["obligations"]}) == 2
+    assert [target["label"] for target in result["targets"]] == ["eq:foc-k", "eq:foc-b"]
+
+
+def test_phase02_bare_duplicate_label_emits_no_target(tmp_path: Path) -> None:
+    for name, rhs in (("a.tex", "1"), ("b.tex", "2")):
+        (tmp_path / name).write_text(
+            f"\\begin{{equation}}\nx = {rhs}\n\\label{{eq:duplicate}}\n\\end{{equation}}\n",
+            encoding="utf-8",
+        )
+    result = extract_derivation_targets_for_label(build_index(tmp_path), "eq:duplicate")
+
+    assert result["status"] == "ambiguous"
+    assert result["targets"] == []
+    assert result["ambiguities"][0]["code"] == "duplicate_label_across_files"

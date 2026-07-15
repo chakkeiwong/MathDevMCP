@@ -7,6 +7,7 @@ from typing import Any
 
 from .agent_hypothesis_expansion import (
     AGENT_HYPOTHESIS_EXPANSION_CONTRACT,
+    hypothesis_generator_provenance,
     propose_hypothesis_expansions,
     validate_agent_hypothesis_expansion,
 )
@@ -102,13 +103,15 @@ def _child_from_hypothesis(
     blocker: dict[str, Any],
     hypothesis: dict[str, Any],
 ) -> dict[str, Any]:
+    generator = hypothesis_generator_provenance(hypothesis)
+    generator_label = "agent" if generator["kind"] == "agent_generated" else "rule"
     assumptions = [
         asdict(
             AssumptionSet(
                 id=f"assumption_{hypothesis['id']}_{index}",
                 assumptions=[str(assumption)],
-                status="agent_hypothesis_pending_verification",
-                source="agent_hypothesis_expansion",
+                status=f"{generator_label}_hypothesis_pending_verification",
+                source=f"{generator_label}_hypothesis_expansion",
                 closes=[str(blocker.get("id", ""))],
                 evidence_refs=[str(hypothesis.get("id", ""))],
             )
@@ -135,7 +138,7 @@ def _child_from_hypothesis(
     return {
         "id": f"node_{hypothesis['id']}",
         "target": str(parent.get("target", "")),
-        "status": "expanded_by_agent",
+        "status": "expanded_by_agent" if generator_label == "agent" else "expanded_by_rule",
         "source_span": dict(parent.get("source_span", {})) if isinstance(parent.get("source_span"), dict) else {},
         "external_tool_first_plan": _external_plan_from_parent(parent),
         "assumptions": assumptions,
@@ -146,7 +149,7 @@ def _child_from_hypothesis(
                     id=f"step_{hypothesis['id']}",
                     claim=str(hypothesis.get("proposed_route", "")),
                     justification=str(hypothesis.get("why_might_close", "")),
-                    checker="agent_hypothesis_expansion",
+                    checker=f"{generator_label}_hypothesis_expansion",
                     checker_status="candidate_pending_tree_verification",
                     evidence_refs=[str(hypothesis.get("id", ""))],
                 )
@@ -159,6 +162,7 @@ def _child_from_hypothesis(
         "parent_node_id": parent.get("id"),
         "parent_blocker_id": blocker.get("id"),
         "agent_hypothesis": hypothesis,
+        "generator": generator,
         "boundary": DERIVATION_TREE_EXPANSION_BOUNDARY,
     }
 

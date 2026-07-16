@@ -38,3 +38,17 @@ def test_generate_template_obligations_remains_unverified():
     assert result["status"] == "unverified"
     assert result["obligations"]
     assert {item["status"] for item in result["obligations"]} == {"unverified"}
+
+
+def test_valuation_templates_are_bounded_and_discoverable():
+    catalog = list_domain_templates()
+    by_id = {item["id"]: item for item in catalog["templates"]}
+
+    assert {"valuation_terminal_value_v1", "valuation_finite_horizon_dcf_v1"}.issubset(by_id)
+    assert "economic validity" in by_id["valuation_terminal_value_v1"]["certification_boundary"]
+    suggestion = suggest_domain_templates(
+        label="eq:terminal-value-base",
+        section_path=["Valuation"],
+        equation_text="terminal value persistence attrition discount rate decay continuation cash flow",
+    )
+    assert suggestion["matches"][0]["id"] == "valuation_terminal_value_v1"

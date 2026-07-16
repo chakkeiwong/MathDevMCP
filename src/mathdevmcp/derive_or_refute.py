@@ -7,6 +7,7 @@ import re
 from typing import Any
 
 from .assumption_discovery import assumptions_required
+from .claim_semantics import source_role_controls_routing, validate_claim_semantics
 from .counterexample_search import find_counterexample
 from .contracts import attach_contract
 from .math_debugging import math_question, workbench_obligation, workbench_result
@@ -25,6 +26,7 @@ class DeriveOrRefuteResult:
     assumption_diagnostic: dict[str, Any]
     counterexample_search: dict[str, Any] | None
     workbench_result: dict[str, Any]
+    claim_semantics: dict[str, Any]
 
 
 def _split_target(target: str, lhs: str | None, rhs: str | None) -> tuple[str, str]:
@@ -64,10 +66,13 @@ def derive_or_refute(
     lhs: str | None = None,
     rhs: str | None = None,
     backend: str = "auto",
+    claim_semantics: dict[str, Any] | None = None,
 ) -> dict:
     left, right = _split_target(target, lhs, rhs)
     given_list = givens or []
     assumption_list = assumptions or []
+    routed_target = target if lhs is None and rhs is None else f"{left} = {right}"
+    semantics = validate_claim_semantics(claim_semantics, routed_target=routed_target)
     semantic_placeholder = semantic_placeholder_equality(left, right)
     assumption_diagnostic = assumptions_required(target, provided_assumptions=assumption_list)
     if semantic_placeholder and not assumption_diagnostic.get("missing_assumptions"):
@@ -83,13 +88,40 @@ def derive_or_refute(
         assumption_diagnostic["reason"] = "Opaque semantic placeholders require source-backed assumptions."
         assumption_diagnostic["assumptions"] = [*assumption_diagnostic.get("assumptions", []), semantic_assumption]
         assumption_diagnostic["missing_assumptions"] = [*assumption_diagnostic.get("missing_assumptions", []), semantic_assumption]
-    route = route_math_obligation(left, right, assumptions=assumption_list, backend=backend)
+    source_role_route = source_role_controls_routing(semantics)
+    role_blocked = semantics["routing_effect"] == "block_pending_source_role_evidence"
+    if source_role_route or role_blocked:
+        route = {
+            "route": "source_semantics",
+            "status": "source_defined" if source_role_route else "inconclusive",
+            "reason": semantics["reason"],
+            "backend_attempt": {
+                "backend": "source_semantics",
+                "status": "source_defined" if source_role_route else "inconclusive",
+                "reason": semantics["reason"],
+                "evidence": [semantics],
+                "severity": "diagnostic",
+            },
+        }
+    else:
+        route = route_math_obligation(left, right, assumptions=assumption_list, backend=backend)
 
     counterexample = None
-    if route["status"] not in {"proved", "refuted"} and not semantic_placeholder:
+    if (
+        route["status"] not in {"proved", "refuted"}
+        and not semantic_placeholder
+        and not source_role_route
+        and not role_blocked
+    ):
         counterexample = find_counterexample(left, right)
 
-    if route["status"] == "proved":
+    if source_role_route:
+        status = "source_defined"
+        reason = "The exact source establishes this target as a definition or identity; theorem refutation is inapplicable, and domain validation remains separate."
+    elif role_blocked:
+        status = "inconclusive"
+        reason = semantics["reason"]
+    elif route["status"] == "proved":
         status = "proved"
         reason = "The bounded target obligation was certified by the routed backend."
     elif route["status"] == "refuted":
@@ -116,7 +148,7 @@ def derive_or_refute(
         target,
         givens=given_list,
         assumptions=assumption_list,
-        context={"backend": backend},
+        context={"backend": backend, "claim_semantics": semantics},
     )
     obligations = [
         workbench_obligation(
@@ -140,6 +172,10 @@ def derive_or_refute(
         actions.extend(assumption_diagnostic["workbench_result"].get("actions", []))
         if semantic_placeholder and not assumption_diagnostic["workbench_result"].get("actions"):
             actions.append({"kind": "supply_source_backed_assumptions", "reason": "Opaque semantic placeholders cannot be refuted by finite-domain substitution."})
+    if status == "source_defined":
+        actions.append({"kind": "formalize_source_definition_domain", "reason": "Validate the definition domain without treating the statement as a theorem."})
+    if role_blocked:
+        actions.append({"kind": "supply_source_role_evidence", "reason": semantics["reason"]})
     if status == "unknown":
         actions.append({"kind": "manual_derivation_or_stronger_backend", "reason": "No bounded route resolved the target."})
         if semantic_placeholder:
@@ -167,6 +203,7 @@ def derive_or_refute(
                 assumption_diagnostic=assumption_diagnostic,
                 counterexample_search=counterexample,
                 workbench_result=workbench,
+                claim_semantics=semantics,
             )
         ),
         "derive_or_refute_result",

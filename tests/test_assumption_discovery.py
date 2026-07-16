@@ -50,6 +50,27 @@ def test_assumption_discovery_marks_provided_route_assumption_without_minimality
     assert "prove" in result["reason"].lower()
 
 
+def test_exact_latex_denominator_assumption_discharges_expression_requirement() -> None:
+    target = r"dTV = \frac{rho*dCF_next}{r_{\mathrm{disc}}+\lambda_{\mathrm{attrition}}+q}"
+    supplied = "r_disc + lambda_attrition + q != 0"
+
+    result = assumptions_required(target, provided_assumptions=[supplied])
+
+    assumption = result["assumptions"][0]
+    assert assumption["status"] == "provided"
+    assert assumption["requirement_expression"] == r"r_{\mathrm{disc}}+\lambda_{\mathrm{attrition}}+q"
+    assert assumption["discharged_by"] == supplied
+    assert result["missing_assumptions"] == []
+
+
+def test_wrong_nonzero_expression_does_not_discharge_denominator() -> None:
+    target = "dTV = rho*dCF_next/(r_disc + lambda_attrition + q)"
+
+    result = assumptions_required(target, provided_assumptions=["r_disc != 0"])
+
+    assert result["missing_assumptions"]
+
+
 def test_assumption_discovery_flags_logdet_and_inverse_conditions() -> None:
     result = assumptions_required("logdet(A) + inv(A)")
 

@@ -51,6 +51,50 @@ def _subprocess_call_name(node: ast.AST) -> str | None:
     return None
 
 
+def _attribute_call(node: ast.AST, *, receiver: str, method: str) -> bool:
+    return (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and isinstance(node.func.value, ast.Name)
+        and node.func.value.id == receiver
+        and node.func.attr == method
+    )
+
+
+def _assigned_name(call: ast.Call, parents: dict[ast.AST, ast.AST]) -> str | None:
+    parent = parents.get(call)
+    if isinstance(parent, ast.Assign) and len(parent.targets) == 1 and isinstance(parent.targets[0], ast.Name):
+        return parent.targets[0].id
+    return None
+
+
+def _bounded_popen_lifecycle(call: ast.Call, tree: ast.AST, parents: dict[ast.AST, ast.AST]) -> bool:
+    process_name = _assigned_name(call, parents)
+    if process_name is None:
+        return False
+    scope: ast.AST | None = call
+    while scope is not None and not isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        scope = parents.get(scope)
+    if scope is None:
+        return False
+    calls = [node for node in ast.walk(scope) if isinstance(node, ast.Call)]
+    has_kill = any(_attribute_call(node, receiver=process_name, method="kill") for node in calls)
+    has_bounded_wait = any(
+        _attribute_call(node, receiver=process_name, method="wait")
+        and any(keyword.arg == "timeout" for keyword in node.keywords)
+        for node in calls
+    )
+    has_bounded_select = any(
+        isinstance(node.func, ast.Attribute)
+        and node.func.attr == "select"
+        and any(keyword.arg == "timeout" for keyword in node.keywords)
+        for node in calls
+    )
+    source = ast.unparse(scope)
+    has_monotonic_deadline = "time.monotonic()" in source and "deadline" in source and "timeout" in source
+    return has_kill and has_bounded_wait and has_bounded_select and has_monotonic_deadline
+
+
 def scan_subprocess_timeout_policy(root: str | Path) -> dict:
     root_path = Path(root)
     src_root = root_path / "src" / "mathdevmcp"
@@ -61,6 +105,7 @@ def scan_subprocess_timeout_policy(root: str | Path) -> dict:
         except SyntaxError as exc:
             findings.append({"kind": "source_parse_failed", "severity": "high", "file": str(path.relative_to(root_path)), "line": exc.lineno})
             continue
+        parents = {child: parent for parent in ast.walk(tree) for child in ast.iter_child_nodes(parent)}
         for node in ast.walk(tree):
             if not isinstance(node, ast.Call):
                 continue
@@ -68,6 +113,8 @@ def scan_subprocess_timeout_policy(root: str | Path) -> dict:
             if call_name is None:
                 continue
             has_timeout = any(keyword.arg == "timeout" for keyword in node.keywords)
+            if call_name == "subprocess.Popen" and not has_timeout:
+                has_timeout = _bounded_popen_lifecycle(node, tree, parents)
             if not has_timeout:
                 findings.append(
                     {
@@ -79,7 +126,7 @@ def scan_subprocess_timeout_policy(root: str | Path) -> dict:
                     }
                 )
     status = "consistent" if not findings else "mismatch"
-    reason = "All MathDevMCP subprocess calls include explicit timeouts." if status == "consistent" else "At least one subprocess call is missing a timeout."
+    reason = "All MathDevMCP subprocess calls have an explicit timeout or reviewed bounded Popen lifecycle." if status == "consistent" else "At least one subprocess call is missing a bounded timeout lifecycle."
     return attach_contract({"status": status, "reason": reason, "findings": findings}, "subprocess_timeout_policy_report")
 
 

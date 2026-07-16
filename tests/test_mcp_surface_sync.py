@@ -82,6 +82,22 @@ def test_document_derivation_fastmcp_schema_exposes_v2_structured_content_tools(
     resolver = mcp._tool_manager._tools["resolve_document_derivation_records"]
     resolver_properties = resolver.parameters["properties"]
     assert resolver_properties["target_id"]["default"] is None
+    assert resolver_properties["collection"]["enum"] == [
+        "global_blocker_records",
+        "global_evidence_ref_records",
+        "global_source_ref_records",
+        "blocker_records",
+        "evidence_ref_records",
+        "source_ref_records",
+        "unresolved_assumption_records",
+        "candidate_assumption_records",
+        "selected_action",
+        "label_scoped_obligation",
+        "typed_repair_obligation",
+        "math_obligation",
+        "source_span",
+        "target_text",
+    ]
     assert resolver_properties["offset"]["default"] == 0
     assert resolver_properties["limit"]["default"] == 100
     assert resolver.fn_metadata.output_schema is None
@@ -89,6 +105,13 @@ def test_document_derivation_fastmcp_schema_exposes_v2_structured_content_tools(
     registry = {spec.name: spec for spec in MCP_TOOL_SPECS}
     assert registry["audit_document_derivation_tree"].output_contract == "document_derivation_response"
     assert registry["resolve_document_derivation_records"].output_contract == "document_derivation_record_page"
+
+    audit_fix = mcp._tool_manager._tools["audit_and_propose_fix"]
+    assert audit_fix.parameters["properties"]["response_mode"]["enum"] == ["detailed", "compact"]
+    rigor = mcp._tool_manager._tools["audit_math_document_rigor"]
+    assert rigor.parameters["properties"]["response_mode"]["enum"] == ["detailed", "compact"]
+    review = mcp._tool_manager._tools["prepare_review_packet"]
+    assert review.parameters["properties"]["response_mode"]["enum"] == ["detailed", "compact"]
 
 
 def test_mcp_readme_mentions_every_registry_and_server_tool():

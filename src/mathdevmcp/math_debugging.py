@@ -16,6 +16,7 @@ WorkbenchStatus = Literal[
     "not_encodable",
     "backend_unavailable",
     "inconclusive",
+    "source_defined",
 ]
 
 EvidenceSeverity = Literal["certifying", "blocking", "diagnostic", "supporting"]
@@ -34,6 +35,7 @@ WORKBENCH_STATUSES: set[str] = {
     "not_encodable",
     "backend_unavailable",
     "inconclusive",
+    "source_defined",
 }
 
 EVIDENCE_SEVERITIES: set[str] = {"certifying", "blocking", "diagnostic", "supporting"}

@@ -394,6 +394,22 @@ def test_response_mode_cannot_change_status_promotion_or_coverage() -> None:
     assert "canonical_byte_count does not match response bytes" in errors
 
 
+def test_compact_page_publishes_closed_resolver_catalog(tmp_path: Path) -> None:
+    response = compile_document_derivation_response(
+        _raw_audit(),
+        _request(),
+        artifact_root=tmp_path,
+    )
+
+    catalog = response["page"]["resolver_catalog"]
+    assert catalog["global_collections"] == [
+        "global_blocker_records",
+        "global_evidence_ref_records",
+        "global_source_ref_records",
+    ]
+    assert "label_scoped_obligation" in catalog["target_collections"]
+
+
 def test_compile_rejects_completed_audit_from_another_source() -> None:
     audit = _raw_audit()
 
@@ -1208,7 +1224,6 @@ def test_resolver_enforces_exact_scope_and_reconstructs_ordered_bindings(
         (target_id, "global_evidence_ref_records"),
         (None, "label_scoped_obligation"),
         ("target:other", "label_scoped_obligation"),
-        (target_id, "unknown_collection"),
     ]
     for invalid_target, collection in invalid_pairs:
         with pytest.raises(ValueError, match="outside the page token scope"):
@@ -1218,6 +1233,14 @@ def test_resolver_enforces_exact_scope_and_reconstructs_ordered_bindings(
                 artifact_root=tmp_path,
                 target_id=invalid_target,
             )
+
+    with pytest.raises(ValueError, match="collection must be one of: .*global_evidence_ref_records"):
+        resolve_document_derivation_records(
+            token,
+            "unknown_collection",
+            artifact_root=tmp_path,
+            target_id=target_id,
+        )
 
 
 def test_resolver_empty_collection_accepts_only_offset_zero(tmp_path: Path) -> None:

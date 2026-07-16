@@ -3,7 +3,9 @@ from __future__ import annotations
 from copy import deepcopy
 import importlib.util
 import json
+import os
 from pathlib import Path
+import subprocess
 import sys
 from types import SimpleNamespace
 
@@ -392,7 +394,7 @@ def test_p08a_decision_is_cross_bound_to_reconstructed_records(
         p09._reconstruct_p08a(runner)
 
 
-def test_p08a_p08b_chain_reconstructs_exactly_without_backend_import() -> None:
+def _assert_p08a_p08b_chain_reconstructs_exactly_without_backend_import() -> None:
     runner = p09._load_verified_module(
         "p09_test_p08_runner_exact",
         p09.P08AB_ROOT / "code-snapshot/scripts/run_p08_frozen_validation.py",
@@ -412,6 +414,23 @@ def test_p08a_p08b_chain_reconstructs_exactly_without_backend_import() -> None:
     assert p08b["backend_checked"] is True
     assert p08b["live_backend_execution_count_in_p09"] == 0
     assert "sympy" not in sys.modules
+
+
+def test_p08a_p08b_chain_reconstructs_exactly_without_backend_import() -> None:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from tests.test_document_derivation_red_team import "
+            "_assert_p08a_p08b_chain_reconstructs_exactly_without_backend_import as check; check()",
+        ],
+        cwd=ROOT,
+        env={**os.environ, "PYTHONPATH": str(ROOT / "src")},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
 
 
 def test_p08b_missing_structural_budget_field_is_integrity_veto(
@@ -752,7 +771,7 @@ def test_hard_bound_positive_entry_never_maps_to_capability_incomplete() -> None
     }
 
 
-def test_p08b_assumption_mutation_is_rejected_without_backend_import() -> None:
+def _assert_p08b_assumption_mutation_is_rejected_without_backend_import() -> None:
     adapter = p09._load_verified_module(
         "p09_test_preserved_adapter",
         p09.P08AB_ROOT
@@ -780,6 +799,23 @@ def test_p08b_assumption_mutation_is_rejected_without_backend_import() -> None:
     with pytest.raises(Exception, match="typed assumptions"):
         adapter.validate_derivative_request(mutated)
     assert "sympy" not in sys.modules
+
+
+def test_p08b_assumption_mutation_is_rejected_without_backend_import() -> None:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from tests.test_document_derivation_red_team import "
+            "_assert_p08b_assumption_mutation_is_rejected_without_backend_import as check; check()",
+        ],
+        cwd=ROOT,
+        env={**os.environ, "PYTHONPATH": str(ROOT / "src")},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
 
 
 def _valid_contract(tmp_path: Path) -> dict:

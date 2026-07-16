@@ -133,7 +133,11 @@ def test_release_readiness_report_contains_non_recursive_gate_and_caveats():
     assert result["metadata"] == {"schema_version": "1.0", "contract": "release_readiness_report"}
     assert result["status"] in {"ready", "ready_with_caveats"}
     assert result["benchmark_gate"]["passed"] is True
-    assert result["benchmark_gate"]["total"] == 40
+    benchmark_categories = result["benchmark_gate"]["summary"]["by_category"]
+    assert "release_policy" not in benchmark_categories
+    assert result["benchmark_gate"]["total"] == sum(
+        item["total"] for item in benchmark_categories.values()
+    )
     assert result["parser_policy"]["status"] == "selected_for_proof_audit"
     assert result["governance_policy"]["metadata"]["contract"] == "governance_policy"
     assert result["governance_validation"]["status"] == "consistent"

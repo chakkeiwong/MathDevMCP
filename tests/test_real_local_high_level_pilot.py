@@ -92,6 +92,23 @@ def test_score_probe_result_fails_when_adapter_gap_hidden() -> None:
     assert score["checks"]["adapter_gap_visible"] is False
 
 
+def test_score_probe_result_allows_only_manifested_optional_evidence_classes() -> None:
+    case = load_high_level_pilot_manifest(ROOT, MANIFEST)["cases"][3]
+    result = {
+        "status": "inconclusive",
+        "evidence_classes": ["human_review_required", "review_packet"],
+        "certification_source": "none",
+        "non_claims": [{"code": code} for code in case["executable_probe"]["expected"]["required_non_claim_codes"]],
+        "veto_reasons": [{"code": code} for code in case["executable_probe"]["expected"]["required_veto_codes"]],
+        "assumptions": [],
+        "counterexamples": [],
+    }
+
+    assert score_probe_result(case, result)["status"] == "passed"
+    result["evidence_classes"].append("backend_proof")
+    assert score_probe_result(case, result)["status"] == "failed"
+
+
 def test_run_high_level_pilot_reports_separate_ledgers_and_no_accuracy_metric() -> None:
     report = run_high_level_pilot(ROOT, MANIFEST)
 

@@ -83,6 +83,17 @@ Facade registry: `src/mathdevmcp/mcp_facade.py`
 - `audit_kalman_recursion` - audit AST-level Kalman recursion structure in code.
 - `typed_obligation_label` - build typed/dimensional diagnostics for a labeled
   math obligation.
+- `proof_packet_label` - build a source-bound proof/evidence packet for an
+  exact label, file, and optional source digest.
+- `negative_evidence_label` - build a diagnostic negative-evidence packet for
+  an exact label without promoting the negative evidence to proof.
+- `domain_templates` - return the governed domain-template catalog.
+- `suggest_domain_templates` - suggest bounded templates from supplied source
+  context.
+- `generate_template_obligations` - generate diagnostic obligations from one
+  governed template.
+- `claim_support_packet` - classify and link local claim-support evidence while
+  keeping it distinct from mathematical proof.
 - `audit_temporal_contract` - experimentally audit explicit current/next
   temporal bindings between a labeled DSGE-style document context and a code
   file path. This is diagnostic and does not certify DSGE correctness.
@@ -92,7 +103,8 @@ Facade registry: `src/mathdevmcp/mcp_facade.py`
 - `plan_math_document_rigor_audit` - experimentally plan a focused
   mathematical rigor audit for one LaTeX file.
 - `audit_math_document_rigor` - experimentally audit one LaTeX file and write
-  a rigor gap/proposal report.
+  a rigor gap/proposal report. Use `response_mode="compact"` with
+  `artifact_root` for a bounded summary backed by exact local detailed bytes.
 - `audit_document_derivation_tree` - experimentally audit LaTeX targets with
   semantic work packets, agent-guided hypothesis branches, tree/backend
   evidence, and `tool_grounded_proposal_compiler_result`. The default MCP/CLI
@@ -112,6 +124,18 @@ Facade registry: `src/mathdevmcp/mcp_facade.py`
   the page's `page_token`, exact collection name, `artifact_root`, and the exact
   target ID for target-scoped collections. Resolver `limit` controls record
   pagination independently of the token's target-page limit.
+- `resolve_agent_report` - resolve the exact verified detailed report behind a
+  compact `prepare_review_packet`, `audit_and_propose_fix`, or
+  `audit_math_document_rigor` response.
+
+Resolver collections are machine-readable in each compact page and through
+`capability_registry`. Global collections are `global_blocker_records`,
+`global_evidence_ref_records`, and `global_source_ref_records`. Target-scoped
+collections are `blocker_records`, `evidence_ref_records`,
+`source_ref_records`, `unresolved_assumption_records`,
+`candidate_assumption_records`, `selected_action`,
+`label_scoped_obligation`, `typed_repair_obligation`, `math_obligation`,
+`source_span`, and `target_text`.
 
 Phase 08 compact responses are an intentional experimental v1-to-v2 break.
 Phase 07 JSON cursors and `next_cursor` are rejected; rerun the initial request
@@ -142,6 +166,8 @@ in-process facade. Compact CLI output is canonical one-line JSON.
 - `tool_matrix` - facade name for the static problem/tool matrix.
 - `get_tool_matrix` - FastMCP server alias for `tool_matrix`.
 - `status_taxonomy` - return the current status/substatus taxonomy.
+- `capability_registry` - classify MCP-exposed and intentionally operator-only
+  capabilities and publish the resolver vocabulary.
 - `governance_policy` - return the security and governance policy.
 
 ## Deprecated Compatibility Names

@@ -1,10 +1,12 @@
 # MathDevMCP
 
-MathDevMCP is an internal release candidate for mathematical development
-agents with an explicit public industrial release gate. It gives colleagues
-local tools for LaTeX/document indexing, code-document consistency checks,
-derivation audit, benchmark gates, optional math backends, MCP integration,
-and privacy-preserving private corpus validation.
+MathDevMCP is an exploratory, high-standard, rigorous, agent-facing
+mathematical development system. It searches broadly across assumptions,
+derivations, counterexamples, formalizations, and specialist-tool routes while
+remaining strict at the claim boundary: diagnostic exploration is not a proof,
+publication decision, or scientific promotion. Release and private-corpus
+controls remain available as operator capabilities, but they do not define the
+academic mission.
 
 The primary product document is:
 
@@ -141,7 +143,7 @@ PYTHONPATH=src python -m mathdevmcp.cli external-tool-first-plan \
   "a + b = b + a"
 ```
 
-These tools are conservative. Backend-certified scoped obligations can support
+These tools are exploratory in search and rigorous at the claim boundary. Backend-certified scoped obligations can support
 proof/refutation statuses; structural code matches, numeric diagnostics,
 generated tests, and review packets remain diagnostic unless linked to a
 certifying backend result.

@@ -133,19 +133,15 @@ def test_audit_and_propose_fix_whole_document_demotes_non_concrete_actions() -> 
         label_limit=2,
     )
     markdown = result["evidence"][0]["low_level"]["markdown"]
-    proposed_changes = markdown.split("## Proposed Changes", 1)[1].split("### Proposed Fixes", 1)[0]
-    proposed_fixes = markdown.split("### Proposed Fixes", 1)[1].split("## Evidence Gaps", 1)[0]
+    proposed_changes = markdown.split("## Proposed Changes", 1)[1].split("## Evidence Gaps", 1)[0]
     evidence_gaps = markdown.split("## Evidence Gaps", 1)[1].split("## Next Actions", 1)[0]
 
     assert "`add_or_verify_assumption`" not in proposed_changes
     assert "`add_review_boundary`" not in proposed_changes
-    assert "`add_or_verify_assumption`" not in proposed_fixes
-    assert "`add_review_boundary`" not in proposed_fixes
-    assert "State or verify the missing constraint" not in proposed_fixes
-    assert "Add a local review boundary" not in proposed_fixes
-    assert "`split_derivation_step`" in proposed_fixes
-    assert "`concretize_before_fix`" in evidence_gaps
-    assert "Do not edit the document from this item alone." in evidence_gaps
+    assert "No concrete proposed change could be derived safely." in proposed_changes
+    assert "### Proposed Fixes" not in markdown
+    assert "`prove_reconstructed_obligation`" in evidence_gaps
+    assert "remains uncertified" in evidence_gaps
 
 
 def test_audit_and_propose_fix_cli_writes_markdown_report(tmp_path: Path) -> None:
@@ -241,7 +237,11 @@ def test_audit_and_propose_fix_replaces_generic_evidence_gap_with_concrete_oblig
     gaps = [item for item in details if item.get("kind") == "prove_reconstructed_obligation"]
 
     assert len(gaps) == 3
-    assert {item["target"] for item in gaps} == {"obligation_2", "obligation_3", "obligation_5"}
+    assert {item["evidence_ref"] for item in gaps} == {
+        "proof_audit_v2:prop:risky-pricing:obligation_1",
+        "proof_audit_v2:prop:interior-foc:obligation_2",
+        "proof_audit_v2:prop:interior-foc:obligation_5",
+    }
     assert all("proof_audit_v2_result" not in item["location"] for item in gaps)
     assert all(item["proof_target"] for item in gaps)
     assert any("zero-profit condition" in item["derivation_plan"] for item in gaps)

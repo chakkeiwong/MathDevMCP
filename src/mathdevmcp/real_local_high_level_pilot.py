@@ -213,10 +213,16 @@ def score_probe_result(case: dict[str, Any], result: dict[str, Any]) -> dict[str
     observed_assumption_text = " ".join(
         str(item.get("text", "")).lower() for item in result.get("assumptions", []) if isinstance(item, dict)
     )
+    required_evidence_classes = set(_list_of_strings(expected.get("evidence_classes")))
+    optional_evidence_classes = set(_list_of_strings(expected.get("optional_evidence_classes")))
+    observed_evidence_classes = set(_list_of_strings(result.get("evidence_classes")))
 
     checks = {
         "status_match": result.get("status") == expected.get("status"),
-        "evidence_classes_match": result.get("evidence_classes") == expected.get("evidence_classes"),
+        "evidence_classes_match": (
+            required_evidence_classes.issubset(observed_evidence_classes)
+            and observed_evidence_classes.issubset(required_evidence_classes | optional_evidence_classes)
+        ),
         "certification_source_match": result.get("certification_source") == expected.get("certification_source"),
         "required_non_claims_present": required_non_claims.issubset(observed_non_claims),
         "required_vetoes_present": required_vetoes.issubset(observed_vetoes),

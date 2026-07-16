@@ -21,6 +21,7 @@ LOW_LEVEL_STATUS_MAP: dict[str, str] = {
     "missing_assumptions": "missing_assumptions",
     "backend_unavailable": "backend_unavailable",
     "not_encodable": "not_encodable",
+    "source_defined": "diagnostic_only",
 }
 
 
@@ -274,6 +275,26 @@ def package_low_level_math_result(
         )
         vetoes.append(veto_reason("not_encodable", str(low_level.get("reason", "Not encodable."))))
         extra_non_claim_codes.add("not_encodable_not_false")
+    elif high_status == "diagnostic_only" and status == "source_defined":
+        evidence.append(
+            evidence_entry(
+                id=f"{workflow}:source-semantics",
+                evidence_class="source_semantics",
+                source="source_semantics_validator",
+                summary=str(low_level.get("reason", "The source establishes a non-theorem claim role.")),
+                extra={
+                    "claim_semantics": low_level.get("claim_semantics", {}),
+                    "low_level": low_level,
+                },
+            )
+        )
+        actions.append(
+            action(
+                "human_review",
+                "Validate the definition or identity domain and use a role-aware formalization route; do not treat it as a theorem proof.",
+            )
+        )
+        extra_non_claim_codes.add("diagnostic_evidence_not_proof")
     else:
         evidence.append(
             evidence_entry(

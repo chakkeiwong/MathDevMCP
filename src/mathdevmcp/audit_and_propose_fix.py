@@ -96,14 +96,16 @@ def _label_audit_failure(root: str, label: str, reason: str) -> dict[str, Any]:
     )
 
 
-def _audit_label_task(task: tuple[int, str, str, bool, bool, str]) -> dict[str, Any]:
-    index, root, label, paragraph_context, summary_only, backend = task
+def _audit_label_task(task: tuple[int, str, str, bool, bool, str, str | None, str | None]) -> dict[str, Any]:
+    index, root, label, paragraph_context, summary_only, backend, file, source_digest = task
     args = {
         "root": root,
         "label": label,
         "paragraph_context": paragraph_context,
         "summary_only": summary_only,
         "backend": backend,
+        "file": file,
+        "source_digest": source_digest,
     }
     try:
         audit = audit_derivation_v2_for_label(
@@ -112,6 +114,8 @@ def _audit_label_task(task: tuple[int, str, str, bool, bool, str]) -> dict[str, 
             paragraph_context=paragraph_context,
             summary_only=summary_only,
             backend=backend,
+            file=file,
+            source_digest=source_digest,
         )
     except Exception as exc:  # pragma: no cover - exercised through structured failure contract.
         audit = _label_audit_failure(root, label, f"audit_derivation_v2_label failed: {exc}")
@@ -138,12 +142,14 @@ def _ordered_label_audits(
     summary_only: bool,
     backend: str,
     workers: int,
+    file: str | None = None,
+    source_digest: str | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     if not labels:
         return [], []
     normalized_workers = max(1, int(workers or 1))
     tasks = [
-        (index, root, label, paragraph_context, summary_only, backend)
+        (index, root, label, paragraph_context, summary_only, backend, file, source_digest)
         for index, label in enumerate(labels)
     ]
     if normalized_workers == 1 or len(tasks) == 1:
@@ -153,7 +159,7 @@ def _ordered_label_audits(
         with ProcessPoolExecutor(max_workers=min(normalized_workers, len(tasks))) as executor:
             future_to_task = {executor.submit(_audit_label_task, task): task for task in tasks}
             for future in as_completed(future_to_task):
-                index, task_root, label, _, _, _ = future_to_task[future]
+                index, task_root, label, _, _, _, task_file, task_digest = future_to_task[future]
                 try:
                     results.append(future.result())
                 except Exception as exc:  # pragma: no cover - protects deterministic parent behavior.
@@ -164,6 +170,8 @@ def _ordered_label_audits(
                         "paragraph_context": paragraph_context,
                         "summary_only": summary_only,
                         "backend": backend,
+                        "file": task_file,
+                        "source_digest": task_digest,
                     }
                     results.append(
                         {
@@ -228,6 +236,7 @@ def _discover_audit_labels(
     root: str,
     *,
     target_file: str | None = None,
+    source_digest: str | None = None,
     label_kinds: list[str] | tuple[str, ...] | None = None,
     label_limit: int | None = None,
 ) -> tuple[list[str], dict[str, Any]]:
@@ -293,10 +302,18 @@ def _discover_audit_labels(
     return [str(item["label"]) for item in selected], coverage
 
 
-def _explicit_coverage(root: str | None, labels: list[str]) -> dict[str, Any]:
+def _explicit_coverage(
+    root: str | None,
+    labels: list[str],
+    *,
+    target_file: str | None = None,
+    source_digest: str | None = None,
+) -> dict[str, Any]:
     return {
         "mode": "explicit_labels",
         "root": str(Path(root).resolve()) if root else None,
+        "target_file": target_file,
+        "source_digest": source_digest,
         "discovered_label_count": len(labels),
         "audited_label_count": len(labels),
         "skipped_label_count": 0,
@@ -308,14 +325,31 @@ def _explicit_coverage(root: str | None, labels: list[str]) -> dict[str, Any]:
 
 
 def _summarize_audit(evidence: dict[str, Any]) -> dict[str, Any]:
+    extraction = evidence.get("target_extraction")
+    targets = extraction.get("targets", []) if isinstance(extraction, dict) else []
+    canonical = targets[0] if len(targets) == 1 and isinstance(targets[0], dict) else None
     return _compact(
         {
             "label": evidence.get("label"),
             "status": evidence.get("status"),
             "contract": _metadata_contract(evidence),
             "reason": evidence.get("reason") or evidence.get("answer"),
+            "canonical_target": _compact(
+                {
+                    "target": canonical.get("target"),
+                    "file": canonical.get("file"),
+                    "label": canonical.get("label"),
+                    "line_start": canonical.get("line_start"),
+                    "line_end": canonical.get("line_end"),
+                    "obligation_id": canonical.get("obligation_id"),
+                    "obligation_digest": canonical.get("obligation_digest"),
+                    "source_digest": canonical.get("label_scoped_obligation", {}).get("document", {}).get("source_digest"),
+                    "target_ingress": "validated_label_scoped_obligation",
+                },
+                ("target", "file", "label", "line_start", "line_end", "obligation_id", "obligation_digest", "source_digest", "target_ingress"),
+            ) if canonical else None,
         },
-        ("label", "status", "contract", "reason"),
+        ("label", "status", "contract", "reason", "canonical_target"),
     )
 
 
@@ -406,9 +440,18 @@ def _reconstruct_split_align_equation(
     if not isinstance(line_start, int):
         return None
     lines = _source_lines_from_doc_context(evidence)
-    if not lines:
-        return None
     line_map = {line_no: text for line_no, text in lines}
+    if line_start not in line_map:
+        root_value = evidence.get("doc_root")
+        file_value = provenance.get("file")
+        if isinstance(root_value, str) and isinstance(file_value, str):
+            root_path = Path(root_value).resolve()
+            source_path = (root_path / file_value).resolve()
+            if source_path.is_file() and (source_path == root_path or root_path in source_path.parents):
+                line_map = {
+                    index: text
+                    for index, text in enumerate(source_path.read_text(encoding="utf-8").splitlines(), start=1)
+                }
     if line_start not in line_map:
         return None
     operator = _clean_math_line(line_map[line_start])
@@ -784,6 +827,45 @@ def _build_non_actionable_gap_details(
         evidence, obligation = _resolve_proof_audit_obligation(audited_evidence, ref)
         if not isinstance(evidence, dict):
             continue
+        provenance = obligation.get("provenance", {}) if isinstance(obligation, dict) else {}
+        canonical_proof_target = (
+            isinstance(obligation, dict)
+            and provenance.get("target_ingress") == "validated_label_scoped_obligation"
+            and bool(obligation.get("lhs"))
+            and bool(obligation.get("rhs"))
+        )
+        if canonical_proof_target:
+            proof_target = _proof_target_from_detail(detail, obligation)
+            problem = "The complete source-bound target is localized but remains uncertified."
+            key = (ref, problem)
+            if key in seen:
+                continue
+            seen.add(key)
+            gaps.append(
+                {
+                    "kind": "prove_reconstructed_obligation",
+                    "target": detail.get("target", obligation.get("id", "obligation")),
+                    "label": detail.get("label", evidence.get("label", "source")),
+                    "location": detail.get("location", "local context"),
+                    "line_start": detail.get("line_start"),
+                    "section_path": detail.get("section_path", []),
+                    "problem": problem,
+                    "summary": "Prove the complete canonical source obligation before treating it as verified.",
+                    "rationale": _gap_status_text(obligation),
+                    "source_text": detail.get("source_text", ""),
+                    "action": "Prove or formalize the canonical source obligation.",
+                    "proposed_fix": (
+                        "Formalize the exact source-bound target, rerun a suitable deterministic backend, "
+                        f"and retain the source digest and obligation digest for `{evidence.get('label', '')}`."
+                    ),
+                    "proof_target": proof_target,
+                    "derivation_plan": _derivation_plan_for_gap(evidence, detail, obligation),
+                    "math_fix": None,
+                    "evidence_only": True,
+                    "evidence_ref": ref,
+                }
+            )
+            continue
         problem = _non_actionable_problem(detail, obligation)
         key = (ref, problem)
         if key in seen:
@@ -883,7 +965,15 @@ def _build_plain_language_details(
     details: list[dict[str, Any]] = []
     evidence_index = {item.get("label"): item for item in audited_evidence if isinstance(item, dict) and isinstance(item.get("label"), str)}
     seen: set[tuple[str, str, str, str]] = set()
-    for change in proposed_changes:
+    priority = {"split_derivation_step": 0, "add_or_verify_assumption": 1, "add_diagnostic_check": 2}
+    ordered_changes = [
+        item[1]
+        for item in sorted(
+            enumerate(proposed_changes),
+            key=lambda item: (priority.get(str(item[1].get("kind", "")), 10), item[0]),
+        )
+    ]
+    for change in ordered_changes:
         if not isinstance(change, dict):
             continue
         refs = change.get("evidence_refs") if isinstance(change.get("evidence_refs"), list) else []
@@ -1211,6 +1301,7 @@ def build_audit_fix_report(
     labels: list[str] | None = None,
     whole_document: bool = False,
     target_file: str | None = None,
+    source_digest: str | None = None,
     label_limit: int | None = None,
     label_kinds: list[str] | tuple[str, ...] | None = None,
     evidence: list[dict[str, Any]] | None = None,
@@ -1231,7 +1322,13 @@ def build_audit_fix_report(
     if evidence is not None and not all(isinstance(item, dict) for item in evidence):
         raise ValueError("evidence must be a list of objects")
     if whole_document:
-        discovered_labels, coverage = _discover_audit_labels(str(root), target_file=target_file, label_kinds=label_kinds, label_limit=label_limit)
+        discovered_labels, coverage = _discover_audit_labels(
+            str(root),
+            target_file=target_file,
+            source_digest=source_digest,
+            label_kinds=label_kinds,
+            label_limit=label_limit,
+        )
         if labels:
             explicit = list(dict.fromkeys(labels))
             discovered_set = set(discovered_labels)
@@ -1246,7 +1343,12 @@ def build_audit_fix_report(
         else:
             labels = discovered_labels
     else:
-        coverage = _explicit_coverage(root, labels)
+        coverage = _explicit_coverage(
+            root,
+            labels,
+            target_file=target_file,
+            source_digest=source_digest,
+        )
 
     tool_uses: list[ToolUseRecord] = []
     audited_evidence: list[dict[str, Any]] = list(evidence or [])
@@ -1258,11 +1360,17 @@ def build_audit_fix_report(
             summary_only=summary_only,
             backend=backend,
             workers=workers,
+            file=target_file,
+            source_digest=source_digest,
         )
         audited_evidence.extend(label_audits)
         tool_uses.extend(ToolUseRecord(**item) for item in label_tool_uses)
 
     proposal_source = _source_context(source, root, labels)
+    if target_file is not None:
+        proposal_source.setdefault("file", target_file)
+    if source_digest is not None:
+        proposal_source.setdefault("source_digest", source_digest)
     proposal = propose_fix(question, evidence=audited_evidence, source=proposal_source)
     tool_uses.append(
         ToolUseRecord(
@@ -1367,6 +1475,7 @@ def audit_and_propose_fix(
     labels: list[str] | None = None,
     whole_document: bool = False,
     target_file: str | None = None,
+    source_digest: str | None = None,
     label_limit: int | None = None,
     label_kinds: list[str] | tuple[str, ...] | None = None,
     evidence: list[dict[str, Any]] | None = None,
@@ -1387,6 +1496,7 @@ def audit_and_propose_fix(
         labels=labels,
         whole_document=whole_document,
         target_file=target_file,
+        source_digest=source_digest,
         label_limit=label_limit,
         label_kinds=label_kinds,
         evidence=evidence,
@@ -1436,6 +1546,7 @@ def write_audit_fix_report_markdown(
     labels: list[str] | None = None,
     whole_document: bool = False,
     target_file: str | None = None,
+    source_digest: str | None = None,
     label_limit: int | None = None,
     label_kinds: list[str] | tuple[str, ...] | None = None,
     evidence: list[dict[str, Any]] | None = None,
@@ -1455,6 +1566,7 @@ def write_audit_fix_report_markdown(
         labels=labels,
         whole_document=whole_document,
         target_file=target_file,
+        source_digest=source_digest,
         label_limit=label_limit,
         label_kinds=label_kinds,
         evidence=evidence,

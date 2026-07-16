@@ -215,6 +215,7 @@ def derive_from(
     lhs: str | None = None,
     rhs: str | None = None,
     backend: str = "auto",
+    claim_semantics: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Answer a scoped "can I derive target from givens?" question.
 
@@ -231,6 +232,7 @@ def derive_from(
             lhs=lhs,
             rhs=rhs,
             backend=backend,
+            claim_semantics=claim_semantics,
         )
     except ValueError as exc:
         result = high_level_result(

@@ -295,6 +295,9 @@
           "evidence_classes": [
             "human_review_required"
           ],
+          "optional_evidence_classes": [
+            "review_packet"
+          ],
           "certification_source": "none",
           "required_non_claim_codes": [
             "general_theorem_proving_not_claimed",

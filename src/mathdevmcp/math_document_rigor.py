@@ -4,12 +4,11 @@ from __future__ import annotations
 
 from collections import Counter
 from contextlib import contextmanager
+import hashlib
 import json
 import os
 from pathlib import Path
 import re
-import shutil
-import tempfile
 from typing import Any
 
 from .actionable_abstentions import build_actionable_abstention_payload
@@ -196,15 +195,6 @@ def _backend_provenance(tex_path: Path, *, backend_env: str | None) -> dict[str,
             "Lean checking with no placeholders, or by another certifying backend under the scoped contract."
         ),
     }
-
-
-@contextmanager
-def _single_file_audit_root(tex_path: Path):
-    with tempfile.TemporaryDirectory(prefix="mathdevmcp-rigor-audit-") as directory:
-        root = Path(directory)
-        copied = root / tex_path.name
-        shutil.copy2(tex_path, copied)
-        yield root
 
 
 def plan_math_document_rigor_audit(
@@ -677,16 +667,18 @@ def audit_math_document_rigor(
     fix_high_level: dict[str, Any] | None = None
     fix_report: dict[str, Any] = {}
     if target_labels:
-        with _single_file_audit_root(path) as audit_root:
-            fix_high_level = audit_and_propose_fix(
-                "Audit selected document labels for mathematical rigor gaps and proposed repairs",
-                root=str(audit_root),
-                labels=target_labels,
-                backend="sympy",
-                validate_proposed_fixes=True,
-                backend_order=validation_backends or ["lean", "sage", "sympy"],
-                output_path=None,
-            )
+        source_digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        fix_high_level = audit_and_propose_fix(
+            "Audit selected document labels for mathematical rigor gaps and proposed repairs",
+            root=str(path.parent),
+            labels=target_labels,
+            target_file=path.name,
+            source_digest=source_digest,
+            backend="sympy",
+            validate_proposed_fixes=True,
+            backend_order=validation_backends or ["lean", "sage", "sympy"],
+            output_path=None,
+        )
         fix_report = _extract_fix_report(fix_high_level)
         tool_uses.append(
             _tool_use(
@@ -697,7 +689,7 @@ def audit_math_document_rigor(
                 {
                     "root": str(path.parent),
                     "target_file": path.name,
-                    "exact_file_root": "temporary_single_file_copy",
+                    "source_digest": source_digest,
                     "labels": target_labels,
                     "validate_proposed_fixes": True,
                 },

@@ -24,6 +24,32 @@ class DomainTemplate:
 
 TEMPLATES: tuple[DomainTemplate, ...] = (
     DomainTemplate(
+        id="valuation_terminal_value_v1",
+        domain="bounded_terminal_value_definition",
+        description="Source-bound scalar terminal-value placeholder with explicit persistence and decay denominator.",
+        assumptions=["claim role is source-evidenced as a definition", "terminal-value denominator is explicitly nonzero", "scalar symbols have declared real-valued meaning"],
+        supported_notation=["terminal value", "persistence", "attrition", "discount rate", "decay", "continuation cash flow"],
+        generated_obligations=["source definition role", "exact nonzero denominator", "algebraic cross-multiplication consistency", "terminal-value sensitivity remains an external scientific obligation"],
+        diagnostic_routes=["claim_semantics", "assumption_discovery", "sympy", "proof_packet"],
+        failure_modes=["definition treated as a theorem", "zero denominator", "terminal value treated as economic truth", "policy or expectation semantics silently simplified"],
+        positive_fixtures=["eq:terminal-value-base"],
+        negative_fixtures=[],
+        certification_boundary="This diagnostic template can check source role, scalar algebra, and denominator domain only; it cannot certify economic validity, calibration, policy optimality, or a universal terminal-value theorem.",
+    ),
+    DomainTemplate(
+        id="valuation_finite_horizon_dcf_v1",
+        domain="finite_horizon_discounted_cash_flow",
+        description="Finite-horizon discounted cash-flow accounting with explicit acquisition cost and terminal term.",
+        assumptions=["horizon is finite and nonnegative", "discount factors and timing convention are declared", "each cash-flow term is finite", "conditional laws and integrability are declared when expectations occur"],
+        supported_notation=["NPV", "finite horizon", "discount factor", "cash flow", "acquisition cost", "terminal value"],
+        generated_obligations=["finite aligned horizon", "discount timing", "cash-flow and terminal-term finiteness", "conditional-law and integrability review", "source claim role"],
+        diagnostic_routes=["claim_semantics", "assumption_discovery", "finite_support_expectation", "proof_packet"],
+        failure_modes=["infinite or mismatched horizon", "unstated discount convention", "unsupported conditional expectation", "causal or policy semantics mistaken for algebra"],
+        positive_fixtures=["eq:incremental-npv"],
+        negative_fixtures=[],
+        certification_boundary="The template generates diagnostic obligations and must abstain on unsupported expectation, causal, behavioral, and policy semantics; it is not a valuation-validity certificate.",
+    ),
+    DomainTemplate(
         id="kalman_loglikelihood_v1",
         domain="filtering_state_space",
         description="Gaussian prediction-error likelihood with solve/logdet diagnostics.",

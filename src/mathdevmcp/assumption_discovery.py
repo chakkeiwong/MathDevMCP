@@ -23,7 +23,7 @@ _ASSUMPTION_RULES = [
     },
     {
         "kind": "division_nonzero",
-        "patterns": [re.compile(r"/"), re.compile(r"\*\*-1\b"), re.compile(r"\^-1\b")],
+        "patterns": [re.compile(r"/"), re.compile(r"\\(?:frac|dfrac|tfrac)\b"), re.compile(r"\*\*-1\b"), re.compile(r"\^-1\b")],
         "text": "denominator is nonzero",
         "source": "division or reciprocal",
         "route_categories": ["domain_condition"],
@@ -128,10 +128,72 @@ class AssumptionDiscoveryResult:
     workbench_result: dict[str, Any]
 
 
-def _provided(text: str, provided_assumptions: list[str]) -> bool:
+def _canonical_expression(text: str) -> str:
+    value = str(text).lower()
+    value = re.sub(r"\\mathrm\{([^{}]+)\}", r"\1", value)
+    value = re.sub(r"\\(?:widehat|hat)\{([^{}]+)\}", r"\1", value)
+    value = value.replace(r"\lambda", "lambda").replace(r"\rho", "rho")
+    value = re.sub(r"_\{([^{}]+)\}", r"_\1", value)
+    value = value.replace("{", "").replace("}", "")
+    return re.sub(r"[\s`$()]", "", value)
+
+
+def _balanced_group(text: str, start: int) -> tuple[str, int] | None:
+    if start >= len(text) or text[start] != "{":
+        return None
+    depth = 0
+    for index in range(start, len(text)):
+        if text[index] == "{":
+            depth += 1
+        elif text[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start + 1 : index], index + 1
+    return None
+
+
+def _denominator_expression(target: str) -> str | None:
+    for marker in (r"\frac", r"\dfrac", r"\tfrac"):
+        offset = 0
+        while True:
+            position = target.find(marker, offset)
+            if position < 0:
+                break
+            numerator_start = position + len(marker)
+            while numerator_start < len(target) and target[numerator_start].isspace():
+                numerator_start += 1
+            numerator = _balanced_group(target, numerator_start)
+            if numerator is None:
+                break
+            denominator_start = numerator[1]
+            while denominator_start < len(target) and target[denominator_start].isspace():
+                denominator_start += 1
+            denominator = _balanced_group(target, denominator_start)
+            if denominator is not None and denominator[0].strip():
+                return denominator[0].strip()
+            offset = numerator[1]
+    parenthesized = re.search(r"/\s*\(([^()]+)\)", target)
+    if parenthesized:
+        return parenthesized.group(1).strip()
+    plain = re.search(r"/\s*([A-Za-z_][A-Za-z0-9_]*(?:\s*[+\-]\s*[A-Za-z_][A-Za-z0-9_]*)*)", target)
+    return plain.group(1).strip() if plain else None
+
+
+def _nonzero_assumption_expression(assumption: str) -> str | None:
+    match = re.search(r"(.+?)\s*(?:!=|≠|\\ne)\s*0(?:\b|$)", assumption)
+    return match.group(1).strip() if match else None
+
+
+def _provided(text: str, provided_assumptions: list[str], *, requirement_expression: str | None = None) -> tuple[bool, str | None]:
     normalized_text = " ".join(text.lower().split())
     normalized_provided = [" ".join(item.lower().split()) for item in provided_assumptions]
-    return any(normalized_text in item or item in normalized_text for item in normalized_provided)
+    for original, normalized in zip(provided_assumptions, normalized_provided):
+        if normalized_text in normalized or normalized in normalized_text:
+            return True, original
+        provided_expression = _nonzero_assumption_expression(original)
+        if requirement_expression and provided_expression and _canonical_expression(provided_expression) == _canonical_expression(requirement_expression):
+            return True, original
+    return False, None
 
 
 def _explicit_in_target(rule: dict[str, Any], target: str) -> bool:
@@ -147,9 +209,14 @@ def assumptions_required(target: str, *, provided_assumptions: list[str] | None 
     for rule in _ASSUMPTION_RULES:
         if not any(pattern.search(target) for pattern in rule["patterns"]):
             continue
-        status = "provided" if _provided(rule["text"], provided) or _explicit_in_target(rule, target) else "missing"
-        assumptions.append(
-            assumption_record(
+        requirement_expression = _denominator_expression(target) if rule["kind"] == "division_nonzero" else None
+        supplied, discharged_by = _provided(
+            rule["text"],
+            provided,
+            requirement_expression=requirement_expression,
+        )
+        status = "provided" if supplied or _explicit_in_target(rule, target) else "missing"
+        record = assumption_record(
                 rule["text"],
                 status=status,
                 source=rule["source"],
@@ -158,7 +225,11 @@ def assumptions_required(target: str, *, provided_assumptions: list[str] | None 
                 route_categories=list(rule["route_categories"]),
                 route_category_sources=[f"assumption_rule:{rule['kind']}"],
             )
-        )
+        if requirement_expression:
+            record["requirement_expression"] = requirement_expression
+            record["discharged_by"] = discharged_by
+            record["matching_policy"] = "canonical_exact_expression_nonzero"
+        assumptions.append(record)
 
     missing = [item for item in assumptions if item["status"] == "missing"]
     if missing:

@@ -31,6 +31,7 @@ from .document_derivation_response import (
     build_document_derivation_audit_request,
     canonical_document_derivation_response_bytes,
     compile_document_derivation_response,
+    document_derivation_resolver_catalog,
     load_document_derivation_continuation,
     resolve_document_derivation_records,
     validate_document_derivation_response_options,
@@ -306,6 +307,7 @@ def _cmd_high_level_derive_from(args: argparse.Namespace) -> int:
         lhs=args.lhs or None,
         rhs=args.rhs or None,
         backend=args.backend,
+        claim_semantics=_load_json_argument_or_file(args.claim_semantics) if args.claim_semantics else None,
     )
     print(json.dumps(result, indent=2))
     return 0
@@ -319,6 +321,7 @@ def _cmd_high_level_prove_or_counterexample(args: argparse.Namespace) -> int:
         rhs=args.rhs or None,
         backend=args.backend,
         lean_source=args.lean_source or None,
+        claim_semantics=_load_json_argument_or_file(args.claim_semantics) if args.claim_semantics else None,
     )
     print(json.dumps(result, indent=2))
     return 0
@@ -432,6 +435,7 @@ def _cmd_high_level_audit_and_propose_fix(args: argparse.Namespace) -> int:
         labels=args.label or None,
         whole_document=args.whole_document,
         target_file=args.file or None,
+        source_digest=args.source_digest or None,
         label_limit=args.label_limit,
         label_kinds=args.label_kind or None,
         evidence=evidence,
@@ -561,7 +565,11 @@ def _cmd_audit_document_derivation_tree_validated(args: argparse.Namespace) -> i
 def _cmd_resolve_document_derivation_records(args: argparse.Namespace) -> int:
     try:
         return _cmd_resolve_document_derivation_records_validated(args)
-    except ValueError:
+    except ValueError as exc:
+        if "collection" in str(exc):
+            payload = error_result("invalid_arguments", str(exc))
+            sys.stderr.buffer.write(canonical_document_derivation_response_bytes(payload) + b"\n")
+            return 2
         return _document_derivation_cli_invalid_arguments()
 
 
@@ -731,6 +739,7 @@ def _cmd_derive_or_refute(args: argparse.Namespace) -> int:
         lhs=args.lhs or None,
         rhs=args.rhs or None,
         backend=args.backend,
+        claim_semantics=_load_json_argument_or_file(args.claim_semantics) if args.claim_semantics else None,
     )
     print(json.dumps(result, indent=2))
     return 0
@@ -744,6 +753,7 @@ def _cmd_prove_or_refute(args: argparse.Namespace) -> int:
         rhs=args.rhs or None,
         backend=args.backend,
         lean_source=args.lean_source or None,
+        claim_semantics=_load_json_argument_or_file(args.claim_semantics) if args.claim_semantics else None,
     )
     print(json.dumps(result, indent=2))
     return 0
@@ -828,6 +838,8 @@ def _cmd_implementation_brief(args: argparse.Namespace) -> int:
         rhs=args.rhs or None,
         limit=args.limit,
         cache_path=Path(args.cache) if args.cache else None,
+        file=args.file or None,
+        source_digest=args.source_digest or None,
     )
     print(json.dumps(result, indent=2))
     return 0
@@ -850,6 +862,8 @@ def _cmd_audit_derivation_label(args: argparse.Namespace) -> int:
         paragraph_context=args.paragraph_context,
         backend=args.backend,
         cache_path=Path(args.cache) if args.cache else None,
+        file=args.file or None,
+        source_digest=args.source_digest or None,
     )
     print(json.dumps(result, indent=2))
     return 0
@@ -865,13 +879,21 @@ def _cmd_audit_derivation_v2_label(args: argparse.Namespace) -> int:
         backend=args.backend,
         cache_path=Path(args.cache) if args.cache else None,
         summary_only=args.summary_only,
+        file=args.file or None,
+        source_digest=args.source_digest or None,
     )
     print(json.dumps(result, indent=2))
     return 0
 
 
 def _cmd_proof_packet_label(args: argparse.Namespace) -> int:
-    result = build_proof_packet_label(args.root, args.label, summary_only=args.summary_only)
+    result = build_proof_packet_label(
+        args.root,
+        args.label,
+        summary_only=args.summary_only,
+        file=args.file or None,
+        source_digest=args.source_digest or None,
+    )
     if args.output:
         Path(args.output).parent.mkdir(parents=True, exist_ok=True)
         Path(args.output).write_text(json.dumps(result, indent=2), encoding="utf-8")
@@ -880,7 +902,13 @@ def _cmd_proof_packet_label(args: argparse.Namespace) -> int:
 
 
 def _cmd_negative_evidence_label(args: argparse.Namespace) -> int:
-    audit = audit_derivation_v2_for_label(args.root, args.label, summary_only=True)
+    audit = audit_derivation_v2_for_label(
+        args.root,
+        args.label,
+        summary_only=True,
+        file=args.file or None,
+        source_digest=args.source_digest or None,
+    )
     result = build_negative_evidence_packet(args.label, audit)
     if args.output:
         Path(args.output).parent.mkdir(parents=True, exist_ok=True)
@@ -897,7 +925,14 @@ def _cmd_audit_kalman_recursion(args: argparse.Namespace) -> int:
 
 
 def _cmd_typed_obligation_label(args: argparse.Namespace) -> int:
-    result = typed_obligation_for_label(args.root, args.label, backend=args.backend, context_text=args.context_text or "")
+    result = typed_obligation_for_label(
+        args.root,
+        args.label,
+        backend=args.backend,
+        context_text=args.context_text or "",
+        file=args.file or None,
+        source_digest=args.source_digest or None,
+    )
     print(json.dumps(result, indent=2))
     return 0
 
@@ -1109,6 +1144,7 @@ def make_parser() -> argparse.ArgumentParser:
     p_high_derive.add_argument("--lhs", default="", help="Optional explicit left-hand side")
     p_high_derive.add_argument("--rhs", default="", help="Optional explicit right-hand side")
     p_high_derive.add_argument("--backend", choices=["auto", "sympy", "sage", "z3"], default="auto", help="Backend preference")
+    p_high_derive.add_argument("--claim-semantics", default="", help="Optional source-bound claim-semantics JSON or file")
     p_high_derive.set_defaults(func=_cmd_high_level_derive_from)
 
     p_high_prove = sub.add_parser("prove-or-counterexample", help="Answer a scoped high-level proof/counterexample question")
@@ -1118,6 +1154,7 @@ def make_parser() -> argparse.ArgumentParser:
     p_high_prove.add_argument("--rhs", default="", help="Optional explicit right-hand side")
     p_high_prove.add_argument("--backend", choices=["auto", "sympy", "sage", "z3", "lean"], default="auto", help="Backend preference")
     p_high_prove.add_argument("--lean-source", default="", help="Explicit Lean source for Lean route")
+    p_high_prove.add_argument("--claim-semantics", default="", help="Optional source-bound claim-semantics JSON or file")
     p_high_prove.set_defaults(func=_cmd_high_level_prove_or_counterexample)
 
     p_high_assumptions = sub.add_parser("assumptions-for", help="Find route-required assumptions for a scoped target")
@@ -1187,6 +1224,7 @@ def make_parser() -> argparse.ArgumentParser:
     p_high_audit_fix.add_argument("--label", action="append", default=[], help="LaTeX label to audit; can be repeated")
     p_high_audit_fix.add_argument("--whole-document", action="store_true", help="Discover and audit document labels with explicit coverage metadata")
     p_high_audit_fix.add_argument("--file", default="", help="Restrict whole-document discovery to one TeX file under --root")
+    p_high_audit_fix.add_argument("--source-digest", default="", help="Required SHA-256 of the selected source bytes")
     p_high_audit_fix.add_argument("--label-limit", type=int, default=None, help="Maximum discovered labels to audit in whole-document mode; <=0 means no limit")
     p_high_audit_fix.add_argument("--label-kind", action="append", default=[], help="Block kind to include in whole-document discovery; can be repeated")
     p_high_audit_fix.add_argument("--source", default="", help="Optional JSON source object or JSON file path")
@@ -1251,7 +1289,9 @@ def make_parser() -> argparse.ArgumentParser:
         help="Resolve one record collection authorized by a Phase 08 page token",
     )
     p_doc_records.add_argument("page_token", help="Phase 08 compact page token")
-    p_doc_records.add_argument("collection", help="Closed resolver collection name")
+    resolver_catalog = document_derivation_resolver_catalog()
+    resolver_choices = [*resolver_catalog["global_collections"], *resolver_catalog["target_collections"]]
+    p_doc_records.add_argument("collection", choices=resolver_choices, help="Closed resolver collection name")
     p_doc_records.add_argument("--artifact-root", required=True, help="Root containing the verified detailed artifact")
     p_doc_records.add_argument("--target-id", default="", help="Exact page target ID; omit only for global collections")
     p_doc_records.add_argument("--offset", type=int, default=0, help="Record offset")
@@ -1327,6 +1367,7 @@ def make_parser() -> argparse.ArgumentParser:
     p_derive_or_refute.add_argument("--lhs", default="", help="Optional explicit left-hand side")
     p_derive_or_refute.add_argument("--rhs", default="", help="Optional explicit right-hand side")
     p_derive_or_refute.add_argument("--backend", choices=["auto", "sympy", "sage", "z3"], default="auto", help="Backend preference")
+    p_derive_or_refute.add_argument("--claim-semantics", default="", help="Optional source-bound claim-semantics JSON or file")
     p_derive_or_refute.set_defaults(func=_cmd_derive_or_refute)
 
     p_prove_or_refute = sub.add_parser("prove-or-refute", help="Try a bounded proof or refutation for a target equality")
@@ -1336,6 +1377,7 @@ def make_parser() -> argparse.ArgumentParser:
     p_prove_or_refute.add_argument("--rhs", default="", help="Optional explicit right-hand side")
     p_prove_or_refute.add_argument("--backend", choices=["auto", "sympy", "sage", "z3", "lean"], default="auto", help="Backend preference")
     p_prove_or_refute.add_argument("--lean-source", default="", help="Explicit Lean source for Lean route")
+    p_prove_or_refute.add_argument("--claim-semantics", default="", help="Optional source-bound claim-semantics JSON or file")
     p_prove_or_refute.set_defaults(func=_cmd_prove_or_refute)
 
     p_gap = sub.add_parser("localize-proof-gap", help="Find the first unsupported step in a bounded derivation chain")
@@ -1447,6 +1489,8 @@ def make_parser() -> argparse.ArgumentParser:
     p_audit.add_argument("--paragraph-context", action="store_true", help="Use paragraph neighborhood instead of line excerpt")
     p_audit.add_argument("--backend", choices=["auto", "sympy", "sage", "z3"], default="auto", help="Backend preference")
     p_audit.add_argument("--cache", default="", help="Optional cache JSON path for index reuse")
+    p_audit.add_argument("--file", default="", help="Exact TeX file selector under --root")
+    p_audit.add_argument("--source-digest", default="", help="Required SHA-256 of the selected source bytes")
     p_audit.set_defaults(func=_cmd_audit_derivation_label)
 
     p_audit_v2 = sub.add_parser("audit-derivation-v2-label", help="Audit a labeled derivation with typed routing and release evidence")
@@ -1458,6 +1502,8 @@ def make_parser() -> argparse.ArgumentParser:
     p_audit_v2.add_argument("--backend", choices=["auto", "sympy", "sage", "z3"], default="sympy", help="Backend preference")
     p_audit_v2.add_argument("--cache", default="", help="Optional cache JSON path for index reuse")
     p_audit_v2.add_argument("--summary-only", action="store_true", help="Return compact per-obligation summaries")
+    p_audit_v2.add_argument("--file", default="", help="Exact TeX file selector under --root")
+    p_audit_v2.add_argument("--source-digest", default="", help="Required SHA-256 of the selected source bytes")
     p_audit_v2.set_defaults(func=_cmd_audit_derivation_v2_label)
 
     p_proof_packet = sub.add_parser("proof-packet-label", help="Build a durable proof packet for a labeled document block")
@@ -1465,12 +1511,16 @@ def make_parser() -> argparse.ArgumentParser:
     p_proof_packet.add_argument("--root", default=".", help="Root directory containing LaTeX files")
     p_proof_packet.add_argument("--summary-only", action="store_true", help="Store compact nested audit evidence")
     p_proof_packet.add_argument("--output", default="", help="Optional JSON output path")
+    p_proof_packet.add_argument("--file", default="", help="Exact TeX file selector under --root")
+    p_proof_packet.add_argument("--source-digest", default="", help="Required SHA-256 of the selected source bytes")
     p_proof_packet.set_defaults(func=_cmd_proof_packet_label)
 
     p_negative_packet = sub.add_parser("negative-evidence-label", help="Build a negative-evidence packet for a labeled document block")
     p_negative_packet.add_argument("label", help="LaTeX label to audit")
     p_negative_packet.add_argument("--root", default=".", help="Root directory containing LaTeX files")
     p_negative_packet.add_argument("--output", default="", help="Optional JSON output path")
+    p_negative_packet.add_argument("--file", default="", help="Exact TeX file selector under --root")
+    p_negative_packet.add_argument("--source-digest", default="", help="Required SHA-256 of the selected source bytes")
     p_negative_packet.set_defaults(func=_cmd_negative_evidence_label)
 
     p_kalman_recursion = sub.add_parser("audit-kalman-recursion", help="Audit AST-level Kalman recursion structure in Python code")
@@ -1483,6 +1533,8 @@ def make_parser() -> argparse.ArgumentParser:
     p_typed_obligation.add_argument("--root", default=".", help="Root directory containing LaTeX files")
     p_typed_obligation.add_argument("--backend", choices=["auto", "sympy", "sage", "z3"], default="sympy", help="Backend preference for source proof audit")
     p_typed_obligation.add_argument("--context-text", default="", help="Optional explicit context/assumption text")
+    p_typed_obligation.add_argument("--file", default="", help="Exact TeX file selector under --root")
+    p_typed_obligation.add_argument("--source-digest", default="", help="Required SHA-256 of the selected source bytes")
     p_typed_obligation.set_defaults(func=_cmd_typed_obligation_label)
 
     p_temporal = sub.add_parser("audit-temporal-contract", help="Audit explicit current/next temporal bindings between a label and code")

@@ -12,14 +12,15 @@ def test_optional_dependency_groups_keep_base_package_small():
     optional = data["project"]["optional-dependencies"]
 
     assert data["project"]["dependencies"] == []
-    assert "pytest" in optional["dev"]
-    assert "build" in optional["dev"]
-    assert "twine" in optional["dev"]
+    names = lambda values: {value.split("=")[0].split("<")[0].split(">")[0] for value in values}
+    assert "pytest" in names(optional["dev"])
+    assert "build" in names(optional["dev"])
+    assert "twine" in names(optional["dev"])
     assert optional["quality"] == ["build", "twine"]
-    assert "sympy" in optional["symbolic"]
-    assert "mcp" in optional["mcp"]
-    assert "lean-dojo" in optional["leandojo"]
-    assert {"sympy", "mcp", "lean-dojo", "build", "twine"}.issubset(set(optional["all"]))
+    assert "sympy" in names(optional["symbolic"])
+    assert "mcp" in names(optional["mcp"])
+    assert "lean-dojo" in names(optional["leandojo"])
+    assert {"sympy", "mcp", "lean-dojo", "build", "twine"}.issubset(names(optional["all"]))
 
 
 def test_docs_explain_optional_mcp_runtime_policy():

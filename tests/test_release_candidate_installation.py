@@ -91,6 +91,20 @@ def test_subprocess_timeout_scan_covers_source_calls():
     assert result["findings"] == []
 
 
+def test_subprocess_timeout_scan_rejects_unbounded_popen(tmp_path: Path) -> None:
+    package = tmp_path / "src" / "mathdevmcp"
+    package.mkdir(parents=True)
+    (package / "bad.py").write_text(
+        "import subprocess\n\ndef run():\n    return subprocess.Popen(['tool'])\n",
+        encoding="utf-8",
+    )
+
+    result = scan_subprocess_timeout_policy(tmp_path)
+
+    assert result["status"] == "mismatch"
+    assert result["findings"][0]["call"] == "subprocess.Popen"
+
+
 def test_cli_validate_governance_reports_contract():
     result = subprocess.run(
         [sys.executable, "-m", "mathdevmcp.cli", "validate-governance", "--root", str(ROOT)],

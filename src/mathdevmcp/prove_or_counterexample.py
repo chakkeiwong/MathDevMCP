@@ -17,6 +17,7 @@ def prove_or_counterexample(
     rhs: str | None = None,
     backend: str = "auto",
     lean_source: str | None = None,
+    claim_semantics: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Answer a scoped "can we prove this?" question."""
     assumption_list = assumptions or []
@@ -28,6 +29,7 @@ def prove_or_counterexample(
             rhs=rhs,
             backend=backend,
             lean_source=lean_source,
+            claim_semantics=claim_semantics,
         )
     except ValueError as exc:
         result = high_level_result(

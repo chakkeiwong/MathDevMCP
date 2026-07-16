@@ -73,6 +73,7 @@ EVIDENCE_CLASSES: set[str] = {
     "fix_report",
     "proof_gap",
     "human_review_required",
+    "source_semantics",
 }
 
 CERTIFICATION_SOURCES: set[str] = {"backend", "scoped_contradiction", "none"}
@@ -582,7 +583,7 @@ def validate_high_level_result(result: dict[str, Any]) -> list[str]:
         if certification_source != "none":
             errors.append("structural_mismatch requires certification_source none")
     elif status == "diagnostic_only":
-        if not _has_any_evidence(raw_classes, {"numeric_diagnostic", "generated_test", "review_packet", "fix_proposal", "fix_report", "human_review_required"}):
+        if not _has_any_evidence(raw_classes, {"numeric_diagnostic", "generated_test", "review_packet", "fix_proposal", "fix_report", "human_review_required", "source_semantics"}):
             errors.append("diagnostic_only requires diagnostic or review evidence")
         if certification_source != "none":
             errors.append("diagnostic_only requires certification_source none")

@@ -68,6 +68,7 @@ class ProofAuditV2Report:
     parser_policy: dict
     base_audit_status: str
     doc_context: dict
+    target_extraction: dict
 
 
 def _context_text(doc_context: dict) -> str:
@@ -226,6 +227,10 @@ def _compact_obligation(obligation: dict) -> dict:
     return {
         "id": obligation["id"],
         "label": obligation["label"],
+        "source_text": obligation["source_text"],
+        "lhs": obligation["lhs"],
+        "rhs": obligation["rhs"],
+        "kind": obligation["kind"],
         "status": obligation["status"],
         "substatus": obligation["substatus"],
         "severity": obligation["severity"],
@@ -256,6 +261,8 @@ def audit_derivation_v2_for_label(
     numeric_artifacts: dict[str, dict] | None = None,
     assumption_manifest: dict | None = None,
     summary_only: bool = False,
+    file: str | None = None,
+    source_digest: str | None = None,
 ) -> dict:
     base = audit_derivation_for_label(
         root,
@@ -265,6 +272,8 @@ def audit_derivation_v2_for_label(
         paragraph_context=paragraph_context,
         backend=backend,
         cache_path=cache_path,
+        file=file,
+        source_digest=source_digest,
     )
     parser = decide_parser_policy(root, backends=parser_backends or ["current"], expected_labels=parser_expected_labels)
     selected_backend = parser.get("selected_backend") or "current"
@@ -368,5 +377,6 @@ def audit_derivation_v2_for_label(
         parser_policy=parser,
         base_audit_status=base.get("status", "inconclusive"),
         doc_context=base.get("doc_context", {}),
+        target_extraction=base.get("target_extraction", {}),
     )
     return attach_contract(asdict(report), "proof_audit_v2_result", doc_context=base.get("doc_context", {}))

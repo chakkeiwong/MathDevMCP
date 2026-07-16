@@ -5,6 +5,7 @@ from pathlib import Path
 import re
 
 from .contracts import attach_contract
+from .derivation_target_extraction import extract_derivation_targets_for_label
 from .index_cache import load_or_build_index
 from .latex_index import build_index, extract_context_for_label, extract_paragraph_context_for_label
 from .proof_obligations import check_proof_obligation
@@ -157,6 +158,20 @@ def _extract_obligation_candidates(doc_context: dict, paragraph_context: bool) -
 
 def _audit_candidate(candidate: dict, obligation_id: str, doc_context: dict, backend: str) -> dict:
     provenance = _line_provenance(doc_context, candidate.get("line"))
+    canonical = candidate.get("canonical_target")
+    if isinstance(canonical, dict):
+        provenance.update(
+            {
+                "file": canonical.get("file"),
+                "line_start": canonical.get("line_start"),
+                "line_end": canonical.get("line_end"),
+                "label": canonical.get("label"),
+                "obligation_id": canonical.get("obligation_id"),
+                "obligation_digest": canonical.get("obligation_digest"),
+                "source_digest": canonical.get("label_scoped_obligation", {}).get("document", {}).get("source_digest"),
+                "target_ingress": "validated_label_scoped_obligation",
+            }
+        )
     classification = candidate["classification"]
     if classification == "not_extracted":
         obligation = ProofAuditObligation(
@@ -265,15 +280,79 @@ def audit_derivation_for_label(
     paragraph_context: bool = False,
     backend: str = "auto",
     cache_path: str | Path | None = None,
+    file: str | None = None,
+    source_digest: str | None = None,
 ) -> dict:
     root_path = Path(root)
     index = load_or_build_index(root_path, Path(cache_path)) if cache_path else build_index(root_path)
-    doc_context = (
-        extract_paragraph_context_for_label(index, label, before=before, after=after)
-        if paragraph_context
-        else extract_context_for_label(index, label, before=before, after=after)
+    target_extraction = extract_derivation_targets_for_label(index, label, file=file)
+    if target_extraction["status"] == "ambiguous":
+        return attach_contract(
+            {
+                "label": label,
+                "doc_root": str(root_path.resolve()),
+                "status": "inconclusive",
+                "reason": target_extraction["reason"],
+                "obligations": [_empty_obligation({"label": label, "file": file})],
+                "counts": {"total": 1, "verified": 0, "mismatched": 0, "unverified": 0, "inconclusive": 1, "not_encodable": 0, "not_extracted": 1},
+                "doc_context": {"label": label, "file": file, "ambiguities": target_extraction["ambiguities"]},
+                "target_extraction": target_extraction,
+            },
+            "proof_audit_result",
+        )
+    targets = target_extraction.get("targets", [])
+    if source_digest is not None and targets:
+        actual_digests = {
+            str(item.get("label_scoped_obligation", {}).get("document", {}).get("source_digest", ""))
+            for item in targets
+        }
+        if actual_digests != {source_digest}:
+            doc_context = {
+                "label": label,
+                "file": file,
+                "required_source_digest": source_digest,
+                "observed_source_digests": sorted(actual_digests),
+            }
+            return attach_contract(
+                {
+                    "label": label,
+                    "doc_root": str(root_path.resolve()),
+                    "status": "inconclusive",
+                    "reason": "The selected source bytes do not match the required source digest.",
+                    "obligations": [_empty_obligation(doc_context)],
+                    "counts": {"total": 1, "verified": 0, "mismatched": 0, "unverified": 0, "inconclusive": 1, "not_encodable": 0, "not_extracted": 1},
+                    "doc_context": doc_context,
+                    "target_extraction": target_extraction,
+                },
+                "proof_audit_result",
+                doc_context=doc_context,
+            )
+    canonical_display_target = (
+        target_extraction.get("status") == "extracted"
+        and len(targets) == 1
+        and targets[0].get("normalized_target", {}).get("kind") == "equality"
+        and target_extraction.get("parent_block", {}).get("kind", "") not in {"theorem", "proposition", "lemma", "corollary"}
     )
-    candidates = _extract_obligation_candidates(doc_context, paragraph_context)
+    doc_context = (
+        extract_paragraph_context_for_label(index, label, before=before, after=after, file=file)
+        if paragraph_context
+        else extract_context_for_label(index, label, before=before, after=after, file=file)
+    )
+    if canonical_display_target:
+        target = targets[0]
+        obligation = target["label_scoped_obligation"]
+        candidates = [
+            {
+                "lhs": target["lhs"],
+                "rhs": target["rhs"],
+                "source_text": target["target"],
+                "line": target["line_start"],
+                "classification": "sympy" if _is_backend_safe(target["lhs"], target["rhs"]) else "human_review",
+                "canonical_target": target,
+            }
+        ]
+    else:
+        candidates = _extract_obligation_candidates(doc_context, paragraph_context)
     obligations = [
         _audit_candidate(candidate, f"obligation_{idx}", doc_context, backend)
         for idx, candidate in enumerate(candidates, start=1)
@@ -291,4 +370,6 @@ def audit_derivation_for_label(
         counts=counts,
         doc_context=doc_context,
     )
-    return attach_contract(asdict(report), "proof_audit_result", doc_context=doc_context)
+    payload = asdict(report)
+    payload["target_extraction"] = target_extraction
+    return attach_contract(payload, "proof_audit_result", doc_context=doc_context)

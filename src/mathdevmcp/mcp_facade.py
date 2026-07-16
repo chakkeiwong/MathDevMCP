@@ -14,6 +14,7 @@ import re
 from typing import Any
 
 from .assumptions_for import audit_and_propose_assumptions as high_level_audit_and_propose_assumptions
+from .agent_report_artifacts import compact_audit_fix_report, compact_review_packet, compact_rigor_report, persist_agent_report, resolve_agent_report
 from .assumptions_for import assumptions_for as high_level_assumptions_for
 from .audit_and_propose_fix import audit_and_propose_fix as high_level_audit_and_propose_fix
 from .audit_math_to_code import audit_math_to_code as high_level_audit_math_to_code
@@ -30,10 +31,12 @@ from .document_derivation_tree import audit_document_derivation_tree as high_lev
 from .document_derivation_response import (
     build_document_derivation_audit_request,
     compile_document_derivation_response,
+    document_derivation_resolver_catalog,
     load_document_derivation_continuation,
     resolve_document_derivation_records,
     validate_document_derivation_response_options,
 )
+from .domain_templates import generate_obligations_from_template, list_domain_templates, suggest_domain_templates
 from .doctor import doctor_report
 from .equation_code_match import code_implements_equation
 from .external_tool_policy import external_tool_first_plan as high_level_external_tool_first_plan
@@ -61,6 +64,9 @@ from .prove_or_refute import prove_or_refute
 from .proof_gap import localize_proof_gap
 from .proof_audit import audit_derivation_for_label
 from .proof_audit_v2 import audit_derivation_v2_for_label
+from .proof_packet import build_proof_packet_label
+from .negative_evidence import build_negative_evidence_packet
+from .claim_support import build_claim_support_packet
 from .release_corpus import release_corpus_manifest, validate_release_corpus_manifest
 from .release_profile_analysis import release_profile_analysis
 from .release_policy import release_readiness_report
@@ -403,6 +409,9 @@ def _tool_literature_local_audit(args: dict[str, Any]) -> dict[str, Any]:
 
 
 def _tool_high_level_derive_from(args: dict[str, Any]) -> dict[str, Any]:
+    claim_semantics = args.get("claim_semantics")
+    if claim_semantics is not None and not isinstance(claim_semantics, dict):
+        raise ValueError("claim_semantics must be an object")
     return high_level_derive_from(
         _required_string(args, "target"),
         givens=_optional_string_list_arg(args, "givens", "given"),
@@ -410,10 +419,14 @@ def _tool_high_level_derive_from(args: dict[str, Any]) -> dict[str, Any]:
         lhs=args.get("lhs") if isinstance(args.get("lhs"), str) and args.get("lhs") else None,
         rhs=args.get("rhs") if isinstance(args.get("rhs"), str) and args.get("rhs") else None,
         backend=str(args.get("backend", "auto")),
+        claim_semantics=claim_semantics,
     )
 
 
 def _tool_high_level_prove_or_counterexample(args: dict[str, Any]) -> dict[str, Any]:
+    claim_semantics = args.get("claim_semantics")
+    if claim_semantics is not None and not isinstance(claim_semantics, dict):
+        raise ValueError("claim_semantics must be an object")
     return high_level_prove_or_counterexample(
         _required_string(args, "claim"),
         assumptions=_optional_string_list_arg(args, "assumptions", "assumption"),
@@ -421,6 +434,7 @@ def _tool_high_level_prove_or_counterexample(args: dict[str, Any]) -> dict[str, 
         rhs=args.get("rhs") if isinstance(args.get("rhs"), str) and args.get("rhs") else None,
         backend=str(args.get("backend", "auto")),
         lean_source=args.get("lean_source") if isinstance(args.get("lean_source"), str) and args.get("lean_source") else None,
+        claim_semantics=claim_semantics,
     )
 
 
@@ -512,6 +526,9 @@ def _tool_high_level_prepare_review_packet(args: dict[str, Any]) -> dict[str, An
     )
     if bool(args.get("handoff")):
         return review_packet_agent_handoff(result)
+    if str(args.get("response_mode", "detailed")) == "compact":
+        artifact_root = _required_string(args, "artifact_root")
+        return compact_review_packet(result, persist_agent_report(result, artifact_root))
     return result
 
 
@@ -562,12 +579,13 @@ def _tool_high_level_audit_and_propose_fix(args: dict[str, Any]) -> dict[str, An
         backend_order = [backend_order]
     if backend_order is not None and (not isinstance(backend_order, list) or not all(isinstance(item, str) for item in backend_order)):
         raise ValueError("backend_order must be a string or list of strings")
-    return high_level_audit_and_propose_fix(
+    result = high_level_audit_and_propose_fix(
         _required_string(args, "question"),
         root=args.get("root") or None,
         labels=labels,
         whole_document=bool(args.get("whole_document", args.get("document", False))),
         target_file=args.get("file") or args.get("target_file") or None,
+        source_digest=args.get("source_digest") or None,
         label_limit=int(args["label_limit"]) if args.get("label_limit") is not None else None,
         label_kinds=args.get("label_kinds") if isinstance(args.get("label_kinds"), list) else None,
         evidence=evidence,
@@ -581,6 +599,10 @@ def _tool_high_level_audit_and_propose_fix(args: dict[str, Any]) -> dict[str, An
         workers=int(args.get("workers", 1)),
         output_path=args.get("output") or args.get("output_path") or None,
     )
+    if str(args.get("response_mode", "detailed")) == "compact":
+        artifact_root = _required_string(args, "artifact_root")
+        return compact_audit_fix_report(result, persist_agent_report(result, artifact_root))
+    return result
 
 
 def _tool_audit_implementation_label(args: dict[str, Any]) -> dict[str, Any]:
@@ -623,6 +645,9 @@ def _tool_derive_or_refute(args: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("givens must be a string or list of strings")
     if not isinstance(assumptions, list) or not all(isinstance(item, str) for item in assumptions):
         raise ValueError("assumptions must be a string or list of strings")
+    claim_semantics = args.get("claim_semantics")
+    if claim_semantics is not None and not isinstance(claim_semantics, dict):
+        raise ValueError("claim_semantics must be an object")
     return derive_or_refute(
         _required_string(args, "target"),
         givens=givens,
@@ -630,6 +655,7 @@ def _tool_derive_or_refute(args: dict[str, Any]) -> dict[str, Any]:
         lhs=args.get("lhs") if isinstance(args.get("lhs"), str) and args.get("lhs") else None,
         rhs=args.get("rhs") if isinstance(args.get("rhs"), str) and args.get("rhs") else None,
         backend=str(args.get("backend", "auto")),
+        claim_semantics=claim_semantics,
     )
 
 
@@ -639,6 +665,9 @@ def _tool_prove_or_refute(args: dict[str, Any]) -> dict[str, Any]:
         assumptions = [assumptions]
     if not isinstance(assumptions, list) or not all(isinstance(item, str) for item in assumptions):
         raise ValueError("assumptions must be a string or list of strings")
+    claim_semantics = args.get("claim_semantics")
+    if claim_semantics is not None and not isinstance(claim_semantics, dict):
+        raise ValueError("claim_semantics must be an object")
     return prove_or_refute(
         _required_string(args, "claim"),
         assumptions=assumptions,
@@ -646,6 +675,7 @@ def _tool_prove_or_refute(args: dict[str, Any]) -> dict[str, Any]:
         rhs=args.get("rhs") if isinstance(args.get("rhs"), str) and args.get("rhs") else None,
         backend=str(args.get("backend", "auto")),
         lean_source=args.get("lean_source") if isinstance(args.get("lean_source"), str) and args.get("lean_source") else None,
+        claim_semantics=claim_semantics,
     )
 
 
@@ -718,6 +748,8 @@ def _tool_audit_derivation_label(args: dict[str, Any]) -> dict[str, Any]:
         paragraph_context=bool(args.get("paragraph_context", False)),
         backend=str(args.get("backend", "auto")),
         cache_path=args.get("cache") or None,
+        file=args.get("file") or None,
+        source_digest=args.get("source_digest") or None,
     )
 
 
@@ -731,6 +763,8 @@ def _tool_audit_derivation_v2_label(args: dict[str, Any]) -> dict[str, Any]:
         backend=str(args.get("backend", "sympy")),
         cache_path=args.get("cache") or None,
         summary_only=bool(args.get("summary_only", False)),
+        file=args.get("file") or None,
+        source_digest=args.get("source_digest") or None,
     )
 
 
@@ -761,6 +795,91 @@ def _tool_typed_obligation_label(args: dict[str, Any]) -> dict[str, Any]:
         _required_string(args, "label"),
         backend=str(args.get("backend", "sympy")),
         context_text=context_text if isinstance(context_text, str) else "",
+        file=args.get("file") or None,
+        source_digest=args.get("source_digest") or None,
+    )
+
+
+def _tool_proof_packet_label(args: dict[str, Any]) -> dict[str, Any]:
+    return build_proof_packet_label(
+        _required_string(args, "root"),
+        _required_string(args, "label"),
+        summary_only=bool(args.get("summary_only", True)),
+        file=args.get("file") or None,
+        source_digest=args.get("source_digest") or None,
+    )
+
+
+def _tool_negative_evidence_label(args: dict[str, Any]) -> dict[str, Any]:
+    label = _required_string(args, "label")
+    audit = audit_derivation_v2_for_label(
+        _required_string(args, "root"),
+        label,
+        summary_only=True,
+        file=args.get("file") or None,
+        source_digest=args.get("source_digest") or None,
+    )
+    return build_negative_evidence_packet(label, audit)
+
+
+def _tool_domain_templates(args: dict[str, Any]) -> dict[str, Any]:
+    _ = args
+    return list_domain_templates()
+
+
+def _tool_suggest_domain_templates(args: dict[str, Any]) -> dict[str, Any]:
+    section_path = args.get("section_path") or []
+    if isinstance(section_path, str):
+        section_path = [section_path]
+    if not isinstance(section_path, list) or not all(isinstance(item, str) for item in section_path):
+        raise ValueError("section_path must be a string or list of strings")
+    return suggest_domain_templates(
+        label=str(args.get("label", "")),
+        section_path=section_path,
+        equation_text=str(args.get("equation_text", "")),
+    )
+
+
+def _tool_generate_template_obligations(args: dict[str, Any]) -> dict[str, Any]:
+    return generate_obligations_from_template(
+        _required_string(args, "template_id"),
+        label=_required_string(args, "label"),
+    )
+
+
+def _tool_claim_support_packet(args: dict[str, Any]) -> dict[str, Any]:
+    citations = args.get("citations") or []
+    if not isinstance(citations, list) or not all(isinstance(item, dict) for item in citations):
+        raise ValueError("citations must be a list of objects")
+    return build_claim_support_packet(
+        _required_string(args, "claim"),
+        claim_id=args.get("claim_id") or None,
+        citations=citations,
+        linked_labels=args.get("linked_labels") or [],
+        linked_packets=args.get("linked_packets") or [],
+        empirical=bool(args.get("empirical", False)),
+        assumption=bool(args.get("assumption", False)),
+        proposed=bool(args.get("proposed", False)),
+    )
+
+
+def _tool_capability_registry(args: dict[str, Any]) -> dict[str, Any]:
+    _ = args
+    exposed = sorted(spec.name for spec in MCP_TOOL_SPECS)
+    return attach_contract(
+        {
+            "status": "consistent",
+            "mcp_exposed": exposed,
+            "intentional_cli_only": [
+                {"capability": "parser_benchmarks", "reason": "operator/release diagnostic, not a document-development primitive"},
+                {"capability": "release_validation", "reason": "operator release authority remains outside agent mathematical development"},
+                {"capability": "real_local_benchmark_builders", "reason": "maintainer benchmark construction and evidence generation"},
+                {"capability": "governance_validation", "reason": "maintainer repository scan; governance policy remains MCP-readable"},
+            ],
+            "resolver_catalog": document_derivation_resolver_catalog(),
+            "boundary": "MCP exposure grants diagnostic invocation only and does not authorize source edits, publication, release, or scientific promotion.",
+        },
+        "capability_registry",
     )
 
 
@@ -871,7 +990,7 @@ def _tool_audit_math_document_rigor(args: dict[str, Any]) -> dict[str, Any]:
     max_label_value = int(max_labels) if max_labels is not None else None
     if max_label_value is not None and max_label_value <= 0:
         max_label_value = None
-    return high_level_audit_math_document_rigor(
+    result = high_level_audit_math_document_rigor(
         _required_string(args, "tex_path"),
         output_md=args.get("output_md") or None,
         output_json=args.get("output_json") or None,
@@ -879,6 +998,17 @@ def _tool_audit_math_document_rigor(args: dict[str, Any]) -> dict[str, Any]:
         max_labels=max_label_value,
         backend_env=str(args.get("backend_env", "mathdevmcp-backends")),
         validation_backends=validation_backends,
+    )
+    if str(args.get("response_mode", "detailed")) == "compact":
+        artifact_root = _required_string(args, "artifact_root")
+        return compact_rigor_report(result, persist_agent_report(result, artifact_root))
+    return result
+
+
+def _tool_resolve_agent_report(args: dict[str, Any]) -> dict[str, Any]:
+    return resolve_agent_report(
+        _required_string(args, "artifact_root"),
+        _required_string(args, "sha256"),
     )
 
 
@@ -1265,6 +1395,12 @@ MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
     ),
     MCPToolSpec("audit_kalman_recursion", _tool_audit_kalman_recursion, "Audit AST-level Kalman recursion structure in Python code text or a code file path.", "kalman_recursion_audit", "workflow"),
     MCPToolSpec("typed_obligation_label", _tool_typed_obligation_label, "Build typed/dimensional diagnostics for a labeled math obligation.", "typed_obligation_label_diagnostic", "workflow"),
+    MCPToolSpec("proof_packet_label", _tool_proof_packet_label, "Build a source-bound proof/evidence packet for an exact labeled target.", "proof_packet", "workflow", stability="experimental"),
+    MCPToolSpec("negative_evidence_label", _tool_negative_evidence_label, "Build a diagnostic negative-evidence packet for an exact labeled target.", "negative_evidence_packet", "workflow", stability="experimental"),
+    MCPToolSpec("domain_templates", _tool_domain_templates, "Return the governed mathematical domain-template catalog.", "domain_template_catalog", "informational", stability="experimental"),
+    MCPToolSpec("suggest_domain_templates", _tool_suggest_domain_templates, "Suggest bounded domain templates for supplied source context.", "domain_template_suggestions", "workflow", stability="experimental"),
+    MCPToolSpec("generate_template_obligations", _tool_generate_template_obligations, "Generate diagnostic obligations from a governed domain template.", "domain_template_obligations", "workflow", stability="experimental"),
+    MCPToolSpec("claim_support_packet", _tool_claim_support_packet, "Build a claim-support packet that remains distinct from mathematical proof.", "claim_support_packet", "workflow", stability="experimental"),
     MCPToolSpec("audit_temporal_contract", _tool_audit_temporal_contract, "Audit explicit current/next temporal bindings between a labeled DSGE-style document context and a code file path.", "temporal_contract_audit", "workflow", stability="experimental"),
     MCPToolSpec("run_benchmarks", _tool_run_benchmarks, "Run seeded consistency benchmarks.", "benchmark_results", "operational"),
     MCPToolSpec("benchmark_gate", _tool_benchmark_gate, "Return CI-friendly benchmark gate results.", "benchmark_gate", "operational"),
@@ -1280,6 +1416,7 @@ MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
         stability="experimental",
     ),
     MCPToolSpec("status_taxonomy", _tool_status_taxonomy, "Return the current MathDevMCP status and substatus taxonomy.", "status_taxonomy", "informational"),
+    MCPToolSpec("capability_registry", _tool_capability_registry, "Classify MCP-exposed and intentionally operator-only capabilities, including resolver vocabulary.", "capability_registry", "informational", stability="experimental"),
     MCPToolSpec("doctor", _tool_doctor, "Report external backend capabilities and environment diagnostics.", "doctor_report", "operational"),
     MCPToolSpec("release_corpus_manifest", _tool_release_corpus_manifest, "Return the release corpus manifest.", "release_corpus_manifest", "operational"),
     MCPToolSpec("validate_release_corpus", _tool_validate_release_corpus, "Validate release corpus privacy and gate metadata.", "release_corpus_validation_report", "operational"),
@@ -1291,6 +1428,7 @@ MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
     MCPToolSpec("audit_math_document_rigor", _tool_audit_math_document_rigor, "Audit one LaTeX file and write a rigor gap/proposal report.", "math_document_rigor_audit", "workflow", stability="experimental", optional_capability="symbolic_backend"),
     MCPToolSpec("audit_document_derivation_tree", _tool_audit_document_derivation_tree, "Audit LaTeX document targets and return a compact evidence-complete response by default; publication remains disabled.", "document_derivation_response", "workflow", stability="experimental", optional_capability="symbolic_backend"),
     MCPToolSpec("resolve_document_derivation_records", _tool_resolve_document_derivation_records, "Resolve exact persisted audit records authorized by a compact document-derivation page token.", "document_derivation_record_page", "workflow", stability="experimental"),
+    MCPToolSpec("resolve_agent_report", _tool_resolve_agent_report, "Resolve a verified detailed report behind a compact audit/fix or rigor response.", "agent_report_artifact", "workflow", stability="experimental"),
 )
 
 

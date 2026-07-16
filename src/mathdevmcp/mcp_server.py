@@ -52,6 +52,12 @@ MCP_SERVER_EXPOSED_TOOLS = {
     "audit_derivation_v2_label",
     "audit_kalman_recursion",
     "typed_obligation_label",
+    "proof_packet_label",
+    "negative_evidence_label",
+    "domain_templates",
+    "suggest_domain_templates",
+    "generate_template_obligations",
+    "claim_support_packet",
     "audit_temporal_contract",
     "run_benchmarks",
     "benchmark_gate",
@@ -60,6 +66,7 @@ MCP_SERVER_EXPOSED_TOOLS = {
     "get_tool_matrix",
     "external_tool_first_plan",
     "status_taxonomy",
+    "capability_registry",
     "doctor",
     "release_corpus_manifest",
     "validate_release_corpus",
@@ -71,6 +78,7 @@ MCP_SERVER_EXPOSED_TOOLS = {
     "audit_math_document_rigor",
     "audit_document_derivation_tree",
     "resolve_document_derivation_records",
+    "resolve_agent_report",
 }
 
 
@@ -337,6 +345,7 @@ def derive_from(
     lhs: str | None = None,
     rhs: str | None = None,
     backend: str = "auto",
+    claim_semantics: dict | None = None,
 ) -> dict:
     return call_mcp_tool(
         "derive_from",
@@ -347,6 +356,7 @@ def derive_from(
             "lhs": lhs,
             "rhs": rhs,
             "backend": backend,
+            "claim_semantics": claim_semantics,
         },
     )
 
@@ -359,6 +369,7 @@ def prove_or_counterexample(
     rhs: str | None = None,
     backend: str = "auto",
     lean_source: str | None = None,
+    claim_semantics: dict | None = None,
 ) -> dict:
     return call_mcp_tool(
         "prove_or_counterexample",
@@ -369,6 +380,7 @@ def prove_or_counterexample(
             "rhs": rhs,
             "backend": backend,
             "lean_source": lean_source,
+            "claim_semantics": claim_semantics,
         },
     )
 
@@ -463,6 +475,8 @@ def prepare_review_packet(
     source: dict | None = None,
     packet_id: str | None = None,
     handoff: bool = False,
+    response_mode: Literal["detailed", "compact"] = "detailed",
+    artifact_root: str | None = None,
 ) -> dict:
     return call_mcp_tool(
         "prepare_review_packet",
@@ -472,6 +486,8 @@ def prepare_review_packet(
             "source": source,
             "packet_id": packet_id,
             "handoff": handoff,
+            "response_mode": response_mode,
+            "artifact_root": artifact_root,
         },
     )
 
@@ -519,6 +535,7 @@ def audit_and_propose_fix(
     labels: Sequence[str] | None = None,
     whole_document: bool = False,
     target_file: str | None = None,
+    source_digest: str | None = None,
     label_limit: int | None = None,
     label_kinds: Sequence[str] | None = None,
     evidence: Sequence[dict] | None = None,
@@ -531,6 +548,8 @@ def audit_and_propose_fix(
     backend_order: Sequence[str] | None = None,
     workers: int = 1,
     output: str | None = None,
+    response_mode: Literal["detailed", "compact"] = "detailed",
+    artifact_root: str | None = None,
 ) -> dict:
     return call_mcp_tool(
         "audit_and_propose_fix",
@@ -540,6 +559,7 @@ def audit_and_propose_fix(
             "labels": list(labels) if labels is not None else None,
             "whole_document": whole_document,
             "target_file": target_file,
+            "source_digest": source_digest,
             "label_limit": label_limit,
             "label_kinds": list(label_kinds) if label_kinds is not None else None,
             "evidence": list(evidence) if evidence is not None else None,
@@ -552,6 +572,8 @@ def audit_and_propose_fix(
             "backend_order": list(backend_order) if backend_order is not None else None,
             "workers": workers,
             "output": output,
+            "response_mode": response_mode,
+            "artifact_root": artifact_root,
         },
     )
 
@@ -646,6 +668,7 @@ def derive_or_refute(
     lhs: str | None = None,
     rhs: str | None = None,
     backend: str = "auto",
+    claim_semantics: dict | None = None,
 ) -> dict:
     return call_mcp_tool(
         "derive_or_refute",
@@ -656,6 +679,7 @@ def derive_or_refute(
             "lhs": lhs,
             "rhs": rhs,
             "backend": backend,
+            "claim_semantics": claim_semantics,
         },
     )
 
@@ -668,6 +692,7 @@ def prove_or_refute(
     rhs: str | None = None,
     backend: str = "auto",
     lean_source: str | None = None,
+    claim_semantics: dict | None = None,
 ) -> dict:
     return call_mcp_tool(
         "prove_or_refute",
@@ -678,6 +703,7 @@ def prove_or_refute(
             "rhs": rhs,
             "backend": backend,
             "lean_source": lean_source,
+            "claim_semantics": claim_semantics,
         },
     )
 
@@ -766,6 +792,8 @@ def audit_derivation_label(
     paragraph_context: bool = False,
     backend: str = "auto",
     cache: str | None = None,
+    file: str | None = None,
+    source_digest: str | None = None,
 ) -> dict:
     return call_mcp_tool(
         "audit_derivation_label",
@@ -777,6 +805,8 @@ def audit_derivation_label(
             "paragraph_context": paragraph_context,
             "backend": backend,
             "cache": cache,
+            "file": file,
+            "source_digest": source_digest,
         },
     )
 
@@ -791,6 +821,8 @@ def audit_derivation_v2_label(
     backend: str = "sympy",
     cache: str | None = None,
     summary_only: bool = False,
+    file: str | None = None,
+    source_digest: str | None = None,
 ) -> dict:
     return call_mcp_tool(
         "audit_derivation_v2_label",
@@ -803,6 +835,8 @@ def audit_derivation_v2_label(
             "backend": backend,
             "cache": cache,
             "summary_only": summary_only,
+            "file": file,
+            "source_digest": source_digest,
         },
     )
 
@@ -819,7 +853,14 @@ def audit_kalman_recursion(code: str, required_operations: Sequence[str] | None 
 
 
 @mcp.tool(description="Build typed/dimensional diagnostics for a labeled math obligation.", structured_output=False)
-def typed_obligation_label(root: str, label: str, backend: str = "sympy", context_text: str | None = None) -> dict:
+def typed_obligation_label(
+    root: str,
+    label: str,
+    backend: str = "sympy",
+    context_text: str | None = None,
+    file: str | None = None,
+    source_digest: str | None = None,
+) -> dict:
     return call_mcp_tool(
         "typed_obligation_label",
         {
@@ -827,6 +868,83 @@ def typed_obligation_label(root: str, label: str, backend: str = "sympy", contex
             "label": label,
             "backend": backend,
             "context_text": context_text,
+            "file": file,
+            "source_digest": source_digest,
+        },
+    )
+
+
+@mcp.tool(description="Build a source-bound proof/evidence packet for an exact labeled target.", structured_output=False)
+def proof_packet_label(
+    root: str,
+    label: str,
+    summary_only: bool = True,
+    file: str | None = None,
+    source_digest: str | None = None,
+) -> dict:
+    return call_mcp_tool(
+        "proof_packet_label",
+        {"root": root, "label": label, "summary_only": summary_only, "file": file, "source_digest": source_digest},
+    )
+
+
+@mcp.tool(description="Build a diagnostic negative-evidence packet for an exact labeled target.", structured_output=False)
+def negative_evidence_label(
+    root: str,
+    label: str,
+    file: str | None = None,
+    source_digest: str | None = None,
+) -> dict:
+    return call_mcp_tool(
+        "negative_evidence_label",
+        {"root": root, "label": label, "file": file, "source_digest": source_digest},
+    )
+
+
+@mcp.tool(description="Return the governed mathematical domain-template catalog.", structured_output=False)
+def domain_templates() -> dict:
+    return call_mcp_tool("domain_templates", {})
+
+
+@mcp.tool(description="Suggest bounded domain templates for supplied source context.", structured_output=False)
+def suggest_domain_templates(
+    label: str = "",
+    section_path: Sequence[str] | None = None,
+    equation_text: str = "",
+) -> dict:
+    return call_mcp_tool(
+        "suggest_domain_templates",
+        {"label": label, "section_path": list(section_path or []), "equation_text": equation_text},
+    )
+
+
+@mcp.tool(description="Generate diagnostic obligations from a governed domain template.", structured_output=False)
+def generate_template_obligations(template_id: str, label: str) -> dict:
+    return call_mcp_tool("generate_template_obligations", {"template_id": template_id, "label": label})
+
+
+@mcp.tool(description="Build a claim-support packet that remains distinct from mathematical proof.", structured_output=False)
+def claim_support_packet(
+    claim: str,
+    claim_id: str | None = None,
+    citations: Sequence[dict] | None = None,
+    linked_labels: Sequence[str] | None = None,
+    linked_packets: Sequence[str] | None = None,
+    empirical: bool = False,
+    assumption: bool = False,
+    proposed: bool = False,
+) -> dict:
+    return call_mcp_tool(
+        "claim_support_packet",
+        {
+            "claim": claim,
+            "claim_id": claim_id,
+            "citations": list(citations or []),
+            "linked_labels": list(linked_labels or []),
+            "linked_packets": list(linked_packets or []),
+            "empirical": empirical,
+            "assumption": assumption,
+            "proposed": proposed,
         },
     )
 
@@ -901,6 +1019,11 @@ def status_taxonomy() -> dict:
     return call_mcp_tool("status_taxonomy", {})
 
 
+@mcp.tool(description="Classify agent-facing and intentionally operator-only capabilities, including resolver vocabulary.", structured_output=False)
+def capability_registry() -> dict:
+    return call_mcp_tool("capability_registry", {})
+
+
 @mcp.tool(description="Report external backend capabilities and environment diagnostics.", structured_output=False)
 def doctor() -> dict:
     return call_mcp_tool("doctor", {})
@@ -961,6 +1084,8 @@ def audit_math_document_rigor(
     max_labels: int = 30,
     backend_env: str = "mathdevmcp-backends",
     validation_backends: Sequence[str] | None = None,
+    response_mode: Literal["detailed", "compact"] = "detailed",
+    artifact_root: str | None = None,
 ) -> dict:
     return call_mcp_tool(
         "audit_math_document_rigor",
@@ -972,6 +1097,8 @@ def audit_math_document_rigor(
             "max_labels": max_labels,
             "backend_env": backend_env,
             "validation_backends": list(validation_backends) if validation_backends is not None else None,
+            "response_mode": response_mode,
+            "artifact_root": artifact_root,
         },
     )
 
@@ -1034,7 +1161,22 @@ def audit_document_derivation_tree(
 @mcp.tool(description="Resolve exact persisted audit records authorized by a compact document-derivation page token.", structured_output=False)
 def resolve_document_derivation_records(
     page_token: str,
-    collection: str,
+    collection: Literal[
+        "global_blocker_records",
+        "global_evidence_ref_records",
+        "global_source_ref_records",
+        "blocker_records",
+        "evidence_ref_records",
+        "source_ref_records",
+        "unresolved_assumption_records",
+        "candidate_assumption_records",
+        "selected_action",
+        "label_scoped_obligation",
+        "typed_repair_obligation",
+        "math_obligation",
+        "source_span",
+        "target_text",
+    ],
     artifact_root: str,
     target_id: str | None = None,
     offset: int = 0,
@@ -1053,6 +1195,11 @@ def resolve_document_derivation_records(
     )
     assert isinstance(result, dict)
     return _document_derivation_tool_result(result)
+
+
+@mcp.tool(description="Resolve a verified detailed report behind a compact audit/fix or rigor response.", structured_output=False)
+def resolve_agent_report(artifact_root: str, sha256: str) -> dict:
+    return call_mcp_tool("resolve_agent_report", {"artifact_root": artifact_root, "sha256": sha256})
 
 
 def main(argv: list[str] | None = None) -> int:

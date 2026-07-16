@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from copy import deepcopy
 import json
+import os
 from pathlib import Path
+import subprocess
+import sys
 
 import pytest
 
@@ -691,18 +694,35 @@ def test_guard_classifies_backend_imports_and_frozen_sources_without_attempts() 
 def test_nonformal_guard_rejects_backend_import_and_source_write() -> None:
     if p03_guard.guard_is_active():
         pytest.skip("Formal zero-attempt runs validate classifiers only.")
-    with pytest.raises(RuntimeError, match="recorded 1 forbidden attempt"):
-        with p03_guard.install_guard(action="nonformal-import-probe", formal=False):
-            __import__("sympy")
-
-    with pytest.raises(RuntimeError, match="recorded 1 forbidden attempt"):
-        with p03_guard.install_guard(action="nonformal-write-probe", formal=False):
-            open(
-                ROOT
-                / "docs/credit-card-npv-component-proposal/credit_card_npv_component_proposal_final_submission.tex",
-                "a",
-                encoding="utf-8",
-            )
+    probes = [
+        ("nonformal-import-probe", "__import__('sympy')"),
+        (
+            "nonformal-write-probe",
+            "open('docs/credit-card-npv-component-proposal/"
+            "credit_card_npv_component_proposal_final_submission.tex', 'a', encoding='utf-8')",
+        ),
+    ]
+    for action, probe in probes:
+        script = f"""
+import tests.p03_no_backend_guard as guard
+try:
+    with guard.install_guard(action={action!r}, formal=False):
+        {probe}
+except RuntimeError as exc:
+    if 'recorded 1 forbidden attempt' not in str(exc):
+        raise
+else:
+    raise AssertionError('guard accepted a forbidden operation')
+"""
+        completed = subprocess.run(
+            [sys.executable, "-c", script],
+            cwd=ROOT,
+            env={**os.environ, "PYTHONPATH": str(ROOT / "src")},
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert completed.returncode == 0, completed.stdout + completed.stderr
 
 
 def test_frozen_card_pi_is_policy_or_ambiguous_never_posterior_by_spelling() -> None:

@@ -62,6 +62,7 @@ def test_proof_audit_v2_summary_only_keeps_compact_obligation_shape():
     assert "substatus" in obligation
     assert "matrix_ir_status" in obligation
     assert "typed_diagnostic" not in obligation
+    assert {"source_text", "lhs", "rhs", "kind"}.issubset(obligation)
     assert obligation["metadata"] == {"schema_version": "1.0", "contract": "proof_audit_v2_obligation"}
 
 

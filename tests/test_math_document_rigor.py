@@ -1,3 +1,4 @@
+import hashlib
 from pathlib import Path
 
 from mathdevmcp.math_document_rigor import (
@@ -152,7 +153,9 @@ final = 2
     assert "final_submission.tex" in markdown
     assert "old_version.tex" not in markdown
     audit_tool_use = next(item for item in result["tool_uses"] if item["tool"] == "audit_and_propose_fix")
-    assert audit_tool_use["arguments"]["exact_file_root"] == "temporary_single_file_copy"
+    assert audit_tool_use["arguments"]["root"] == str(tmp_path)
+    assert audit_tool_use["arguments"]["target_file"] == final.name
+    assert audit_tool_use["arguments"]["source_digest"] == hashlib.sha256(final.read_bytes()).hexdigest()
 
 
 def test_audit_math_document_rigor_selects_requested_backend_env(monkeypatch, tmp_path: Path) -> None:

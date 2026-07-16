@@ -8,6 +8,7 @@ is coherent enough to claim public release readiness.
 from __future__ import annotations
 
 import ast
+import re
 import tomllib
 from pathlib import Path
 from typing import Any
@@ -90,7 +91,11 @@ def _check_packaging_metadata(root: Path) -> dict[str, Any]:
     for group in ["dev", "mcp", "symbolic", "leandojo", "all", "quality"]:
         if group not in optional:
             findings.append({"check": "packaging_metadata", "severity": "high", "kind": "optional_dependency_group_missing", "detail": group})
-    if "mcp" not in optional.get("mcp", []):
+    requirement_names = {
+        re.split(r"[<>=!~;\s\[]", str(requirement), maxsplit=1)[0].lower().replace("_", "-")
+        for requirement in optional.get("mcp", [])
+    }
+    if "mcp" not in requirement_names:
         findings.append({"check": "packaging_metadata", "severity": "high", "kind": "mcp_extra_missing_runtime_dependency"})
     if "license" not in project:
         findings.append({"check": "packaging_metadata", "severity": "medium", "kind": "license_metadata_missing"})

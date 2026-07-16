@@ -38,6 +38,13 @@ def test_list_mcp_tools_includes_implementation_brief():
     assert "prepare_review_packet" in names
     assert "high_level_workflow_quality" in names
     assert "external_tool_first_plan" in names
+    assert "domain_templates" in names
+    assert "suggest_domain_templates" in names
+    assert "generate_template_obligations" in names
+    assert "claim_support_packet" in names
+    assert "proof_packet_label" in names
+    assert "negative_evidence_label" in names
+    assert "capability_registry" in names
     assert tools["compare_label_code"]["deprecated"] is True
     assert tools["compare_label_code"]["replacement"] == "audit_implementation_label"
     assert tools["check_proof_obligation"]["deprecated"] is True
@@ -54,6 +61,34 @@ def test_list_mcp_tools_includes_implementation_brief():
     assert tools["audit_report_claim_boundary"]["output_contract"] == "report_claim_boundary_audit"
     assert tools["external_tool_first_plan"]["output_contract"] == "external_tool_first_plan_result"
     assert tools["prepare_review_packet"]["certifying_capable"] is False
+
+
+def test_agent_capability_registry_exposes_resolver_vocabulary_and_operator_boundary() -> None:
+    result = call_mcp_tool("capability_registry", {})
+
+    assert result["ok"] is True
+    assert "label_scoped_obligation" in result["resolver_catalog"]["target_collections"]
+    assert "global_evidence_ref_records" in result["resolver_catalog"]["global_collections"]
+    assert {item["capability"] for item in result["intentional_cli_only"]} >= {
+        "parser_benchmarks",
+        "release_validation",
+    }
+
+
+def test_agent_domain_template_tools_are_available_through_facade() -> None:
+    catalog = call_mcp_tool("domain_templates", {})
+    suggestions = call_mcp_tool(
+        "suggest_domain_templates",
+        {"label": "eq:terminal-value-base", "equation_text": "terminal value attrition discount rate"},
+    )
+    obligations = call_mcp_tool(
+        "generate_template_obligations",
+        {"template_id": "valuation_terminal_value_v1", "label": "eq:terminal-value-base"},
+    )
+
+    assert catalog["metadata"]["contract"] == "domain_template_catalog"
+    assert suggestions["matches"][0]["id"] == "valuation_terminal_value_v1"
+    assert obligations["status"] == "unverified"
 
 
 def test_call_mcp_tool_high_level_derive_from_preserves_library_contract():

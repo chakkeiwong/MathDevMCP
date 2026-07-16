@@ -68,6 +68,16 @@ _TARGET_RESOLVER_COLLECTIONS = (
     "target_text",
 )
 
+
+def document_derivation_resolver_catalog() -> dict[str, Any]:
+    """Return the closed resolver vocabulary used by CLI and MCP clients."""
+    return {
+        "schema_version": DOCUMENT_DERIVATION_RESOLVER_SCOPE_SCHEMA,
+        "global_collections": list(_GLOBAL_RESOLVER_COLLECTIONS),
+        "target_collections": list(_TARGET_RESOLVER_COLLECTIONS),
+        "target_id_rule": "omit target_id for global collections; require an exact page target_id for target collections",
+    }
+
 _PRESENTATION_FIELDS = frozenset({"markdown", "output_md", "output_json"})
 _BACKEND_PATH_KEYS = frozenset(
     {"executable", "prefix", "backend_prefix", "path_head"}
@@ -1762,6 +1772,7 @@ def _compile_artifact_indexed_page(
             "filter_id": compact["page"]["filter_id"],
             "byte_policy_version": DOCUMENT_DERIVATION_BYTE_POLICY,
             "page_token": page_token,
+            "resolver_catalog": document_derivation_resolver_catalog(),
         },
         "completeness": {
             "global_boundary": "complete",
@@ -2262,6 +2273,11 @@ def resolve_document_derivation_records(
         raise ValueError("page_token must be a non-empty string")
     if not isinstance(collection, str) or not collection:
         raise ValueError("collection must be a non-empty string")
+    valid_collections = {*_GLOBAL_RESOLVER_COLLECTIONS, *_TARGET_RESOLVER_COLLECTIONS}
+    if collection not in valid_collections:
+        raise ValueError(
+            "collection must be one of: " + ", ".join(sorted(valid_collections))
+        )
     try:
         offset_value = int(offset)
         limit_value = int(limit)
@@ -2298,7 +2314,11 @@ def resolve_document_derivation_records(
     }
     pair = (target_id, collection)
     if pair not in allowed_pairs:
-        raise ValueError("target_id and collection are outside the page token scope")
+        raise ValueError(
+            "target_id and collection are outside the page token scope; "
+            f"global collections: {', '.join(_GLOBAL_RESOLVER_COLLECTIONS)}; "
+            f"target collections: {', '.join(_TARGET_RESOLVER_COLLECTIONS)}"
+        )
     collections: dict[tuple[str | None, str], list[dict[str, Any]]] = {}
     for position, target_index in enumerate(target_indices):
         for key, records in _resolver_collections_for_target(

@@ -404,16 +404,24 @@ def _candidate_for_seed(rows: list[dict[str, Any]], seed_index: int) -> list[int
             break
         return None
     if shape == "relation_chain_continuation":
-        if seed_index == 0 or len(stack) != 2:
+        if seed_index == 0:
             return None
         previous = rows[seed_index - 1]
         descriptors = seed["environment_stack_descriptors"]
+        nested_equation_chain = (
+            previous["row_shape"] == "complete_relation"
+            and len(stack) == 2
+            and [item["kind"] for item in descriptors] == ["equation", "aligned"]
+        )
+        number_suppressed_chain = (
+            previous["row_shape"] == "relation_head"
+            and previous.get("has_nonumber") is True
+        )
         if (
             previous["explicit_labels"]
-            or previous["row_shape"] != "complete_relation"
             or previous["environment_stack"] != stack
             or previous["sequence_group"] != group
-            or [item["kind"] for item in descriptors] != ["equation", "aligned"]
+            or not (nested_equation_chain or number_suppressed_chain)
         ):
             return None
         return [seed_index - 1, seed_index]
@@ -525,7 +533,7 @@ def _normalized_target(owned_rows: list[dict[str, Any]]) -> dict[str, Any]:
         len(shapes) >= 2 and shapes[0] == "definition_head" and set(shapes[1:]) == {"relation_continuation"}
     ):
         kind, token = "aligned_definition", r"\coloneqq"
-    elif len(shapes) >= 2 and shapes[0] == "complete_relation" and set(shapes[1:]) == {
+    elif len(shapes) >= 2 and shapes[0] in {"complete_relation", "relation_head"} and set(shapes[1:]) == {
         "relation_chain_continuation"
     }:
         kind, token = "equality_chain", "="

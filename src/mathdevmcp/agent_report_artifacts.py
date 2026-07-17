@@ -19,6 +19,19 @@ def _canonical_bytes(value: Any) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode("utf-8")
 
 
+def _finalize_payload_guardrail(value: dict[str, Any]) -> int:
+    guardrail = value["payload_guardrail"]
+    guardrail["canonical_byte_count"] = 0
+    guardrail["status"] = "pending"
+    while True:
+        size = len(_canonical_bytes(value))
+        status = "met" if size <= AGENT_REPORT_TRANSPORT_BYTES else "exceeded"
+        if guardrail["canonical_byte_count"] == size and guardrail["status"] == status:
+            return size
+        guardrail["canonical_byte_count"] = size
+        guardrail["status"] = status
+
+
 def _safe_root(value: str | Path, *, create: bool) -> Path:
     root = Path(value).expanduser()
     if root.exists() and root.is_symlink():
@@ -166,19 +179,7 @@ def compact_evidence_packet(report: Mapping[str, Any], artifact: Mapping[str, An
         },
         "compact_evidence_packet",
     )
-    compact["payload_guardrail"] = {
-        "transport_target_bytes": AGENT_REPORT_TRANSPORT_BYTES,
-        "canonical_byte_count": 0,
-        "status": "pending",
-    }
-    while True:
-        size = len(_canonical_bytes(compact))
-        status = "met" if size <= AGENT_REPORT_TRANSPORT_BYTES else "exceeded"
-        guardrail = compact["payload_guardrail"]
-        if guardrail["canonical_byte_count"] == size and guardrail["status"] == status:
-            break
-        guardrail["canonical_byte_count"] = size
-        guardrail["status"] = status
+    size = _finalize_payload_guardrail(compact)
     if size > AGENT_REPORT_TRANSPORT_BYTES:
         raise ValueError("compact evidence packet exceeds the transport budget")
     return compact
@@ -197,14 +198,40 @@ def compact_audit_fix_report(result: Mapping[str, Any], artifact: Mapping[str, A
         for item in details
         if isinstance(item, dict)
     ]
+    total_ledger_count = len(ledger)
+    coverage = low.get("coverage", {}) if isinstance(low.get("coverage"), Mapping) else {}
+    compact_coverage = {
+        key: coverage[key]
+        for key in (
+            "mode",
+            "target_file",
+            "source_digest",
+            "discovered_label_count",
+            "audited_label_count",
+            "skipped_label_count",
+            "audit_complete",
+            "limit",
+        )
+        if key in coverage
+    }
+    audited_labels = coverage.get("audited_labels")
+    if isinstance(audited_labels, list):
+        compact_coverage["audited_label_preview"] = [
+            str(item.get("label"))
+            for item in audited_labels[:20]
+            if isinstance(item, Mapping) and item.get("label")
+        ]
+        compact_coverage["audited_label_preview_truncated"] = len(audited_labels) > 20
     compact = attach_contract(
         {
             "status": result.get("status"),
             "workflow": "audit_and_propose_fix",
             "answer": result.get("answer"),
             "source": low.get("source", result.get("source", {})),
-            "coverage": low.get("coverage", {}),
+            "coverage": compact_coverage,
             "repair_ledger": ledger,
+            "repair_ledger_total_count": total_ledger_count,
+            "repair_ledger_truncated": False,
             "validation": low.get("validation", {}),
             "veto_reasons": result.get("veto_reasons", []),
             "assumptions": result.get("assumptions", []),
@@ -215,12 +242,11 @@ def compact_audit_fix_report(result: Mapping[str, Any], artifact: Mapping[str, A
         },
         "compact_agent_report",
     )
-    size = len(_canonical_bytes(compact))
-    compact["payload_guardrail"] = {
-        "transport_target_bytes": AGENT_REPORT_TRANSPORT_BYTES,
-        "canonical_byte_count": size,
-        "status": "met" if size <= AGENT_REPORT_TRANSPORT_BYTES else "exceeded",
-    }
+    size = _finalize_payload_guardrail(compact)
+    while size > AGENT_REPORT_TRANSPORT_BYTES and compact["repair_ledger"]:
+        compact["repair_ledger"].pop()
+        compact["repair_ledger_truncated"] = True
+        size = _finalize_payload_guardrail(compact)
     if size > AGENT_REPORT_TRANSPORT_BYTES:
         raise ValueError("compact audit/fix report exceeds the transport budget")
     return compact
@@ -244,12 +270,7 @@ def compact_review_packet(result: Mapping[str, Any], artifact: Mapping[str, Any]
         },
         "compact_agent_report",
     )
-    size = len(_canonical_bytes(compact))
-    compact["payload_guardrail"] = {
-        "transport_target_bytes": AGENT_REPORT_TRANSPORT_BYTES,
-        "canonical_byte_count": size,
-        "status": "met" if size <= AGENT_REPORT_TRANSPORT_BYTES else "exceeded",
-    }
+    size = _finalize_payload_guardrail(compact)
     if size > AGENT_REPORT_TRANSPORT_BYTES:
         raise ValueError("compact review packet exceeds the transport budget")
     return compact
@@ -267,6 +288,39 @@ def compact_rigor_report(result: Mapping[str, Any], artifact: Mapping[str, Any])
         if isinstance(item, dict)
     ]
     selection = result.get("target_selection") if isinstance(result.get("target_selection"), dict) else {}
+    target_rows = [
+        {
+            "label": item.get("label"),
+            "line_start": item.get("line_start"),
+            "line_end": item.get("line_end"),
+            "relation_kind": item.get("normalized_target", {}).get("kind")
+            if isinstance(item.get("normalized_target"), Mapping)
+            else None,
+            "routing_role": {
+                key: item.get("routing_role", {}).get(key)
+                for key in ("role", "authority")
+                if item.get("routing_role", {}).get(key) is not None
+            }
+            if isinstance(item.get("routing_role"), Mapping)
+            else None,
+            "obligation_id": item.get("obligation_id"),
+            "obligation_digest": item.get("obligation_digest"),
+            "local_obligation_ids": [
+                obligation.get("id")
+                for obligation in item.get("local_obligations", [])
+                if isinstance(obligation, Mapping) and obligation.get("id")
+            ],
+            "downstream_integration_obligation_ids": [
+                obligation.get("id")
+                for obligation in item.get("downstream_integration_obligations", [])
+                if isinstance(obligation, Mapping) and obligation.get("id")
+            ],
+        }
+        for item in selection.get("targets", [])
+        if isinstance(item, dict)
+    ]
+    total_target_count = len(target_rows)
+    total_gap_count = len(ledger)
     compact = attach_contract(
         {
             "status": result.get("coverage", {}).get("status"),
@@ -279,51 +333,28 @@ def compact_rigor_report(result: Mapping[str, Any], artifact: Mapping[str, Any])
                 "selected_count": selection.get("selected_count"),
                 "available_labeled_equation_count": selection.get("available_labeled_equation_count"),
                 "partial_coverage": selection.get("partial_coverage"),
-                "targets": [
-                    {
-                        "label": item.get("label"),
-                        "line_start": item.get("line_start"),
-                        "line_end": item.get("line_end"),
-                        "relation_kind": item.get("normalized_target", {}).get("kind")
-                        if isinstance(item.get("normalized_target"), Mapping)
-                        else None,
-                        "routing_role": {
-                            key: item.get("routing_role", {}).get(key)
-                            for key in ("role", "authority")
-                            if item.get("routing_role", {}).get(key) is not None
-                        }
-                        if isinstance(item.get("routing_role"), Mapping)
-                        else None,
-                        "obligation_id": item.get("obligation_id"),
-                        "obligation_digest": item.get("obligation_digest"),
-                        "local_obligation_ids": [
-                            obligation.get("id")
-                            for obligation in item.get("local_obligations", [])
-                            if isinstance(obligation, Mapping) and obligation.get("id")
-                        ],
-                        "downstream_integration_obligation_ids": [
-                            obligation.get("id")
-                            for obligation in item.get("downstream_integration_obligations", [])
-                            if isinstance(obligation, Mapping) and obligation.get("id")
-                        ],
-                    }
-                    for item in selection.get("targets", [])
-                    if isinstance(item, dict)
-                ],
+                "targets": target_rows,
+                "target_total_count": total_target_count,
+                "target_preview_truncated": False,
             },
             "gap_ledger": ledger,
+            "gap_ledger_total_count": total_gap_count,
+            "gap_ledger_truncated": False,
             "non_claims": result.get("non_claims", []),
             "artifact": dict(artifact),
             "payload_guardrail": {"transport_target_bytes": AGENT_REPORT_TRANSPORT_BYTES, "status": "pending"},
         },
         "compact_agent_report",
     )
-    size = len(_canonical_bytes(compact))
-    compact["payload_guardrail"] = {
-        "transport_target_bytes": AGENT_REPORT_TRANSPORT_BYTES,
-        "canonical_byte_count": size,
-        "status": "met" if size <= AGENT_REPORT_TRANSPORT_BYTES else "exceeded",
-    }
+    size = _finalize_payload_guardrail(compact)
+    while size > AGENT_REPORT_TRANSPORT_BYTES and compact["gap_ledger"]:
+        compact["gap_ledger"].pop()
+        compact["gap_ledger_truncated"] = True
+        size = _finalize_payload_guardrail(compact)
+    while size > AGENT_REPORT_TRANSPORT_BYTES and compact["target_selection"]["targets"]:
+        compact["target_selection"]["targets"].pop()
+        compact["target_selection"]["target_preview_truncated"] = True
+        size = _finalize_payload_guardrail(compact)
     if size > AGENT_REPORT_TRANSPORT_BYTES:
         raise ValueError("compact rigor report exceeds the transport budget")
     return compact

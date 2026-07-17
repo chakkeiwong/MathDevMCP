@@ -1006,6 +1006,15 @@ def _tool_audit_math_document_rigor(args: dict[str, Any]) -> dict[str, Any]:
     response_mode = str(args.get("response_mode", "detailed"))
     if response_mode not in {"detailed", "compact"}:
         raise ValueError("response_mode must be detailed or compact")
+    audit_fix_result = args.get("audit_fix_result")
+    if audit_fix_result is None and args.get("audit_fix_artifact_root") and args.get("audit_fix_artifact_sha256"):
+        resolved = resolve_agent_report(
+            _required_string(args, "audit_fix_artifact_root"),
+            _required_string(args, "audit_fix_artifact_sha256"),
+        )
+        audit_fix_result = resolved.get("report")
+    if audit_fix_result is not None and not isinstance(audit_fix_result, dict):
+        raise ValueError("audit_fix_result must be an object")
     result = high_level_audit_math_document_rigor(
         _required_string(args, "tex_path"),
         output_md=None if response_mode == "compact" else args.get("output_md") or None,
@@ -1014,6 +1023,7 @@ def _tool_audit_math_document_rigor(args: dict[str, Any]) -> dict[str, Any]:
         max_labels=max_label_value,
         backend_env=str(args.get("backend_env", "mathdevmcp-backends")),
         validation_backends=validation_backends,
+        audit_fix_result=audit_fix_result,
     )
     if response_mode == "compact":
         artifact_root = _required_string(args, "artifact_root")

@@ -3,6 +3,7 @@ from __future__ import annotations
 """Extract source-local derivation targets from LaTeX index blocks."""
 
 import hashlib
+from functools import lru_cache
 from pathlib import Path
 import re
 from typing import Any
@@ -181,12 +182,35 @@ def _resolve_occurrence(index: dict[str, Any], label: str, file: str | None) -> 
 
 def _obligation_for_occurrence(index: dict[str, Any], occurrence: dict[str, Any], label: str) -> dict[str, Any]:
     source_path, source_ref, corpus_version = _workspace_source(index, occurrence)
-    obligations = extract_label_scoped_obligations(
-        source_path,
-        source_ref=source_ref,
-        corpus_version=corpus_version,
+    source_digest = hashlib.sha256(source_path.read_bytes()).hexdigest()
+    obligations = list(
+        _cached_source_obligations(
+            str(source_path),
+            source_ref,
+            corpus_version,
+            source_digest,
+        )
     )
     return lookup_label_scoped_obligation(obligations, label, file=source_ref)
+
+
+@lru_cache(maxsize=16)
+def _cached_source_obligations(
+    source_path: str,
+    source_ref: str,
+    corpus_version: str,
+    source_digest: str,
+) -> tuple[dict[str, Any], ...]:
+    raw = Path(source_path).read_bytes()
+    if hashlib.sha256(raw).hexdigest() != source_digest:
+        raise ValueError("source bytes changed while building the obligation cache")
+    return tuple(
+        extract_label_scoped_obligations(
+            raw,
+            source_ref=source_ref,
+            corpus_version=corpus_version,
+        )
+    )
 
 
 def _target_from_obligation(

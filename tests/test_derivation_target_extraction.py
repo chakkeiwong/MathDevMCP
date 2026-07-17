@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from mathdevmcp.derivation_target_extraction import (
+    _cached_source_obligations,
     build_proposition_context_packet,
     extract_derivation_targets,
     extract_derivation_targets_for_label,
@@ -37,6 +38,37 @@ def test_v8_nine_targets_share_typed_relation_and_source_role_contract() -> None
         assert target["routing_role"]["authority"] == "source_evidenced_role"
         assert target["routing_role"]["obligation_digest"] == target["obligation_digest"]
         assert "does not establish" in target["routing_role"]["non_claims"][0]
+
+
+def test_exact_labels_in_one_source_reuse_one_obligation_parse(monkeypatch, tmp_path: Path) -> None:
+    source = tmp_path / "two_labels.tex"
+    source.write_text(
+        r"""
+\begin{equation}a = b\label{eq:a}\end{equation}
+\begin{equation}c = d\label{eq:c}\end{equation}
+""",
+        encoding="utf-8",
+    )
+    import mathdevmcp.derivation_target_extraction as module
+
+    calls = 0
+    original = module.extract_label_scoped_obligations
+
+    def counted(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)
+
+    _cached_source_obligations.cache_clear()
+    monkeypatch.setattr(module, "extract_label_scoped_obligations", counted)
+    index = build_index(tmp_path)
+
+    first = extract_derivation_targets_for_label(index, "eq:a", file=source.name)
+    second = extract_derivation_targets_for_label(index, "eq:c", file=source.name)
+
+    assert first["status"] == second["status"] == "extracted"
+    assert calls == 1
+    _cached_source_obligations.cache_clear()
 DOCS = ROOT / "docs"
 
 

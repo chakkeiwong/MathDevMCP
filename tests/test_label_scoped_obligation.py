@@ -120,6 +120,26 @@ def test_two_explicit_labels_and_orphan_continuation_fail_closed() -> None:
     assert orphan[0]["owned_spans"] == []
 
 
+def test_number_suppressed_head_and_labeled_equality_chain_are_one_obligation() -> None:
+    source = r"""
+\begin{align}
+d\nu_t &= \beta E_t[x_t] \nonumber\\
+        &= \beta\Omega E_t[y_t].\label{eq:expanded}
+\end{align}
+"""
+
+    obligation = extract_label_scoped_obligations(source)[0]
+
+    assert obligation["extraction_state"] == "valid_complete"
+    assert obligation["adapter_eligible"] is True
+    assert obligation["normalized_target"]["kind"] == "equality_chain"
+    assert obligation["normalized_target"]["members"] == [
+        "d\\nu_t",
+        "\\beta E_t[x_t]",
+        "\\beta\\Omega E_t[y_t]",
+    ]
+
+
 def test_duplicate_bare_lookup_is_ambiguous_and_file_scoped_lookup_is_exact() -> None:
     root = ROOT / "tests/fixtures/label_scoped_obligations"
     obligations = []

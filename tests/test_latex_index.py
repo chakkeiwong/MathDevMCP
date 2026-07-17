@@ -104,6 +104,99 @@ def test_phase02_nested_aligned_rows_keep_outer_to_inner_environment_stack() -> 
     assert len({row["environment_id"] for row in rows}) == 1
 
 
+def test_index_retains_label_after_nested_aligned_as_lookup_only(tmp_path: Path) -> None:
+    source = tmp_path / "nested_suffix.tex"
+    source.write_text(
+        r"""
+\begin{equation}
+\begin{aligned}
+x &= y\\
+  &= z
+\end{aligned}
+\label{eq:nested-suffix}
+\end{equation}
+""",
+        encoding="utf-8",
+    )
+
+    index = build_index(tmp_path)
+    occurrence = index["labels"]["eq:nested-suffix"]
+
+    assert occurrence["label_source"] == "outer_display_suffix"
+    assert occurrence["target_extraction_status"] == "nested_display_ownership_required"
+    assert resolve_label_occurrences(index, "eq:nested-suffix")["status"] == "resolved"
+
+
+def test_index_retains_every_outer_label_between_nested_aligned_branches(tmp_path: Path) -> None:
+    source = tmp_path / "nested_branches.tex"
+    source.write_text(
+        r"""
+\begin{align}
+\begin{aligned}x &= 1\end{aligned}\label{eq:branch-a}\\
+\begin{aligned}x &= 2\end{aligned}\label{eq:branch-b}\\
+\begin{aligned}x &= 3\end{aligned}\label{eq:branch-c}
+\end{align}
+""",
+        encoding="utf-8",
+    )
+
+    index = build_index(tmp_path)
+
+    assert {"eq:branch-a", "eq:branch-b", "eq:branch-c"} <= set(index["labels"])
+    assert all(
+        index["labels"][label]["target_extraction_status"] == "nested_display_ownership_required"
+        for label in ("eq:branch-a", "eq:branch-b", "eq:branch-c")
+    )
+
+
+def test_outer_suffix_label_is_not_hidden_by_same_label_in_sibling_file(tmp_path: Path) -> None:
+    (tmp_path / "old.tex").write_text(
+        r"""
+\begin{equation}x = 1\label{eq:shared}\end{equation}
+""",
+        encoding="utf-8",
+    )
+    (tmp_path / "new.tex").write_text(
+        r"""
+\begin{equation}
+\begin{aligned}x &= 2\end{aligned}
+\label{eq:shared}
+\end{equation}
+""",
+        encoding="utf-8",
+    )
+
+    index = build_index(tmp_path)
+    occurrences = index["label_occurrences"]["eq:shared"]
+
+    assert {item["file"] for item in occurrences} == {"old.tex", "new.tex"}
+    new_occurrence = next(item for item in occurrences if item["file"] == "new.tex")
+    assert new_occurrence["target_extraction_status"] == "nested_display_ownership_required"
+
+
+def test_outer_suffix_duplicate_is_counted_after_explicit_row_label(tmp_path: Path) -> None:
+    (tmp_path / "duplicate.tex").write_text(
+        r"""
+\begin{align}
+x &= 1\label{eq:duplicate}\\
+\begin{aligned}x &= 2\end{aligned}\label{eq:duplicate}
+\end{align}
+""",
+        encoding="utf-8",
+    )
+
+    index = build_index(tmp_path)
+    occurrences = index["label_occurrences"]["eq:duplicate"]
+
+    assert len(occurrences) == 2
+    assert {item["label_source"] for item in occurrences} == {"outer_display_suffix"}
+    assert all(
+        item["target_extraction_status"] == "nested_display_ownership_required"
+        for item in occurrences
+    )
+    assert "eq:duplicate" in index["diagnostics"]["duplicate_labels"]
+
+
 def test_search_index_ranks_matching_blocks(tmp_path: Path):
     tex = tmp_path / "chapter.tex"
     tex.write_text(

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass, asdict
 import fnmatch
 import hashlib
@@ -373,6 +374,10 @@ def _find_label(block_text: str) -> str | None:
     return None
 
 
+def _find_labels(block_text: str) -> list[str]:
+    return [match.group(1) for match in re.finditer(r"\\label\{([^}]+)\}", block_text)]
+
+
 def _extract_title(arg: str | None) -> str | None:
     if arg is None:
         return None
@@ -609,6 +614,36 @@ def _label_occurrences(blocks: list[LatexBlock], equation_rows: list[dict]) -> d
             occurrence["environment_start_byte"] = row.get("environment_start_byte")
             occurrence["environment_end_byte"] = row.get("environment_end_byte")
             occurrences.setdefault(label, []).append(occurrence)
+
+    # A common amsmath form puts the equation label after an inner ``aligned``
+    # environment. The byte-preserving row locator intentionally emits only
+    # the inner rows, so retain the outer label for exact lookup without
+    # pretending that row-level mathematical ownership has been established.
+    for block in display_blocks:
+        physical_counts = Counter(_find_labels(block.text))
+        row_counts = Counter(
+            str(label)
+            for row in equation_rows
+            if (
+                row.get("file") == block.file
+                and block.line_start <= int(row.get("line_start", 0)) <= block.line_end
+                and block.line_start <= int(row.get("line_end", 0)) <= block.line_end
+            )
+            for label in row.get("explicit_labels", [])
+            if isinstance(label, str)
+        )
+        for label, physical_count in physical_counts.items():
+            for _ in range(max(0, physical_count - row_counts[label])):
+                occurrence = asdict(block)
+                occurrence["label"] = label
+                occurrence["block_id"] = _block_id(block.file, block.kind, block.line_start, label, None)
+                occurrence["label_source"] = "outer_display_suffix"
+                occurrence["label_span"] = None
+                occurrence["environment_id"] = None
+                occurrence["environment_start_byte"] = None
+                occurrence["environment_end_byte"] = None
+                occurrence["target_extraction_status"] = "nested_display_ownership_required"
+                occurrences.setdefault(label, []).append(occurrence)
 
     for label, values in occurrences.items():
         values.sort(

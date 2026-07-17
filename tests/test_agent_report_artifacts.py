@@ -53,8 +53,52 @@ def test_compact_audit_fix_round_trip_is_bounded_and_lossless(tmp_path: Path) ->
 
     assert compact["payload_guardrail"]["status"] == "met"
     assert compact["payload_guardrail"]["canonical_byte_count"] <= AGENT_REPORT_TRANSPORT_BYTES
+    assert compact["payload_guardrail"]["canonical_byte_count"] == len(
+        json.dumps(compact, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    )
     assert len(compact["repair_ledger"]) == 20
     assert resolved["report"] == report
+
+
+def test_compact_audit_fix_truncates_preview_but_resolves_full_report(tmp_path: Path) -> None:
+    report = _audit_fix_fixture()
+    details = report["evidence"][0]["low_level"]["proposal_details"]
+    report["evidence"][0]["low_level"]["proposal_details"] = [
+        {**details[index % len(details)], "problem": "long diagnostic " + "x" * 1000 + str(index)}
+        for index in range(200)
+    ]
+    artifact = persist_agent_report(report, tmp_path)
+
+    compact = compact_audit_fix_report(report, artifact)
+
+    assert compact["repair_ledger_truncated"] is True
+    assert compact["repair_ledger_total_count"] == 200
+    assert len(compact["repair_ledger"]) < 200
+    assert compact["payload_guardrail"]["status"] == "met"
+    assert resolve_agent_report(tmp_path, artifact["sha256"])["report"] == report
+
+
+def test_compact_audit_fix_summarizes_large_coverage_ledger(tmp_path: Path) -> None:
+    report = _audit_fix_fixture()
+    report["evidence"][0]["low_level"]["coverage"] = {
+        "mode": "explicit_labels",
+        "target_file": "source.tex",
+        "audited_label_count": 200,
+        "skipped_label_count": 0,
+        "audit_complete": True,
+        "audited_labels": [
+            {"label": f"eq:{index}", "canonical_target": {"payload": "x" * 1000}}
+            for index in range(200)
+        ],
+    }
+    artifact = persist_agent_report(report, tmp_path)
+
+    compact = compact_audit_fix_report(report, artifact)
+
+    assert compact["coverage"]["audited_label_count"] == 200
+    assert len(compact["coverage"]["audited_label_preview"]) == 20
+    assert compact["coverage"]["audited_label_preview_truncated"] is True
+    assert compact["payload_guardrail"]["status"] == "met"
 
 
 def test_compact_rigor_preserves_gap_ledger_and_round_trip(tmp_path: Path) -> None:
@@ -71,6 +115,55 @@ def test_compact_rigor_preserves_gap_ledger_and_round_trip(tmp_path: Path) -> No
     assert compact["source"] == {"file": "source.tex"}
     assert compact["gap_ledger"][0]["id"] == "gap:1"
     assert compact["payload_guardrail"]["status"] == "met"
+    assert resolve_agent_report(tmp_path, artifact["sha256"])["report"] == report
+
+
+def test_compact_rigor_truncates_large_target_and_gap_previews(tmp_path: Path) -> None:
+    report = {
+        "tex_path": "/private/source.tex",
+        "coverage": {"status": "selected_scope_complete", "gap_count": 200},
+        "target_selection": {
+            "selected_count": 200,
+            "available_labeled_equation_count": 200,
+            "partial_coverage": False,
+            "targets": [
+                {
+                    "label": f"eq:{index}",
+                    "line_start": index + 1,
+                    "line_end": index + 1,
+                    "normalized_target": {"kind": "equality"},
+                    "routing_role": {"role": "definition", "authority": "source_evidenced_role"},
+                    "obligation_id": f"obl_{index}",
+                    "obligation_digest": "d" * 64,
+                    "local_obligations": [{"id": f"local_{index}_{j}"} for j in range(10)],
+                    "downstream_integration_obligations": [{"id": f"downstream_{index}_{j}"} for j in range(10)],
+                }
+                for index in range(200)
+            ],
+        },
+        "gaps": [
+            {
+                "id": f"gap:{index}",
+                "kind": "review",
+                "label": f"eq:{index}",
+                "location": "source.tex > " + "x" * 500,
+                "problem": "Unverified " + "y" * 500,
+            }
+            for index in range(200)
+        ],
+        "non_claims": [{"code": "not_proof", "text": "Not proof."}],
+    }
+    artifact = persist_agent_report(report, tmp_path)
+
+    compact = compact_rigor_report(report, artifact)
+
+    assert compact["target_selection"]["target_total_count"] == 200
+    assert compact["gap_ledger_total_count"] == 200
+    assert compact["target_selection"]["target_preview_truncated"] or compact["gap_ledger_truncated"]
+    assert compact["payload_guardrail"]["status"] == "met"
+    assert compact["payload_guardrail"]["canonical_byte_count"] == len(
+        json.dumps(compact, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    )
     assert resolve_agent_report(tmp_path, artifact["sha256"])["report"] == report
 
 

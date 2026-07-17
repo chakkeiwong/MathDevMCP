@@ -181,6 +181,72 @@ def test_audit_math_document_rigor_selects_requested_backend_env(monkeypatch, tm
     assert result["backend_provenance"]["doctor"]["capabilities"]["lean_dojo"]["environment_scope"] == "backend_python"
 
 
+def test_audit_math_document_rigor_reuses_exact_audit_fix_evidence(monkeypatch, tmp_path: Path) -> None:
+    tex = tmp_path / "toy.tex"
+    _write_fixture(tex)
+    digest = hashlib.sha256(tex.read_bytes()).hexdigest()
+    reused = {
+        "workflow": "audit_and_propose_fix",
+        "evidence": [
+            {
+                "low_level": {
+                    "source": {"file": tex.name, "source_digest": digest},
+                    "coverage": {
+                        "audit_complete": True,
+                        "audited_labels": [{"label": "eq:toy-npv"}],
+                    },
+                    "agent_handoff": {"proposal_details": []},
+                    "tool_uses": [],
+                }
+            }
+        ],
+    }
+
+    def fail_recompute(*args, **kwargs):
+        raise AssertionError("audit_and_propose_fix should not be recomputed")
+
+    monkeypatch.setattr("mathdevmcp.math_document_rigor.audit_and_propose_fix", fail_recompute)
+
+    result = audit_math_document_rigor(
+        tex,
+        focus_labels=["eq:toy-npv"],
+        max_labels=1,
+        audit_fix_result=reused,
+    )
+
+    tool_use = next(item for item in result["tool_uses"] if item["tool"] == "audit_and_propose_fix")
+    assert tool_use["arguments"]["reused_exact_evidence"] is True
+
+
+def test_audit_math_document_rigor_rejects_reused_evidence_without_source_file(tmp_path: Path) -> None:
+    tex = tmp_path / "toy.tex"
+    _write_fixture(tex)
+    reused = {
+        "workflow": "audit_and_propose_fix",
+        "evidence": [
+            {
+                "low_level": {
+                    "source": {"source_digest": hashlib.sha256(tex.read_bytes()).hexdigest()},
+                    "coverage": {
+                        "audit_complete": True,
+                        "audited_labels": [{"label": "eq:toy-npv"}],
+                    },
+                }
+            }
+        ],
+    }
+
+    import pytest
+
+    with pytest.raises(ValueError, match="source file does not match"):
+        audit_math_document_rigor(
+            tex,
+            focus_labels=["eq:toy-npv"],
+            max_labels=1,
+            audit_fix_result=reused,
+        )
+
+
 def test_gaps_from_fix_report_preserves_singular_evidence_ref() -> None:
     gaps, proposals = _gaps_from_fix_report(
         {

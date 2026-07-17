@@ -581,6 +581,34 @@ def _extract_fix_report(high_level: dict[str, Any]) -> dict[str, Any]:
     return {}
 
 
+def _validated_reused_fix_result(
+    high_level: dict[str, Any],
+    *,
+    path: Path,
+    target_labels: list[str],
+) -> dict[str, Any]:
+    if high_level.get("workflow") != "audit_and_propose_fix":
+        raise ValueError("reused audit/fix evidence must be an audit_and_propose_fix workflow result")
+    low = _extract_fix_report(high_level)
+    source = low.get("source") if isinstance(low.get("source"), dict) else {}
+    expected_digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    if source.get("source_digest") != expected_digest:
+        raise ValueError("reused audit/fix evidence source digest does not match the target document")
+    source_file = source.get("file") or source.get("target_file")
+    if not isinstance(source_file, str) or Path(source_file).name != path.name:
+        raise ValueError("reused audit/fix evidence source file does not match the target document")
+    coverage = low.get("coverage") if isinstance(low.get("coverage"), dict) else {}
+    audited = coverage.get("audited_labels")
+    audited_labels = {
+        str(item.get("label"))
+        for item in audited
+        if isinstance(item, dict) and item.get("label")
+    } if isinstance(audited, list) else set()
+    if audited_labels != set(target_labels) or coverage.get("audit_complete") is not True:
+        raise ValueError("reused audit/fix evidence does not exactly cover the requested labels")
+    return high_level
+
+
 def _gaps_from_fix_report(fix_report: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     gaps: list[dict[str, Any]] = []
     proposals: list[dict[str, Any]] = []
@@ -671,6 +699,7 @@ def audit_math_document_rigor(
     max_labels: int | None = DEFAULT_LABEL_LIMIT,
     backend_env: str = "mathdevmcp-backends",
     validation_backends: list[str] | None = None,
+    audit_fix_result: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Run a focused document-rigor audit and optionally write Markdown/JSON artifacts."""
     path = Path(tex_path)
@@ -701,22 +730,31 @@ def audit_math_document_rigor(
     fix_report: dict[str, Any] = {}
     if target_labels:
         source_digest = hashlib.sha256(path.read_bytes()).hexdigest()
-        fix_high_level = audit_and_propose_fix(
-            "Audit selected document labels for mathematical rigor gaps and proposed repairs",
-            root=str(path.parent),
-            labels=target_labels,
-            target_file=path.name,
-            source_digest=source_digest,
-            backend="sympy",
-            validate_proposed_fixes=True,
-            backend_order=validation_backends or ["lean", "sage", "sympy"],
-            output_path=None,
-        )
+        if audit_fix_result is not None:
+            fix_high_level = _validated_reused_fix_result(
+                audit_fix_result,
+                path=path,
+                target_labels=target_labels,
+            )
+        else:
+            fix_high_level = audit_and_propose_fix(
+                "Audit selected document labels for mathematical rigor gaps and proposed repairs",
+                root=str(path.parent),
+                labels=target_labels,
+                target_file=path.name,
+                source_digest=source_digest,
+                backend="sympy",
+                validate_proposed_fixes=True,
+                backend_order=validation_backends or ["lean", "sage", "sympy"],
+                output_path=None,
+            )
         fix_report = _extract_fix_report(fix_high_level)
         tool_uses.append(
             _tool_use(
                 "audit_and_propose_fix",
-                "Audit selected labels and propose concrete derivation/evidence repairs.",
+                "Reuse exact audit/fix evidence for rigor synthesis."
+                if audit_fix_result is not None
+                else "Audit selected labels and propose concrete derivation/evidence repairs.",
                 fix_report.get("status", fix_high_level.get("status", "unknown")),
                 "high_level_workflow_result",
                 {
@@ -725,6 +763,7 @@ def audit_math_document_rigor(
                     "source_digest": source_digest,
                     "labels": target_labels,
                     "validate_proposed_fixes": True,
+                    "reused_exact_evidence": audit_fix_result is not None,
                 },
             )
         )

@@ -6,6 +6,9 @@ from pathlib import Path
 from .latex_index import build_index, iter_tex_files
 
 
+INDEX_CACHE_SCHEMA_VERSION = "latex_index_cache@2"
+
+
 def _index_fingerprint(root: Path) -> dict:
     root = root.resolve()
     files = []
@@ -18,7 +21,7 @@ def _index_fingerprint(root: Path) -> dict:
                 "size": stat.st_size,
             }
         )
-    return {"root": str(root), "files": files}
+    return {"schema_version": INDEX_CACHE_SCHEMA_VERSION, "root": str(root), "files": files}
 
 
 def _read_cached_index(cache_path: Path) -> dict | None:

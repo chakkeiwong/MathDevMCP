@@ -457,6 +457,9 @@ def test_open_run_rejects_manifest_code_identity_cross_binding(
         "code_identity_digest": "2" * 64,
     }
     monkeypatch.setattr(p08, "PHASE_ROOT", phase)
+    monkeypatch.setattr(p08, "P08_PYTHON", sys.executable)
+    manifest["python_executable"] = sys.executable
+    (run_root / "run-manifest.json").write_bytes(p08._canonical(manifest))
     monkeypatch.setattr(p08, "_verify_code_identity", lambda *args: identity)
     with pytest.raises(p08.Phase08Error, match="cross-binding"):
         p08._open_run(tmp_path, run_ref)

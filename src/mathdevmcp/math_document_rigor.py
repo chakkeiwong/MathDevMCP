@@ -17,6 +17,9 @@ from .contracts import attach_contract
 from .doctor import doctor_report
 from .equation_locator import locate_equations_in_file, summarize_equation_localization
 from .lean_readiness import lean_readiness
+from .derivation_target_extraction import extract_derivation_targets_for_label
+from .latex_index import build_index
+from .role_obligations import build_role_specific_obligations, has_role_specific_builder
 
 
 RIGOR_AUDIT_CONTRACT = "math_document_rigor_audit"
@@ -142,17 +145,47 @@ def _select_rows(
 
 
 def _target_entries(tex_path: Path, rows: list[dict[str, Any]], sections: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    index = build_index(tex_path.parent)
     entries: list[dict[str, Any]] = []
     for row in rows:
+        label = str(row.get("label", ""))
+        extraction = extract_derivation_targets_for_label(index, label, file=tex_path.name) if label else {}
+        targets = extraction.get("targets", []) if isinstance(extraction, dict) else []
+        canonical = targets[0] if len(targets) == 1 and isinstance(targets[0], dict) else None
+        routing_role = canonical.get("routing_role", {}) if isinstance(canonical, dict) else {}
+        role_obligations: dict[str, Any] | None = None
+        if (
+            isinstance(canonical, dict)
+            and isinstance(routing_role, dict)
+            and has_role_specific_builder(routing_role, target=str(canonical.get("target", "")))
+        ):
+            role_obligations = build_role_specific_obligations(
+                target=str(canonical.get("target", "")),
+                normalized_target=canonical.get("normalized_target", {}),
+                routing_role=routing_role,
+                evidence_refs=[
+                    f"source:{canonical.get('label_scoped_obligation', {}).get('document', {}).get('source_digest')}:{canonical.get('obligation_digest')}",
+                    f"routing_role:{routing_role.get('role_id', routing_role.get('role', 'unknown'))}",
+                ],
+            )
         entries.append(
             {
-                "label": row.get("label"),
-                "location": _row_location(tex_path, row, sections),
-                "line_start": row.get("line_start"),
-                "line_end": row.get("line_end"),
-                "environment": row.get("environment"),
-                "claim_type": _classify_equation(row),
-                "text": row.get("text"),
+                "label": label,
+                "location": _row_location(tex_path, canonical or row, sections),
+                "line_start": canonical.get("line_start") if canonical else row.get("line_start"),
+                "line_end": canonical.get("line_end") if canonical else row.get("line_end"),
+                "environment": canonical.get("environment") if canonical else row.get("environment"),
+                "claim_type": routing_role.get("role", "unsupported_or_ambiguous"),
+                "text": canonical.get("target") if canonical else row.get("text"),
+                "normalized_target": canonical.get("normalized_target") if canonical else None,
+                "routing_role": routing_role or None,
+                "obligation_id": canonical.get("obligation_id") if canonical else None,
+                "obligation_digest": canonical.get("obligation_digest") if canonical else None,
+                "local_obligations": role_obligations.get("local_obligations", []) if role_obligations else [],
+                "downstream_integration_obligations": role_obligations.get("downstream_integration_obligations", []) if role_obligations else [],
+                "possible_assumption_sets": role_obligations.get("possible_assumption_sets", []) if role_obligations else [],
+                "role_derivation_route": role_obligations.get("derivation_route", []) if role_obligations else [],
+                "role_obligation_non_claims": role_obligations.get("non_claims", []) if role_obligations else [],
                 "uncertainty": row.get("uncertainty", []),
             }
         )
@@ -717,6 +750,7 @@ def audit_math_document_rigor(
     }
     result = {
         "tex_path": str(path),
+        "source": {"file": path.name, "source_digest": hashlib.sha256(path.read_bytes()).hexdigest()},
         "backend_env": backend_env,
         "backend_provenance": backend,
         "document_inventory": plan["document_inventory"],
@@ -861,6 +895,82 @@ def render_math_document_rigor_markdown(result: dict[str, Any]) -> str:
         lines.append(f"- `{_md(item.get('code', ''))}`: {_md(item.get('text', ''))}")
     lines.append("")
     return "\n".join(lines)
+
+
+def render_compact_math_document_rigor_markdown(
+    result: dict[str, Any],
+    *,
+    artifact: dict[str, Any] | None = None,
+) -> str:
+    """Render a bounded all-target rigor summary with detailed artifact linkage."""
+    coverage = result.get("coverage") if isinstance(result.get("coverage"), dict) else {}
+    source = result.get("source") if isinstance(result.get("source"), dict) else {}
+    lines = [
+        "# Compact Math Document Rigor Audit",
+        "",
+        f"Source: `{source.get('file', Path(str(result.get('tex_path', ''))).name)}`",
+        f"Source SHA-256: `{source.get('source_digest', '')}`",
+        f"Coverage: `{coverage.get('status', '')}`; targets `{coverage.get('selected_count', 0)}`; gaps `{coverage.get('gap_count', 0)}`; concrete repairs `{coverage.get('concrete_repair_count', 0)}`; diagnostic abstentions `{coverage.get('diagnostic_abstention_count', 0)}`",
+        "",
+        "This is a bounded transport summary. Exact detailed records remain available through `resolve_agent_report`.",
+    ]
+    if isinstance(artifact, dict):
+        lines.extend(
+            [
+                f"Detailed artifact: `{artifact.get('sha256', '')}` ({artifact.get('byte_count', 0)} bytes; state `{artifact.get('state', '')}`).",
+                "",
+            ]
+        )
+    lines.extend(
+        [
+            "| Label | Relation | Source role | Line |",
+            "| --- | --- | --- | ---: |",
+        ]
+    )
+    for target in result.get("target_selection", {}).get("targets", []):
+        if not isinstance(target, dict):
+            continue
+        normalized = target.get("normalized_target") if isinstance(target.get("normalized_target"), dict) else {}
+        role = target.get("routing_role") if isinstance(target.get("routing_role"), dict) else {}
+        lines.append(
+            f"| `{_md(target.get('label', ''))}` | `{_md(normalized.get('kind', 'unavailable'))}` | "
+            f"`{_md(role.get('role', target.get('claim_type', 'unsupported_or_ambiguous')) )}` | {target.get('line_start', '')} |"
+        )
+    lines.extend(["", "## Gap Ledger", "", "| Label | Classification | Problem | Evidence |", "| --- | --- | --- | --- |"])
+    for gap in result.get("gaps", []):
+        if not isinstance(gap, dict):
+            continue
+        refs = ", ".join(str(item) for item in gap.get("evidence_refs", []))
+        lines.append(
+            f"| `{_md(gap.get('label', gap.get('id', '')))}` | "
+            f"`{_md(gap.get('substantive_classification', DIAGNOSTIC_ABSTENTION_CLASS))}` | "
+            f"{_md(gap.get('problem', ''))} | `{_md(refs)}` |"
+        )
+    lines.extend(["", "## Role-Specific Obligation Ledger", ""])
+    for target in result.get("target_selection", {}).get("targets", []):
+        if not isinstance(target, dict):
+            continue
+        local = [item for item in target.get("local_obligations", []) if isinstance(item, dict)]
+        downstream = [item for item in target.get("downstream_integration_obligations", []) if isinstance(item, dict)]
+        lines.extend(
+            [
+                f"### `{_md(target.get('label', 'target'))}`",
+                "",
+                f"- Local obligations: `{_md([item.get('id') for item in local])}`",
+                f"- Downstream-only integration obligations: `{_md([item.get('id') for item in downstream])}`",
+                "- Boundary: the source role selects relevant checks but does not establish their assumptions or truth.",
+                "",
+            ]
+        )
+    lines.extend(["", "## Boundaries", ""])
+    for item in result.get("non_claims", []):
+        if isinstance(item, dict):
+            lines.append(f"- `{_md(item.get('code', ''))}`: {_md(item.get('text', ''))}")
+    lines.append("")
+    rendered = "\n".join(lines)
+    if len(rendered.encode("utf-8")) > 30_720:
+        raise ValueError("compact rigor Markdown exceeds the transport budget")
+    return rendered
 
 
 def _append_proposal_markdown(lines: list[str], proposal: dict[str, Any], *, index: int, diagnostic: bool = False) -> None:

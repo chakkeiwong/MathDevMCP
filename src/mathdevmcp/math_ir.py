@@ -597,11 +597,11 @@ def _route_hints(suitability: Suitability, unresolved_constructs: list[str], con
 
 def _has_apostrophe_transpose(text: str) -> bool:
     """Detect matrix/vector transpose primes without treating scalar time primes as transpose."""
-    return bool(
-        re.search(r"\\[A-Za-z][A-Za-z0-9]*'", text)
-        or re.search(r"\b[A-Z][A-Za-z0-9]*(?:_\{?[A-Za-z0-9|+\-]+\}?)?'", text)
-        or re.search(r"\b[a-z][A-Za-z0-9]*_\{?[A-Za-z0-9|+\-]+\}?'", text)
-    )
+    operand = r"(?:\\[A-Za-z][A-Za-z0-9]*|[A-Za-z][A-Za-z0-9]*(?:_\{?[A-Za-z0-9|+\-]+\}?)?)"
+    spacing = r"(?:\s|\\[,;! ])*"
+    # A bare prime commonly denotes a next-period scalar/state. Require a
+    # following operand, as in x' A or A'x, before treating it as transpose.
+    return bool(re.search(rf"{operand}'{spacing}(?={operand})", text))
 
 
 def _unresolved(text: str) -> list[str]:

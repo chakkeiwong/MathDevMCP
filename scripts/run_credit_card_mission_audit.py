@@ -267,12 +267,12 @@ def main() -> None:
     invoke("assumptions_for", {"target": TV_TARGET, "provided_assumptions": ["r_disc + lambda_attrition + q != 0"]}, records)
     assumptions_report = invoke(
         "audit_and_propose_assumptions",
-        {"question": "Which assumptions are required by the selected credit-card valuation equations?", "root": str(DOC_ROOT), "labels": FOCUS_LABELS, "target": TV_TARGET, "provided_assumptions": ["r_disc + lambda_attrition + q != 0"]},
+        {"question": "Which assumptions are required by the selected credit-card valuation equations?", "root": str(DOC_ROOT), "labels": FOCUS_LABELS, "file": SOURCE.name, "source_digest": source_digest, "target": TV_TARGET, "provided_assumptions": ["r_disc + lambda_attrition + q != 0"]},
         records,
     )
     derivations_report = invoke(
         "audit_and_propose_derivations",
-        {"question": "Which derivation steps are unsupported in the selected credit-card valuation equations?", "root": str(DOC_ROOT), "labels": FOCUS_LABELS, "target": TV_TARGET, "givens": [DCF_TARGET], "assumptions": ["r_disc + lambda_attrition + q != 0"], "backend": "auto"},
+        {"question": "Which derivation steps are unsupported in the selected credit-card valuation equations?", "root": str(DOC_ROOT), "labels": FOCUS_LABELS, "file": SOURCE.name, "source_digest": source_digest, "target": TV_TARGET, "givens": [DCF_TARGET], "assumptions": ["r_disc + lambda_attrition + q != 0"], "backend": "auto"},
         records,
     )
     invoke(

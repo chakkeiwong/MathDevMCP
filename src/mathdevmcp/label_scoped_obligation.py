@@ -96,6 +96,8 @@ ROW_SHAPES = frozenset(
     {
         "complete_relation",
         "complete_definition",
+        "complete_conditional_expectation",
+        "complete_conditional_independence",
         "relation_head",
         "definition_head",
         "relation_continuation",
@@ -128,7 +130,16 @@ DIAGNOSTIC_CODES = frozenset(
         "unknown_row_shape",
     }
 )
-TARGET_KINDS = frozenset({"equality", "equality_chain", "aligned_definition", "unavailable"})
+TARGET_KINDS = frozenset(
+    {
+        "equality",
+        "equality_chain",
+        "aligned_definition",
+        "conditional_expectation_object",
+        "conditional_independence",
+        "unavailable",
+    }
+)
 OPERATOR_ORDER = (
     "definition",
     "equality",
@@ -331,6 +342,15 @@ def classify_display_row(row: Mapping[str, Any]) -> str:
         if row.get("has_nonumber") is True and row.get("had_row_terminator") is True:
             return "definition_head"
         return "complete_definition"
+    expectation = re.fullmatch(
+        r"(?:\\E|\\mathbb\{E\})(?:\\!)*\\left\[(.+)\\right\]",
+        text,
+        flags=re.DOTALL,
+    )
+    if expectation and r"\mid" in expectation.group(1):
+        return "complete_conditional_expectation"
+    if re.search(r"\\perp(?:\\!)*\\perp", text) and r"\mid" in text:
+        return "complete_conditional_independence"
     if _CONTINUATION_PREFIX_RE.match(text):
         return "relation_continuation"
     return "unknown"
@@ -356,7 +376,7 @@ def _candidate_for_seed(rows: list[dict[str, Any]], seed_index: int) -> list[int
             candidate.append(cursor)
             cursor += 1
         return candidate
-    if shape == "complete_definition":
+    if shape in {"complete_definition", "complete_conditional_expectation", "complete_conditional_independence"}:
         return [seed_index]
     if shape in {"relation_head", "definition_head"}:
         candidate = [seed_index]
@@ -509,6 +529,41 @@ def _normalized_target(owned_rows: list[dict[str, Any]]) -> dict[str, Any]:
         "relation_chain_continuation"
     }:
         kind, token = "equality_chain", "="
+    elif shapes == ["complete_conditional_expectation"]:
+        joined = " ".join(transformed)
+        match = re.fullmatch(
+            r"(?:\\E|\\mathbb\{E\})(?:\\!)*\\left\[(.+)\\right\]",
+            joined,
+            flags=re.DOTALL,
+        )
+        if match is None or r"\mid" not in match.group(1):
+            return unavailable
+        integrand, condition = [item.strip() for item in match.group(1).rsplit(r"\mid", 1)]
+        if not integrand or not condition:
+            return unavailable
+        return {
+            "kind": "conditional_expectation_object",
+            "members": [integrand, condition],
+            "display_text": joined,
+            "complete_lhs_rhs": True,
+            "normalization_version": NORMALIZATION_VERSION,
+        }
+    elif shapes == ["complete_conditional_independence"]:
+        joined = " ".join(transformed)
+        relation = re.search(r"\\perp(?:\\!)*\\perp", joined)
+        if relation is None or r"\mid" not in joined[relation.end() :]:
+            return unavailable
+        lhs = joined[: relation.start()].strip()
+        rhs, condition = [item.strip() for item in joined[relation.end() :].rsplit(r"\mid", 1)]
+        if not lhs or not rhs or not condition:
+            return unavailable
+        return {
+            "kind": "conditional_independence",
+            "members": [lhs, rhs, condition],
+            "display_text": joined,
+            "complete_lhs_rhs": True,
+            "normalization_version": NORMALIZATION_VERSION,
+        }
     else:
         return unavailable
     joined = " ".join(transformed)

@@ -73,8 +73,13 @@ def build_proof_packet_label(
             "obligation_id": target.get("obligation_id"),
             "obligation_digest": target.get("obligation_digest"),
             "target": target.get("target"),
+            "normalized_target": target.get("normalized_target"),
+            "routing_role": target.get("routing_role"),
+            "specialist_execution": target.get("specialist_execution"),
             "source_digest": target.get("label_scoped_obligation", {}).get("document", {}).get("source_digest"),
             "target_ingress": "validated_label_scoped_obligation",
+            "source_binding_status": audit.get("source_binding_status"),
+            "specialist_parser_readiness": audit.get("specialist_parser_readiness"),
         }
         if isinstance(target, dict)
         else {
@@ -82,6 +87,11 @@ def build_proof_packet_label(
             "file": file,
             "source_digest": source_digest,
             "status": "unresolved_source_target",
+            "normalized_target": None,
+            "routing_role": None,
+            "specialist_execution": None,
+            "source_binding_status": audit.get("source_binding_status"),
+            "specialist_parser_readiness": audit.get("specialist_parser_readiness"),
         }
     )
     packet = ProofPacket(

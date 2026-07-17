@@ -108,6 +108,32 @@ def test_mcp_server_high_level_workflows_return_contract_envelopes():
     assert packet["certification_source"] == "none"
 
 
+def test_mcp_server_report_selectors_are_forwarded(tmp_path):
+    import hashlib
+
+    source = tmp_path / "current.tex"
+    source.write_text(r"\begin{equation}\label{eq:shared} x = 2 \end{equation}", encoding="utf-8")
+    digest = hashlib.sha256(source.read_bytes()).hexdigest()
+
+    assumptions = audit_and_propose_assumptions(
+        "Audit exact",
+        root=str(tmp_path),
+        labels=["eq:shared"],
+        file=source.name,
+        source_digest=digest,
+    )
+    derivations = audit_and_propose_derivations(
+        "Audit exact",
+        root=str(tmp_path),
+        labels=["eq:shared"],
+        file=source.name,
+        source_digest=digest,
+    )
+
+    assert assumptions["coverage"]["label_selection"][0]["selection_status"] == "selected"
+    assert derivations["coverage"]["label_selection"][0]["selection_status"] == "selected"
+
+
 def test_mcp_server_prepare_review_packet_preserves_phase6_packet_fields():
     derived = derive_from("a + b = b + a", givens=["a,b are scalars"])
     code = audit_math_to_code(

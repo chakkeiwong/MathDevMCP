@@ -28,11 +28,14 @@ from .derivation_search_tree import PROMOTION_BOUNDARY, branch_promotion_report
 from .derivation_target_extraction import build_proposition_context_packet, extract_derivation_targets_for_label
 from .derivation_tree_expansion import expand_tree_with_hypotheses
 from .derivation_tree_report import render_derivation_tree_report
+from .document_evidence_binding import build_document_evidence_binding
 from .doctor import doctor_report
 from .equation_locator import DISPLAY_ENVIRONMENTS, locate_equations_in_file, summarize_equation_localization
 from .latex_index import build_index, extract_paragraph_context_for_label
+from .label_scoped_obligation import FROZEN_CORPUS_VERSION
 from .math_ir import typed_repair_obligation_from_packet
 from .math_document_rigor import _classify_equation, _label_ref_hygiene, _section_map, _section_path_for_line
+from .role_obligations import build_role_specific_obligations, has_role_specific_builder
 
 
 DOCUMENT_DERIVATION_TREE_CONTRACT = "document_derivation_tree_audit"
@@ -124,8 +127,24 @@ def _sentence(value: Any) -> str:
     return text if text.endswith((".", "!", "?")) else f"{text}."
 
 
-def _effective_document_promotion(raw_promotion: dict[str, Any] | None = None) -> dict[str, Any]:
+def _effective_document_promotion(
+    raw_promotion: dict[str, Any] | None = None,
+    *,
+    current_binding: bool = False,
+) -> dict[str, Any]:
     raw = raw_promotion if isinstance(raw_promotion, dict) else {}
+    if current_binding:
+        return {
+            "can_promote": False,
+            "supported_status": None,
+            "reason": "Document promotion is disabled; current evidence identity does not establish claim eligibility.",
+            "errors": [DOCUMENT_PUBLICATION_VETO_ID],
+            "evidence_refs": [str(ref) for ref in raw.get("evidence_refs", []) if str(ref)],
+            "boundary": (
+                "Current source, obligation, branch, tool, input, and result binding establishes replayable identity only. "
+                "Mathematical closure, scientific validity, edit approval, and publication authority remain separate gates."
+            ),
+        }
     return {
         "can_promote": False,
         "supported_status": None,
@@ -148,6 +167,45 @@ def _legacy_document_integrity_binding() -> dict[str, Any]:
         "claim_eligibility": DOCUMENT_CLAIM_ELIGIBILITY,
         "publication_enabled": DOCUMENT_PUBLICATION_ENABLED,
     }
+
+
+def _current_document_integrity_binding(binding: dict[str, Any]) -> dict[str, Any]:
+    """Project a verified binding without duplicating its full evidence payload."""
+    return {
+        "evidence_schema_version": str(binding.get("schema_version", "1.0")),
+        "integrity_binding_status": binding.get("integrity_binding_status"),
+        "integrity_binding_verified": binding.get("integrity_binding_verified") is True,
+        "claim_eligibility": DOCUMENT_CLAIM_ELIGIBILITY,
+        "publication_enabled": DOCUMENT_PUBLICATION_ENABLED,
+        "document_evidence_binding_ref": {
+            "binding_id": binding.get("binding_id"),
+            "binding_digest": binding.get("binding_digest"),
+        },
+    }
+
+
+def _integrity_from(value: dict[str, Any]) -> dict[str, Any]:
+    binding = value.get("document_evidence_binding")
+    if (
+        isinstance(binding, dict)
+        and isinstance(binding.get("binding_id"), str)
+        and isinstance(binding.get("binding_digest"), str)
+    ):
+        return _current_document_integrity_binding(binding)
+    if value.get("evidence_schema_version") == "1.0" and value.get("integrity_binding_verified") is True:
+        return {
+            key: value[key]
+            for key in (
+                "evidence_schema_version",
+                "integrity_binding_status",
+                "integrity_binding_verified",
+                "claim_eligibility",
+                "publication_enabled",
+                "document_evidence_binding_ref",
+            )
+            if key in value
+        }
+    return _legacy_document_integrity_binding()
 
 
 def _document_attempt_view(attempt: dict[str, Any]) -> dict[str, Any]:
@@ -1651,6 +1709,9 @@ def _branch_context_for_report(
 
 def _quarantine_branch_ranking(ranking: dict[str, Any], branches: list[dict[str, Any]]) -> dict[str, Any]:
     branch_by_id = {str(branch.get("id")): branch for branch in branches if branch.get("id")}
+    current_binding = bool(branches) and all(
+        branch.get("integrity_binding_verified") is True for branch in branches
+    )
     quarantined = dict(ranking)
     quarantined_rankings: list[dict[str, Any]] = []
     for item in ranking.get("rankings", []) if isinstance(ranking.get("rankings"), list) else []:
@@ -1660,19 +1721,33 @@ def _quarantine_branch_ranking(ranking: dict[str, Any], branches: list[dict[str,
         branch = branch_by_id.get(str(entry.get("branch_id")), {})
         evidence = branch.get("backend_evidence") if isinstance(branch.get("backend_evidence"), dict) else {}
         raw = evidence.get("raw_promotion") if isinstance(evidence.get("raw_promotion"), dict) else {}
-        entry["promotion"] = _effective_document_promotion(raw)
+        entry_current_binding = evidence.get("integrity_binding_verified") is True
+        entry["promotion"] = _effective_document_promotion(raw, current_binding=entry_current_binding)
         if raw.get("can_promote"):
-            entry["outcome"] = "legacy_evidence_unbound"
-            entry["explanation"] = (
-                "Raw lower-level backend evidence affected diagnostic ordering, but exact document binding is absent; "
-                "the effective promotion decision is false."
-            )
+            if entry_current_binding:
+                entry["outcome"] = "identity_bound_claim_ineligible"
+                entry["explanation"] = (
+                    "Raw lower-level backend evidence affected diagnostic ordering and has replayable identity, "
+                    "but identity binding does not establish claim or publication authority; the effective "
+                    "promotion decision is false."
+                )
+            else:
+                entry["outcome"] = "legacy_evidence_unbound"
+                entry["explanation"] = (
+                    "Raw lower-level backend evidence affected diagnostic ordering, but exact document binding "
+                    "is absent; the effective promotion decision is false."
+                )
         quarantined_rankings.append(entry)
     quarantined["rankings"] = quarantined_rankings
     quarantined["publication_mode"] = DOCUMENT_PUBLICATION_MODE
-    quarantined["boundary"] = (
-        f"{ranking.get('boundary', '')} Document-level promotion is quarantined until exact binding exists."
-    ).strip()
+    binding_boundary = (
+        "Current evidence has replayable identity, but document-level promotion remains quarantined because "
+        "identity binding does not establish mathematical closure, claim eligibility, edit approval, or "
+        "publication authority."
+        if current_binding
+        else "Document-level promotion is quarantined until exact binding exists."
+    )
+    quarantined["boundary"] = f"{ranking.get('boundary', '')} {binding_boundary}".strip()
     return quarantined
 
 
@@ -1703,7 +1778,7 @@ def _document_backend_evidence_view(branch: dict[str, Any]) -> dict[str, Any]:
     evidence = branch.get("backend_evidence") if isinstance(branch.get("backend_evidence"), dict) else {}
     raw = evidence.get("raw_promotion") if isinstance(evidence.get("raw_promotion"), dict) else {}
     return {
-        **_legacy_document_integrity_binding(),
+        **_integrity_from(evidence),
         "status": evidence.get("status"),
         "binding_status": evidence.get("binding_status", "no_branch_evidence"),
         "failure_classification": evidence.get("failure_classification"),
@@ -1711,7 +1786,10 @@ def _document_backend_evidence_view(branch: dict[str, Any]) -> dict[str, Any]:
         "backend_attempt_count": evidence.get("backend_attempt_count", 0),
         "translation_attempt_count": evidence.get("translation_attempt_count", 0),
         "translation_blocker_count": evidence.get("translation_blocker_count", 0),
-        "promotion": _effective_document_promotion(raw),
+        "promotion": _effective_document_promotion(
+            raw,
+            current_binding=evidence.get("integrity_binding_verified") is True,
+        ),
         "raw_evidence_refs": [str(ref) for ref in raw.get("evidence_refs", []) if str(ref)],
         "boundary": evidence.get("boundary", PROMOTION_BOUNDARY),
     }
@@ -1797,7 +1875,7 @@ def _common_document_repair_payload(
     remaining_blockers: list[dict[str, Any]],
 ) -> dict[str, Any]:
     return {
-        **_legacy_document_integrity_binding(),
+        **_integrity_from(branch),
         "target_label": packet.get("label"),
         "location": packet.get("location"),
         "source_span": packet.get("display_source_span") or packet.get("source_span", {}),
@@ -2083,7 +2161,7 @@ def _compiled_item(
             veto_ids.append(veto_id)
 
     return {
-        **_legacy_document_integrity_binding(),
+        **_integrity_from(item),
         "id": item.get("id"),
         "type": item_type,
         "target_label": item.get("target_label"),
@@ -2267,7 +2345,7 @@ def _compile_tool_grounded_proposal_report(
     else:
         status = "no_publishable_items"
     result = {
-        **_legacy_document_integrity_binding(),
+        **_integrity_from(root),
         "status": status,
         "publication_mode": DOCUMENT_PUBLICATION_MODE,
         "publication_veto_ids": [DOCUMENT_PUBLICATION_VETO_ID],
@@ -2550,7 +2628,7 @@ def _semantic_packet_from_label_scoped_target(
         raise ValueError("label-scoped target is missing its obligation record")
     normalized = obligation.get("normalized_target")
     if not isinstance(normalized, dict) or normalized.get("complete_lhs_rhs") is not True:
-        raise ValueError("label-scoped target is not a complete lhs/rhs obligation")
+        raise ValueError("label-scoped target is not a complete canonical relation")
     if target_record.get("obligation_id") != obligation.get("obligation_id"):
         raise ValueError("label-scoped target obligation id does not match its source record")
     if target_record.get("obligation_digest") != obligation.get("obligation_digest"):
@@ -2560,8 +2638,9 @@ def _semantic_packet_from_label_scoped_target(
     target = str(normalized.get("display_text", ""))
     lhs = str(target_record.get("lhs", ""))
     rhs = str(target_record.get("rhs", ""))
-    if not label or not target or not lhs or not rhs:
-        raise ValueError("label-scoped target lacks a label, target, lhs, or rhs")
+    equality_like = normalized.get("kind") in {"equality", "equality_chain", "aligned_definition"}
+    if not label or not target or (equality_like and (not lhs or not rhs)):
+        raise ValueError("label-scoped target lacks required canonical relation fields")
     owned_rows = [item for item in obligation.get("owned_rows", []) if isinstance(item, dict)]
     owned_spans = [item for item in obligation.get("owned_spans", []) if isinstance(item, dict)]
     if not owned_rows or not owned_spans:
@@ -2587,17 +2666,38 @@ def _semantic_packet_from_label_scoped_target(
         "line_start": source_span["line_start"],
         "label": label,
     }
-    claim_row = {"text": target}
-    claim_type = _classify_equation(claim_row)
+    routing_role = target_record.get("routing_role") if isinstance(target_record.get("routing_role"), dict) else {}
+    claim_type = str(routing_role.get("role", "unsupported_or_ambiguous"))
     packet_id = f"semantic_packet_{_slug(label)}_{str(obligation['obligation_digest'])[:16]}"
-    abstention = build_actionable_abstention_payload(
-        text="\n".join(item for item in (source_math, target, claim_type) if item),
-        problem=f"Build a semantic derivation route for `{label}` before backend certification.",
-        why_not_concrete="A validated source obligation still requires explicit assumptions and backend evidence.",
-        location=_location(tex_path, location_row, sections),
-        kind=claim_type,
-        evidence_refs=[str(obligation["obligation_id"]), str(obligation["obligation_digest"])],
-    )
+    if has_role_specific_builder(routing_role, target=target):
+        role_obligations = build_role_specific_obligations(
+            target=target,
+            normalized_target={**normalized, "operator_inventory": obligation.get("operator_inventory", [])},
+            routing_role=routing_role,
+            evidence_refs=[str(obligation["obligation_id"]), str(obligation["obligation_digest"])],
+        )
+        semantic_domains = [f"role:{role_obligations['role']}", f"relation:{role_obligations['relation_kind']}"]
+        local_obligations = role_obligations.get("local_obligations", [])
+        downstream_obligations = role_obligations.get("downstream_integration_obligations", [])
+        possible_sets = role_obligations.get("possible_assumption_sets", [])
+        derivation_route = role_obligations.get("derivation_route", [])
+        next_audit = role_obligations.get("next_audit", {})
+    else:
+        generic = build_actionable_abstention_payload(
+            text="\n".join(item for item in (source_math, target, claim_type) if item),
+            problem=f"Build a semantic derivation route for `{label}` before backend certification.",
+            why_not_concrete="A validated source obligation still requires explicit assumptions and backend evidence.",
+            location=_location(tex_path, location_row, sections),
+            kind=claim_type,
+            evidence_refs=[str(obligation["obligation_id"]), str(obligation["obligation_digest"])],
+        )
+        role_obligations = None
+        semantic_domains = generic.get("domains", [])
+        local_obligations = generic.get("missing_obligations", [])
+        downstream_obligations = []
+        possible_sets = generic.get("possible_assumption_sets", [])
+        derivation_route = generic.get("how_derivation_can_work", [])
+        next_audit = generic.get("next_audit", {})
     assumptions = assumptions_required(target)
     scoped_symbols = obligation.get("symbol_inventory") if isinstance(obligation.get("symbol_inventory"), dict) else {}
     compatibility_symbols = {
@@ -2653,18 +2753,23 @@ def _semantic_packet_from_label_scoped_target(
         "source_environment": environment.get("kind"),
         "uncertainty": list(obligation.get("uncertainties", [])),
         "label_row_count": len(owned_rows),
-        "semantic_domains": abstention.get("domains", []),
-        "missing_obligations": abstention.get("missing_obligations", []),
-        "possible_assumption_sets": abstention.get("possible_assumption_sets", []),
-        "how_derivation_can_work": abstention.get("how_derivation_can_work", []),
+        "semantic_domains": semantic_domains,
+        "missing_obligations": local_obligations,
+        "local_obligations": local_obligations,
+        "downstream_integration_obligations": downstream_obligations,
+        "possible_assumption_sets": possible_sets,
+        "how_derivation_can_work": derivation_route,
         "route_required_assumptions": assumptions.get("assumptions", []),
         "missing_route_assumptions": assumptions.get("missing_assumptions", []),
-        "next_audit": abstention.get("next_audit", {}),
+        "next_audit": next_audit,
         "obligation_id": obligation["obligation_id"],
         "obligation_digest": obligation["obligation_digest"],
         "owned_spans": owned_spans,
         "excluded_spans": list(obligation.get("excluded_spans", [])),
         "normalized_target": normalized,
+        "routing_role": routing_role,
+        "specialist_execution": target_record.get("specialist_execution"),
+        "role_obligation_contract": role_obligations,
         "label_scoped_obligation": obligation,
         "target_ingress": "validated_label_scoped_obligation",
         "evidence_refs": [
@@ -2693,10 +2798,25 @@ def _blocker_from_obligation(packet: dict[str, Any], obligation: dict[str, Any])
     }
 
 
-def _augment_tree(tree: dict[str, Any], packet: dict[str, Any]) -> None:
+def _augment_tree(tree: dict[str, Any], packet: dict[str, Any], *, source_path: Path) -> None:
     root = tree.get("root", {})
     root["source_span"] = packet["source_span"]
     root.setdefault("semantic_work_packet", packet)
+    specialist = packet.get("specialist_execution")
+    if isinstance(specialist, dict):
+        root["specialist_execution"] = specialist
+        backend_attempt = specialist.get("result", {}).get("backend_attempt")
+        if isinstance(backend_attempt, dict):
+            root.setdefault("specialist_backend_evidence", []).append(
+                {
+                    **backend_attempt,
+                    "label": packet.get("label"),
+                    "obligation_digest": packet.get("obligation_digest"),
+                    "claim_eligibility": "ineligible",
+                    "publication_enabled": False,
+                    "promotion_boundary": "diagnostic specialist evidence cannot promote a branch",
+                }
+            )
     if isinstance(packet.get("context_graph"), dict):
         root.setdefault("context_graph", packet["context_graph"])
     if isinstance(packet.get("typed_repair_obligation"), dict):
@@ -2708,6 +2828,8 @@ def _augment_tree(tree: dict[str, Any], packet: dict[str, Any]) -> None:
         branch = _assumption_branch(packet, item, plan if isinstance(plan, dict) else {})
         branch["formalization_stubs"] = _formalization_stubs(packet, branch)
         _attach_branch_backend_evidence(packet, branch, root)
+        if isinstance(specialist, dict):
+            branch["specialist_execution"] = specialist
         branches.append(branch)
         assumptions.append(
             {
@@ -2802,6 +2924,36 @@ def _augment_tree(tree: dict[str, Any], packet: dict[str, Any]) -> None:
     }
     root["branch_ranking"] = _quarantine_branch_ranking(rank_repair_branches(branches), branches)
     root["recursive_expansion_ranking"] = _recursive_expansion_ranking(root)
+    corpus_version = packet.get("label_scoped_obligation", {}).get("document", {}).get("corpus_version")
+    if (
+        packet.get("routing_role", {}).get("authority") == "source_evidenced_role"
+        and corpus_version == FROZEN_CORPUS_VERSION
+    ):
+        binding = build_document_evidence_binding(
+            packet,
+            branches,
+            source_path=source_path,
+        )
+        root["document_evidence_binding"] = binding
+        root.update(_current_document_integrity_binding(binding))
+        for evidence in root.get("specialist_backend_evidence", []):
+            if isinstance(evidence, dict):
+                evidence.update(_current_document_integrity_binding(binding))
+        for branch in branches:
+            branch.update(_current_document_integrity_binding(binding))
+            evidence = branch.get("backend_evidence")
+            if isinstance(evidence, dict):
+                evidence.update(_current_document_integrity_binding(binding))
+                evidence["binding_status"] = "verified_current_evidence"
+                evidence["veto_ids"] = [DOCUMENT_PUBLICATION_VETO_ID]
+                evidence["effective_document_promotion"] = _effective_document_promotion(
+                    evidence.get("raw_promotion"),
+                    current_binding=True,
+                )
+        root["branch_ranking"] = _quarantine_branch_ranking(
+            rank_repair_branches(branches),
+            branches,
+        )
     compiler = _compile_tool_grounded_proposal_report(packet, tree)
     root["tool_grounded_proposal_compiler"] = compiler
     root["document_ready_repair_proposals"] = compiler.get("document_ready_repair_proposals", [])
@@ -2810,14 +2962,21 @@ def _augment_tree(tree: dict[str, Any], packet: dict[str, Any]) -> None:
     tree["final_tree_digest"] = compiler["final_tree_digest"]
 
 
-def _quarantine_report_sections(rendered: dict[str, Any]) -> list[dict[str, Any]]:
+def _quarantine_report_sections(
+    rendered: dict[str, Any],
+    *,
+    current_binding: bool = False,
+) -> list[dict[str, Any]]:
     sections: list[dict[str, Any]] = []
     for section in rendered.get("sections", []) if isinstance(rendered.get("sections"), list) else []:
         if not isinstance(section, dict):
             continue
         item = dict(section)
         raw = item.get("promotion") if isinstance(item.get("promotion"), dict) else {}
-        item["promotion"] = _effective_document_promotion(raw)
+        item["promotion"] = _effective_document_promotion(
+            raw,
+            current_binding=current_binding,
+        )
         if raw.get("can_promote"):
             item["status"] = "partial_evidence"
         patches: list[dict[str, Any]] = []
@@ -2869,8 +3028,10 @@ def _compact_tree(tree: dict[str, Any], rendered: dict[str, Any]) -> dict[str, A
             )
     if engineering_error:
         failure_classifications.add("engineering_error")
+    integrity = _integrity_from(root)
+    current_binding = root.get("integrity_binding_verified") is True
     return {
-        **_legacy_document_integrity_binding(),
+        **integrity,
         "status": compact_status,
         "publication_mode": DOCUMENT_PUBLICATION_MODE,
         "failure_classifications": sorted(failure_classifications),
@@ -2883,7 +3044,10 @@ def _compact_tree(tree: dict[str, Any], rendered: dict[str, Any]) -> dict[str, A
             "raw_reason": controller.get("reason"),
             "attempts_used": controller.get("attempts_used"),
             "exhausted_actions": controller.get("exhausted_actions", []),
-            "promotion": _effective_document_promotion(raw_controller_promotion),
+            "promotion": _effective_document_promotion(
+                raw_controller_promotion,
+                current_binding=current_binding,
+            ),
             "validation_errors": controller.get("validation_errors", []),
         },
         "backend_attempts": [
@@ -2891,6 +3055,9 @@ def _compact_tree(tree: dict[str, Any], rendered: dict[str, Any]) -> dict[str, A
             for attempt in root.get("backend_attempts", [])
             if isinstance(attempt, dict)
         ],
+        "specialist_execution": root.get("specialist_execution", {}),
+        "specialist_backend_evidence": root.get("specialist_backend_evidence", []),
+        "document_evidence_binding": root.get("document_evidence_binding", {}),
         "context_graph": root.get("context_graph", {}),
         "typed_repair_obligations": root.get("typed_repair_obligations", []),
         "assumptions": root.get("assumptions", []),
@@ -2914,7 +3081,10 @@ def _compact_tree(tree: dict[str, Any], rendered: dict[str, Any]) -> dict[str, A
             "boundary": tree.get("recursive_expansion", {}).get("boundary", ""),
         },
         "patch_candidates": root.get("patch_candidates", []),
-        "report_sections": _quarantine_report_sections(rendered),
+        "report_sections": _quarantine_report_sections(
+            rendered,
+            current_binding=current_binding,
+        ),
     }
 
 
@@ -3318,7 +3488,7 @@ def _target_result_for_row(
         capabilities=capabilities,
         integrations=integrations,
     )
-    _augment_tree(tree, packet)
+    _augment_tree(tree, packet, source_path=path)
     rendered = render_derivation_tree_report(tree)
     raw_promotion = tree.get("controller", {}).get("promotion", {})
     compact_tree = _compact_tree(tree, rendered)
@@ -3330,7 +3500,7 @@ def _target_result_for_row(
     ) and "engineering_error" not in classifications:
         classifications.append("engineering_error")
     return {
-        **_legacy_document_integrity_binding(),
+        **_integrity_from(compact_tree),
         "label": packet.get("label"),
         "row_id": packet.get("row_id"),
         "row_index": row.get("row_index"),
@@ -3342,7 +3512,10 @@ def _target_result_for_row(
         "publication_mode": DOCUMENT_PUBLICATION_MODE,
         "failure_classifications": classifications,
         "veto_ids": [DOCUMENT_PUBLICATION_VETO_ID],
-        "promotion": _effective_document_promotion(raw_promotion),
+        "promotion": _effective_document_promotion(
+            raw_promotion,
+            current_binding=compact_tree.get("integrity_binding_verified") is True,
+        ),
         "semantic_work_packet": packet,
         "tree": compact_tree,
     }
@@ -3698,8 +3871,28 @@ def audit_document_derivation_tree(
         coverage["tool_grounded_compiler_validation_error_count"] += (
             len(errors) if isinstance(errors, list) else 0
         )
+    current_targets = [
+        item
+        for item in target_results
+        if item.get("evidence_schema_version") == "1.0"
+        and item.get("integrity_binding_verified") is True
+    ]
+    aggregate_integrity = (
+        {
+            "evidence_schema_version": "1.0",
+            "integrity_binding_status": "verified_current_evidence",
+            "integrity_binding_verified": True,
+            "claim_eligibility": DOCUMENT_CLAIM_ELIGIBILITY,
+            "publication_enabled": DOCUMENT_PUBLICATION_ENABLED,
+            "document_evidence_binding_refs": [
+                item.get("document_evidence_binding_ref", {}) for item in current_targets
+            ],
+        }
+        if target_results and len(current_targets) == len(target_results)
+        else _legacy_document_integrity_binding()
+    )
     result = {
-        **_legacy_document_integrity_binding(),
+        **aggregate_integrity,
         "tex_path": str(path),
         "backend_env": backend_env,
         "search_mode": search_mode,
@@ -3708,7 +3901,9 @@ def audit_document_derivation_tree(
         "publication_veto_ids": [DOCUMENT_PUBLICATION_VETO_ID],
         "veto_ids": [DOCUMENT_PUBLICATION_VETO_ID],
         "failure_classifications": sorted(failure_classification_counts),
-        "promotion": _effective_document_promotion(),
+        "promotion": _effective_document_promotion(
+            current_binding=aggregate_integrity.get("integrity_binding_verified") is True,
+        ),
         "execution": execution,
         "document_inventory": {
             "line_count": len(text.splitlines()),
@@ -3831,7 +4026,11 @@ def audit_document_derivation_tree(
         "backend_provenance": {
             "doctor": doctor,
             "certification_boundary": (
-                "Raw scoped backend evidence remains diagnostic at the document boundary until exact Phase 01 binding exists."
+                "Current evidence identity is replayable, but scoped backend evidence remains diagnostic at the "
+                "document boundary because identity binding does not establish mathematical closure, scientific "
+                "validity, claim eligibility, or publication authority."
+                if aggregate_integrity.get("integrity_binding_verified") is True
+                else "Raw scoped backend evidence remains diagnostic at the document boundary until exact Phase 01 binding exists."
             ),
         },
         "targets": target_results,
@@ -4237,3 +4436,84 @@ def render_document_derivation_tree_markdown(result: dict[str, Any]) -> str:
         lines.append(f"- `{_md(item.get('code', ''))}`: {_md(item.get('text', ''))}")
     lines.append("")
     return "\n".join(lines)
+
+
+def render_compact_document_derivation_tree_markdown(result: dict[str, Any]) -> str:
+    """Render an all-target summary while details remain artifact-resolvable."""
+    coverage = result.get("coverage") if isinstance(result.get("coverage"), dict) else {}
+    lines = [
+        "# Compact Document Derivation Tree Audit",
+        "",
+        f"Source: `{result.get('tex_path', '')}`",
+        f"Publication mode: `{result.get('publication_mode', DOCUMENT_PUBLICATION_MODE)}`",
+        f"Targets: `{coverage.get('semantic_packet_count', 0)}`; gaps: `{coverage.get('document_gap_report_count', 0)}`; repairs: `{coverage.get('document_ready_repair_proposal_count', 0)}`",
+        "",
+        "This is a bounded transport summary. Exact detailed records remain in the digest-bound document artifact and page-token resolver.",
+        "",
+        "| Label | Relation | Source role | Tree status | Specialist | Binding | Local obligations | Next action |",
+        "| --- | --- | --- | --- | --- | --- | ---: | --- |",
+    ]
+    for target in result.get("targets", []):
+        if not isinstance(target, dict):
+            continue
+        packet = target.get("semantic_work_packet") if isinstance(target.get("semantic_work_packet"), dict) else {}
+        tree = target.get("tree") if isinstance(target.get("tree"), dict) else {}
+        normalized = packet.get("normalized_target") if isinstance(packet.get("normalized_target"), dict) else {}
+        role = packet.get("routing_role") if isinstance(packet.get("routing_role"), dict) else {}
+        specialist = packet.get("specialist_execution") if isinstance(packet.get("specialist_execution"), dict) else {}
+        ranking = tree.get("branch_ranking") if isinstance(tree.get("branch_ranking"), dict) else {}
+        action = ranking.get("selected_action") if isinstance(ranking.get("selected_action"), dict) else {}
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    f"`{_md(target.get('label', ''))}`",
+                    f"`{_md(normalized.get('kind', 'unavailable'))}`",
+                    f"`{_md(role.get('role', 'unsupported_or_ambiguous'))}`",
+                    f"`{_md(target.get('status', ''))}`",
+                    f"`{_md(specialist.get('status', 'not_run'))}`",
+                    f"`{_md(target.get('integrity_binding_status', DOCUMENT_INTEGRITY_BINDING_STATUS))}`",
+                    str(len(packet.get("local_obligations", []))),
+                    f"`{_md(action.get('action_kind', 'none'))}`",
+                ]
+            )
+            + " |"
+        )
+    lines.extend(["", "## Exact Targets", ""])
+    for target in result.get("targets", []):
+        if not isinstance(target, dict):
+            continue
+        packet = target.get("semantic_work_packet") if isinstance(target.get("semantic_work_packet"), dict) else {}
+        specialist = packet.get("specialist_execution") if isinstance(packet.get("specialist_execution"), dict) else {}
+        specialist_result = specialist.get("result") if isinstance(specialist.get("result"), dict) else {}
+        lines.extend(
+            [
+                f"### `{_md(target.get('label', 'target'))}`",
+                "",
+                f"- Source digest: `{_md(packet.get('source_span', {}).get('source_digest', ''))}`",
+                f"- Obligation: `{_md(packet.get('obligation_id', ''))}` / `{_md(packet.get('obligation_digest', ''))}`",
+                f"- Binding: `{_md(target.get('document_evidence_binding_ref', {}))}`",
+                f"- Specialist: `{_md(specialist.get('status', 'not_run'))}`; tool `{_md(specialist.get('selected_tool'))}`; result `{_md(specialist_result.get('status', ''))}`",
+                f"- Remaining local obligations: `{_md([item.get('id') for item in packet.get('local_obligations', []) if isinstance(item, dict)])}`",
+                "",
+                "```tex",
+                str(packet.get("target", "")).strip(),
+                "```",
+                "",
+            ]
+        )
+    lines.extend(
+        [
+            "## Boundaries",
+            "",
+            "- Current evidence binding establishes source/evidence identity and replay, not mathematical or scientific truth.",
+            "- Specialist CAS checks are scoped diagnostics; typed abstentions are not refutations.",
+            "- No candidate edit is applicable while publication mode is disabled.",
+            "- This selected-label audit does not establish whole-document correctness.",
+            "",
+        ]
+    )
+    rendered = "\n".join(lines)
+    if len(rendered.encode("utf-8")) > 30_720:
+        raise ValueError("compact document derivation Markdown exceeds the transport budget")
+    return rendered

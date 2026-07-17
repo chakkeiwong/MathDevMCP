@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from collections.abc import Iterable
+from copy import deepcopy
 from pathlib import Path
 
 from .contracts import attach_contract, contract_metadata
@@ -35,6 +36,8 @@ class ProofAuditV2Obligation:
     rhs: str
     kind: str
     parser_backend: str | None
+    source_binding_status: str
+    specialist_parser_readiness: str
     parser_policy: dict
     typed_diagnostic: dict
     matrix_ir: dict
@@ -66,6 +69,8 @@ class ProofAuditV2Report:
     high_priority_actions: list[dict]
     obligations: list[dict]
     parser_policy: dict
+    source_binding_status: str
+    specialist_parser_readiness: str
     base_audit_status: str
     doc_context: dict
     target_extraction: dict
@@ -185,6 +190,11 @@ def _obligation_status_and_reason(
         return "inconclusive", "The row could not be extracted as a safe proof obligation."
     if shape.get("missing_constraints"):
         return "unverified", "The obligation has missing shape, dimension, or regularity constraints."
+    if base_obligation.get("classification") == "human_review":
+        return "unverified", base_obligation.get(
+            "reason",
+            "The exact source relation requires manual formalization before backend certification.",
+        )
     if route.get("route") == "human_review":
         return "unverified", "The obligation uses notation that requires human review or manual formalization."
     if base_status == "verified":
@@ -231,6 +241,8 @@ def _compact_obligation(obligation: dict) -> dict:
         "lhs": obligation["lhs"],
         "rhs": obligation["rhs"],
         "kind": obligation["kind"],
+        "source_binding_status": obligation["source_binding_status"],
+        "specialist_parser_readiness": obligation["specialist_parser_readiness"],
         "status": obligation["status"],
         "substatus": obligation["substatus"],
         "severity": obligation["severity"],
@@ -245,6 +257,20 @@ def _compact_obligation(obligation: dict) -> dict:
         "provenance": obligation["provenance"],
         "metadata": obligation["metadata"],
     }
+
+
+def _durable_parser_policy(parser: dict) -> dict:
+    """Exclude wall-clock proxies from durable proof-evidence identity."""
+    durable = deepcopy(parser)
+    benchmark = durable.get("benchmark_report")
+    if isinstance(benchmark, dict):
+        for result in benchmark.get("results", []):
+            if isinstance(result, dict):
+                result.pop("runtime_seconds", None)
+        benchmark["durable_identity_exclusions"] = [
+            "results[*].runtime_seconds is an explanatory runtime proxy and is not used for parser selection"
+        ]
+    return durable
 
 
 def audit_derivation_v2_for_label(
@@ -275,7 +301,31 @@ def audit_derivation_v2_for_label(
         file=file,
         source_digest=source_digest,
     )
-    parser = decide_parser_policy(root, backends=parser_backends or ["current"], expected_labels=parser_expected_labels)
+    expected_labels = (
+        list(parser_expected_labels)
+        if parser_expected_labels is not None
+        else [label]
+        if file is not None or source_digest is not None
+        else None
+    )
+    parser = decide_parser_policy(root, backends=parser_backends or ["current"], expected_labels=expected_labels)
+    target_extraction = base.get("target_extraction", {})
+    targets = target_extraction.get("targets", []) if isinstance(target_extraction, dict) else []
+    exact_target = targets[0] if len(targets) == 1 and isinstance(targets[0], dict) else None
+    observed_digest = (
+        exact_target.get("label_scoped_obligation", {}).get("document", {}).get("source_digest")
+        if exact_target is not None
+        else None
+    )
+    if exact_target is not None and (source_digest is None or observed_digest == source_digest):
+        source_binding_status = "accepted_exact_source"
+    elif target_extraction.get("status") == "ambiguous":
+        source_binding_status = "ambiguous_label"
+    elif source_digest is not None and observed_digest != source_digest:
+        source_binding_status = "source_digest_mismatch"
+    else:
+        source_binding_status = "source_label_missing"
+    specialist_parser_readiness = str(parser.get("status", "blocked"))
     selected_backend = parser.get("selected_backend") or "current"
     context = _context_text(base.get("doc_context", {}))
     obligations: list[dict] = []
@@ -323,6 +373,7 @@ def audit_derivation_v2_for_label(
             route=route,
             shape=shape,
             actions=actions,
+            source_binding_status=source_binding_status,
         )
         actions = classification["actions"]
         backend_attempts = _backend_attempts(base_obligation)
@@ -335,6 +386,8 @@ def audit_derivation_v2_for_label(
             rhs=str(base_obligation.get("rhs", "")),
             kind=typed.get("obligation", {}).get("kind", "unknown"),
             parser_backend=parser.get("selected_backend"),
+            source_binding_status=source_binding_status,
+            specialist_parser_readiness=specialist_parser_readiness,
             parser_policy=parser,
             typed_diagnostic=typed,
             matrix_ir=matrix_ir,
@@ -374,7 +427,9 @@ def audit_derivation_v2_for_label(
         substatus_counts=substatus_counts,
         high_priority_actions=high_priority_actions,
         obligations=report_obligations,
-        parser_policy=parser,
+        parser_policy=_durable_parser_policy(parser),
+        source_binding_status=source_binding_status,
+        specialist_parser_readiness=specialist_parser_readiness,
         base_audit_status=base.get("status", "inconclusive"),
         doc_context=base.get("doc_context", {}),
         target_extraction=base.get("target_extraction", {}),

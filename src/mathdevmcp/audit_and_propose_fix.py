@@ -344,9 +344,12 @@ def _summarize_audit(evidence: dict[str, Any]) -> dict[str, Any]:
                     "obligation_id": canonical.get("obligation_id"),
                     "obligation_digest": canonical.get("obligation_digest"),
                     "source_digest": canonical.get("label_scoped_obligation", {}).get("document", {}).get("source_digest"),
+                    "normalized_target": canonical.get("normalized_target"),
+                    "routing_role": canonical.get("routing_role"),
+                    "specialist_execution": canonical.get("specialist_execution"),
                     "target_ingress": "validated_label_scoped_obligation",
                 },
-                ("target", "file", "label", "line_start", "line_end", "obligation_id", "obligation_digest", "source_digest", "target_ingress"),
+                ("target", "file", "label", "line_start", "line_end", "obligation_id", "obligation_digest", "source_digest", "normalized_target", "routing_role", "specialist_execution", "target_ingress"),
             ) if canonical else None,
         },
         ("label", "status", "contract", "reason", "canonical_target"),
@@ -393,6 +396,10 @@ def _detail_is_evidence_only(kind: str) -> bool:
 def _is_latex_math_fragment(text: str) -> bool:
     stripped = str(text or "").strip()
     if not stripped:
+        return False
+    if stripped in {r"\begin{align}", r"\begin{equation}", r"\end{align}", r"\end{equation}", r"\[", r"\]"}:
+        return False
+    if stripped.startswith((r"\begin{", r"\end{")):
         return False
     if stripped.startswith("where ") or stripped.startswith(r"\text"):
         return False
@@ -921,6 +928,7 @@ def _build_evidence_gap_details(
             continue
         seen.add(key)
         proof_target = _proof_target_from_detail(detail, obligation)
+        safe_proof_target = proof_target if _is_latex_math_fragment(proof_target) else ""
         derivation_plan = _derivation_plan_for_gap(evidence, detail, obligation)
         proposed_fix = (
             "Add the derivation step described below, with the stated regularity/interiority assumptions, "
@@ -948,7 +956,7 @@ def _build_evidence_gap_details(
                 "source_text": source_line or detail.get("source_text", ""),
                 "action": "Prove or formalize the reconstructed obligation.",
                 "proposed_fix": proposed_fix,
-                "proof_target": proof_target,
+                "proof_target": safe_proof_target,
                 "derivation_plan": derivation_plan,
                 "math_fix": detail.get("math_fix"),
                 "evidence_only": True,
@@ -1429,13 +1437,23 @@ def build_audit_fix_report(
     ]
     concrete_details = [item for item in proposal_details if _detail_has_concrete_fix(item)]
     status = _report_status(concrete_details, audited_evidence)
+    evidence_summaries = [_summarize_audit(item) for item in audited_evidence]
+    coverage["label_ledger"] = [
+        {
+            "label": item.get("label"),
+            "status": item.get("status"),
+            "coverage_status": "canonical_target" if isinstance(item.get("canonical_target"), dict) else "typed_abstention",
+            "canonical_target": item.get("canonical_target"),
+        }
+        for item in evidence_summaries
+    ]
     low_level = AuditFixReport(
         status=status,
         question=question,
         source=proposal_source,
         coverage=coverage,
         tool_uses=[asdict(item) for item in tool_uses],
-        audited_evidence=[_summarize_audit(item) for item in audited_evidence],
+        audited_evidence=evidence_summaries,
         proposal_changes=proposed_changes,
         proposal_details=proposal_details,
         validation=validation_summary,

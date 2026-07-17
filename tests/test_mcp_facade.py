@@ -190,6 +190,38 @@ def test_call_mcp_tool_derivation_report_preserves_extracted_targets() -> None:
     assert "Route planning is diagnostic only" in result["route_plans"][0]["boundary"]
 
 
+def test_call_mcp_tool_report_selectors_reach_high_level_workflows(tmp_path) -> None:
+    import hashlib
+
+    source = tmp_path / "current.tex"
+    source.write_text(r"\begin{equation}\label{eq:shared} x = 2 \end{equation}", encoding="utf-8")
+    digest = hashlib.sha256(source.read_bytes()).hexdigest()
+
+    assumptions = call_mcp_tool(
+        "audit_and_propose_assumptions",
+        {
+            "question": "Audit exact",
+            "root": str(tmp_path),
+            "labels": ["eq:shared"],
+            "file": source.name,
+            "source_digest": digest,
+        },
+    )
+    derivations = call_mcp_tool(
+        "audit_and_propose_derivations",
+        {
+            "question": "Audit exact",
+            "root": str(tmp_path),
+            "labels": ["eq:shared"],
+            "file": source.name,
+            "source_digest": digest,
+        },
+    )
+
+    assert assumptions["coverage"]["label_selection"][0]["selection_status"] == "selected"
+    assert derivations["coverage"]["label_selection"][0]["selection_status"] == "selected"
+
+
 def test_call_mcp_tool_prepare_review_packet_preserves_phase6_packet_fields():
     derived = call_mcp_tool(
         "derive_from",

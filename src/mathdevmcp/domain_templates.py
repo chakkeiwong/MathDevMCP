@@ -108,6 +108,8 @@ def suggest_domain_templates(*, label: str = "", section_path: list[str] | None 
     for template in TEMPLATES:
         terms = [template.domain, template.description, *template.supported_notation]
         score = sum(1 for term in terms if term.lower() in haystack)
+        if label and label in template.positive_fixtures:
+            score += 100
         if score:
             item = asdict(template)
             item["score"] = score

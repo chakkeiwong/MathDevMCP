@@ -249,6 +249,14 @@ def test_audit_and_propose_fix_replaces_generic_evidence_gap_with_concrete_oblig
     assert all(item["evidence_ref"].startswith("proof_audit_v2:") for item in gaps)
 
 
+def test_environment_openers_are_not_accepted_as_proof_targets() -> None:
+    from mathdevmcp.audit_and_propose_fix import _is_latex_math_fragment
+
+    assert _is_latex_math_fragment(r"x = y") is True
+    assert _is_latex_math_fragment(r"\begin{equation}") is False
+    assert _is_latex_math_fragment(r"\begin{align}") is False
+
+
 def test_audit_and_propose_fix_validates_concrete_fixes_with_backend_attempts() -> None:
     result = audit_and_propose_fix(
         "Audit the risky-debt lecture note and propose repairs",

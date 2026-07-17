@@ -110,6 +110,34 @@ def test_pi_is_not_unconditionally_posterior() -> None:
     assert all(item["role"] != "posterior_candidate" for item in typed["typed_symbols"])
 
 
+def test_next_period_primes_are_not_misclassified_as_transpose() -> None:
+    typed = diagnose_typed_obligation(
+        {
+            "id": "bellman",
+            "lhs": r"V_t(b,O)",
+            "rhs": r"\max_a \{r_t + \delta \E[V_{t+1}(b',O')\mid b,O,a]\}",
+            "source_text": r"V_t(b,O)=\max_a \{r_t + \delta \E[V_{t+1}(b',O')\mid b,O,a]\}",
+        }
+    )["obligation"]
+
+    assert "transpose" not in typed["unresolved_constructs"]
+    assert not any(item["kind"] == "conformable_product_required" for item in typed["dimension_constraints"])
+
+
+def test_prime_followed_by_operand_still_routes_as_transpose_product() -> None:
+    typed = diagnose_typed_obligation(
+        {
+            "id": "quadratic",
+            "lhs": "q",
+            "rhs": r"x' A x",
+            "source_text": r"q=x' A x",
+        }
+    )["obligation"]
+
+    assert "transpose" in typed["unresolved_constructs"]
+    assert any(item["kind"] == "conformable_product_required" for item in typed["dimension_constraints"])
+
+
 def test_card_pi_resolves_policy_or_remains_not_searched() -> None:
     evidence = {
         "symbol": r"\pi",

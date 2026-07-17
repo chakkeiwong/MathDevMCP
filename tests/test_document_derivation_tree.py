@@ -136,6 +136,11 @@ def test_document_derivation_tree_builds_semantic_packets_before_backend_attempt
     assert any(blocker["source"] == "semantic_work_packet" for blocker in target["tree"]["blockers"])
     assert any(blocker["source"] == "document_derivation_tree_formalization_stub" for blocker in target["tree"]["blockers"])
     assert result["coverage"]["promoted_count"] == 0
+    assert result["integrity_binding_verified"] is False
+    assert result["promotion"]["errors"] == [
+        "legacy_unbound_document_evidence",
+        "document_repair_publication_quarantined",
+    ]
     assert "Mathematically missing obligations" in result["markdown"]
     assert "Possible sufficient assumption sets" in result["markdown"]
     assert "Candidate assumption branches" in result["markdown"]

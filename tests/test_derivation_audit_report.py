@@ -1,3 +1,4 @@
+import hashlib
 from pathlib import Path
 import subprocess
 import sys
@@ -138,6 +139,42 @@ def test_audit_and_propose_derivations_reports_missing_label_coverage_gap() -> N
         f"Label `prop:not-present` was not found under `{FIXTURES}`."
     ]
     assert result["proposals"] == []
+
+
+def test_audit_and_propose_derivations_exact_selector_disambiguates_duplicate_labels(tmp_path: Path) -> None:
+    old = tmp_path / "old.tex"
+    current = tmp_path / "current.tex"
+    old.write_text(r"\begin{equation}\label{eq:shared} x = 1 \end{equation}", encoding="utf-8")
+    current.write_text(r"\begin{equation}\label{eq:shared} x = 2 \end{equation}", encoding="utf-8")
+    digest = hashlib.sha256(current.read_bytes()).hexdigest()
+
+    ambiguous = audit_and_propose_derivations(
+        "Audit duplicate",
+        root=str(tmp_path),
+        labels=["eq:shared"],
+    )
+    selected = audit_and_propose_derivations(
+        "Audit exact",
+        root=str(tmp_path),
+        labels=["eq:shared"],
+        file=current.name,
+        source_digest=digest,
+    )
+    stale = audit_and_propose_derivations(
+        "Audit stale",
+        root=str(tmp_path),
+        labels=["eq:shared"],
+        file=current.name,
+        source_digest="0" * 64,
+    )
+
+    assert ambiguous["coverage"]["target_count"] == 0
+    assert ambiguous["target_extraction"]["label_results"][0]["selection_status"] == "ambiguous_label"
+    assert selected["coverage"]["target_count"] == 1
+    assert selected["coverage"]["label_selection"][0]["selection_status"] == "selected"
+    assert selected["target_results"][0]["source"]["source_digest"] == digest
+    assert stale["coverage"]["target_count"] == 0
+    assert stale["coverage"]["label_selection"][0]["selection_status"] == "source_digest_mismatch"
 
 
 def test_audit_and_propose_derivations_preserves_certifying_boundary(tmp_path: Path) -> None:

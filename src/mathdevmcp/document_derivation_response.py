@@ -192,6 +192,13 @@ def _collect_veto_ids(value: Any) -> list[str]:
             or key in {"launch_vetoes", "vetoes"}
         ):
             ids.update(_string_values(child))
+    if (
+        isinstance(value, Mapping)
+        and value.get("integrity_binding_verified") is True
+        and "legacy_unbound_document_evidence"
+        not in _string_values(value.get("veto_ids", []))
+    ):
+        ids.discard("legacy_unbound_document_evidence")
     return sorted(ids)
 
 
@@ -373,6 +380,8 @@ def _evidence_ref_entries(value: Any) -> list[dict[str, str]]:
 
 
 def _collect_failure_classifications(value: Any) -> list[str]:
+    if isinstance(value, Mapping) and "failure_classifications" in value:
+        return sorted(set(_string_values(value.get("failure_classifications"))))
     classifications: set[str] = set()
     for _, key, child in _walk(value):
         if key == "failure_classification" or key == "failure_classifications":
@@ -611,6 +620,7 @@ def _compact_target(
         "candidate_assumptions": candidate_assumptions,
         "blocker_ids": sorted({str(item["id"]) for item in blockers}),
         "selected_action": _compact_action(action),
+        "source_evidence": _compact_source_evidence(target),
         "evidence_refs": _evidence_ref_entries(target),
         "source_refs": source_refs,
         "reference_resolution": "exact_current_page_records",
@@ -765,6 +775,14 @@ def _project_action(
         "launch_vetoes": deepcopy(action.get("launch_vetoes")),
     }
     if _canonical_json_bytes(expected) != _canonical_json_bytes(action):
+        if action.get("outcomes") == _outcome_policy():
+            without_outcomes = deepcopy(dict(validated))
+            without_outcomes.pop("outcomes", None)
+            return {
+                "representation": "shared_outcome_policy",
+                "policy_id": DOCUMENT_DERIVATION_ACTION_POLICY,
+                "action": without_outcomes,
+            }
         return {
             "representation": "inline_validated",
             "action": deepcopy(dict(validated)),
@@ -795,6 +813,17 @@ def expand_document_derivation_action(
         validated = validate_discriminating_action(action)
         if _canonical_json_bytes(validated) != _canonical_json_bytes(action):
             raise ValueError("inline action changes under the Phase 06 validator")
+        return validated
+    if projection.get("representation") == "shared_outcome_policy":
+        if projection.get("policy_id") != DOCUMENT_DERIVATION_ACTION_POLICY:
+            raise ValueError("unknown shared action outcome policy")
+        action = projection.get("action")
+        if not isinstance(action, Mapping) or "outcomes" in action:
+            raise ValueError("shared-outcome action projection is invalid")
+        expanded = {**deepcopy(dict(action)), "outcomes": _outcome_policy()}
+        validated = validate_discriminating_action(expanded)
+        if _canonical_json_bytes(validated) != _canonical_json_bytes(expanded):
+            raise ValueError("shared-outcome action changes under the Phase 06 validator")
         return validated
     if projection.get("policy_id") != DOCUMENT_DERIVATION_ACTION_POLICY:
         raise ValueError("unknown action projection policy")
@@ -1560,6 +1589,114 @@ def _page_identity_tables(targets: Sequence[Mapping[str, Any]]) -> dict[str, lis
     }
 
 
+_COMPACT_ID_PREFIXES = (
+    "candidate_assumption_",
+    "assumption_",
+    "action_",
+    "ledger_",
+)
+
+
+def _compact_opaque_id(value: str) -> str:
+    for index, prefix in enumerate(_COMPACT_ID_PREFIXES):
+        if value.startswith(prefix):
+            suffix = value[len(prefix) :]
+            if re.fullmatch(r"[0-9a-f]{64}", suffix):
+                encoded = base64.urlsafe_b64encode(bytes.fromhex(suffix)).decode("ascii").rstrip("=")
+                return f"{index}:{encoded}"
+    return value
+
+
+def _expand_opaque_id(value: str) -> str:
+    match = re.fullmatch(r"([0-9]):([A-Za-z0-9_-]{43})", value)
+    if match is None:
+        return value
+    index = int(match.group(1))
+    if index >= len(_COMPACT_ID_PREFIXES):
+        raise ValueError("opaque identity prefix index is invalid")
+    try:
+        digest = base64.urlsafe_b64decode(match.group(2) + "=").hex()
+    except (binascii.Error, ValueError) as exc:
+        raise ValueError("opaque identity digest is invalid base64url") from exc
+    return _COMPACT_ID_PREFIXES[index] + digest
+
+
+def _compact_opaque_ids(values: Sequence[str]) -> list[str]:
+    return [_compact_opaque_id(str(value)) for value in values]
+
+
+def _expand_opaque_ids(values: Sequence[str]) -> list[str]:
+    return [_expand_opaque_id(str(value)) for value in values]
+
+
+def _common_string_prefix(values: Sequence[str]) -> str:
+    if not values:
+        return ""
+    prefix = os.path.commonprefix([str(value) for value in values])
+    return prefix if len(prefix) >= 8 else ""
+
+
+def _compact_source_evidence(raw_target: Mapping[str, Any]) -> dict[str, Any]:
+    packet = raw_target.get("semantic_work_packet")
+    if not isinstance(packet, Mapping):
+        raise ValueError("stored audit target has no semantic work packet")
+    role = packet.get("routing_role") if isinstance(packet.get("routing_role"), Mapping) else {}
+    specialist = packet.get("specialist_execution") if isinstance(packet.get("specialist_execution"), Mapping) else {}
+    specialist_result = specialist.get("result") if isinstance(specialist.get("result"), Mapping) else {}
+    source_span = packet.get("source_span") if isinstance(packet.get("source_span"), Mapping) else {}
+    normalized = packet.get("normalized_target") if isinstance(packet.get("normalized_target"), Mapping) else {}
+    if normalized and normalized.get("display_text") != packet.get("target"):
+        raise ValueError("normalized display text differs from the canonical target")
+    compact_normalized = {
+        key: deepcopy(value)
+        for key, value in normalized.items()
+        if key != "display_text"
+    }
+    return {
+        "source": {
+            key: deepcopy(source_span.get(key))
+            for key in (
+                "file",
+                "label",
+                "start_byte",
+                "end_byte",
+                "source_digest",
+                "obligation_id",
+                "obligation_digest",
+            )
+        },
+        "target": packet.get("target"),
+        "normalized_target": compact_normalized,
+        "routing_role": {
+            key: deepcopy(role.get(key))
+            for key in (
+                "status",
+                "role",
+                "authority",
+                "routing_effect",
+                "role_id",
+                "role_digest",
+            )
+        },
+        "specialist_execution": {
+            "status": specialist.get("status"),
+            "selected_tool": specialist.get("selected_tool"),
+            "backend_environment": deepcopy(specialist.get("backend_environment", {})),
+            "result": {
+                "status": specialist_result.get("status"),
+                "reason": specialist_result.get("reason"),
+                "backend_attempt": deepcopy(specialist_result.get("backend_attempt")),
+            },
+        },
+        "binding_ref": deepcopy(raw_target.get("document_evidence_binding_ref", {})),
+        "boundary": {
+            "claim_eligibility": raw_target.get("claim_eligibility", "ineligible"),
+            "publication_enabled": raw_target.get("publication_enabled", False),
+            "promotion_allowed": False,
+        },
+    }
+
+
 def _project_indexed_target(
     compact: Mapping[str, Any],
     target: Mapping[str, Any],
@@ -1616,6 +1753,7 @@ def _project_indexed_target(
         "selected_action": _project_action(
             selected_action, list(compact["veto_ids"])
         ),
+        "source_evidence": _compact_source_evidence(raw_target),
     }
 
 
@@ -1731,10 +1869,11 @@ def _compile_artifact_indexed_page(
         "promotion": deepcopy(compact["promotion"]),
         "coverage": deepcopy(compact["coverage"]),
         "failure_classifications": deepcopy(compact["failure_classifications"]),
-        "veto_ids": deepcopy(compact["veto_ids"]),
-        "unresolved_assumption_ids": deepcopy(compact["unresolved_assumption_ids"]),
-        "candidate_assumption_ids": deepcopy(compact["candidate_assumption_ids"]),
-        "action_decision_ids": deepcopy(compact["action_decision_ids"]),
+        "veto_ids": _compact_opaque_ids(compact["veto_ids"]),
+        "unresolved_assumption_ids": _compact_opaque_ids(compact["unresolved_assumption_ids"]),
+        "candidate_assumption_ids": _compact_opaque_ids(compact["candidate_assumption_ids"]),
+        "action_decision_ids": _compact_opaque_ids(compact["action_decision_ids"]),
+        "opaque_id_prefixes": list(_COMPACT_ID_PREFIXES),
         "non_claims": deepcopy(compact["non_claims"]),
         "execution_summary": deepcopy(compact["execution_summary"]),
         "output_references": deepcopy(compact["output_references"]),
@@ -1757,7 +1896,14 @@ def _compile_artifact_indexed_page(
             ),
             "resolution": "page_token",
         },
-        "page_identity_tables": tables,
+        "page_identity_tables": {
+            **tables,
+            "blocker_id_prefix": _common_string_prefix(tables["blocker_ids"]),
+            "blocker_ids": [
+                value[len(_common_string_prefix(tables["blocker_ids"])) :]
+                for value in _compact_opaque_ids(tables["blocker_ids"])
+            ],
+        },
         "targets": projections,
         "page": {
             "page_index": page_index,
@@ -2380,6 +2526,20 @@ def _artifact_indexed_validation_errors(
         return ["artifact-indexed targets are invalid"]
     if not isinstance(inventory, Mapping):
         return ["artifact-indexed record inventory is invalid"]
+    if response.get("opaque_id_prefixes") != list(_COMPACT_ID_PREFIXES):
+        errors.append("artifact-indexed opaque identity prefix registry mismatch")
+    expanded_tables = deepcopy(dict(tables))
+    try:
+        blocker_prefix = tables.get("blocker_id_prefix", "")
+        if not isinstance(blocker_prefix, str):
+            raise ValueError("blocker identity prefix is not a string")
+        expanded_tables.pop("blocker_id_prefix", None)
+        expanded_tables["blocker_ids"] = _expand_opaque_ids(
+            [blocker_prefix + str(item) for item in tables.get("blocker_ids", [])]
+        )
+    except ValueError as exc:
+        errors.append(f"artifact-indexed blocker identity expansion failed: {exc}")
+    tables = expanded_tables
     if (
         artifact.get("state") != "verified"
         or artifact.get("schema_version") != DOCUMENT_DERIVATION_ARTIFACT_SCHEMA
@@ -2494,6 +2654,12 @@ def _artifact_indexed_validation_errors(
             if any(projection.get(field) != expected.get(field) for field in scalar_fields):
                 errors.append(f"artifact-indexed target {relative_index} scalar mismatch")
             try:
+                if _canonical_json_bytes(projection.get("source_evidence")) != _canonical_json_bytes(
+                    _compact_source_evidence(raw_target)
+                ):
+                    errors.append(
+                        f"artifact-indexed target {relative_index} source evidence mismatch"
+                    )
                 if projection.get("content_identity") != _target_content_identity(raw_target):
                     errors.append(
                         f"artifact-indexed target {relative_index} content identity mismatch"
@@ -2726,6 +2892,20 @@ def validate_document_derivation_response(
     }
     if artifact_indexed:
         expected_sets.pop("reference_inventory")
+        for compacted_key in (
+            "veto_ids",
+            "unresolved_assumption_ids",
+            "candidate_assumption_ids",
+            "action_decision_ids",
+        ):
+            expected = expected_sets.pop(compacted_key)
+            try:
+                expanded = _expand_opaque_ids(response.get(compacted_key, []))
+            except (TypeError, ValueError) as exc:
+                errors.append(f"{compacted_key} compact identity expansion failed: {exc}")
+                continue
+            if expanded != expected:
+                errors.append(f"{compacted_key} differs from completed audit")
     for key, expected in expected_sets.items():
         source_identity = _normalized_source_identity(str(audit.get("tex_path") or "."))
         normalized_expected = _redact_transport(

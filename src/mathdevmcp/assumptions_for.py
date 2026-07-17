@@ -15,9 +15,11 @@ from .assumption_gap_proposals import (
 )
 from .assumption_discovery import assumptions_required
 from .contracts import attach_contract, contract_metadata
+from .derivation_target_extraction import extract_derivation_targets_for_label
 from .high_level_contracts import action, refresh_evidence_ledger, validate_high_level_result
 from .high_level_workflows import package_assumption_result
 from .latex_index import build_index
+from .role_obligations import build_role_specific_obligations, has_role_specific_builder
 
 
 ASSUMPTION_REPORT_CONTRACT = "audit_assumption_report_result"
@@ -63,12 +65,19 @@ def assumptions_for(
     *,
     provided_assumptions: list[str] | None = None,
     source: dict[str, Any] | None = None,
+    role_obligation_packet: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Return route-required assumptions for a scoped target."""
     low_level = assumptions_required(target, provided_assumptions=provided_assumptions)
     result = package_assumption_result(low_level, question=f"What assumptions are required for {target}?")
     gaps = build_assumption_gaps(target, low_level.get("assumptions", []), source=source)
     proposals = build_assumption_proposals(gaps)
+    if isinstance(role_obligation_packet, dict):
+        gaps, proposals = _role_specific_assumption_gap_and_proposal(
+            target,
+            source=source,
+            packet=role_obligation_packet,
+        )
     if not gaps and low_level.get("status") == "unknown" and not low_level.get("assumptions"):
         unknown_gap = build_unknown_route_gap(target, source=source)
         gaps = [unknown_gap]
@@ -90,6 +99,21 @@ def assumptions_for(
         ],
     }
     result["tool_uses"] = build_assumption_tool_uses(target, provided_assumptions=provided_assumptions)
+    if isinstance(role_obligation_packet, dict):
+        result["tool_uses"].append(
+            {
+                "tool": "build_role_specific_obligations",
+                "arguments": {
+                    "role": role_obligation_packet.get("role"),
+                    "relation_kind": role_obligation_packet.get("relation_kind"),
+                },
+                "purpose": "Replace generic string-route gaps with source-role-local mathematical obligations.",
+                "status": role_obligation_packet.get("status", "completed"),
+                "output_contract": "role_specific_obligation_result",
+            }
+        )
+        result["source"]["assumption_route"] = "source_role_specific"
+        result["source"]["role_obligations"] = role_obligation_packet
     result["gaps"] = gaps
     result["proposals"] = proposals
     result["validation"] = summarize_assumption_validation(proposals)
@@ -112,6 +136,86 @@ def assumptions_for(
     if errors:
         raise ValueError(f"invalid assumptions_for result: {errors}")
     return result
+
+
+def _role_specific_assumption_gap_and_proposal(
+    target: str,
+    *,
+    source: dict[str, Any] | None,
+    packet: dict[str, Any],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Package one source-role-local gap without duplicating every obligation."""
+    source_context = dict(source or {})
+    role = str(packet.get("role", "unsupported_or_ambiguous"))
+    local = [item for item in packet.get("local_obligations", []) if isinstance(item, dict)]
+    digest = str(source_context.get("obligation_digest", "unbound"))
+    gap_id = f"assumption_gap_{digest[:16]}_role_{role}"
+    location = str(source_context.get("context_summary") or source_context.get("file") or target)
+    evidence_refs = list(dict.fromkeys(
+        [str(item) for item in packet.get("evidence_refs", []) if item]
+        + [str(item.get("evidence_ref")) for item in local if item.get("evidence_ref")]
+    ))
+    gap = {
+        "id": gap_id,
+        "location": location,
+        "problem": f"The source-evidenced `{role}` target has {len(local)} undischarged local obligations.",
+        "why": (
+            "A routing role identifies the relevant mathematical checks but does not establish their assumptions or truth. "
+            "These local obligations must be bound or discharged before claim promotion."
+        ),
+        "affected_terms": [target] if target else [],
+        "route_categories": sorted({str(item.get("kind")) for item in local if item.get("kind")}),
+        "route_kind": role,
+        "source": "build_role_specific_obligations",
+        "source_context": source_context,
+        "evidence_refs": evidence_refs,
+        "severity": "high" if role in {"identification_assumption", "statistical_estimator"} else "medium",
+        "local_obligations": local,
+    }
+    missing = [
+        (
+            f"{item.get('id')} ({item.get('kind')}): {item.get('mathematically_missing')} "
+            f"Why missing: {item.get('why_missing')}"
+        )
+        for item in local
+    ]
+    proposal = {
+        "id": f"assumption_proposal_{digest[:16]}_role_{role}",
+        "gap_ids": [gap_id],
+        "type": "bind_role_specific_assumptions",
+        "location": location,
+        "proposal_text": (
+            f"State, source-bind, or discharge the {len(local)} local obligations for the source-evidenced "
+            f"`{role}` route; do not import downstream conditions as local correctness requirements."
+        ),
+        "rationale": "The proposal follows the exact source role and normalized relation instead of a generic lexical route.",
+        "missing_assumptions": missing,
+        "possible_assumption_sets": list(packet.get("possible_assumption_sets", [])),
+        "derivation_route": list(packet.get("derivation_route", [])),
+        "route_kind": role,
+        "local_obligations": local,
+        "downstream_integration_obligations": list(packet.get("downstream_integration_obligations", [])),
+        "evidence_refs": evidence_refs,
+        "application_status": "not_applied",
+        "validation": {
+            "policy": "source_role_obligation_builder_v1",
+            "status": "validated_by_source_role_rule",
+            "certifying": False,
+            "reason": "The obligation set was selected by an exact source-evidenced routing role.",
+            "backend_attempts": [
+                {
+                    "backend": "build_role_specific_obligations",
+                    "status": "diagnostic_only",
+                    "severity": "diagnostic",
+                    "reason": "Role routing selects relevant checks but cannot establish assumption truth or sufficiency.",
+                }
+            ],
+            "boundary": "Source-role-local proposals are diagnostic candidates, not proof or globally minimal assumption sets.",
+            "gap_id": gap_id,
+        },
+    }
+    proposal["validation"]["proposal_id"] = proposal["id"]
+    return [gap], [proposal]
 
 
 def score_assumption_set(result: dict[str, Any], expected_terms: set[str]) -> dict[str, Any]:
@@ -235,6 +339,8 @@ def audit_and_propose_assumptions(
     target: str | None = None,
     root: str | None = None,
     labels: list[str] | None = None,
+    file: str | None = None,
+    source_digest: str | None = None,
     provided_assumptions: list[str] | None = None,
     output_path: str | Path | None = None,
 ) -> dict[str, Any]:
@@ -243,6 +349,7 @@ def audit_and_propose_assumptions(
     tool_uses: list[dict[str, Any]] = []
     source: dict[str, Any] = {}
     coverage_gaps: list[str] = []
+    label_selection: list[dict[str, Any]] = []
 
     if target:
         target_result = assumptions_for(target, provided_assumptions=provided_assumptions)
@@ -252,6 +359,10 @@ def audit_and_propose_assumptions(
         root_path = Path(root)
         index = build_index(root_path)
         source["root"] = str(root_path)
+        if file is not None:
+            source["file"] = file
+        if source_digest is not None:
+            source["source_digest"] = source_digest
         tool_uses.append(
             {
                 "tool": "build_index",
@@ -262,6 +373,80 @@ def audit_and_propose_assumptions(
             }
         )
         for label in labels:
+            if file is not None or source_digest is not None:
+                extraction = extract_derivation_targets_for_label(
+                    index,
+                    label,
+                    file=file,
+                    source_digest=source_digest,
+                )
+                label_selection.append(
+                    {
+                        "label": label,
+                        "selection_status": extraction.get("selection_status", extraction.get("status")),
+                        "extraction_status": extraction.get("status"),
+                        "source_binding": extraction.get("source_binding"),
+                        "target_count": len(extraction.get("targets", [])),
+                        "obligation_count": len(extraction.get("obligations", [])),
+                    }
+                )
+                selection_status = extraction.get("selection_status")
+                if selection_status != "selected":
+                    coverage_gaps.append(
+                        f"Label `{label}` selection failed with `{selection_status}` under `{root}`."
+                    )
+                    continue
+                extracted_targets = [item for item in extraction.get("targets", []) if isinstance(item, dict)]
+                if not extracted_targets:
+                    coverage_gaps.append(
+                        f"Label `{label}` was source-bound but had no supported assumption target."
+                    )
+                    continue
+                for extracted in extracted_targets:
+                    label_source = {
+                        "root": str(root_path),
+                        "label": extracted.get("label") or label,
+                        "parent_label": extracted.get("parent_label") or label,
+                        "file": extraction.get("source_binding", {}).get("file") or extracted.get("file"),
+                        "source_digest": extraction.get("source_binding", {}).get("source_digest"),
+                        "line_start": extracted.get("line_start"),
+                        "line_end": extracted.get("line_end"),
+                        "obligation_id": extracted.get("obligation_id"),
+                        "obligation_digest": extracted.get("obligation_digest"),
+                        "normalized_target": extracted.get("normalized_target"),
+                        "routing_role": extracted.get("routing_role"),
+                        "context_summary": (
+                            f"{extracted.get('file', root)} > {label} > "
+                            f"line {extracted.get('line_start', 'unknown')}"
+                        ),
+                    }
+                    normalized_target = extracted.get("normalized_target", {})
+                    routing_role = extracted.get("routing_role", {})
+                    role_packet = None
+                    if (
+                        isinstance(normalized_target, dict)
+                        and isinstance(routing_role, dict)
+                        and has_role_specific_builder(routing_role, target=str(extracted.get("target", "")))
+                    ):
+                        role_packet = build_role_specific_obligations(
+                            target=str(extracted.get("target", "")),
+                            normalized_target=normalized_target,
+                            routing_role=routing_role,
+                            evidence_refs=[
+                                f"source:{label_source.get('source_digest')}:{label_source.get('obligation_digest')}",
+                                f"routing_role:{routing_role.get('role_id', routing_role.get('role', 'unknown'))}",
+                            ],
+                        )
+                    target_result = assumptions_for(
+                        str(extracted.get("target", "")),
+                        provided_assumptions=provided_assumptions,
+                        source=label_source,
+                        role_obligation_packet=role_packet,
+                    )
+                    target_result["extracted_target"] = extracted
+                    target_results.append(target_result)
+                    tool_uses.extend(target_result.get("tool_uses", []))
+                continue
             block = index.get("labels", {}).get(label)
             if not isinstance(block, dict):
                 coverage_gaps.append(f"Label `{label}` was not found under `{root}`.")
@@ -305,6 +490,7 @@ def audit_and_propose_assumptions(
             "gap_count": len(gaps),
             "proposal_count": len(proposals),
             "coverage_gaps": coverage_gaps,
+            "label_selection": label_selection,
             "not_inspected": [
                 "global minimality",
                 "proof closure after proposed assumptions",

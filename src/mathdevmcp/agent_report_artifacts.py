@@ -12,6 +12,7 @@ from .contracts import attach_contract
 
 
 AGENT_REPORT_TRANSPORT_BYTES = 30_720
+PACKET_TRANSPORT_SCHEMA = "compact_evidence_packet@1"
 
 
 def _canonical_bytes(value: Any) -> bytes:
@@ -93,6 +94,94 @@ def resolve_agent_report(artifact_root: str | Path, sha256: str) -> dict[str, An
         },
         "agent_report_artifact",
     )
+
+
+def compact_evidence_packet(report: Mapping[str, Any], artifact: Mapping[str, Any]) -> dict[str, Any]:
+    """Build a bounded, source-literal handoff for proof or negative evidence."""
+    metadata = report.get("metadata") if isinstance(report.get("metadata"), Mapping) else {}
+    contract = str(metadata.get("contract", ""))
+    if contract not in {"proof_packet", "negative_evidence_packet"}:
+        raise ValueError("compact evidence packet requires a proof or negative-evidence packet")
+    source = report.get("source") if isinstance(report.get("source"), Mapping) else {}
+    nested = report.get("proof_audit_v2") if isinstance(report.get("proof_audit_v2"), Mapping) else report.get("evidence")
+    audit = nested if isinstance(nested, Mapping) else {}
+    obligations = [
+        {
+            key: item.get(key)
+            for key in (
+                "id",
+                "label",
+                "kind",
+                "status",
+                "substatus",
+                "reason",
+                "route",
+                "missing_constraints",
+                "verification_boundary",
+            )
+            if item.get(key) not in (None, "", [], {})
+        }
+        for item in audit.get("obligations", [])
+        if isinstance(item, Mapping)
+    ]
+    specialist = source.get("specialist_execution") if isinstance(source.get("specialist_execution"), Mapping) else {}
+    non_claims = [
+        str(report.get("certification_boundary", "")),
+        *[str(item) for item in specialist.get("non_claims", []) if str(item)],
+    ]
+    compact = attach_contract(
+        {
+            "response_schema_version": PACKET_TRANSPORT_SCHEMA,
+            "response_mode": "compact",
+            "packet_contract": contract,
+            "packet_id": report.get("packet_id"),
+            "label": report.get("label", report.get("source_label")),
+            "status": report.get("status"),
+            "reason": report.get("reason", audit.get("reason")),
+            "likely_cause": report.get("likely_cause"),
+            "substatus_counts": report.get("substatus_counts", audit.get("substatus_counts", {})),
+            "source": dict(source),
+            "obligation_summaries": obligations,
+            "assumption_manifest": report.get("assumption_manifest"),
+            "convention_context": report.get("convention_context"),
+            "numeric_evidence": report.get("numeric_evidence"),
+            "code_links": report.get("code_links", []),
+            "actions": report.get("actions", audit.get("high_priority_actions", [])),
+            "vetoes": {
+                "claim_eligibility": "ineligible",
+                "publication_enabled": False,
+                "promotion_allowed": False,
+            },
+            "non_claims": list(dict.fromkeys(item for item in non_claims if item)),
+            "artifact": dict(artifact),
+            "detail_resolution": {
+                "tool": "resolve_agent_report",
+                "sha256": artifact.get("sha256"),
+                "semantic_parity": "exact canonical detailed packet bytes",
+            },
+            "payload_guardrail": {
+                "transport_target_bytes": AGENT_REPORT_TRANSPORT_BYTES,
+                "status": "pending",
+            },
+        },
+        "compact_evidence_packet",
+    )
+    compact["payload_guardrail"] = {
+        "transport_target_bytes": AGENT_REPORT_TRANSPORT_BYTES,
+        "canonical_byte_count": 0,
+        "status": "pending",
+    }
+    while True:
+        size = len(_canonical_bytes(compact))
+        status = "met" if size <= AGENT_REPORT_TRANSPORT_BYTES else "exceeded"
+        guardrail = compact["payload_guardrail"]
+        if guardrail["canonical_byte_count"] == size and guardrail["status"] == status:
+            break
+        guardrail["canonical_byte_count"] = size
+        guardrail["status"] = status
+    if size > AGENT_REPORT_TRANSPORT_BYTES:
+        raise ValueError("compact evidence packet exceeds the transport budget")
+    return compact
 
 
 def compact_audit_fix_report(result: Mapping[str, Any], artifact: Mapping[str, Any]) -> dict[str, Any]:
@@ -182,14 +271,42 @@ def compact_rigor_report(result: Mapping[str, Any], artifact: Mapping[str, Any])
         {
             "status": result.get("coverage", {}).get("status"),
             "workflow": "audit_math_document_rigor",
-            "source": {"file": Path(str(result.get("tex_path", ""))).name},
+            "source": dict(result.get("source", {}))
+            if isinstance(result.get("source"), Mapping)
+            else {"file": Path(str(result.get("tex_path", ""))).name},
             "coverage": result.get("coverage", {}),
             "target_selection": {
                 "selected_count": selection.get("selected_count"),
                 "available_labeled_equation_count": selection.get("available_labeled_equation_count"),
                 "partial_coverage": selection.get("partial_coverage"),
                 "targets": [
-                    {key: item.get(key) for key in ("label", "line_start", "classification") if item.get(key) is not None}
+                    {
+                        "label": item.get("label"),
+                        "line_start": item.get("line_start"),
+                        "line_end": item.get("line_end"),
+                        "relation_kind": item.get("normalized_target", {}).get("kind")
+                        if isinstance(item.get("normalized_target"), Mapping)
+                        else None,
+                        "routing_role": {
+                            key: item.get("routing_role", {}).get(key)
+                            for key in ("role", "authority")
+                            if item.get("routing_role", {}).get(key) is not None
+                        }
+                        if isinstance(item.get("routing_role"), Mapping)
+                        else None,
+                        "obligation_id": item.get("obligation_id"),
+                        "obligation_digest": item.get("obligation_digest"),
+                        "local_obligation_ids": [
+                            obligation.get("id")
+                            for obligation in item.get("local_obligations", [])
+                            if isinstance(obligation, Mapping) and obligation.get("id")
+                        ],
+                        "downstream_integration_obligation_ids": [
+                            obligation.get("id")
+                            for obligation in item.get("downstream_integration_obligations", [])
+                            if isinstance(obligation, Mapping) and obligation.get("id")
+                        ],
+                    }
                     for item in selection.get("targets", [])
                     if isinstance(item, dict)
                 ],

@@ -10,6 +10,33 @@ from mathdevmcp.latex_index import build_index
 
 
 ROOT = Path(__file__).resolve().parent.parent
+
+
+def test_v8_nine_targets_share_typed_relation_and_source_role_contract() -> None:
+    source = ROOT / "docs/credit-card-npv-component-proposal/credit_card_npv_component_proposal_v8.tex"
+    index = build_index(source.parent)
+    expected = {
+        "eq:panel-npv-functional": ("equality", "policy_value_recursion"),
+        "eq:incremental-cash-flow": ("equality", "accounting_identity"),
+        "eq:pd-lgd-ead": ("equality", "accounting_identity"),
+        "eq:balance-stock-flow": ("equality", "accounting_identity"),
+        "eq:terminal-value-base": ("equality", "placeholder_definition"),
+        "eq:ss-bellman": ("equality", "policy_value_recursion"),
+        "eq:causal-cashflow-object": ("conditional_expectation_object", "causal_estimand_object"),
+        "eq:experiment-late": ("equality", "statistical_estimator"),
+        "eq:randomization-assumption": ("conditional_independence", "identification_assumption"),
+    }
+
+    for label, (kind, role) in expected.items():
+        result = extract_derivation_targets_for_label(index, label, file=source.name)
+        assert result["status"] == "extracted"
+        assert len(result["targets"]) == 1
+        target = result["targets"][0]
+        assert target["normalized_target"]["kind"] == kind
+        assert target["routing_role"]["role"] == role
+        assert target["routing_role"]["authority"] == "source_evidenced_role"
+        assert target["routing_role"]["obligation_digest"] == target["obligation_digest"]
+        assert "does not establish" in target["routing_role"]["non_claims"][0]
 DOCS = ROOT / "docs"
 
 

@@ -71,6 +71,7 @@ def classify_status(
     route: dict | None = None,
     shape: dict | None = None,
     actions: list[dict] | None = None,
+    source_binding_status: str | None = None,
 ) -> dict:
     """Classify a report with an additive substatus and next-action list."""
 
@@ -91,12 +92,17 @@ def classify_status(
         else:
             substatus = "mismatch:likely_formula_error"
     elif parser_policy.get("status") not in {"", None, "selected", "selected_for_proof_audit"}:
-        substatus = "unverified:parser_limit" if status == "unverified" else "inconclusive:source_label_missing"
+        if source_binding_status == "accepted_exact_source":
+            substatus = "unverified:parser_limit"
+        else:
+            substatus = "unverified:parser_limit" if status == "unverified" else "inconclusive:source_label_missing"
     elif base_obligation.get("classification") == "not_extracted":
         substatus = "unverified:parser_limit" if status == "unverified" else "inconclusive:source_label_missing"
     elif shape.get("missing_constraints"):
         missing_kinds = {item.get("kind") for item in shape.get("missing_constraints", [])}
         substatus = "unverified:missing_shape" if any("shape" in str(kind) or "square" in str(kind) for kind in missing_kinds) else "unverified:missing_assumption"
+    elif base_obligation.get("classification") == "human_review":
+        substatus = "unverified:manual_formalization_required"
     elif route.get("route") == "human_review":
         substatus = "unverified:manual_formalization_required"
     elif "timeout" in reason.lower() or "timed out" in reason.lower():

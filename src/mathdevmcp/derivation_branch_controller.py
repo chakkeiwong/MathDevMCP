@@ -212,7 +212,6 @@ def _legacy_blocker_ledger_kind(kind: str) -> tuple[str, str]:
     evidence_markers = (
         "binding",
         "manifest",
-        "branch_bound_backend_execution",
         "source_extraction_uncertainty",
         "request_invalid",
         "result_record",
@@ -225,6 +224,8 @@ def _legacy_blocker_ledger_kind(kind: str) -> tuple[str, str]:
         "law",
         "integrability",
         "expectation",
+        "conditioning",
+        "branch_bound_backend_execution",
         "derivative",
         "invertib",
         "conformab",

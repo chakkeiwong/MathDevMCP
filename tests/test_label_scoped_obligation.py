@@ -139,6 +139,28 @@ def test_duplicate_bare_lookup_is_ambiguous_and_file_scoped_lookup_is_exact() ->
     assert scoped["obligation"]["normalized_target"]["display_text"] == "x = 2"
 
 
+def test_v8_probabilistic_relations_extract_as_typed_objects() -> None:
+    source = ROOT / "docs/credit-card-npv-component-proposal/credit_card_npv_component_proposal_v8.tex"
+    by_label = {
+        item["label"]: item
+        for item in extract_label_scoped_obligations(source, source_ref=source.relative_to(ROOT).as_posix())
+    }
+
+    expectation = by_label["eq:causal-cashflow-object"]
+    independence = by_label["eq:randomization-assumption"]
+
+    assert expectation["extraction_state"] == "valid_complete"
+    assert expectation["normalized_target"]["kind"] == "conditional_expectation_object"
+    assert expectation["normalized_target"]["members"] == [
+        "Y_i(a)-Y_i(a_0)",
+        "X_i, d, s, \\pi",
+    ]
+    assert independence["extraction_state"] == "valid_complete"
+    assert independence["normalized_target"]["kind"] == "conditional_independence"
+    assert independence["normalized_target"]["members"][0] == "Z_{ie}"
+    assert independence["normalized_target"]["members"][2] == "i\\in\\mathcal{P}_e"
+
+
 def test_validator_rejects_unknown_keys_wrong_derived_ids_and_source_drift() -> None:
     record = next(iter(_reconstruct_reviewed_records().values()))
     source = (ROOT / record["document"]["file"]).read_bytes()

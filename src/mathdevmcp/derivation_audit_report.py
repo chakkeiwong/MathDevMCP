@@ -31,13 +31,14 @@ def audit_derivation_extraction_boundary(
     labels: list[str] | tuple[str, ...] | str,
     *,
     file: str | None = None,
+    source_digest: str | None = None,
 ) -> dict[str, Any]:
     """Audit extraction identities without planning or executing backends."""
     root_path = Path(root)
     label_list = [labels] if isinstance(labels, str) else list(labels)
     index = build_index(root_path)
     label_results = [
-        extract_derivation_targets_for_label(index, str(label), file=file)
+        extract_derivation_targets_for_label(index, str(label), file=file, source_digest=source_digest)
         for label in label_list
     ]
     targets = [
@@ -57,6 +58,7 @@ def audit_derivation_extraction_boundary(
         "status": "extracted" if obligations and len(targets) == len(obligations) else "quarantined",
         "root": str(root_path),
         "file": file,
+        "source_digest": source_digest,
         "labels": label_list,
         "label_results": label_results,
         "obligations": obligations,
@@ -96,6 +98,9 @@ def _target_source(target: dict[str, Any], *, root: str, requested_label: str) -
         "label": label,
         "parent_label": parent_label,
         "file": target.get("file"),
+        "source_digest": target.get("label_scoped_obligation", {}).get("document", {}).get("source_digest"),
+        "obligation_id": target.get("obligation_id"),
+        "obligation_digest": target.get("obligation_digest"),
         "line_start": target.get("line_start"),
         "line_end": target.get("line_end"),
         "section_path": target.get("section_path", []),
@@ -367,6 +372,8 @@ def audit_and_propose_derivations(
     target: str | None = None,
     root: str | None = None,
     labels: list[str] | tuple[str, ...] | str | None = None,
+    file: str | None = None,
+    source_digest: str | None = None,
     givens: list[str] | None = None,
     assumptions: list[str] | None = None,
     backend: str = "auto",
@@ -378,6 +385,7 @@ def audit_and_propose_derivations(
     coverage_gaps: list[str] = []
     route_plans: list[dict[str, Any]] = []
     label_extraction_results: list[dict[str, Any]] = []
+    label_selection: list[dict[str, Any]] = []
     source: dict[str, Any] = {}
     given_list = list(givens or [])
     assumption_list = list(assumptions or [])
@@ -409,6 +417,10 @@ def audit_and_propose_derivations(
         root_path = Path(root)
         index = build_index(root_path)
         source["root"] = str(root_path)
+        if file is not None:
+            source["file"] = file
+        if source_digest is not None:
+            source["source_digest"] = source_digest
         tool_uses.append(
             {
                 "tool": "build_index",
@@ -419,24 +431,52 @@ def audit_and_propose_derivations(
             }
         )
         for label in normalized_labels:
-            block = index.get("labels", {}).get(label)
-            if not isinstance(block, dict):
-                coverage_gaps.append(f"Label `{label}` was not found under `{root_path}`.")
-                continue
-            extraction = extract_derivation_targets_for_label(index, label)
+            extraction = extract_derivation_targets_for_label(
+                index,
+                label,
+                file=file,
+                source_digest=source_digest,
+            )
             label_extraction_results.append(extraction)
+            label_selection.append(
+                {
+                    "label": label,
+                    "selection_status": extraction.get("selection_status", extraction.get("status")),
+                    "extraction_status": extraction.get("status"),
+                    "source_binding": extraction.get("source_binding"),
+                    "target_count": len(extraction.get("targets", [])),
+                    "obligation_count": len(extraction.get("obligations", [])),
+                }
+            )
             tool_uses.append(
                 {
                     "tool": "extract_derivation_targets_for_label",
-                    "arguments": {"root": str(root_path), "label": label},
+                    "arguments": {
+                        "root": str(root_path),
+                        "label": label,
+                        "file": file,
+                        "source_digest": source_digest,
+                    },
                     "purpose": "Extract source-local equation or align-row obligations from the label block.",
                     "status": extraction.get("status", "unknown"),
                     "output_contract": "derivation_target_extraction_result",
                 }
             )
+            selection_status = extraction.get("selection_status")
+            if selection_status != "selected":
+                if selection_status == "label_absent":
+                    coverage_gaps.append(f"Label `{label}` was not found under `{root_path}`.")
+                else:
+                    coverage_gaps.append(
+                        f"Label `{label}` selection failed with `{selection_status}` under `{root_path}`."
+                    )
+                continue
             extracted_targets = [item for item in extraction.get("targets", []) if isinstance(item, dict)]
             if not extracted_targets:
-                coverage_gaps.append(f"Label `{label}` had no extractable derivation targets.")
+                if file is None and source_digest is None:
+                    coverage_gaps.append(f"Label `{label}` had no extractable derivation targets.")
+                else:
+                    coverage_gaps.append(f"Label `{label}` was source-bound but had no supported derivation target.")
                 continue
             for extracted in extracted_targets:
                 source_context = _target_source(extracted, root=str(root_path), requested_label=label)
@@ -511,6 +551,7 @@ def audit_and_propose_derivations(
             "gap_count": len(gaps),
             "proposal_count": len(proposals),
             "coverage_gaps": coverage_gaps,
+            "label_selection": label_selection,
             "not_inspected": [
                 "automatic source edits",
                 "full-document derivation correctness",

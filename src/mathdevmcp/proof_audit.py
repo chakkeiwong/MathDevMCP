@@ -160,6 +160,7 @@ def _audit_candidate(candidate: dict, obligation_id: str, doc_context: dict, bac
     provenance = _line_provenance(doc_context, candidate.get("line"))
     canonical = candidate.get("canonical_target")
     if isinstance(canonical, dict):
+        normalized = canonical.get("normalized_target") if isinstance(canonical.get("normalized_target"), dict) else {}
         provenance.update(
             {
                 "file": canonical.get("file"),
@@ -170,6 +171,7 @@ def _audit_candidate(candidate: dict, obligation_id: str, doc_context: dict, bac
                 "obligation_digest": canonical.get("obligation_digest"),
                 "source_digest": canonical.get("label_scoped_obligation", {}).get("document", {}).get("source_digest"),
                 "target_ingress": "validated_label_scoped_obligation",
+                "relation_kind": normalized.get("kind"),
             }
         )
     classification = candidate["classification"]
@@ -300,6 +302,22 @@ def audit_derivation_for_label(
             },
             "proof_audit_result",
         )
+    if target_extraction["status"] == "label_not_found":
+        doc_context = {"label": label, "file": file, "status": "source_label_missing"}
+        return attach_contract(
+            {
+                "label": label,
+                "doc_root": str(root_path.resolve()),
+                "status": "inconclusive",
+                "reason": target_extraction["reason"],
+                "obligations": [_empty_obligation(doc_context)],
+                "counts": {"total": 1, "verified": 0, "mismatched": 0, "unverified": 0, "inconclusive": 1, "not_encodable": 0, "not_extracted": 1},
+                "doc_context": doc_context,
+                "target_extraction": target_extraction,
+            },
+            "proof_audit_result",
+            doc_context=doc_context,
+        )
     targets = target_extraction.get("targets", [])
     if source_digest is not None and targets:
         actual_digests = {
@@ -330,7 +348,7 @@ def audit_derivation_for_label(
     canonical_display_target = (
         target_extraction.get("status") == "extracted"
         and len(targets) == 1
-        and targets[0].get("normalized_target", {}).get("kind") == "equality"
+        and targets[0].get("adapter_eligible") is True
         and target_extraction.get("parent_block", {}).get("kind", "") not in {"theorem", "proposition", "lemma", "corollary"}
     )
     doc_context = (
@@ -340,17 +358,36 @@ def audit_derivation_for_label(
     )
     if canonical_display_target:
         target = targets[0]
-        obligation = target["label_scoped_obligation"]
-        candidates = [
-            {
-                "lhs": target["lhs"],
-                "rhs": target["rhs"],
-                "source_text": target["target"],
-                "line": target["line_start"],
-                "classification": "sympy" if _is_backend_safe(target["lhs"], target["rhs"]) else "human_review",
-                "canonical_target": target,
-            }
-        ]
+        relation_kind = target.get("normalized_target", {}).get("kind")
+        equality_like = relation_kind in {"equality", "equality_chain", "aligned_definition"}
+        members = target.get("normalized_target", {}).get("members", [])
+        if relation_kind == "equality_chain" and isinstance(members, list) and len(members) >= 2:
+            candidates = [
+                {
+                    "lhs": str(lhs),
+                    "rhs": str(rhs),
+                    "source_text": f"{lhs} = {rhs}",
+                    "line": target["line_start"],
+                    "classification": "sympy" if _is_backend_safe(str(lhs), str(rhs)) else "human_review",
+                    "canonical_target": target,
+                }
+                for lhs, rhs in zip(members, members[1:])
+            ]
+        else:
+            candidates = [
+                {
+                    "lhs": target["lhs"],
+                    "rhs": target["rhs"],
+                    "source_text": target["target"],
+                    "line": target["line_start"],
+                    "classification": (
+                        "sympy"
+                        if equality_like and _is_backend_safe(target["lhs"], target["rhs"])
+                        else "human_review"
+                    ),
+                    "canonical_target": target,
+                }
+            ]
     else:
         candidates = _extract_obligation_candidates(doc_context, paragraph_context)
     obligations = [

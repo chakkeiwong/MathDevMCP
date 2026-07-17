@@ -186,7 +186,9 @@ def test_predecessor_artifact_inventory_requires_exact_ordered_refs(
             p09._require_artifact_inventory(tmp_path, changed, refs)
 
 
-def test_predecessor_code_bindings_reject_missing_extra_and_reordered() -> None:
+def test_predecessor_code_bindings_reject_missing_extra_and_reordered(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     expected = {
         "scripts/run_p08c1_target_fidelity_replay.py": p09.P08C1_CODE_DIGESTS[
             "scripts/run_p08c1_target_fidelity_replay.py"
@@ -195,7 +197,12 @@ def test_predecessor_code_bindings_reject_missing_extra_and_reordered() -> None:
             "src/mathdevmcp/document_derivation_tree.py"
         ],
     }
-    bindings = [p09._binding(ROOT / ref, ref) for ref in expected]
+    bindings = [
+        {"ref": ref, "sha256": digest, "byte_count": index + 1}
+        for index, (ref, digest) in enumerate(expected.items())
+    ]
+    by_ref = {item["ref"]: item for item in bindings}
+    monkeypatch.setattr(p09, "_binding", lambda _path, ref: dict(by_ref[ref]))
     assert p09._require_code_bindings(
         {"code_bindings": bindings}, expected, gate="test"
     ) == bindings

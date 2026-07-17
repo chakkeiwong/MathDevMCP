@@ -1,4 +1,5 @@
 from pathlib import Path
+import hashlib
 
 import pytest
 
@@ -41,7 +42,35 @@ def test_proof_audit_v2_downgrades_when_parser_policy_is_blocked():
     assert result["status"] == "inconclusive"
     assert result["counts"]["inconclusive"] == 1
     assert result["obligations"][0]["status"] == "inconclusive"
+    assert result["source_binding_status"] == "accepted_exact_source"
+    assert result["specialist_parser_readiness"] == "selected_for_context_only"
+    assert result["obligations"][0]["substatus"] == "unverified:parser_limit"
     assert any(action["kind"] == "fix_parser_provenance_before_certification" for action in result["high_priority_actions"])
+
+
+def test_exact_v8_source_binding_is_not_reported_as_missing() -> None:
+    source = ROOT / "docs/credit-card-npv-component-proposal/credit_card_npv_component_proposal_v8.tex"
+    digest = hashlib.sha256(source.read_bytes()).hexdigest()
+
+    result = audit_derivation_v2_for_label(
+        str(source.parent),
+        "eq:incremental-cash-flow",
+        file=source.name,
+        source_digest=digest,
+        summary_only=True,
+    )
+
+    assert result["source_binding_status"] == "accepted_exact_source"
+    assert result["specialist_parser_readiness"] == "selected_for_proof_audit"
+    assert "inconclusive:source_label_missing" not in result["substatus_counts"]
+    assert all(item["source_binding_status"] == "accepted_exact_source" for item in result["obligations"])
+
+
+def test_true_missing_label_retains_source_label_missing_substatus() -> None:
+    result = audit_derivation_v2_for_label(str(FIXTURES), "eq:not-present", summary_only=True)
+
+    assert result["source_binding_status"] == "source_label_missing"
+    assert result["substatus_counts"] == {"inconclusive:source_label_missing": 1}
 
 
 def test_p02_parser_policy_ignores_success_counts_and_runtime_proxies() -> None:

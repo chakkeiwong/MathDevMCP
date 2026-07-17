@@ -402,6 +402,8 @@ def audit_and_propose_assumptions(
     target: str | None = None,
     root: str | None = None,
     labels: Sequence[str] | None = None,
+    file: str | None = None,
+    source_digest: str | None = None,
     provided_assumptions: Sequence[str] | None = None,
     output: str | None = None,
 ) -> dict:
@@ -412,6 +414,8 @@ def audit_and_propose_assumptions(
             "target": target,
             "root": root,
             "labels": list(labels) if labels is not None else None,
+            "file": file,
+            "source_digest": source_digest,
             "provided_assumptions": list(provided_assumptions) if provided_assumptions is not None else None,
             "output": output,
         },
@@ -424,6 +428,8 @@ def audit_and_propose_derivations(
     target: str | None = None,
     root: str | None = None,
     labels: Sequence[str] | None = None,
+    file: str | None = None,
+    source_digest: str | None = None,
     givens: Sequence[str] | None = None,
     assumptions: Sequence[str] | None = None,
     backend: str = "auto",
@@ -436,6 +442,8 @@ def audit_and_propose_derivations(
             "target": target,
             "root": root,
             "labels": list(labels) if labels is not None else None,
+            "file": file,
+            "source_digest": source_digest,
             "givens": list(givens) if givens is not None else None,
             "assumptions": list(assumptions) if assumptions is not None else None,
             "backend": backend,
@@ -881,10 +889,12 @@ def proof_packet_label(
     summary_only: bool = True,
     file: str | None = None,
     source_digest: str | None = None,
+    response_mode: Literal["compact", "detailed"] = "detailed",
+    artifact_root: str | None = None,
 ) -> dict:
     return call_mcp_tool(
         "proof_packet_label",
-        {"root": root, "label": label, "summary_only": summary_only, "file": file, "source_digest": source_digest},
+        {"root": root, "label": label, "summary_only": summary_only, "file": file, "source_digest": source_digest, "response_mode": response_mode, "artifact_root": artifact_root},
     )
 
 
@@ -894,10 +904,12 @@ def negative_evidence_label(
     label: str,
     file: str | None = None,
     source_digest: str | None = None,
+    response_mode: Literal["compact", "detailed"] = "detailed",
+    artifact_root: str | None = None,
 ) -> dict:
     return call_mcp_tool(
         "negative_evidence_label",
-        {"root": root, "label": label, "file": file, "source_digest": source_digest},
+        {"root": root, "label": label, "file": file, "source_digest": source_digest, "response_mode": response_mode, "artifact_root": artifact_root},
     )
 
 

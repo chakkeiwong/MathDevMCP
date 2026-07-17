@@ -718,6 +718,23 @@ def test_nested_promotion_decision_vetoes_are_complete_and_mutation_detected() -
     )
 
 
+def test_current_global_ledgers_do_not_inflate_legacy_nested_history() -> None:
+    audit = _raw_audit()
+    audit["integrity_binding_verified"] = True
+    audit["veto_ids"] = ["document_repair_publication_disabled"]
+    audit["failure_classifications"] = ["mathematical_gap"]
+    audit["targets"][0]["tree"]["historical_backend_evidence"] = {
+        "failure_classification": "evidence_binding_error",
+        "veto_ids": ["legacy_unbound_document_evidence"],
+    }
+
+    response = compile_document_derivation_response(audit, _request(), target_limit=1)
+
+    assert response["failure_classifications"] == ["mathematical_gap"]
+    assert "legacy_unbound_document_evidence" not in response["veto_ids"]
+    assert "document_repair_publication_disabled" in response["veto_ids"]
+
+
 def test_request_identity_binds_exact_worker_argument() -> None:
     zero = _request(workers=0)
     one = _request(workers=1)
@@ -778,6 +795,14 @@ def test_compact_consumer_has_action_source_evidence_and_boundary_under_guardrai
     assert "candidate_assumptions" in target
     assert target["evidence_refs"]
     assert target["source_refs"]
+    assert target["source_evidence"]["target"]
+    assert "normalized_target" in target["source_evidence"]
+    assert "routing_role" in target["source_evidence"]
+    assert target["source_evidence"]["boundary"] == {
+        "claim_eligibility": "ineligible",
+        "publication_enabled": False,
+        "promotion_allowed": False,
+    }
     assert "document_repair_publication_disabled" in response["veto_ids"]
     assert response["non_claims"]
     assert response["compact_representation"] == "inline_complete"

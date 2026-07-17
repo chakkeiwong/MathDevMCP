@@ -14,7 +14,7 @@ import re
 from typing import Any
 
 from .assumptions_for import audit_and_propose_assumptions as high_level_audit_and_propose_assumptions
-from .agent_report_artifacts import compact_audit_fix_report, compact_review_packet, compact_rigor_report, persist_agent_report, resolve_agent_report
+from .agent_report_artifacts import compact_audit_fix_report, compact_evidence_packet, compact_review_packet, compact_rigor_report, persist_agent_report, resolve_agent_report
 from .assumptions_for import assumptions_for as high_level_assumptions_for
 from .audit_and_propose_fix import audit_and_propose_fix as high_level_audit_and_propose_fix
 from .audit_math_to_code import audit_math_to_code as high_level_audit_math_to_code
@@ -27,7 +27,7 @@ from .derivation_audit_report import audit_and_propose_derivations as high_level
 from .debug_derivation import debug_derivation as high_level_debug_derivation
 from .derive_from import derive_from as high_level_derive_from
 from .derive_or_refute import derive_or_refute
-from .document_derivation_tree import audit_document_derivation_tree as high_level_audit_document_derivation_tree
+from .document_derivation_tree import audit_document_derivation_tree as high_level_audit_document_derivation_tree, render_compact_document_derivation_tree_markdown
 from .document_derivation_response import (
     build_document_derivation_audit_request,
     compile_document_derivation_response,
@@ -52,6 +52,7 @@ from .math_claim_classifier import classify_math_claim
 from .math_change_impact import math_change_impact
 from .math_document_rigor import audit_math_document_rigor as high_level_audit_math_document_rigor
 from .math_document_rigor import plan_math_document_rigor_audit as high_level_plan_math_document_rigor_audit
+from .math_document_rigor import render_compact_math_document_rigor_markdown
 from .report_claim_boundary import audit_report_claim_boundary as high_level_audit_report_claim_boundary
 from .math_review_packet import build_math_review_packet
 from .math_to_tests import generate_math_tests
@@ -461,6 +462,8 @@ def _tool_high_level_audit_and_propose_assumptions(args: dict[str, Any]) -> dict
         target=args.get("target") if isinstance(args.get("target"), str) and args.get("target") else None,
         root=args.get("root") if isinstance(args.get("root"), str) and args.get("root") else None,
         labels=labels,
+        file=args.get("file") if isinstance(args.get("file"), str) and args.get("file") else None,
+        source_digest=args.get("source_digest") if isinstance(args.get("source_digest"), str) and args.get("source_digest") else None,
         provided_assumptions=_optional_string_list_arg(args, "provided_assumptions", "provided_assumption"),
         output_path=output if isinstance(output, str) and output else None,
     )
@@ -482,6 +485,8 @@ def _tool_high_level_audit_and_propose_derivations(args: dict[str, Any]) -> dict
         target=args.get("target") if isinstance(args.get("target"), str) and args.get("target") else None,
         root=args.get("root") if isinstance(args.get("root"), str) and args.get("root") else None,
         labels=labels,
+        file=args.get("file") if isinstance(args.get("file"), str) and args.get("file") else None,
+        source_digest=args.get("source_digest") if isinstance(args.get("source_digest"), str) and args.get("source_digest") else None,
         givens=_optional_string_list_arg(args, "givens", "given"),
         assumptions=_optional_string_list_arg(args, "assumptions", "assumption"),
         backend=str(args.get("backend", "auto")),
@@ -801,13 +806,17 @@ def _tool_typed_obligation_label(args: dict[str, Any]) -> dict[str, Any]:
 
 
 def _tool_proof_packet_label(args: dict[str, Any]) -> dict[str, Any]:
-    return build_proof_packet_label(
+    result = build_proof_packet_label(
         _required_string(args, "root"),
         _required_string(args, "label"),
         summary_only=bool(args.get("summary_only", True)),
         file=args.get("file") or None,
         source_digest=args.get("source_digest") or None,
     )
+    if str(args.get("response_mode", "detailed")) == "compact":
+        artifact_root = _required_string(args, "artifact_root")
+        return compact_evidence_packet(result, persist_agent_report(result, artifact_root))
+    return result
 
 
 def _tool_negative_evidence_label(args: dict[str, Any]) -> dict[str, Any]:
@@ -819,7 +828,11 @@ def _tool_negative_evidence_label(args: dict[str, Any]) -> dict[str, Any]:
         file=args.get("file") or None,
         source_digest=args.get("source_digest") or None,
     )
-    return build_negative_evidence_packet(label, audit)
+    result = build_negative_evidence_packet(label, audit)
+    if str(args.get("response_mode", "detailed")) == "compact":
+        artifact_root = _required_string(args, "artifact_root")
+        return compact_evidence_packet(result, persist_agent_report(result, artifact_root))
+    return result
 
 
 def _tool_domain_templates(args: dict[str, Any]) -> dict[str, Any]:
@@ -990,18 +1003,27 @@ def _tool_audit_math_document_rigor(args: dict[str, Any]) -> dict[str, Any]:
     max_label_value = int(max_labels) if max_labels is not None else None
     if max_label_value is not None and max_label_value <= 0:
         max_label_value = None
+    response_mode = str(args.get("response_mode", "detailed"))
+    if response_mode not in {"detailed", "compact"}:
+        raise ValueError("response_mode must be detailed or compact")
     result = high_level_audit_math_document_rigor(
         _required_string(args, "tex_path"),
-        output_md=args.get("output_md") or None,
+        output_md=None if response_mode == "compact" else args.get("output_md") or None,
         output_json=args.get("output_json") or None,
         focus_labels=focus_labels,
         max_labels=max_label_value,
         backend_env=str(args.get("backend_env", "mathdevmcp-backends")),
         validation_backends=validation_backends,
     )
-    if str(args.get("response_mode", "detailed")) == "compact":
+    if response_mode == "compact":
         artifact_root = _required_string(args, "artifact_root")
-        return compact_rigor_report(result, persist_agent_report(result, artifact_root))
+        artifact = persist_agent_report(result, artifact_root)
+        if args.get("output_md"):
+            Path(str(args["output_md"])).write_text(
+                render_compact_math_document_rigor_markdown(result, artifact=artifact),
+                encoding="utf-8",
+            )
+        return compact_rigor_report(result, artifact)
     return result
 
 
@@ -1066,7 +1088,7 @@ def _tool_audit_document_derivation_tree(args: dict[str, Any]) -> dict[str, Any]
     else:
         audit = high_level_audit_document_derivation_tree(
             tex_path,
-            output_md=args.get("output_md") or None,
+            output_md=None if response_mode == "compact" else args.get("output_md") or None,
             output_json=args.get("output_json") or None,
             focus_labels=focus_labels,
             max_labels=max_label_value,
@@ -1077,6 +1099,11 @@ def _tool_audit_document_derivation_tree(args: dict[str, Any]) -> dict[str, Any]
             grounding_policy=grounding_policy,
             workers=workers,
         )
+        if response_mode == "compact" and args.get("output_md"):
+            Path(str(args["output_md"])).write_text(
+                render_compact_document_derivation_tree_markdown(audit),
+                encoding="utf-8",
+            )
     return compile_document_derivation_response(
         audit,
         audit_request,

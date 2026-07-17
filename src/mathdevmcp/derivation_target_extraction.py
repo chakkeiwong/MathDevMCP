@@ -2,6 +2,7 @@ from __future__ import annotations
 
 """Extract source-local derivation targets from LaTeX index blocks."""
 
+import hashlib
 from pathlib import Path
 import re
 from typing import Any
@@ -15,6 +16,8 @@ from .label_scoped_obligation import (
     lookup_label_scoped_obligation,
 )
 from .latex_index import build_index, extract_paragraph_context_for_label, resolve_label_occurrences
+from .source_routing_role import infer_source_routing_role
+from .specialist_execution import execute_source_bound_specialist
 
 
 DERIVATION_TARGET_EXTRACTION_CONTRACT = "derivation_target_extraction_result"
@@ -22,6 +25,7 @@ PROPOSITION_CONTEXT_PACKET_CONTRACT = "proposition_context_packet_result"
 FROZEN_SOURCE_REFS = frozenset(
     {
         "docs/credit-card-npv-component-proposal/credit_card_npv_component_proposal_final_submission.tex",
+        "docs/credit-card-npv-component-proposal/credit_card_npv_component_proposal_v8.tex",
         "docs/risky-debt-maliar-deep-learning-lecture-note.tex",
     }
 )
@@ -189,12 +193,15 @@ def _target_from_obligation(
     obligation: dict[str, Any],
     *,
     parent: dict[str, Any],
+    routing_role: dict[str, Any],
+    specialist_execution: dict[str, Any],
 ) -> dict[str, Any]:
     normalized = obligation["normalized_target"]
     members = list(normalized["members"])
-    lhs = members[0] if members else ""
+    equality_like = normalized["kind"] in {"equality", "equality_chain", "aligned_definition"}
+    lhs = members[0] if equality_like and members else ""
     delimiter = r" \coloneqq " if normalized["kind"] == "aligned_definition" else " = "
-    rhs = delimiter.join(members[1:]) if len(members) > 1 else ""
+    rhs = delimiter.join(members[1:]) if equality_like and len(members) > 1 else ""
     rows = obligation["owned_rows"]
     return {
         "id": f"{parent.get('block_id', obligation['document']['file'])}:target:{obligation['label']}",
@@ -228,6 +235,8 @@ def _target_from_obligation(
         "operator_inventory": obligation["operator_inventory"],
         "symbol_inventory": obligation["symbol_inventory"],
         "label_scoped_obligation": obligation,
+        "routing_role": routing_role,
+        "specialist_execution": specialist_execution,
     }
 
 
@@ -247,6 +256,7 @@ def extract_derivation_targets_for_label(
     label: str,
     *,
     file: str | None = None,
+    source_digest: str | None = None,
 ) -> dict[str, Any]:
     """Extract validated label-scoped targets without fallback routing."""
     resolution = _resolve_occurrence(index, label, file)
@@ -254,6 +264,7 @@ def extract_derivation_targets_for_label(
         return {
             "label": label,
             "status": "ambiguous",
+            "selection_status": "ambiguous_label",
             "reason": "The label has multiple source occurrences; exact file identity is required.",
             "parent_block": None,
             "targets": [],
@@ -272,12 +283,36 @@ def extract_derivation_targets_for_label(
         return {
             "label": label,
             "status": "label_not_found",
+            "selection_status": "label_absent",
             "reason": f"Label `{label}` was not found in the index.",
             "parent_block": None,
             "targets": [],
             "obligations": [],
             "fallback_count": 0,
             "ambiguities": [],
+        }
+
+    source_path, source_ref, _ = _workspace_source(index, block)
+    observed_source_digest = hashlib.sha256(source_path.read_bytes()).hexdigest()
+    source_binding = {
+        "status": "accepted",
+        "file": source_ref,
+        "source_digest": observed_source_digest,
+        "required_source_digest": source_digest,
+    }
+    if source_digest is not None and source_digest != observed_source_digest:
+        source_binding["status"] = "rejected_digest_mismatch"
+        return {
+            "label": label,
+            "status": "source_digest_mismatch",
+            "selection_status": "source_digest_mismatch",
+            "reason": "The selected source bytes do not match the required source digest.",
+            "parent_block": _parent_block(block),
+            "targets": [],
+            "obligations": [],
+            "fallback_count": 0,
+            "ambiguities": [],
+            "source_binding": source_binding,
         }
 
     child_labels: list[str]
@@ -296,6 +331,8 @@ def extract_derivation_targets_for_label(
         child_labels = [label]
 
     obligations: list[dict[str, Any]] = []
+    routing_roles: dict[str, dict[str, Any]] = {}
+    specialist_executions: dict[str, dict[str, Any]] = {}
     ambiguities: list[dict[str, Any]] = []
     for child_label in child_labels:
         child_resolution = _resolve_occurrence(index, child_label, str(block.get("file")))
@@ -307,13 +344,25 @@ def extract_derivation_targets_for_label(
         obligation = lookup.get("obligation")
         if isinstance(obligation, dict):
             obligations.append(obligation)
+            source_path, _, _ = _workspace_source(index, child_occurrence)
+            routing_roles[obligation["obligation_digest"]] = infer_source_routing_role(source_path, obligation)
+            specialist_executions[obligation["obligation_digest"]] = execute_source_bound_specialist(
+                source_path=source_path,
+                obligation=obligation,
+                routing_role=routing_roles[obligation["obligation_digest"]],
+            )
         else:
             ambiguities.extend(lookup.get("ambiguities", []))
 
     parent = dict(block)
     parent["label"] = label
     targets = [
-        _target_from_obligation(obligation, parent=parent)
+        _target_from_obligation(
+            obligation,
+            parent=parent,
+            routing_role=routing_roles[obligation["obligation_digest"]],
+            specialist_execution=specialist_executions[obligation["obligation_digest"]],
+        )
         for obligation in obligations
         if obligation["adapter_eligible"] and obligation["extraction_state"] == "valid_complete"
     ]
@@ -322,6 +371,7 @@ def extract_derivation_targets_for_label(
     return {
         "label": label,
         "status": status,
+        "selection_status": "selected",
         "reason": (
             "Extracted validated label-scoped obligations."
             if status == "extracted"
@@ -332,6 +382,7 @@ def extract_derivation_targets_for_label(
         "obligations": obligations,
         "fallback_count": 0,
         "ambiguities": ambiguities + [item for obligation in blocked for item in obligation["ambiguities"]],
+        "source_binding": source_binding,
     }
 
 

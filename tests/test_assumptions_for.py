@@ -1,3 +1,4 @@
+import hashlib
 from pathlib import Path
 
 from mathdevmcp.assumptions_for import audit_and_propose_assumptions, assumptions_for, score_assumption_set
@@ -220,3 +221,38 @@ def test_audit_and_propose_assumptions_markdown_preserves_math_packet(tmp_path: 
     assert "Possible sufficient assumption sets:" in markdown
     assert "How the derivation works under the assumptions:" in markdown
     assert "Under a choice-independent transition law" in markdown
+
+
+def test_audit_and_propose_assumptions_exact_selector_disambiguates_duplicate_labels(tmp_path: Path) -> None:
+    old = tmp_path / "old.tex"
+    current = tmp_path / "current.tex"
+    old.write_text(r"\begin{equation}\label{eq:shared} x = 1 \end{equation}", encoding="utf-8")
+    current.write_text(r"\begin{equation}\label{eq:shared} x = 2 \end{equation}", encoding="utf-8")
+    digest = hashlib.sha256(current.read_bytes()).hexdigest()
+
+    ambiguous = audit_and_propose_assumptions(
+        "Audit duplicate",
+        root=str(tmp_path),
+        labels=["eq:shared"],
+    )
+    selected = audit_and_propose_assumptions(
+        "Audit exact",
+        root=str(tmp_path),
+        labels=["eq:shared"],
+        file=current.name,
+        source_digest=digest,
+    )
+    stale = audit_and_propose_assumptions(
+        "Audit stale",
+        root=str(tmp_path),
+        labels=["eq:shared"],
+        file=current.name,
+        source_digest="0" * 64,
+    )
+
+    assert ambiguous["coverage"]["target_count"] == 0
+    assert selected["coverage"]["target_count"] == 1
+    assert selected["coverage"]["label_selection"][0]["selection_status"] == "selected"
+    assert selected["target_results"][0]["source"]["source_digest"] == digest
+    assert stale["coverage"]["target_count"] == 0
+    assert stale["coverage"]["label_selection"][0]["selection_status"] == "source_digest_mismatch"

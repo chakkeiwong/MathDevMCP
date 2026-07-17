@@ -26,7 +26,7 @@ from .derivation_audit_report import audit_and_propose_derivations as high_level
 from .derive_from import derive_from as high_level_derive_from
 from .derive_or_refute import derive_or_refute
 from .doctor import doctor_report
-from .document_derivation_tree import audit_document_derivation_tree as high_level_audit_document_derivation_tree
+from .document_derivation_tree import audit_document_derivation_tree as high_level_audit_document_derivation_tree, render_compact_document_derivation_tree_markdown
 from .document_derivation_response import (
     build_document_derivation_audit_request,
     canonical_document_derivation_response_bytes,
@@ -52,6 +52,7 @@ from .math_claim_classifier import classify_math_claim
 from .math_change_impact import math_change_impact
 from .math_document_rigor import audit_math_document_rigor as high_level_audit_math_document_rigor
 from .math_document_rigor import plan_math_document_rigor_audit as high_level_plan_math_document_rigor_audit
+from .math_document_rigor import render_compact_math_document_rigor_markdown
 from .report_claim_boundary import audit_report_claim_boundary
 from .math_review_packet import build_math_review_packet
 from .math_to_tests import generate_math_tests
@@ -68,6 +69,7 @@ from .prove_or_refute import prove_or_refute
 from .proof_audit import audit_derivation_for_label
 from .proof_audit_v2 import audit_derivation_v2_for_label
 from .proof_packet import build_proof_packet_label
+from .agent_report_artifacts import compact_evidence_packet, compact_rigor_report, persist_agent_report, resolve_agent_report
 from .proof_gap import localize_proof_gap
 from .negative_evidence import build_negative_evidence_packet
 from .public_release import public_release_check
@@ -342,6 +344,8 @@ def _cmd_high_level_audit_and_propose_assumptions(args: argparse.Namespace) -> i
         target=args.target or None,
         root=args.root or None,
         labels=args.label or None,
+        file=args.file or None,
+        source_digest=args.source_digest or None,
         provided_assumptions=args.provided_assumption,
         output_path=Path(args.output) if args.output else None,
     )
@@ -355,6 +359,8 @@ def _cmd_high_level_audit_and_propose_derivations(args: argparse.Namespace) -> i
         target=args.target or None,
         root=args.root or None,
         labels=args.label or None,
+        file=args.file or None,
+        source_digest=args.source_digest or None,
         givens=args.given,
         assumptions=args.assumption,
         backend=args.backend,
@@ -468,13 +474,28 @@ def _cmd_audit_math_document_rigor(args: argparse.Namespace) -> int:
     max_labels = None if args.max_labels is not None and args.max_labels <= 0 else args.max_labels
     result = high_level_audit_math_document_rigor(
         args.tex_path,
-        output_md=Path(args.output_md) if args.output_md else None,
+        output_md=Path(args.output_md) if args.output_md and args.response_mode != "compact" else None,
         output_json=Path(args.output_json) if args.output_json else None,
         focus_labels=args.focus_label or None,
         max_labels=max_labels,
         backend_env=args.backend_env,
         validation_backends=args.validation_backend or None,
     )
+    if args.response_mode == "compact":
+        if not args.artifact_root:
+            raise ValueError("--artifact-root is required for compact rigor responses")
+        artifact = persist_agent_report(result, args.artifact_root)
+        if args.output_md:
+            Path(args.output_md).write_text(
+                render_compact_math_document_rigor_markdown(result, artifact=artifact),
+                encoding="utf-8",
+            )
+        compact = compact_rigor_report(result, artifact)
+        if args.print_markdown:
+            print(render_compact_math_document_rigor_markdown(result, artifact=artifact))
+        else:
+            print(json.dumps(compact, indent=2))
+        return 0
     if args.print_markdown:
         print(result["markdown"])
         return 0
@@ -533,7 +554,7 @@ def _cmd_audit_document_derivation_tree_validated(args: argparse.Namespace) -> i
     else:
         result = high_level_audit_document_derivation_tree(
             args.tex_path,
-            output_md=Path(args.output_md) if args.output_md else None,
+            output_md=Path(args.output_md) if args.output_md and args.response_mode != "compact" else None,
             output_json=Path(args.output_json) if args.output_json else None,
             focus_labels=args.focus_label or None,
             max_labels=max_labels,
@@ -544,6 +565,11 @@ def _cmd_audit_document_derivation_tree_validated(args: argparse.Namespace) -> i
             grounding_policy=args.grounding_policy,
             workers=args.workers,
         )
+        if args.output_md and args.response_mode == "compact":
+            Path(args.output_md).write_text(
+                render_compact_document_derivation_tree_markdown(result),
+                encoding="utf-8",
+            )
     if args.print_markdown:
         print(result["markdown"])
         return 0
@@ -894,6 +920,10 @@ def _cmd_proof_packet_label(args: argparse.Namespace) -> int:
         file=args.file or None,
         source_digest=args.source_digest or None,
     )
+    if args.response_mode == "compact":
+        if not args.artifact_root:
+            raise ValueError("--artifact-root is required for compact packet responses")
+        result = compact_evidence_packet(result, persist_agent_report(result, args.artifact_root))
     if args.output:
         Path(args.output).parent.mkdir(parents=True, exist_ok=True)
         Path(args.output).write_text(json.dumps(result, indent=2), encoding="utf-8")
@@ -910,10 +940,19 @@ def _cmd_negative_evidence_label(args: argparse.Namespace) -> int:
         source_digest=args.source_digest or None,
     )
     result = build_negative_evidence_packet(args.label, audit)
+    if args.response_mode == "compact":
+        if not args.artifact_root:
+            raise ValueError("--artifact-root is required for compact packet responses")
+        result = compact_evidence_packet(result, persist_agent_report(result, args.artifact_root))
     if args.output:
         Path(args.output).parent.mkdir(parents=True, exist_ok=True)
         Path(args.output).write_text(json.dumps(result, indent=2), encoding="utf-8")
     print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_resolve_agent_report(args: argparse.Namespace) -> int:
+    print(json.dumps(resolve_agent_report(args.artifact_root, args.sha256), indent=2))
     return 0
 
 
@@ -1167,6 +1206,8 @@ def make_parser() -> argparse.ArgumentParser:
     p_high_audit_assumptions.add_argument("--target", default="", help="Direct target expression or equality")
     p_high_audit_assumptions.add_argument("--root", default="", help="Document root containing LaTeX files")
     p_high_audit_assumptions.add_argument("--label", action="append", default=[], help="LaTeX label to audit; can be repeated")
+    p_high_audit_assumptions.add_argument("--file", default="", help="Exact source file for duplicate-label corpora")
+    p_high_audit_assumptions.add_argument("--source-digest", default="", help="Required lowercase SHA-256 of the selected source")
     p_high_audit_assumptions.add_argument("--provided-assumption", action="append", default=[], help="Assumption already supplied; can be repeated")
     p_high_audit_assumptions.add_argument("--output", default="", help="Optional Markdown report output path")
     p_high_audit_assumptions.set_defaults(func=_cmd_high_level_audit_and_propose_assumptions)
@@ -1176,6 +1217,8 @@ def make_parser() -> argparse.ArgumentParser:
     p_high_audit_derivations.add_argument("--target", default="", help="Direct target expression or equality")
     p_high_audit_derivations.add_argument("--root", default="", help="Document root containing LaTeX files")
     p_high_audit_derivations.add_argument("--label", action="append", default=[], help="LaTeX label to audit; can be repeated")
+    p_high_audit_derivations.add_argument("--file", default="", help="Exact source file for duplicate-label corpora")
+    p_high_audit_derivations.add_argument("--source-digest", default="", help="Required lowercase SHA-256 of the selected source")
     p_high_audit_derivations.add_argument("--given", action="append", default=[], help="Context/given statement; can be repeated")
     p_high_audit_derivations.add_argument("--assumption", action="append", default=[], help="Formal route assumption; can be repeated")
     p_high_audit_derivations.add_argument("--backend", choices=["auto", "sympy", "sage", "z3"], default="auto", help="Backend preference")
@@ -1254,6 +1297,8 @@ def make_parser() -> argparse.ArgumentParser:
     p_audit_rigor.add_argument("--backend-env", default="mathdevmcp-backends", help="Backend env name recorded in the report")
     p_audit_rigor.add_argument("--validation-backend", action="append", choices=["lean", "sage", "sympy"], default=[], help="Backend validation order; can be repeated")
     p_audit_rigor.add_argument("--print-markdown", action="store_true", help="Print Markdown instead of JSON")
+    p_audit_rigor.add_argument("--response-mode", choices=["detailed", "compact"], default="detailed", help="Return a detailed report or compact digest-resolvable response")
+    p_audit_rigor.add_argument("--artifact-root", default="", help="Required detailed-report store for compact mode")
     p_audit_rigor.set_defaults(func=_cmd_audit_math_document_rigor)
 
     p_doc_tree = sub.add_parser("audit-document-derivation-tree", help="Audit LaTeX document targets with semantic work packets and derivation trees")
@@ -1513,6 +1558,8 @@ def make_parser() -> argparse.ArgumentParser:
     p_proof_packet.add_argument("--output", default="", help="Optional JSON output path")
     p_proof_packet.add_argument("--file", default="", help="Exact TeX file selector under --root")
     p_proof_packet.add_argument("--source-digest", default="", help="Required SHA-256 of the selected source bytes")
+    p_proof_packet.add_argument("--response-mode", choices=["compact", "detailed"], default="detailed")
+    p_proof_packet.add_argument("--artifact-root", default="", help="Verified artifact root required for compact mode")
     p_proof_packet.set_defaults(func=_cmd_proof_packet_label)
 
     p_negative_packet = sub.add_parser("negative-evidence-label", help="Build a negative-evidence packet for a labeled document block")
@@ -1521,7 +1568,14 @@ def make_parser() -> argparse.ArgumentParser:
     p_negative_packet.add_argument("--output", default="", help="Optional JSON output path")
     p_negative_packet.add_argument("--file", default="", help="Exact TeX file selector under --root")
     p_negative_packet.add_argument("--source-digest", default="", help="Required SHA-256 of the selected source bytes")
+    p_negative_packet.add_argument("--response-mode", choices=["compact", "detailed"], default="detailed")
+    p_negative_packet.add_argument("--artifact-root", default="", help="Verified artifact root required for compact mode")
     p_negative_packet.set_defaults(func=_cmd_negative_evidence_label)
+
+    p_resolve_agent = sub.add_parser("resolve-agent-report", help="Resolve a digest-bound detailed agent report")
+    p_resolve_agent.add_argument("sha256", help="Canonical report SHA-256")
+    p_resolve_agent.add_argument("--artifact-root", required=True, help="Verified artifact root")
+    p_resolve_agent.set_defaults(func=_cmd_resolve_agent_report)
 
     p_kalman_recursion = sub.add_parser("audit-kalman-recursion", help="Audit AST-level Kalman recursion structure in Python code")
     p_kalman_recursion.add_argument("code", help="Python code file path")

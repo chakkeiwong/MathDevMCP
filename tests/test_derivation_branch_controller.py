@@ -368,6 +368,35 @@ def test_rank_repair_branches_uses_validity_gated_partial_order_without_scores()
     assert "not MCTS" in ranking["boundary"]
 
 
+def test_pending_backend_execution_is_mathematical_work_not_binding_repair() -> None:
+    pending = {
+        "id": "branch_pending",
+        "status": "unexecuted_branch_pending_bound_request",
+        "assumptions": ["x is a scalar."],
+        "closes_obligations": ["algebra_identity"],
+        "backend_attempts": [],
+        "blockers": [
+            {
+                "id": "blocker_pending_execution",
+                "kind": "branch_bound_backend_execution_required",
+                "problem": "No branch-bound backend execution has run.",
+                "required_next_evidence": "Execute the scoped backend request.",
+            }
+        ],
+    }
+
+    ranking = rank_repair_branches([pending])
+    selected_id = ranking["selected_action"]["ledger_entry_ids"][0]
+    selected = next(
+        item
+        for item in ranking["ledgers"]["deduplicated_entries"]
+        if item["entry_id"] == selected_id
+    )
+
+    assert selected["ledger_kind"] == "mathematical_validity"
+    assert ranking["selected_action"]["action_kind"] == "resolve_branch_bound_backend_execution_required"
+
+
 def test_branch_expansion_records_include_assumptions_attempts_and_blockers() -> None:
     branch = {
         "id": "branch_demo",

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from collections.abc import Iterable
+from copy import deepcopy
 
 from .contracts import attach_contract
 from .parser_benchmark import P02_FIDELITY_FIELDS, compare_p02_fidelity_vectors, compare_parser_backends
@@ -25,9 +26,7 @@ class ParserPolicyDecision:
     benchmark_report: dict
 
 
-def decide_parser_policy(root: str, *, backends: list[str] | None = None, expected_labels: Iterable[str] | None = None) -> dict:
-    """Choose the parser role for a corpus and report any blocking findings."""
-    report = compare_parser_backends(root, backends=backends or ["current", "latexml", "pandoc"], expected_labels=expected_labels)
+def _decision_from_report(report: dict) -> dict:
     blocking: list[dict] = []
     caveats: list[dict] = []
     backend_roles: list[dict] = []
@@ -74,6 +73,65 @@ def decide_parser_policy(root: str, *, backends: list[str] | None = None, expect
     payload = attach_contract(asdict(decision), "parser_policy_decision")
     payload["legacy_status"] = "selected" if status == "selected_for_proof_audit" else status
     return payload
+
+
+def decide_parser_policy(root: str, *, backends: list[str] | None = None, expected_labels: Iterable[str] | None = None) -> dict:
+    """Choose the parser role for a corpus and report any blocking findings."""
+    report = compare_parser_backends(root, backends=backends or ["current", "latexml", "pandoc"], expected_labels=expected_labels)
+    return _decision_from_report(report)
+
+
+def project_parser_policy_expected_labels(parser_policy: dict, expected_labels: Iterable[str]) -> dict:
+    """Project one parser measurement onto an exact expected-label subset."""
+
+    expected = sorted(set(str(label) for label in expected_labels))
+    if not expected:
+        raise ValueError("expected_labels must be nonempty")
+    benchmark = parser_policy.get("benchmark_report")
+    if not isinstance(benchmark, dict) or not isinstance(benchmark.get("results"), list):
+        raise ValueError("parser policy lacks a reusable benchmark report")
+    report = deepcopy(benchmark)
+    for result in report["results"]:
+        if not isinstance(result, dict):
+            raise ValueError("parser benchmark result is invalid")
+        labels = result.get("labels")
+        details = result.get("details")
+        quality = result.get("quality_checks")
+        if not isinstance(labels, list) or not isinstance(details, dict) or not isinstance(quality, dict):
+            raise ValueError("parser benchmark result lacks projection fields")
+        label_set = {str(label) for label in labels}
+        missing = sorted(set(expected) - label_set)
+        details["expected_labels"] = expected
+        details["missing_expected_labels"] = missing
+        details["expected_label_recall"] = (len(expected) - len(missing)) / len(expected)
+        details["expected_label_precision"] = len(set(expected) & label_set) / len(label_set) if label_set else 0.0
+        quality["label_preservation"] = not missing
+    report["summary"] = {
+        "total": len(report["results"]),
+        "parsed": sum(1 for result in report["results"] if result.get("status") == "parsed"),
+        "inconclusive": sum(1 for result in report["results"] if result.get("status") == "inconclusive"),
+        "label_preserving": sum(
+            1 for result in report["results"] if result.get("quality_checks", {}).get("label_preservation")
+        ),
+        "provenance_available": sum(
+            1 for result in report["results"] if result.get("quality_checks", {}).get("provenance_available")
+        ),
+    }
+    report["summary"]["backend_comparison_matrix"] = {
+        str(result.get("backend")): {
+            "status": result.get("status"),
+            "labels_found": result.get("labels_found"),
+            "provenance_quality": result.get("provenance_quality"),
+            "missing_expected_labels": result.get("details", {}).get("missing_expected_labels", []),
+            "role_hint": (
+                "candidate_for_proof_audit"
+                if result.get("backend") == "current" and result.get("quality_checks", {}).get("provenance_available")
+                else "context_or_optional_evidence"
+            ),
+        }
+        for result in report["results"]
+    }
+    return _decision_from_report(report)
 
 
 def select_p02_parser_backend(

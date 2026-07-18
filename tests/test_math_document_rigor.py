@@ -92,23 +92,18 @@ def test_audit_math_document_rigor_returns_agent_consumable_report(tmp_path: Pat
     assert result["coverage"]["selected_count"] == 1
     assert result["backend_provenance"]["certification_boundary"]
     assert any(item["tool"] == "doctor_report" for item in result["tool_uses"])
-    assert result["gaps"]
-    assert result["proposals"]
-    first_gap = result["gaps"][0]
-    assert first_gap["location"]
-    assert first_gap["problem"]
-    assert first_gap["why_mathematically_problematic"]
-    assert result["proposals"][0]["proposed_fix"]
+    assert result["gaps"] == []
+    assert result["proposals"] == []
+    assert result["issues"][0]["status"] == "resolved_by_existing_context"
+    assert result["source_reports"]["raw_route_gaps"]
     markdown = output_md.read_text(encoding="utf-8")
-    assert "## Backend Provenance" in markdown
-    assert "## Tool Uses" in markdown
-    assert "## Gap And Proposal Ledger" in markdown
+    assert "# Actionable Math Document Rigor Audit" in markdown
+    assert "## Issue Ledger" in markdown
+    assert "Detailed evidence pointer" in markdown
+    assert "## Backend Provenance" not in markdown
+    assert "## Backend Provenance" in result["forensic_markdown"]
     assert "Location:" in markdown
-    assert "Problem:" in markdown
-    assert "Why mathematically problematic:" in markdown
-    assert "Proposed fix:" in markdown
-    assert "### 1. `" in markdown
-    assert "### 1. `\n" not in markdown
+    assert "Boundary:" in markdown
     assert output_json.exists()
 
 

@@ -24,6 +24,7 @@ class ProofPacket:
     convention_context: dict | None
     dependency_graph: dict
     proof_audit_v2: dict
+    audit_provenance: dict
     numeric_evidence: dict | None
     code_links: list[dict]
     actions: list[dict]
@@ -42,18 +43,41 @@ def build_proof_packet_label(
     summary_only: bool = True,
     file: str | None = None,
     source_digest: str | None = None,
+    index: dict[str, Any] | None = None,
+    resumable_session: dict[str, Any] | None = None,
+    resumable_record: dict[str, Any] | None = None,
+    resumable_record_index: int | None = None,
 ) -> dict:
-    index = build_index(Path(root))
-    audit = audit_derivation_v2_for_label(
-        root,
-        label,
-        assumption_manifest=assumption_manifest,
-        numeric_artifacts=numeric_artifacts,
-        summary_only=summary_only,
-        file=file,
-        source_digest=source_digest,
-    )
-    graph = build_dependency_graph(index=index, manifest=assumption_manifest, packets=[{"packet_id": label, "label": label, "status": audit.get("status")}])
+    shared_index = index or build_index(Path(root))
+    audit_provenance = {"mode": "computed", "record_id": None}
+    if resumable_record is not None or resumable_session is not None or resumable_record_index is not None:
+        if not isinstance(resumable_record, dict) or not isinstance(resumable_session, dict) or resumable_record_index is None:
+            raise ValueError("resumable packet reuse requires session, record, and record index")
+        if assumption_manifest is not None or numeric_artifacts is not None:
+            raise ValueError("resumable packet reuse does not cover assumption or numeric audit inputs")
+        from .resumable_audit import validate_resumable_label_record
+
+        validate_resumable_label_record(resumable_record, resumable_session, resumable_record_index)
+        if Path(root).resolve().as_posix() != resumable_session.get("root") or label != resumable_session["labels"][resumable_record_index]:
+            raise ValueError("resumable packet root or label mismatch")
+        if file != resumable_session.get("target_file") or source_digest != resumable_session.get("source_digest"):
+            raise ValueError("resumable packet source binding mismatch")
+        if summary_only != resumable_session.get("options", {}).get("summary_only"):
+            raise ValueError("resumable packet summary configuration mismatch")
+        audit = resumable_record["result"]
+        audit_provenance = {"mode": "reused_validated_checkpoint", "record_id": resumable_record["record_id"]}
+    else:
+        audit = audit_derivation_v2_for_label(
+            root,
+            label,
+            assumption_manifest=assumption_manifest,
+            numeric_artifacts=numeric_artifacts,
+            summary_only=summary_only,
+            file=file,
+            source_digest=source_digest,
+            index=shared_index,
+        )
+    graph = build_dependency_graph(index=shared_index, manifest=assumption_manifest, packets=[{"packet_id": label, "label": label, "status": audit.get("status")}])
     selected_extraction = audit.get("target_extraction")
     targets = selected_extraction.get("targets", []) if isinstance(selected_extraction, dict) else []
     candidate = targets[0] if len(targets) == 1 and isinstance(targets[0], dict) else None
@@ -105,6 +129,7 @@ def build_proof_packet_label(
         convention_context=convention_context,
         dependency_graph=graph,
         proof_audit_v2=audit,
+        audit_provenance=audit_provenance,
         numeric_evidence={"artifacts_supplied": sorted(numeric_artifacts)} if numeric_artifacts else None,
         code_links=code_links or [],
         actions=audit.get("high_priority_actions", []),

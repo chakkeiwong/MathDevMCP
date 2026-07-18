@@ -72,6 +72,7 @@ class ProofAuditV2Report:
     source_binding_status: str
     specialist_parser_readiness: str
     base_audit_status: str
+    audit_configuration: dict
     doc_context: dict
     target_extraction: dict
 
@@ -267,8 +268,14 @@ def _durable_parser_policy(parser: dict) -> dict:
         for result in benchmark.get("results", []):
             if isinstance(result, dict):
                 result.pop("runtime_seconds", None)
+                details = result.get("details")
+                if isinstance(details, dict):
+                    details.pop("expected_label_recall", None)
+                    details.pop("expected_label_precision", None)
+                    details.pop("provenance_score", None)
         benchmark["durable_identity_exclusions"] = [
-            "results[*].runtime_seconds is an explanatory runtime proxy and is not used for parser selection"
+            "results[*].runtime_seconds is an explanatory runtime proxy and is not used for parser selection",
+            "results[*].details expected-label rates and provenance score are explanatory floating-point proxies; exact labels, missing labels, provenance quality, and quality-check booleans are retained",
         ]
     return durable
 
@@ -289,6 +296,9 @@ def audit_derivation_v2_for_label(
     summary_only: bool = False,
     file: str | None = None,
     source_digest: str | None = None,
+    index: dict | None = None,
+    parser_policy: dict | None = None,
+    task_context: str = "general_math_audit",
 ) -> dict:
     base = audit_derivation_for_label(
         root,
@@ -300,6 +310,7 @@ def audit_derivation_v2_for_label(
         cache_path=cache_path,
         file=file,
         source_digest=source_digest,
+        index=index,
     )
     expected_labels = (
         list(parser_expected_labels)
@@ -308,7 +319,7 @@ def audit_derivation_v2_for_label(
         if file is not None or source_digest is not None
         else None
     )
-    parser = decide_parser_policy(root, backends=parser_backends or ["current"], expected_labels=expected_labels)
+    parser = parser_policy or decide_parser_policy(root, backends=parser_backends or ["current"], expected_labels=expected_labels)
     target_extraction = base.get("target_extraction", {})
     targets = target_extraction.get("targets", []) if isinstance(target_extraction, dict) else []
     exact_target = targets[0] if len(targets) == 1 and isinstance(targets[0], dict) else None
@@ -317,8 +328,25 @@ def audit_derivation_v2_for_label(
         if exact_target is not None
         else None
     )
+    extracted_obligations = [
+        item
+        for item in target_extraction.get("obligations", [])
+        if isinstance(item, dict)
+    ]
+    abstention_digest = (
+        extracted_obligations[0].get("document", {}).get("source_digest")
+        if len(extracted_obligations) == 1
+        else None
+    )
     if exact_target is not None and (source_digest is None or observed_digest == source_digest):
         source_binding_status = "accepted_exact_source"
+    elif (
+        exact_target is None
+        and len(extracted_obligations) == 1
+        and target_extraction.get("status") in {"quarantined", "ambiguous"}
+        and (source_digest is None or abstention_digest == source_digest)
+    ):
+        source_binding_status = "source_bound_typed_abstention"
     elif target_extraction.get("status") == "ambiguous":
         source_binding_status = "ambiguous_label"
     elif source_digest is not None and observed_digest != source_digest:
@@ -342,7 +370,19 @@ def audit_derivation_v2_for_label(
         )
         route = route_typed_diagnostic(typed, label=label)
         shape = diagnose_shape_constraints(typed)
-        numeric = suggest_numeric_diagnostics(typed)
+        numeric = (
+            attach_contract(
+                {
+                    "status": "not_applicable",
+                    "reason": "Numeric diagnostics require a numerical artifact or implementation target; this task is symbolic exposition.",
+                    "suggestions": [],
+                    "task_context": task_context,
+                },
+                "numeric_diagnostic_suggestions",
+            )
+            if task_context == "symbolic_exposition" and not numeric_artifacts
+            else suggest_numeric_diagnostics(typed)
+        )
         if numeric_artifacts:
             executed = []
             for suggestion in numeric.get("suggestions", []):
@@ -431,6 +471,17 @@ def audit_derivation_v2_for_label(
         source_binding_status=source_binding_status,
         specialist_parser_readiness=specialist_parser_readiness,
         base_audit_status=base.get("status", "inconclusive"),
+        audit_configuration={
+            "backend": backend,
+            "paragraph_context": paragraph_context,
+            "before": before,
+            "after": after,
+            "summary_only": summary_only,
+            "file": file,
+            "source_digest": source_digest,
+            "parser_backends": list(parser_backends or ["current"]),
+            "task_context": task_context,
+        },
         doc_context=base.get("doc_context", {}),
         target_extraction=base.get("target_extraction", {}),
     )

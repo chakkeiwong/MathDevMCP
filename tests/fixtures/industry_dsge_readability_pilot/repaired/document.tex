@@ -1,0 +1,61 @@
+\documentclass{article}
+
+\newcommand{\BCRM}{BCRM}
+
+\begin{document}
+
+\section{A common language for production networks}
+
+Let there be $J$ industries. Index a using industry by $i$ and a supplying
+industry by $j$, and let $\Omega\in\mathbb{R}^{J\times J}_{+}$ use the
+user-by-supplier convention. If the spectral radius satisfies
+$\rho(\Omega)<1$, then $I-\Omega$ is invertible and its Neumann series
+converges:
+
+\begin{equation}
+  \mathcal{L}=(I-\Omega)^{-1}=I+\Omega+\Omega^2+\cdots
+  \label{eq:leontief}
+\end{equation}
+
+Here $I$ is the $J\times J$ identity matrix. The term $I$ is own exposure,
+$\Omega$ is direct supplier exposure, and $(\Omega^n)_{ij}$ collects length-$n$
+paths from user $i$ to upstream supplier $j$. Equation~\eqref{eq:leontief} is
+an accounting map. The infinite-series equality requires $\rho(\Omega)<1$;
+mere invertibility of $I-\Omega$ would not by itself justify that series.
+
+If $\beta\in\mathbb{R}^{J}$ is a column vector of final-consumption shares, the
+corresponding Domar weights are defined by
+
+\begin{equation}
+  \lambda^{\prime}=\beta^{\prime}(I-\Omega)^{-1}.
+  \label{eq:domar}
+\end{equation}
+
+These weights measure gross activity, not welfare and not an impulse response.
+
+\section{A quantitative multisector DSGE: \BCRM{} (2009)}
+
+\subsection{Question and model architecture}
+
+Sector $j$ produces gross output with capital, labor, and materials. The source
+model maintains constant returns in these three inputs:
+
+\begin{equation}
+  y_{jt}=k_{jt}^{\alpha_j}(z_t n_{jt})^{\nu_j}H_{jt}^{\gamma_j},
+  \qquad \alpha_j+\nu_j+\gamma_j=1,
+  \label{eq:bcrm-production}
+\end{equation}
+
+The restriction $\alpha_j+\nu_j+\gamma_j=1$ is a source-stated maintained
+assumption. The material composite is defined by
+
+\begin{equation}
+  H_{jt}=\left(\sum_{i=1}^{J}\zeta_{ij}
+  h_{ji,t}^{(\theta-1)/\theta}\right)^{\theta/(\theta-1)}.
+  \label{eq:bcrm-material}
+\end{equation}
+
+Here $h_{ji,t}$ is user $j$'s purchase from supplier $i$, and $\zeta_{ij}$ is
+the source's supplier weight in user $j$'s material bundle.
+
+\end{document}

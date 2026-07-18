@@ -104,9 +104,18 @@ def _source_lines(doc_context: dict, paragraph_context: bool) -> list[dict]:
 
 def _body_lines_for_label(doc_context: dict, paragraph_context: bool) -> list[tuple[int, str]]:
     lines: list[tuple[int, str]] = []
+    scoped_start = doc_context.get("line_start") if paragraph_context else None
+    scoped_end = doc_context.get("line_end") if paragraph_context else None
     for item in _source_lines(doc_context, paragraph_context):
         start_line = item["line"]
         for offset, line in enumerate(item["text"].splitlines()):
+            source_line = start_line + offset
+            if (
+                isinstance(scoped_start, int)
+                and isinstance(scoped_end, int)
+                and not scoped_start <= source_line <= scoped_end
+            ):
+                continue
             stripped = line.strip()
             if not stripped:
                 continue
@@ -114,7 +123,7 @@ def _body_lines_for_label(doc_context: dict, paragraph_context: bool) -> list[tu
                 continue
             stripped = re.sub(r"\\label\{[^}]+\}", "", stripped).strip()
             if stripped:
-                lines.append((start_line + offset, stripped))
+                lines.append((source_line, stripped))
     return lines
 
 
@@ -284,9 +293,10 @@ def audit_derivation_for_label(
     cache_path: str | Path | None = None,
     file: str | None = None,
     source_digest: str | None = None,
+    index: dict | None = None,
 ) -> dict:
     root_path = Path(root)
-    index = load_or_build_index(root_path, Path(cache_path)) if cache_path else build_index(root_path)
+    index = index or (load_or_build_index(root_path, Path(cache_path)) if cache_path else build_index(root_path))
     target_extraction = extract_derivation_targets_for_label(index, label, file=file)
     if target_extraction["status"] == "ambiguous":
         return attach_contract(

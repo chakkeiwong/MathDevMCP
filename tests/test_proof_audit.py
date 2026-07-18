@@ -49,11 +49,54 @@ def test_audit_derivation_marks_ambiguous_multiequality_inconclusive():
 
 
 def test_audit_derivation_nearby_context_does_not_count_as_proof():
-    result = audit_derivation_for_label(str(FIXTURES), "prop:proof-audit-nearby", paragraph_context=True, backend="sympy")
+    result = audit_derivation_for_label(
+        str(FIXTURES),
+        "prop:proof-audit-nearby",
+        paragraph_context=True,
+        before=4,
+        after=4,
+        backend="sympy",
+    )
 
     assert result["status"] == "inconclusive"
     assert result["counts"]["verified"] == 0
     assert result["counts"]["not_extracted"] == 1
+
+
+def test_paragraph_window_does_not_change_labeled_proof_obligations(tmp_path: Path) -> None:
+    source = tmp_path / "scoped-proof.tex"
+    source.write_text(
+        r"""
+\begin{equation}\label{eq:neighbor-before}
+u = v
+\end{equation}
+
+\begin{proposition}\label{prop:scoped-proof}
+The scoped claim is
+\begin{align}
+0 &= x + y,\\
+0 &= z.
+\end{align}
+\end{proposition}
+
+\begin{equation}\label{eq:neighbor-after}
+p = q
+\end{equation}
+""",
+        encoding="utf-8",
+    )
+
+    narrow = audit_derivation_for_label(
+        str(tmp_path), "prop:scoped-proof", paragraph_context=True, before=0, after=0, backend="sympy"
+    )
+    wide = audit_derivation_for_label(
+        str(tmp_path), "prop:scoped-proof", paragraph_context=True, before=4, after=4, backend="sympy"
+    )
+
+    assert [(item["source_text"], item["provenance"]) for item in wide["obligations"]] == [
+        (item["source_text"], item["provenance"]) for item in narrow["obligations"]
+    ]
+    assert all(6 <= item["provenance"]["line_start"] <= 12 for item in wide["obligations"])
 
 
 def test_audit_derivation_reports_numeric_false_identity_as_mismatch():

@@ -63,8 +63,7 @@ def _math_signature_terms(equation: str) -> set[str]:
     terms: set[str] = set()
     for match in re.finditer(r"([A-Za-z_\\][A-Za-z0-9_\\]*(?:\^\{[^{}]+\}|_\{[^{}]+\}|_[A-Za-z0-9]+)?)\s*\(([^)]*)\)", equation):
         args = [item.strip() for item in match.group(2).split(",") if item.strip()]
-        if len(args) >= 2:
-            terms.update(arg.strip("\\{} ") for arg in args if re.search(r"[A-Za-z]", arg))
+        terms.update(arg.strip("\\{} ") for arg in args if re.search(r"[A-Za-z]", arg))
     for match in re.finditer(r"\\sum_\{([^{}]+)\}\^\{([^{}]+)\}", equation):
         terms.update(token for token in _IDENTIFIER.findall(" ".join(match.groups())) if token not in {"sum"})
     if "\\mid" in equation or "|" in equation:
@@ -72,38 +71,62 @@ def _math_signature_terms(equation: str) -> set[str]:
     return {term for term in terms if term}
 
 
-def _scope_diagnostic(equation: str, code_summary: dict[str, Any], matched: list[str], missing: list[str]) -> dict[str, Any]:
+def _scope_diagnostic(
+    equation: str,
+    code_summary: dict[str, Any],
+    matched: list[str],
+    missing: list[str],
+    aliases: dict[str, str],
+) -> dict[str, Any]:
     math_scope_terms = _math_signature_terms(equation)
+    mapped_math_scope_terms = {aliases.get(term, term) for term in math_scope_terms}
     function_args_map = code_summary.get("function_args") if isinstance(code_summary.get("function_args"), dict) else {}
     code_args = {arg for args in function_args_map.values() if isinstance(args, list) for arg in args}
-    missing_scope_terms = sorted(term for term in math_scope_terms if term not in code_args and term not in matched)
-    matched_scope_terms = sorted(term for term in math_scope_terms if term in code_args or term in matched)
+    missing_scope_terms = sorted(term for term in mapped_math_scope_terms if term not in code_args)
+    matched_scope_terms = sorted(term for term in mapped_math_scope_terms if term in code_args)
     function_level_markers = sorted(math_scope_terms)
-    reduced_code_signature = bool(function_args_map) and bool(missing_scope_terms) and bool(matched)
-    is_likelihood_or_value = bool(re.search(r"likelihood|loglik|log_like|\\ell|NPV|V[_\^]|Q\(", equation, re.IGNORECASE))
-    triggered = reduced_code_signature and (is_likelihood_or_value or len(missing_scope_terms) >= 2)
+    if not math_scope_terms:
+        status = "not_applicable"
+    elif not function_args_map:
+        status = "scope_unverifiable_no_callable_boundary"
+    elif missing_scope_terms:
+        status = "scope_limited"
+    else:
+        status = "scope_covered_structurally"
+    messages = {
+        "not_applicable": (
+            "No mathematical function-argument or conditioning boundary was detected for static scope comparison.",
+            "This classification says nothing about semantic code correctness.",
+            "Treat scope comparison as not applicable; retain the ordinary term and conflict diagnostics.",
+        ),
+        "scope_unverifiable_no_callable_boundary": (
+            "The mathematical expression exposes function-level arguments, but the code fragment has no callable signature to compare.",
+            "Assignment-level name matches cannot establish that the implementation varies with every mathematical function argument.",
+            "Treat function-level implementation scope as unverifiable until a callable boundary or equivalent dependency interface is supplied.",
+        ),
+        "scope_limited": (
+            "The code exposes structurally relevant terms for a value-level or instance-level slice, with a callable signature covering only part of the mathematical function-level scope.",
+            "The code signature omits one or more function-level arguments, summation/index domains, or conditioning-scope markers required by the mathematical claim.",
+            "Treat this as scope-limited implementation evidence: it may support one evaluated slice, but it does not prove the full function-level formula.",
+        ),
+        "scope_covered_structurally": (
+            "The visible callable signature covers every detected mathematical scope term.",
+            "Static signature coverage does not establish numerical, semantic, or scientific correctness.",
+            "Report structural scope coverage only; retain all other mismatch, execution, and validation requirements.",
+        ),
+    }
+    supports, does_not_support, safe_wording = messages[status]
     return {
-        "status": "scope_limited" if triggered else "not_triggered",
+        "status": status,
         "math_scope_terms": sorted(math_scope_terms),
+        "mapped_math_scope_terms": sorted(mapped_math_scope_terms),
         "code_function_args": sorted(code_args),
         "matched_scope_terms": matched_scope_terms,
         "missing_scope_terms": missing_scope_terms,
         "function_level_markers": function_level_markers,
-        "supports": (
-            "The code exposes structurally relevant terms for a value-level or instance-level slice of the mathematical expression."
-            if triggered
-            else ""
-        ),
-        "does_not_support": (
-            "The code signature does not expose all function-level arguments, summation/index domains, or conditioning scope required by the mathematical claim."
-            if triggered
-            else ""
-        ),
-        "safe_wording": (
-            "Treat this as scope-limited implementation evidence: it may support one evaluated slice, but it does not prove the full function-level formula."
-            if triggered
-            else ""
-        ),
+        "supports": supports,
+        "does_not_support": does_not_support,
+        "safe_wording": safe_wording,
         "boundary": "Scope diagnostics are structural and non-executing; they are not code correctness proof.",
     }
 
@@ -156,13 +179,13 @@ def code_implements_equation(equation: str, code: str, *, aliases: dict[str, str
         conflicts.append({"kind": "transpose_mismatch", "reason": "Equation mentions transpose but code lacks a visible transpose operation."})
     if any(term.endswith("_next") for term in equation_terms) and not any(term.endswith("_next") for term in code_terms):
         conflicts.append({"kind": "time_index_mismatch", "reason": "Equation mentions next-period symbol but code lacks matching next-period name."})
-    missing_required = [term for term in missing if term in _KNOWN_FUNCTIONS or term in mapped_terms]
-    scope_diagnostic = _scope_diagnostic(equation, code_summary, matched, missing)
+    missing_required_operators = [term for term in missing if term in _KNOWN_FUNCTIONS]
+    scope_diagnostic = _scope_diagnostic(equation, code_summary, matched, missing, alias_map)
     trace_map["scope_diagnostic"] = scope_diagnostic
-    if scope_diagnostic["status"] == "scope_limited" and not conflicts:
+    if scope_diagnostic["status"] == "scope_limited" and not conflicts and not missing_required_operators:
         status = "scope_limited"
         reason = "Code evidence is scope-limited: it supports a value-level slice but not the full function-level mathematical claim."
-    elif conflicts or missing_required:
+    elif conflicts or missing:
         status = "mismatch"
         reason = "Code is missing required equation terms or has structural conflicts."
     else:

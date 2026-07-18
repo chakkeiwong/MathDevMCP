@@ -118,6 +118,83 @@ def test_compact_rigor_preserves_gap_ledger_and_round_trip(tmp_path: Path) -> No
     assert resolve_agent_report(tmp_path, artifact["sha256"])["report"] == report
 
 
+def test_compact_rigor_preserves_semantic_issues_and_actionable_proposals(tmp_path: Path) -> None:
+    issue = {
+        "issue_id": "eq:test/matrix-domain-and-neumann-convergence",
+        "label": "eq:test",
+        "family": "matrix-domain-and-neumann-convergence",
+        "status": "unresolved",
+        "roles": ["definition", "conditional_identity"],
+        "unresolved_obligations": ["neumann_convergence"],
+        "candidate_patch": "Assume rho(Omega) < 1.",
+        "patch_class": "candidate_exposition_patch_not_certificate",
+        "math_nonclaim": "This is not a proof certificate.",
+    }
+    proposal = {
+        "id": "proposal:1",
+        "issue_id": issue["issue_id"],
+        "status": "actionable_assumption_text",
+        "candidate_patch": issue["candidate_patch"],
+    }
+    report = {
+        "tex_path": "/private/source.tex",
+        "coverage": {"status": "selected_scope_complete", "gap_count": 1},
+        "target_selection": {"selected_count": 1, "targets": []},
+        "issues": [issue],
+        "proposals": [proposal, {"id": "diagnostic:1", "status": "diagnostic_only"}],
+        "gaps": [],
+        "non_claims": ["Not proof."],
+    }
+    artifact = persist_agent_report(report, tmp_path)
+
+    compact = compact_rigor_report(report, artifact)
+
+    assert compact["issue_ledger"] == [issue]
+    assert compact["issue_ledger_total_count"] == 1
+    assert compact["issue_ledger_truncated"] is False
+    assert compact["actionable_proposals"] == [proposal]
+    assert compact["actionable_proposal_total_count"] == 1
+    assert compact["actionable_proposals_truncated"] is False
+    assert resolve_agent_report(tmp_path, artifact["sha256"])["report"] == report
+
+
+def test_compact_rigor_bounds_large_semantic_ledgers(tmp_path: Path) -> None:
+    reports = [
+        {
+            "issue_id": f"eq:{index}/formalization",
+            "label": f"eq:{index}",
+            "family": "formalization-and-source-role",
+            "status": "needs_formalization",
+            "candidate_patch": "x" * 2000,
+        }
+        for index in range(200)
+    ]
+    report = {
+        "tex_path": "/private/source.tex",
+        "coverage": {"status": "selected_scope_complete", "gap_count": 200},
+        "target_selection": {"selected_count": 200, "targets": []},
+        "issues": reports,
+        "proposals": [
+            {
+                "id": f"proposal:{index}",
+                "status": "actionable_assumption_text",
+                "candidate_patch": "y" * 2000,
+            }
+            for index in range(200)
+        ],
+        "gaps": [],
+        "non_claims": ["Not proof."],
+    }
+    artifact = persist_agent_report(report, tmp_path)
+
+    compact = compact_rigor_report(report, artifact)
+
+    assert compact["payload_guardrail"]["status"] == "met"
+    assert compact["issue_ledger_total_count"] == 200
+    assert compact["actionable_proposal_total_count"] == 200
+    assert compact["issue_ledger_truncated"] or compact["actionable_proposals_truncated"]
+
+
 def test_compact_rigor_truncates_large_target_and_gap_previews(tmp_path: Path) -> None:
     report = {
         "tex_path": "/private/source.tex",

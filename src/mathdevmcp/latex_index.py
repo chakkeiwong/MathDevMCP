@@ -391,7 +391,51 @@ SECTION_LEVELS = {
     "section": 2,
     "subsection": 3,
     "subsubsection": 4,
+    "paragraph": 5,
 }
+
+
+def scan_latex_headings(text: str) -> list[dict[str, object]]:
+    """Return comment-aware headings with balanced-brace titles and paths."""
+    command = re.compile(r"\\(?P<kind>part|chapter|section|subsection|subsubsection|paragraph)\*?\s*\{")
+    headings: list[dict[str, object]] = []
+    stack: list[tuple[int, str]] = []
+    for match in command.finditer(text):
+        line_start = text.rfind("\n", 0, match.start()) + 1
+        prefix = text[line_start : match.start()]
+        comment = prefix.find("%")
+        if comment >= 0 and (comment == 0 or prefix[comment - 1] != "\\"):
+            continue
+        cursor = match.end()
+        depth = 1
+        while cursor < len(text) and depth:
+            char = text[cursor]
+            escaped = cursor > 0 and text[cursor - 1] == "\\"
+            if char == "{" and not escaped:
+                depth += 1
+            elif char == "}" and not escaped:
+                depth -= 1
+            cursor += 1
+        if depth:
+            continue
+        kind = match.group("kind")
+        level = SECTION_LEVELS[kind]
+        title = text[match.end() : cursor - 1].strip()
+        while stack and stack[-1][0] >= level:
+            stack.pop()
+        stack.append((level, title))
+        headings.append(
+            {
+                "kind": kind,
+                "level": level,
+                "title": title,
+                "start": match.start(),
+                "end": cursor,
+                "line": _line_number_at(text, match.start()),
+                "section_path": [name for _, name in stack],
+            }
+        )
+    return headings
 
 
 
@@ -454,36 +498,29 @@ def extract_latex_blocks(root: Path) -> list[LatexBlock]:
         r"\\end\{(?P=env)\*?\}",
         re.DOTALL,
     )
-    section_pattern = re.compile(
-        r"\\(?P<kind>part|chapter|section|subsection|subsubsection)\*?\{(?P<title>[^{}]+)\}"
-    )
-
     for path in _discover_input_order(root):
         text = path.read_text(encoding="utf-8")
         rel = str(path.relative_to(root))
-        section_matches = list(section_pattern.finditer(text))
-        section_stack: list[tuple[int, str]] = []
+        section_matches = [item for item in scan_latex_headings(text) if item["kind"] != "paragraph"]
         section_lookup: list[tuple[int, list[str]]] = []
-        for match in section_matches:
-            level = SECTION_LEVELS[match.group("kind")]
-            title = match.group("title").strip()
-            while section_stack and section_stack[-1][0] >= level:
-                section_stack.pop()
-            section_stack.append((level, title))
-            section_lookup.append((match.start(), [name for _, name in section_stack]))
-            line = _line_number_at(text, match.start())
+        for heading in section_matches:
+            kind = str(heading["kind"])
+            title = str(heading["title"])
+            section_path = [str(item) for item in heading["section_path"]]
+            section_lookup.append((int(heading["start"]), section_path))
+            line = int(heading["line"])
             blocks.append(
                 LatexBlock(
-                    kind=match.group("kind"),
+                    kind=kind,
                     name=title,
                     file=rel,
                     line_start=line,
                     line_end=line,
                     label=None,
                     title=title,
-                    text=match.group(0),
-                    block_id=_block_id(rel, match.group("kind"), line, None, title),
-                    section_path=[name for _, name in section_stack],
+                    text=text[int(heading["start"]) : int(heading["end"])],
+                    block_id=_block_id(rel, kind, line, None, title),
+                    section_path=section_path,
                 )
             )
 

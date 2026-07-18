@@ -1471,6 +1471,18 @@ def _assumption_branch(packet: dict[str, Any], assumption_set: dict[str, Any], p
     if conditioning and "conditional" in str(assumption_set.get("id", "")).lower():
         assumptions.append(f"The conditioning object `{conditioning}` is defined as a sigma-field, information set, state, or conditioning variable for this equality.")
     route = _branch_route(packet, assumption_set)
+    evidence_refs = list(
+        dict.fromkeys(
+            [
+                str(packet["id"]),
+                *[
+                    str(item.get("evidence_ref", ""))
+                    for item in packet.get("missing_obligations", [])
+                    if isinstance(item, dict) and item.get("evidence_ref")
+                ],
+            ]
+        )
+    )
     why = (
         f"This branch closes `{assumption_set.get('closes', 'the detected obligation')}` "
         "by making the operators and objects in the displayed equality well-defined before backend certification."
@@ -1489,7 +1501,7 @@ def _assumption_branch(packet: dict[str, Any], assumption_set: dict[str, Any], p
         "derivation_route_under_assumptions": route,
         "external_tool_first_ledger": _external_tool_ledger(plan),
         "validation_status": "diagnostic_pending_backend_or_formalization",
-        "evidence_refs": [packet["id"], *[str(item.get("evidence_ref", "")) for item in packet.get("missing_obligations", []) if isinstance(item, dict)]],
+        "evidence_refs": evidence_refs,
         "non_claim": "This branch proposes a sufficient route; it is not a proof certificate and not a globally minimal assumption set.",
     }
 
@@ -3604,6 +3616,28 @@ def _ordered_target_results(
     return [target for _, target in results], attach_contract(execution, PARALLEL_EXECUTION_CONTRACT)
 
 
+def _validated_precomputed_target_results(
+    selected_rows: list[dict[str, Any]],
+    target_results: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    if len(target_results) != len(selected_rows):
+        raise ValueError("precomputed tree targets do not exactly cover selected rows")
+    for index, (row, target) in enumerate(zip(selected_rows, target_results, strict=True)):
+        expected = {
+            "label": row.get("label"),
+            "obligation_id": row.get("obligation_id"),
+            "obligation_digest": row.get("obligation_digest"),
+        }
+        if not isinstance(target, dict) or any(target.get(key) != value for key, value in expected.items()):
+            raise ValueError(f"precomputed tree target binding mismatch at index {index}")
+        if target.get("publication_mode") != DOCUMENT_PUBLICATION_MODE:
+            raise ValueError(f"precomputed tree target publication boundary mismatch at index {index}")
+        tree = target.get("tree")
+        if not isinstance(tree, dict) or tree.get("publication_mode") != DOCUMENT_PUBLICATION_MODE:
+            raise ValueError(f"precomputed tree payload publication boundary mismatch at index {index}")
+    return target_results
+
+
 def _disabled_document_derivation_tree_result(tex_path: str | Path) -> dict[str, Any]:
     result = {
         **_legacy_document_integrity_binding(),
@@ -3718,6 +3752,7 @@ def audit_document_derivation_tree(
     search_mode: str = "agent_guided",
     grounding_policy: str = STRICT_GROUNDING_POLICY,
     workers: int = 1,
+    precomputed_target_results: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Run the generic semantic-packet -> tree-controller document workflow."""
     if _document_tool_disabled():
@@ -3752,20 +3787,36 @@ def audit_document_derivation_tree(
         capabilities = doctor.get("capabilities", {})
         integrations = doctor.get("integrations", {})
 
-    target_results, execution = _ordered_target_results(
-        selected_rows,
-        path=path,
-        sections=sections,
-        rows_by_label=rows_by_label,
-        rows_by_environment=rows_by_environment,
-        latex_index=latex_index,
-        displays=displays,
-        budget_profile=budget_profile,
-        max_attempts=max_attempts,
-        capabilities=capabilities,
-        integrations=integrations,
-        workers=workers,
-    )
+    if precomputed_target_results is None:
+        target_results, execution = _ordered_target_results(
+            selected_rows,
+            path=path,
+            sections=sections,
+            rows_by_label=rows_by_label,
+            rows_by_environment=rows_by_environment,
+            latex_index=latex_index,
+            displays=displays,
+            budget_profile=budget_profile,
+            max_attempts=max_attempts,
+            capabilities=capabilities,
+            integrations=integrations,
+            workers=workers,
+        )
+    else:
+        target_results = _validated_precomputed_target_results(selected_rows, precomputed_target_results)
+        execution = attach_contract(
+            {
+                "mode": "resumable_checkpoint_reuse",
+                "workers_requested": workers,
+                "workers_used": 0,
+                "target_count": len(selected_rows),
+                "failure_count": 0,
+                "failures": [],
+                "deterministic_order": "validated selected-target order",
+                "boundary": "Validated target checkpoint reuse changes execution provenance only; document assembly is unchanged.",
+            },
+            PARALLEL_EXECUTION_CONTRACT,
+        )
 
     context_labels = {str(packet.get("label")) for packet in context_targets if packet.get("label")}
     context_graphs = [

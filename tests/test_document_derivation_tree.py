@@ -9,11 +9,32 @@ from mathdevmcp.document_derivation_tree import (
     audit_document_derivation_tree,
     extract_document_derivation_obligations,
 )
+from mathdevmcp.evidence_manifest import canonical_json_bytes
 from mathdevmcp.mcp_facade import call_mcp_tool, list_mcp_tools
 from mathdevmcp.mcp_server import audit_document_derivation_tree as server_audit_document_derivation_tree
 
 
 ROOT = Path(__file__).resolve().parent.parent
+
+
+def test_assumption_branch_deduplicates_packet_evidence_refs() -> None:
+    packet = {
+        "id": "semantic_packet:eq:duplicate-ref",
+        "target": "x = x",
+        "missing_obligations": [
+            {"id": "missing:first", "evidence_ref": "semantic_packet:eq:duplicate-ref"},
+            {"id": "missing:second", "evidence_ref": "evidence:distinct"},
+            {"id": "missing:third", "evidence_ref": "semantic_packet:eq:duplicate-ref"},
+        ],
+    }
+    branch = document_tree._assumption_branch(
+        packet,
+        {"id": "assumption_set", "closes": "missing", "assumptions": ["x is defined"]},
+        {},
+    )
+
+    assert branch["evidence_refs"] == ["semantic_packet:eq:duplicate-ref", "evidence:distinct"]
+    canonical_json_bytes({"assumption_branches": [branch]})
 
 
 def _write_fixture(path: Path) -> None:

@@ -512,7 +512,10 @@ def _dimension_constraints(text: str, unresolved_constructs: list[str]) -> list[
             DimensionConstraint(
                 kind="invertibility_required",
                 target="inverse operand",
-                reason="Matrix inverse or solve notation requires an invertible or positive-definite operand.",
+                reason=(
+                    "Matrix inverse or solve notation requires an invertible operand; "
+                    "positive definiteness is one structured sufficient condition."
+                ),
                 status="explicit_or_satisfied" if explicit_pd else "missing_assumption",
                 source="unresolved_constructs",
             )

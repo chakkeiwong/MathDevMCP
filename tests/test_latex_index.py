@@ -5,10 +5,35 @@ from mathdevmcp.latex_index import (
     build_index,
     extract_context_for_label,
     extract_paragraph_context_for_label,
+    scan_latex_headings,
     search_index,
     search_index_filtered,
     resolve_label_occurrences,
 )
+
+
+def test_heading_scanner_preserves_balanced_macro_titles_and_ignores_comments() -> None:
+    headings = scan_latex_headings(
+        "\n".join(
+            (
+                r"% \section{Commented out}",
+                r"\section{A quantitative model: \BCRM{} (2009)}",
+                r"\subsection{Question and {model} architecture}",
+                r"\section*{Next section}",
+            )
+        )
+    )
+
+    assert [item["title"] for item in headings] == [
+        r"A quantitative model: \BCRM{} (2009)",
+        r"Question and {model} architecture",
+        "Next section",
+    ]
+    assert headings[1]["section_path"] == [
+        r"A quantitative model: \BCRM{} (2009)",
+        r"Question and {model} architecture",
+    ]
+    assert headings[2]["section_path"] == ["Next section"]
 
 
 def test_build_index_finds_sections_and_equations(tmp_path: Path):

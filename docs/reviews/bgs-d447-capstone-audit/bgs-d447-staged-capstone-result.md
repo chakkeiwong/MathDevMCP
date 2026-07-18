@@ -1,5 +1,44 @@
 # BGS D447 Staged Capstone Result
 
+## 2026-07-18 Resumable Remediation Addendum
+
+The original decision below is retained as the historical verdict for the
+2026-07-17 monolithic run. The engineering capstone has since been rerun under
+the reviewed resumable workflow.
+
+Updated engineering decision:
+`CAPSTONE_WORKFLOW_ACCOMPLISHED_WITH_LIMITS`.
+
+- the frozen D447 digest remains
+  `c5cfc66061ce90b053cf7e1df6eb770bababfcda85aa54c26546437037da0690`;
+- all 566 indexed non-nested labels have immutable audit records;
+- the corrected inventory is 434 canonical targets plus 132 exact
+  source-bound typed relation-shape abstentions;
+- rigor completed from reused audit evidence with `audit_recomputed: false`;
+- all 434 canonical derivation-tree targets completed from resumable records;
+- all 132 non-tree statuses remain explicit in full-document coverage;
+- uninterrupted/resumed semantic projections pass on the frozen 18-label
+  D447 slice for both audit/fix and tree workflows;
+- publication remains disabled and no claim was promoted;
+- the seven nested-alignment labels remain typed ownership abstentions;
+- independent generalization remains
+  `not_tested_no_verified_clean_holdout`.
+
+Verified detailed artifacts:
+
+- audit/fix:
+  `736581c22e85ee1275f667be034fc37f2d03ebc68f528762b9c9b23f943f3444`;
+- rigor:
+  `c1d5fa9fc5c9d8dccf535c844d5908a47aabbdab161775f1caf5d744fdce8d8f`;
+- derivation tree:
+  `070eb440fa0af44fb7772bd8ebc2b6a63344256a2e03d36035b653d3be88d1d2`.
+
+This addendum closes the prior scale/time-out gap. It does not establish BGS
+correctness, theorem proof, implementation equivalence, scientific validity,
+publication readiness, or generalization. The detailed current verdict and
+remaining gaps are recorded in
+`docs/plans/mathdevmcp-resumable-full-document-gap-remediation-result-2026-07-18.md`.
+
 Decision: `PARTIAL_CAPSTONE_SCALE_OR_TOOL_GAPS`
 
 ## Phase Results

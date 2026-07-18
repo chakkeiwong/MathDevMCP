@@ -321,6 +321,22 @@ def compact_rigor_report(result: Mapping[str, Any], artifact: Mapping[str, Any])
     ]
     total_target_count = len(target_rows)
     total_gap_count = len(ledger)
+    issue_ledger = [
+        {
+            key: item[key]
+            for key in ("issue_id", "label", "family", "status", "roles", "location", "unresolved_obligations", "existing_context_support", "candidate_patch", "patch_class", "math_nonclaim")
+            if key in item and item[key] not in (None, "", [], {})
+        }
+        for item in result.get("issues", [])
+        if isinstance(item, Mapping)
+    ]
+    actionable_proposals = [
+        dict(item)
+        for item in result.get("proposals", [])
+        if isinstance(item, Mapping) and item.get("status") in {"actionable_patch", "actionable_assumption_text"}
+    ]
+    total_issue_count = len(issue_ledger)
+    total_actionable_proposal_count = len(actionable_proposals)
     compact = attach_contract(
         {
             "status": result.get("coverage", {}).get("status"),
@@ -338,6 +354,12 @@ def compact_rigor_report(result: Mapping[str, Any], artifact: Mapping[str, Any])
                 "target_preview_truncated": False,
             },
             "gap_ledger": ledger,
+            "issue_ledger": issue_ledger,
+            "issue_ledger_total_count": total_issue_count,
+            "issue_ledger_truncated": False,
+            "actionable_proposals": actionable_proposals,
+            "actionable_proposal_total_count": total_actionable_proposal_count,
+            "actionable_proposals_truncated": False,
             "gap_ledger_total_count": total_gap_count,
             "gap_ledger_truncated": False,
             "non_claims": result.get("non_claims", []),
@@ -354,6 +376,14 @@ def compact_rigor_report(result: Mapping[str, Any], artifact: Mapping[str, Any])
     while size > AGENT_REPORT_TRANSPORT_BYTES and compact["target_selection"]["targets"]:
         compact["target_selection"]["targets"].pop()
         compact["target_selection"]["target_preview_truncated"] = True
+        size = _finalize_payload_guardrail(compact)
+    while size > AGENT_REPORT_TRANSPORT_BYTES and compact["issue_ledger"]:
+        compact["issue_ledger"].pop()
+        compact["issue_ledger_truncated"] = True
+        size = _finalize_payload_guardrail(compact)
+    while size > AGENT_REPORT_TRANSPORT_BYTES and compact["actionable_proposals"]:
+        compact["actionable_proposals"].pop()
+        compact["actionable_proposals_truncated"] = True
         size = _finalize_payload_guardrail(compact)
     if size > AGENT_REPORT_TRANSPORT_BYTES:
         raise ValueError("compact rigor report exceeds the transport budget")

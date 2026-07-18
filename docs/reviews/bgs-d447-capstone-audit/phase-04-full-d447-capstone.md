@@ -1,5 +1,26 @@
 # Full D447 Capstone
 
+## 2026-07-18 Resumable Replay Addendum
+
+The timeout result below is retained as historical evidence for the original
+monolithic run. The repaired resumable replay now passes the Phase 4
+engineering gates with limits:
+
+- `all_566_indexed_non_nested_labels_accounted_for`: `True`;
+- `canonical_tree_targets_completed`: `434 / 434`;
+- `typed_relation_shape_abstentions_retained`: `132 / 132`;
+- `nested_ownership_abstentions_retained`: `7 / 7`;
+- `audit_fix_aggregate_completed`: `True`;
+- `full_rigor_accounts_for_566`: `True`;
+- `full_tree_accounts_for_566`: `True` through the exact 434 plus 132 ledger;
+- `full_tree_publication_disabled`: `True`;
+- `source_digest_unchanged`: `True`;
+- `independent_generalization`: `not_tested_no_verified_clean_holdout`.
+
+Updated decision: `CAPSTONE_WORKFLOW_ACCOMPLISHED_WITH_LIMITS`.
+
+This is workflow-coverage evidence, not mathematical or scientific proof.
+
 Status: `partial_scale_or_tool_gaps`
 
 ## Gates

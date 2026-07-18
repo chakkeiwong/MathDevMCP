@@ -3,8 +3,12 @@ import hashlib
 
 import pytest
 
-from mathdevmcp.parser_policy import decide_parser_policy, select_p02_parser_backend
-from mathdevmcp.proof_audit_v2 import audit_derivation_v2_for_label
+from mathdevmcp.parser_policy import (
+    decide_parser_policy,
+    project_parser_policy_expected_labels,
+    select_p02_parser_backend,
+)
+from mathdevmcp.proof_audit_v2 import _durable_parser_policy, audit_derivation_v2_for_label
 from tests.p02_no_backend_guard import guard_is_active
 
 
@@ -28,6 +32,19 @@ def test_parser_policy_blocks_when_expected_label_is_missing():
 
     assert policy["status"] == "selected_for_context_only"
     assert any(finding["kind"] == "missing_expected_labels" for finding in policy["blocking_findings"])
+
+
+def test_shared_parser_measurement_projects_to_exact_per_label_policy() -> None:
+    shared = decide_parser_policy(
+        str(FIXTURES),
+        backends=["current"],
+        expected_labels=["eq:proof-audit-single", "eq:not-in-release-corpus"],
+    )
+
+    for label in ("eq:proof-audit-single", "eq:not-in-release-corpus"):
+        projected = project_parser_policy_expected_labels(shared, [label])
+        direct = decide_parser_policy(str(FIXTURES), backends=["current"], expected_labels=[label])
+        assert _durable_parser_policy(projected) == _durable_parser_policy(direct)
 
 
 def test_proof_audit_v2_downgrades_when_parser_policy_is_blocked():

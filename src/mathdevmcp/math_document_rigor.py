@@ -18,7 +18,8 @@ from .doctor import doctor_report
 from .equation_locator import locate_equations_in_file, summarize_equation_localization
 from .lean_readiness import lean_readiness
 from .derivation_target_extraction import extract_derivation_targets_for_label
-from .latex_index import build_index
+from .document_exposition import build_exposition_projection
+from .latex_index import build_index, extract_paragraph_context_for_label, scan_latex_headings
 from .role_obligations import build_role_specific_obligations, has_role_specific_builder
 
 
@@ -45,27 +46,22 @@ def _section_path_for_line(sections: list[dict[str, Any]], line: int) -> list[st
     for section in sections:
         if int(section["line"]) > line:
             break
-        level = int(section["level"])
-        current = current[: level - 1] + [str(section["title"])]
+        current = [str(item) for item in section.get("section_path", [])]
     return current
 
 
 def _section_map(text: str) -> list[dict[str, Any]]:
-    pattern = re.compile(r"\\(?P<kind>section|subsection|subsubsection|paragraph)\*?\{(?P<title>[^}]*)\}")
-    levels = {"section": 1, "subsection": 2, "subsubsection": 3, "paragraph": 4}
-    sections: list[dict[str, Any]] = []
-    for index, line in enumerate(text.splitlines(), start=1):
-        match = pattern.search(line)
-        if match:
-            sections.append(
-                {
-                    "line": index,
-                    "kind": match.group("kind"),
-                    "level": levels[match.group("kind")],
-                    "title": match.group("title").strip(),
-                }
-            )
-    return sections
+    return [
+        {
+            "line": int(item["line"]),
+            "kind": str(item["kind"]),
+            "level": int(item["level"]),
+            "title": str(item["title"]),
+            "section_path": [str(value) for value in item["section_path"]],
+        }
+        for item in scan_latex_headings(text)
+        if item["kind"] in {"section", "subsection", "subsubsection", "paragraph"}
+    ]
 
 
 def _label_ref_hygiene(text: str) -> dict[str, Any]:
@@ -144,7 +140,14 @@ def _select_rows(
     return deduped[:limit]
 
 
-def _target_entries(tex_path: Path, rows: list[dict[str, Any]], sections: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _target_entries(
+    tex_path: Path,
+    rows: list[dict[str, Any]],
+    sections: list[dict[str, Any]],
+    *,
+    context_before: int = 3,
+    context_after: int = 1,
+) -> list[dict[str, Any]]:
     index = build_index(tex_path.parent)
     entries: list[dict[str, Any]] = []
     for row in rows:
@@ -152,6 +155,13 @@ def _target_entries(tex_path: Path, rows: list[dict[str, Any]], sections: list[d
         extraction = extract_derivation_targets_for_label(index, label, file=tex_path.name) if label else {}
         targets = extraction.get("targets", []) if isinstance(extraction, dict) else []
         canonical = targets[0] if len(targets) == 1 and isinstance(targets[0], dict) else None
+        exposition_context = extract_paragraph_context_for_label(
+            index,
+            label,
+            before=context_before,
+            after=context_after,
+            file=tex_path.name,
+        ) if label else {}
         routing_role = canonical.get("routing_role", {}) if isinstance(canonical, dict) else {}
         role_obligations: dict[str, Any] | None = None
         if (
@@ -187,6 +197,7 @@ def _target_entries(tex_path: Path, rows: list[dict[str, Any]], sections: list[d
                 "role_derivation_route": role_obligations.get("derivation_route", []) if role_obligations else [],
                 "role_obligation_non_claims": role_obligations.get("non_claims", []) if role_obligations else [],
                 "uncertainty": row.get("uncertainty", []),
+                "exposition_context": exposition_context,
             }
         )
     return entries
@@ -235,6 +246,8 @@ def plan_math_document_rigor_audit(
     *,
     focus_labels: list[str] | None = None,
     max_labels: int | None = DEFAULT_LABEL_LIMIT,
+    context_before: int = 3,
+    context_after: int = 1,
 ) -> dict[str, Any]:
     """Plan a focused rigor audit for a single LaTeX file."""
     path = Path(tex_path)
@@ -242,7 +255,13 @@ def plan_math_document_rigor_audit(
     rows = locate_equations_in_file(path, root=path.parent)
     sections = _section_map(text)
     selected = _select_rows(rows, focus_labels=focus_labels, max_labels=max_labels)
-    target_entries = _target_entries(path, selected, sections)
+    target_entries = _target_entries(
+        path,
+        selected,
+        sections,
+        context_before=context_before,
+        context_after=context_after,
+    )
     labeled_rows = [row for row in rows if row.get("label")]
     result = {
         "tex_path": str(path),
@@ -258,6 +277,8 @@ def plan_math_document_rigor_audit(
             "mode": "focus_labels" if focus_labels else "first_labeled_equations",
             "requested_focus_labels": list(focus_labels or []),
             "max_labels": max_labels,
+            "context_before": context_before,
+            "context_after": context_after,
             "selected_count": len(target_entries),
             "available_labeled_equation_count": len(labeled_rows),
             "partial_coverage": len(target_entries) < len(labeled_rows),
@@ -590,6 +611,10 @@ def _validated_reused_fix_result(
     if high_level.get("workflow") != "audit_and_propose_fix":
         raise ValueError("reused audit/fix evidence must be an audit_and_propose_fix workflow result")
     low = _extract_fix_report(high_level)
+    if "resumable_evidence" in low:
+        from .resumable_audit import validate_resumable_audit_fix_result
+
+        validate_resumable_audit_fix_result(high_level)
     source = low.get("source") if isinstance(low.get("source"), dict) else {}
     expected_digest = hashlib.sha256(path.read_bytes()).hexdigest()
     if source.get("source_digest") != expected_digest:
@@ -700,10 +725,18 @@ def audit_math_document_rigor(
     backend_env: str = "mathdevmcp-backends",
     validation_backends: list[str] | None = None,
     audit_fix_result: dict[str, Any] | None = None,
+    context_before: int = 4,
+    context_after: int = 1,
 ) -> dict[str, Any]:
     """Run a focused document-rigor audit and optionally write Markdown/JSON artifacts."""
     path = Path(tex_path)
-    plan = plan_math_document_rigor_audit(path, focus_labels=focus_labels, max_labels=max_labels)
+    plan = plan_math_document_rigor_audit(
+        path,
+        focus_labels=focus_labels,
+        max_labels=max_labels,
+        context_before=context_before,
+        context_after=context_after,
+    )
     target_labels = [str(item["label"]) for item in plan["target_selection"]["targets"] if item.get("label")]
     tool_uses = list(plan.get("tool_uses", []))
     backend = _backend_provenance(path, backend_env=backend_env)
@@ -744,6 +777,9 @@ def audit_math_document_rigor(
                 target_file=path.name,
                 source_digest=source_digest,
                 backend="sympy",
+                task_context="symbolic_exposition",
+                context_before=context_before,
+                context_after=context_after,
                 validate_proposed_fixes=True,
                 backend_order=validation_backends or ["lean", "sage", "sympy"],
                 output_path=None,
@@ -769,10 +805,11 @@ def audit_math_document_rigor(
         )
         tool_uses.extend(fix_report.get("tool_uses", []))
 
-    gaps, proposals = _gaps_from_fix_report(fix_report)
-    if not gaps:
-        gaps = [_default_gap_for_target(target) for target in plan["target_selection"]["targets"]]
-        proposals = [_proposal_from_gap(gap) for gap in gaps]
+    raw_gaps, raw_proposals = _gaps_from_fix_report(fix_report)
+    exposition = build_exposition_projection(plan["target_selection"]["targets"], raw_gaps)
+    plan["target_selection"]["targets"] = exposition["targets"]
+    gaps = exposition["gaps"]
+    proposals = exposition["proposals"]
     ledgers = _proposal_ledgers(proposals)
 
     coverage = {
@@ -784,6 +821,8 @@ def audit_math_document_rigor(
         "proposal_count": len(proposals),
         "concrete_repair_count": len(ledgers["concrete_repairs"]),
         "diagnostic_abstention_count": len(ledgers["diagnostic_abstentions"]),
+        "resolved_by_existing_context_count": exposition["status_counts"].get("resolved_by_existing_context", 0),
+        "distinct_issue_count": len(exposition["issues"]),
         "target_file_only": True,
         "target_file": path.name,
     }
@@ -798,8 +837,14 @@ def audit_math_document_rigor(
         "coverage": coverage,
         "gaps": gaps,
         "proposals": proposals,
+        "issues": exposition["issues"],
+        "semantic_issues": exposition["issues"],
         "proposal_ledgers": ledgers,
-        "source_reports": {"audit_and_propose_fix": fix_report} if fix_report else {},
+        "source_reports": {
+            "audit_and_propose_fix": fix_report,
+            "raw_route_gaps": raw_gaps,
+            "raw_route_proposals": raw_proposals,
+        } if fix_report else {},
         "non_claims": [
             {
                 "code": "document_rigor_audit_not_document_proof",
@@ -816,10 +861,13 @@ def audit_math_document_rigor(
         ],
     }
     result = attach_contract(result, RIGOR_AUDIT_CONTRACT)
-    markdown = render_math_document_rigor_markdown(result)
-    result["markdown"] = markdown
+    forensic_markdown = render_math_document_rigor_markdown(result)
+    actionable_markdown = render_actionable_math_document_rigor_markdown(result)
+    result["forensic_markdown"] = forensic_markdown
+    result["actionable_markdown"] = actionable_markdown
+    result["markdown"] = actionable_markdown
     if output_md is not None:
-        Path(output_md).write_text(markdown, encoding="utf-8")
+        Path(output_md).write_text(actionable_markdown, encoding="utf-8")
         result["output_md"] = str(output_md)
     if output_json is not None:
         serializable = dict(result)
@@ -827,6 +875,81 @@ def audit_math_document_rigor(
         Path(output_json).write_text(json.dumps(serializable, indent=2, sort_keys=True), encoding="utf-8")
         result["output_json"] = str(output_json)
     return result
+
+
+def render_actionable_math_document_rigor_markdown(result: dict[str, Any]) -> str:
+    """Render the default source-aware issue view without forensic payloads."""
+    coverage = result.get("coverage") if isinstance(result.get("coverage"), dict) else {}
+    source = result.get("source") if isinstance(result.get("source"), dict) else {}
+    lines = [
+        "# Actionable Math Document Rigor Audit",
+        "",
+        f"Source: `{source.get('file', Path(str(result.get('tex_path', ''))).name)}`",
+        f"Source SHA-256: `{source.get('source_digest', '')}`",
+        (
+            f"Coverage: `{coverage.get('status', '')}`; selected `{coverage.get('selected_count', 0)}`; "
+            f"distinct issues `{coverage.get('distinct_issue_count', 0)}`; open `{coverage.get('gap_count', 0)}`; "
+            f"actionable proposals `{coverage.get('proposal_count', 0)}`; resolved by context "
+            f"`{coverage.get('resolved_by_existing_context_count', 0)}`."
+        ),
+        "",
+        "Detailed evidence pointer: `source_reports`; forensic rendering: `forensic_markdown`.",
+        "",
+        "## Issue Ledger",
+        "",
+    ]
+    issues = [item for item in result.get("issues", []) if isinstance(item, dict)]
+    proposals = [item for item in result.get("proposals", []) if isinstance(item, dict)]
+    proposals_by_issue = {str(item.get("issue_id")): item for item in proposals}
+    if not issues:
+        lines.append("- No semantic issue record was produced for the selected scope.")
+    for issue in issues:
+        issue_id = str(issue.get("issue_id", issue.get("id", "issue")))
+        lines.extend(
+            [
+                f"### `{_md(issue_id)}`",
+                "",
+                f"- Status: `{_md(issue.get('status', 'unknown'))}`",
+                f"- Roles: `{_md(issue.get('roles', []))}`",
+                f"- Location: `{_md(issue.get('location', ''))}`",
+            ]
+        )
+        support = [item for item in issue.get("existing_context_support", []) if isinstance(item, dict)]
+        if support:
+            lines.append("- Existing context support:")
+            for item in support:
+                lines.append(
+                    f"  - `{_md(item.get('file', ''))}:{item.get('line_start', '')}-{item.get('line_end', '')}`: "
+                    f"{_md(item.get('text', ''))}"
+                )
+        unresolved = issue.get("unresolved_obligations")
+        if isinstance(unresolved, list) and unresolved:
+            lines.append(f"- Unresolved obligations: `{_md(unresolved)}`")
+        proposal = proposals_by_issue.get(issue_id)
+        if proposal is not None:
+            lines.extend(
+                [
+                    f"- Repair status: `{_md(proposal.get('status', ''))}`",
+                    f"- Candidate patch: {_md(proposal.get('candidate_patch', proposal.get('proposed_fix', '')))}",
+                    f"- Patch boundary: `{_md(proposal.get('patch_class', ''))}`; human review required.",
+                ]
+            )
+        lines.append(f"- Boundary: {_md(issue.get('math_nonclaim', 'Diagnostic evidence is not proof.'))}")
+        lines.append("")
+    lines.extend(
+        [
+            "## Non-Claims",
+            "",
+            "- Context closure means the document states the scoped exposition condition; it is not a proof certificate.",
+            "- Candidate patches are bounded human-review text and do not establish source-specific truth.",
+            "- This focused audit does not certify general readability, pedagogy, or whole-document correctness.",
+            "",
+        ]
+    )
+    rendered = "\n".join(lines)
+    if len(rendered.splitlines()) >= 200:
+        raise ValueError("actionable rigor Markdown exceeds the four-label human-interface budget")
+    return rendered
 
 
 def render_math_document_rigor_markdown(result: dict[str, Any]) -> str:

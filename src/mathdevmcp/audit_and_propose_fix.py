@@ -96,14 +96,17 @@ def _label_audit_failure(root: str, label: str, reason: str) -> dict[str, Any]:
     )
 
 
-def _audit_label_task(task: tuple[int, str, str, bool, bool, str, str | None, str | None]) -> dict[str, Any]:
-    index, root, label, paragraph_context, summary_only, backend, file, source_digest = task
+def _audit_label_task(task: tuple[int, str, str, bool, int, int, bool, str, str, str | None, str | None]) -> dict[str, Any]:
+    index, root, label, paragraph_context, context_before, context_after, summary_only, backend, task_context, file, source_digest = task
     args = {
         "root": root,
         "label": label,
         "paragraph_context": paragraph_context,
+        "before": context_before,
+        "after": context_after,
         "summary_only": summary_only,
         "backend": backend,
+        "task_context": task_context,
         "file": file,
         "source_digest": source_digest,
     }
@@ -111,9 +114,12 @@ def _audit_label_task(task: tuple[int, str, str, bool, bool, str, str | None, st
         audit = audit_derivation_v2_for_label(
             root,
             label,
+            before=context_before,
+            after=context_after,
             paragraph_context=paragraph_context,
             summary_only=summary_only,
             backend=backend,
+            task_context=task_context,
             file=file,
             source_digest=source_digest,
         )
@@ -139,8 +145,11 @@ def _ordered_label_audits(
     labels: list[str],
     *,
     paragraph_context: bool,
+    context_before: int,
+    context_after: int,
     summary_only: bool,
     backend: str,
+    task_context: str,
     workers: int,
     file: str | None = None,
     source_digest: str | None = None,
@@ -149,7 +158,7 @@ def _ordered_label_audits(
         return [], []
     normalized_workers = max(1, int(workers or 1))
     tasks = [
-        (index, root, label, paragraph_context, summary_only, backend, file, source_digest)
+        (index, root, label, paragraph_context, context_before, context_after, summary_only, backend, task_context, file, source_digest)
         for index, label in enumerate(labels)
     ]
     if normalized_workers == 1 or len(tasks) == 1:
@@ -159,7 +168,7 @@ def _ordered_label_audits(
         with ProcessPoolExecutor(max_workers=min(normalized_workers, len(tasks))) as executor:
             future_to_task = {executor.submit(_audit_label_task, task): task for task in tasks}
             for future in as_completed(future_to_task):
-                index, task_root, label, _, _, _, task_file, task_digest = future_to_task[future]
+                index, task_root, label, _, _, _, _, _, _, task_file, task_digest = future_to_task[future]
                 try:
                     results.append(future.result())
                 except Exception as exc:  # pragma: no cover - protects deterministic parent behavior.
@@ -168,8 +177,11 @@ def _ordered_label_audits(
                         "root": task_root,
                         "label": label,
                         "paragraph_context": paragraph_context,
+                        "before": context_before,
+                        "after": context_after,
                         "summary_only": summary_only,
                         "backend": backend,
+                        "task_context": task_context,
                         "file": task_file,
                         "source_digest": task_digest,
                     }
@@ -640,11 +652,9 @@ def _detail_has_concrete_fix(detail: dict[str, Any]) -> bool:
         return False
     kind = str(detail.get("kind") or "")
     math_fix = detail.get("math_fix")
-    if isinstance(math_fix, dict) and (math_fix.get("replacement_latex") or math_fix.get("equation")):
+    if isinstance(math_fix, dict) and math_fix.get("replacement_latex"):
         return True
-    if detail.get("replacement_latex") or detail.get("proof_target"):
-        return True
-    if kind == "add_diagnostic_check":
+    if detail.get("replacement_latex") or detail.get("assumption_statement"):
         return True
     return False
 
@@ -1315,13 +1325,17 @@ def build_audit_fix_report(
     evidence: list[dict[str, Any]] | None = None,
     source: dict[str, Any] | None = None,
     paragraph_context: bool = True,
+    context_before: int = 4,
+    context_after: int = 1,
     summary_only: bool = True,
     backend: str = "sympy",
+    task_context: str = "general_math_audit",
     validate_proposed_fixes: bool = False,
     certifier_policy: str = VALIDATION_POLICY_REQUIRE_ATTEMPT,
     backend_order: list[str] | tuple[str, ...] | None = None,
     workers: int = 1,
     output_path: str | Path | None = None,
+    precomputed_label_audits: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Collect audit evidence, propose repairs, and optionally write Markdown."""
     labels = labels or []
@@ -1360,13 +1374,32 @@ def build_audit_fix_report(
 
     tool_uses: list[ToolUseRecord] = []
     audited_evidence: list[dict[str, Any]] = list(evidence or [])
-    if labels:
+    if precomputed_label_audits is not None:
+        if [item.get("label") for item in precomputed_label_audits] != labels:
+            raise ValueError("precomputed label audits must exactly match requested label order")
+        if any(item.get("metadata", {}).get("contract") != "proof_audit_v2_result" for item in precomputed_label_audits):
+            raise ValueError("precomputed label audit contract mismatch")
+        audited_evidence.extend(precomputed_label_audits)
+        tool_uses.extend(
+            ToolUseRecord(
+                tool="audit_derivation_v2_label",
+                arguments={"label": label, "reused_exact_evidence": True},
+                purpose=f"Reuse exact derivation audit evidence for `{label}`.",
+                status=str(audit.get("status", "unknown")),
+                output_contract=_metadata_contract(audit),
+            )
+            for label, audit in zip(labels, precomputed_label_audits, strict=True)
+        )
+    elif labels:
         label_audits, label_tool_uses = _ordered_label_audits(
             str(root),
             labels,
             paragraph_context=paragraph_context,
+            context_before=context_before,
+            context_after=context_after,
             summary_only=summary_only,
             backend=backend,
+            task_context=task_context,
             workers=workers,
             file=target_file,
             source_digest=source_digest,
@@ -1499,13 +1532,17 @@ def audit_and_propose_fix(
     evidence: list[dict[str, Any]] | None = None,
     source: dict[str, Any] | None = None,
     paragraph_context: bool = True,
+    context_before: int = 4,
+    context_after: int = 1,
     summary_only: bool = True,
     backend: str = "sympy",
+    task_context: str = "general_math_audit",
     validate_proposed_fixes: bool = False,
     certifier_policy: str = VALIDATION_POLICY_REQUIRE_ATTEMPT,
     backend_order: list[str] | tuple[str, ...] | None = None,
     workers: int = 1,
     output_path: str | Path | None = None,
+    precomputed_label_audits: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Return a high-level envelope for an audit-plus-fix Markdown report."""
     report = build_audit_fix_report(
@@ -1520,13 +1557,17 @@ def audit_and_propose_fix(
         evidence=evidence,
         source=source,
         paragraph_context=paragraph_context,
+        context_before=context_before,
+        context_after=context_after,
         summary_only=summary_only,
         backend=backend,
+        task_context=task_context,
         validate_proposed_fixes=validate_proposed_fixes,
         certifier_policy=certifier_policy,
         backend_order=backend_order,
         workers=workers,
         output_path=output_path,
+        precomputed_label_audits=precomputed_label_audits,
     )
     high_level = high_level_result(
         status="diagnostic_only",
@@ -1570,8 +1611,11 @@ def write_audit_fix_report_markdown(
     evidence: list[dict[str, Any]] | None = None,
     source: dict[str, Any] | None = None,
     paragraph_context: bool = True,
+    context_before: int = 4,
+    context_after: int = 1,
     summary_only: bool = True,
     backend: str = "sympy",
+    task_context: str = "general_math_audit",
     validate_proposed_fixes: bool = False,
     certifier_policy: str = VALIDATION_POLICY_REQUIRE_ATTEMPT,
     backend_order: list[str] | tuple[str, ...] | None = None,
@@ -1590,8 +1634,11 @@ def write_audit_fix_report_markdown(
         evidence=evidence,
         source=source,
         paragraph_context=paragraph_context,
+        context_before=context_before,
+        context_after=context_after,
         summary_only=summary_only,
         backend=backend,
+        task_context=task_context,
         validate_proposed_fixes=validate_proposed_fixes,
         certifier_policy=certifier_policy,
         backend_order=backend_order,

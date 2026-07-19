@@ -76,8 +76,11 @@ MCP_SERVER_EXPOSED_TOOLS = {
     "lean_readiness",
     "plan_math_document_rigor_audit",
     "audit_math_document_rigor",
+    "page_math_document_rigor_records",
     "audit_document_derivation_tree",
     "resolve_document_derivation_records",
+    "page_resumable_tree_records",
+    "resolve_resumable_tree_record",
     "resolve_agent_report",
 }
 
@@ -891,10 +894,14 @@ def proof_packet_label(
     source_digest: str | None = None,
     response_mode: Literal["compact", "detailed"] = "detailed",
     artifact_root: str | None = None,
+    checkpoint_root: str | None = None,
+    checkpoint_session_id: str | None = None,
+    checkpoint_record_index: int | None = None,
+    checkpoint_record_id: str | None = None,
 ) -> dict:
     return call_mcp_tool(
         "proof_packet_label",
-        {"root": root, "label": label, "summary_only": summary_only, "file": file, "source_digest": source_digest, "response_mode": response_mode, "artifact_root": artifact_root},
+        {"root": root, "label": label, "summary_only": summary_only, "file": file, "source_digest": source_digest, "response_mode": response_mode, "artifact_root": artifact_root, "checkpoint_root": checkpoint_root, "checkpoint_session_id": checkpoint_session_id, "checkpoint_record_index": checkpoint_record_index, "checkpoint_record_id": checkpoint_record_id},
     )
 
 
@@ -906,10 +913,14 @@ def negative_evidence_label(
     source_digest: str | None = None,
     response_mode: Literal["compact", "detailed"] = "detailed",
     artifact_root: str | None = None,
+    checkpoint_root: str | None = None,
+    checkpoint_session_id: str | None = None,
+    checkpoint_record_index: int | None = None,
+    checkpoint_record_id: str | None = None,
 ) -> dict:
     return call_mcp_tool(
         "negative_evidence_label",
-        {"root": root, "label": label, "file": file, "source_digest": source_digest, "response_mode": response_mode, "artifact_root": artifact_root},
+        {"root": root, "label": label, "file": file, "source_digest": source_digest, "response_mode": response_mode, "artifact_root": artifact_root, "checkpoint_root": checkpoint_root, "checkpoint_session_id": checkpoint_session_id, "checkpoint_record_index": checkpoint_record_index, "checkpoint_record_id": checkpoint_record_id},
     )
 
 
@@ -1098,6 +1109,10 @@ def audit_math_document_rigor(
     validation_backends: Sequence[str] | None = None,
     response_mode: Literal["detailed", "compact"] = "detailed",
     artifact_root: str | None = None,
+    report_profile: Literal["actionable", "forensic"] = "actionable",
+    prior_report: dict | None = None,
+    revision_manifest: dict | None = None,
+    obligation_metadata: dict | None = None,
 ) -> dict:
     return call_mcp_tool(
         "audit_math_document_rigor",
@@ -1111,7 +1126,25 @@ def audit_math_document_rigor(
             "validation_backends": list(validation_backends) if validation_backends is not None else None,
             "response_mode": response_mode,
             "artifact_root": artifact_root,
+            "report_profile": report_profile,
+            "prior_report": prior_report,
+            "revision_manifest": revision_manifest,
+            "obligation_metadata": obligation_metadata,
         },
+    )
+
+
+@mcp.tool(description="Page an allowlisted collection from an exact persisted forensic rigor report.", structured_output=False)
+def page_math_document_rigor_records(
+    artifact_root: str,
+    sha256: str,
+    collection: str,
+    offset: int = 0,
+    limit: int = 100,
+) -> dict:
+    return call_mcp_tool(
+        "page_math_document_rigor_records",
+        {"artifact_root": artifact_root, "sha256": sha256, "collection": collection, "offset": offset, "limit": limit},
     )
 
 
@@ -1204,6 +1237,39 @@ def resolve_document_derivation_records(
             "limit": limit,
             "artifact_root": artifact_root,
         },
+    )
+    assert isinstance(result, dict)
+    return _document_derivation_tool_result(result)
+
+
+@mcp.tool(description="Page immutable resumable tree checkpoints without loading a monolithic audit artifact.", structured_output=False)
+def page_resumable_tree_records(
+    artifact_root: str,
+    session_id: str,
+    offset: int = 0,
+    limit: int = 20,
+    page_token: str | None = None,
+) -> CallToolResult:
+    result = call_mcp_tool(
+        "page_resumable_tree_records",
+        {"artifact_root": artifact_root, "session_id": session_id, "offset": offset, "limit": limit, "page_token": page_token},
+    )
+    assert isinstance(result, dict)
+    return _document_derivation_tool_result(result)
+
+
+@mcp.tool(description="Stream exact canonical checkpoint bytes scoped by an issued resumable-tree page token.", structured_output=False)
+def resolve_resumable_tree_record(
+    artifact_root: str,
+    page_token: str,
+    index: int,
+    record_sha256: str,
+    byte_offset: int = 0,
+    byte_limit: int = 16_384,
+) -> CallToolResult:
+    result = call_mcp_tool(
+        "resolve_resumable_tree_record",
+        {"artifact_root": artifact_root, "page_token": page_token, "index": index, "record_sha256": record_sha256, "byte_offset": byte_offset, "byte_limit": byte_limit},
     )
     assert isinstance(result, dict)
     return _document_derivation_tool_result(result)

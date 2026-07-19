@@ -47,8 +47,40 @@ def build_proof_packet_label(
     resumable_session: dict[str, Any] | None = None,
     resumable_record: dict[str, Any] | None = None,
     resumable_record_index: int | None = None,
+    checkpoint_root: str | Path | None = None,
+    checkpoint_session_id: str | None = None,
+    checkpoint_record_index: int | None = None,
+    checkpoint_record_id: str | None = None,
 ) -> dict:
-    shared_index = index or build_index(Path(root))
+    checkpoint_selector = any(
+        value is not None
+        for value in (checkpoint_root, checkpoint_session_id, checkpoint_record_index, checkpoint_record_id)
+    )
+    if checkpoint_selector:
+        if not all(
+            value is not None
+            for value in (checkpoint_root, checkpoint_session_id, checkpoint_record_index, checkpoint_record_id)
+        ):
+            raise ValueError("checkpoint reuse requires root, session, record index, and record ID")
+        from .resumable_audit import load_packet_audit_checkpoint
+
+        checkpoint_session, checkpoint_record = load_packet_audit_checkpoint(
+            checkpoint_root,
+            str(checkpoint_session_id),
+            int(checkpoint_record_index),
+            str(checkpoint_record_id),
+            root=root,
+            label=label,
+            target_file=file,
+            source_digest=source_digest,
+            summary_only=summary_only,
+        )
+        if resumable_session is not None or resumable_record is not None:
+            raise ValueError("checkpoint selector cannot be combined with internal record reuse")
+        resumable_session = checkpoint_session
+        resumable_record = checkpoint_record
+        resumable_record_index = int(checkpoint_record_index)
+    shared_index = index
     audit_provenance = {"mode": "computed", "record_id": None}
     if resumable_record is not None or resumable_session is not None or resumable_record_index is not None:
         if not isinstance(resumable_record, dict) or not isinstance(resumable_session, dict) or resumable_record_index is None:
@@ -67,6 +99,8 @@ def build_proof_packet_label(
         audit = resumable_record["result"]
         audit_provenance = {"mode": "reused_validated_checkpoint", "record_id": resumable_record["record_id"]}
     else:
+        if shared_index is None:
+            shared_index = build_index(Path(root))
         audit = audit_derivation_v2_for_label(
             root,
             label,
@@ -77,7 +111,6 @@ def build_proof_packet_label(
             source_digest=source_digest,
             index=shared_index,
         )
-    graph = build_dependency_graph(index=shared_index, manifest=assumption_manifest, packets=[{"packet_id": label, "label": label, "status": audit.get("status")}])
     selected_extraction = audit.get("target_extraction")
     targets = selected_extraction.get("targets", []) if isinstance(selected_extraction, dict) else []
     candidate = targets[0] if len(targets) == 1 and isinstance(targets[0], dict) else None
@@ -88,6 +121,24 @@ def build_proof_packet_label(
     )
     source_binding_accepted = source_digest is None or observed_digest == source_digest
     target = candidate if source_binding_accepted else None
+    graph_index = (
+        {
+            "labels": {
+                label: {
+                    "file": target.get("file"),
+                    "line_start": target.get("line_start"),
+                    "text": target.get("target", ""),
+                }
+            }
+        }
+        if target is not None
+        else None
+    )
+    graph = build_dependency_graph(
+        index=graph_index,
+        manifest=assumption_manifest,
+        packets=[{"packet_id": label, "label": label, "status": audit.get("status")}],
+    )
     source = (
         {
             "file": target.get("file"),

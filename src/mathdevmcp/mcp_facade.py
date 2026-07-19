@@ -53,6 +53,7 @@ from .math_change_impact import math_change_impact
 from .math_document_rigor import audit_math_document_rigor as high_level_audit_math_document_rigor
 from .math_document_rigor import plan_math_document_rigor_audit as high_level_plan_math_document_rigor_audit
 from .math_document_rigor import render_compact_math_document_rigor_markdown
+from .rigor_report_contracts import page_rigor_report_records
 from .report_claim_boundary import audit_report_claim_boundary as high_level_audit_report_claim_boundary
 from .math_review_packet import build_math_review_packet
 from .math_to_tests import generate_math_tests
@@ -66,7 +67,8 @@ from .proof_gap import localize_proof_gap
 from .proof_audit import audit_derivation_for_label
 from .proof_audit_v2 import audit_derivation_v2_for_label
 from .proof_packet import build_proof_packet_label
-from .negative_evidence import build_negative_evidence_packet
+from .resumable_tree import page_resumable_tree_records, resolve_resumable_tree_record
+from .negative_evidence import build_negative_evidence_label, build_negative_evidence_packet
 from .claim_support import build_claim_support_packet
 from .release_corpus import release_corpus_manifest, validate_release_corpus_manifest
 from .release_profile_analysis import release_profile_analysis
@@ -812,6 +814,10 @@ def _tool_proof_packet_label(args: dict[str, Any]) -> dict[str, Any]:
         summary_only=bool(args.get("summary_only", True)),
         file=args.get("file") or None,
         source_digest=args.get("source_digest") or None,
+        checkpoint_root=args.get("checkpoint_root") or None,
+        checkpoint_session_id=args.get("checkpoint_session_id") or None,
+        checkpoint_record_index=args.get("checkpoint_record_index"),
+        checkpoint_record_id=args.get("checkpoint_record_id") or None,
     )
     if str(args.get("response_mode", "detailed")) == "compact":
         artifact_root = _required_string(args, "artifact_root")
@@ -821,14 +827,16 @@ def _tool_proof_packet_label(args: dict[str, Any]) -> dict[str, Any]:
 
 def _tool_negative_evidence_label(args: dict[str, Any]) -> dict[str, Any]:
     label = _required_string(args, "label")
-    audit = audit_derivation_v2_for_label(
+    result = build_negative_evidence_label(
         _required_string(args, "root"),
         label,
-        summary_only=True,
         file=args.get("file") or None,
         source_digest=args.get("source_digest") or None,
+        checkpoint_root=args.get("checkpoint_root") or None,
+        checkpoint_session_id=args.get("checkpoint_session_id") or None,
+        checkpoint_record_index=args.get("checkpoint_record_index"),
+        checkpoint_record_id=args.get("checkpoint_record_id") or None,
     )
-    result = build_negative_evidence_packet(label, audit)
     if str(args.get("response_mode", "detailed")) == "compact":
         artifact_root = _required_string(args, "artifact_root")
         return compact_evidence_packet(result, persist_agent_report(result, artifact_root))
@@ -1015,6 +1023,15 @@ def _tool_audit_math_document_rigor(args: dict[str, Any]) -> dict[str, Any]:
         audit_fix_result = resolved.get("report")
     if audit_fix_result is not None and not isinstance(audit_fix_result, dict):
         raise ValueError("audit_fix_result must be an object")
+    prior_report = args.get("prior_report")
+    if prior_report is not None and not isinstance(prior_report, dict):
+        raise ValueError("prior_report must be an object")
+    revision_manifest = args.get("revision_manifest")
+    if revision_manifest is not None and not isinstance(revision_manifest, dict):
+        raise ValueError("revision_manifest must be an object")
+    obligation_metadata = args.get("obligation_metadata")
+    if obligation_metadata is not None and not isinstance(obligation_metadata, dict):
+        raise ValueError("obligation_metadata must be an object")
     result = high_level_audit_math_document_rigor(
         _required_string(args, "tex_path"),
         output_md=None if response_mode == "compact" else args.get("output_md") or None,
@@ -1024,6 +1041,10 @@ def _tool_audit_math_document_rigor(args: dict[str, Any]) -> dict[str, Any]:
         backend_env=str(args.get("backend_env", "mathdevmcp-backends")),
         validation_backends=validation_backends,
         audit_fix_result=audit_fix_result,
+        prior_report=prior_report,
+        revision_manifest=revision_manifest,
+        report_profile=str(args.get("report_profile", "actionable")),
+        obligation_metadata=obligation_metadata,
     )
     if response_mode == "compact":
         artifact_root = _required_string(args, "artifact_root")
@@ -1037,10 +1058,41 @@ def _tool_audit_math_document_rigor(args: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
+def _tool_page_math_document_rigor_records(args: dict[str, Any]) -> dict[str, Any]:
+    return page_rigor_report_records(
+        _required_string(args, "artifact_root"),
+        _required_string(args, "sha256"),
+        _required_string(args, "collection"),
+        offset=int(args.get("offset", 0)),
+        limit=int(args.get("limit", 100)),
+    )
+
+
 def _tool_resolve_agent_report(args: dict[str, Any]) -> dict[str, Any]:
     return resolve_agent_report(
         _required_string(args, "artifact_root"),
         _required_string(args, "sha256"),
+    )
+
+
+def _tool_page_resumable_tree_records(args: dict[str, Any]) -> dict[str, Any]:
+    return page_resumable_tree_records(
+        _required_string(args, "artifact_root"),
+        _required_string(args, "session_id"),
+        offset=int(args.get("offset", 0)),
+        limit=int(args.get("limit", 20)),
+        page_token=args.get("page_token") or None,
+    )
+
+
+def _tool_resolve_resumable_tree_record(args: dict[str, Any]) -> dict[str, Any]:
+    return resolve_resumable_tree_record(
+        _required_string(args, "artifact_root"),
+        _required_string(args, "page_token"),
+        int(args.get("index")),
+        record_sha256=_required_string(args, "record_sha256"),
+        byte_offset=int(args.get("byte_offset", 0)),
+        byte_limit=int(args.get("byte_limit", 16_384)),
     )
 
 
@@ -1463,8 +1515,11 @@ MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
     MCPToolSpec("lean_readiness", _tool_lean_readiness, "Report direct Lean, Lake, and LeanDojo readiness separately.", "lean_readiness", "operational"),
     MCPToolSpec("plan_math_document_rigor_audit", _tool_plan_math_document_rigor_audit, "Plan a focused mathematical rigor audit for one LaTeX file.", "math_document_rigor_audit_plan", "workflow", stability="experimental"),
     MCPToolSpec("audit_math_document_rigor", _tool_audit_math_document_rigor, "Audit one LaTeX file and write a rigor gap/proposal report.", "math_document_rigor_audit", "workflow", stability="experimental", optional_capability="symbolic_backend"),
+    MCPToolSpec("page_math_document_rigor_records", _tool_page_math_document_rigor_records, "Page an allowlisted collection from an exact persisted forensic rigor report.", "math_document_rigor_record_page", "workflow", stability="experimental"),
     MCPToolSpec("audit_document_derivation_tree", _tool_audit_document_derivation_tree, "Audit LaTeX document targets and return a compact evidence-complete response by default; publication remains disabled.", "document_derivation_response", "workflow", stability="experimental", optional_capability="symbolic_backend"),
     MCPToolSpec("resolve_document_derivation_records", _tool_resolve_document_derivation_records, "Resolve exact persisted audit records authorized by a compact document-derivation page token.", "document_derivation_record_page", "workflow", stability="experimental"),
+    MCPToolSpec("page_resumable_tree_records", _tool_page_resumable_tree_records, "Page immutable resumable tree checkpoints without loading a monolithic audit artifact.", "resumable_document_tree_page", "workflow", stability="experimental"),
+    MCPToolSpec("resolve_resumable_tree_record", _tool_resolve_resumable_tree_record, "Stream exact canonical checkpoint bytes scoped by an issued resumable-tree page token.", "resumable_document_tree_record_resolution", "workflow", stability="experimental"),
     MCPToolSpec("resolve_agent_report", _tool_resolve_agent_report, "Resolve a verified detailed report behind a compact audit/fix or rigor response.", "agent_report_artifact", "workflow", stability="experimental"),
 )
 

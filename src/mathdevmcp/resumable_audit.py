@@ -20,6 +20,14 @@ from .parser_policy import decide_parser_policy, project_parser_policy_expected_
 
 SESSION_SCHEMA = "resumable_document_audit_session@1"
 LABEL_RECORD_SCHEMA = "resumable_label_audit_record@1"
+PACKET_AUDIT_OPTIONS = {
+    "backend": "sympy",
+    "paragraph_context": False,
+    "before": 0,
+    "after": 0,
+    "task_context": "general_math_audit",
+    "parser_backends": ["current"],
+}
 
 
 def _digest(value: Any) -> str:
@@ -266,6 +274,64 @@ def _record_ref(session_id: str, index: int, label: str) -> str:
     return f"resumable-audits/{session_id}/labels/{index:06d}-{label_digest}.json"
 
 
+def load_resumable_audit_label_record(
+    artifact_root: str | Path,
+    session: dict[str, Any],
+    index: int,
+    record_id: str,
+) -> dict[str, Any]:
+    """Load one exact checkpoint and validate every session binding."""
+    validate_resumable_audit_session(session)
+    labels = session.get("labels")
+    if not isinstance(labels, list) or not 0 <= index < len(labels):
+        raise ValueError("resumable audit record index is out of range")
+    ref = _record_ref(str(session["session_id"]), index, str(labels[index]))
+    root = Path(artifact_root)
+    record = _load_record(root, ref)
+    if record is None:
+        raise ValueError("resumable audit checkpoint is missing")
+    validate_resumable_label_record(record, session, index)
+    if record.get("record_id") != record_id:
+        raise ValueError("resumable audit checkpoint record identity mismatch")
+    return record
+
+
+def load_packet_audit_checkpoint(
+    artifact_root: str | Path,
+    session_id: str,
+    record_index: int,
+    record_id: str,
+    *,
+    root: str | Path,
+    label: str,
+    target_file: str | None,
+    source_digest: str | None,
+    summary_only: bool,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Load a checkpoint that is semantically identical to a public packet audit."""
+
+    session = load_resumable_audit_session(artifact_root, session_id)
+    labels = session.get("labels")
+    if not isinstance(labels, list) or not 0 <= record_index < len(labels):
+        raise ValueError("packet checkpoint record index is out of range")
+    if session.get("root") != str(Path(root).resolve()):
+        raise ValueError("checkpoint session root does not match packet root")
+    if labels[record_index] != label:
+        raise ValueError("checkpoint label does not match packet label")
+    if session.get("target_file") != target_file or session.get("source_digest") != source_digest:
+        raise ValueError("checkpoint source binding does not match packet request")
+    expected_options = {**PACKET_AUDIT_OPTIONS, "summary_only": summary_only}
+    if session.get("options") != expected_options:
+        raise ValueError("checkpoint audit configuration does not match packet route")
+    record = load_resumable_audit_label_record(
+        artifact_root,
+        session,
+        record_index,
+        record_id,
+    )
+    return session, record
+
+
 def _expected_binding(session: dict[str, Any], index: int) -> dict[str, Any]:
     labels = session.get("labels")
     bindings = session.get("bindings")
@@ -303,14 +369,14 @@ def validate_resumable_label_record(
     expected_configuration = {
         "backend": session.get("options", {}).get("backend"),
         "paragraph_context": session.get("options", {}).get("paragraph_context"),
-        "before": session.get("options", {}).get("before"),
-        "after": session.get("options", {}).get("after"),
-        "task_context": session.get("options", {}).get("task_context"),
         "summary_only": session.get("options", {}).get("summary_only"),
         "file": session.get("target_file"),
         "source_digest": session.get("source_digest"),
         "parser_backends": session.get("options", {}).get("parser_backends"),
     }
+    for key in ("before", "after", "task_context"):
+        if key in session.get("options", {}):
+            expected_configuration[key] = session["options"][key]
     if result.get("audit_configuration") != expected_configuration:
         raise ValueError("resumable label record audit configuration mismatch")
     if result.get("doc_root") != session.get("root"):

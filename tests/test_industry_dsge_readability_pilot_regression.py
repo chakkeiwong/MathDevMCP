@@ -161,6 +161,8 @@ def test_role_first_routing_distinguishes_equation_semantics(repaired_audit: dic
         if item["role"] == "maintained_assumption"
     )
     assert assumption_evidence["authority"] == "source_evidenced_role"
+    assert targets["eq:bcrm-production"]["route_metadata"]["family"] == "symbolic_exposition"
+    assert "numeric_diagnostic_without_numeric_artifact" in targets["eq:bcrm-production"]["route_metadata"]["route_vetoes"]
     assert any(
         "source-stated maintained" in span["text"]
         and isinstance(span["line_start"], int)

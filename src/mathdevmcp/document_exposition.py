@@ -6,11 +6,37 @@ import re
 from typing import Any, Iterable
 
 from .contracts import attach_contract
-from .evidence_manifest import content_digest
+from .rigor_report_contracts import semantic_issue_digest
 
 
 EXPOSITION_CONTRACT = "document_exposition_issue_projection"
 ACTIONABLE_STATUSES = frozenset({"actionable_patch", "actionable_assumption_text"})
+ROLE_TAXONOMY = (
+    "definition",
+    "conditional_identity",
+    "maintained_assumption",
+    "accounting_identity",
+    "equilibrium_condition",
+    "approximation_linearization",
+    "estimator_objective",
+    "source_reported_result",
+    "local_derived_claim",
+    "conjecture_heuristic",
+    "unknown",
+)
+PRIMARY_ROUTE_BY_ROLE = {
+    "definition": "definition_context",
+    "conditional_identity": "assumption_context",
+    "maintained_assumption": "assumption_context",
+    "accounting_identity": "identity_context",
+    "equilibrium_condition": "equilibrium_context",
+    "approximation_linearization": "approximation_context",
+    "estimator_objective": "estimator_context",
+    "source_reported_result": "source_review",
+    "local_derived_claim": "derivation_review",
+    "conjecture_heuristic": "human_review",
+    "unknown": "human_classification",
+}
 
 
 def _context_paragraphs(target: dict[str, Any]) -> list[dict[str, Any]]:
@@ -104,6 +130,19 @@ def classify_exposition_roles(target: dict[str, Any]) -> list[dict[str, Any]]:
             )
         )
 
+    if any(cue in lowered for cue in ("equilibrium", "market clearing", "first-order condition", "foc")):
+        roles.append(_role_evidence("equilibrium_condition", "source_context", "equilibrium cue", target, source_spans=_cue_spans(target, ("equilibrium", "market clearing", "first-order condition", "foc"))))
+    if any(cue in lowered for cue in ("linearization", "linearised", "linearized", "first-order approximation", "approximation")):
+        roles.append(_role_evidence("approximation_linearization", "source_context", "approximation cue", target, source_spans=_cue_spans(target, ("linearization", "linearised", "linearized", "first-order approximation", "approximation"))))
+    if any(cue in lowered for cue in ("estimator", "objective function", "loss function", "minimize", "maximum likelihood")) or "argmin" in text or r"arg\max" in text:
+        roles.append(_role_evidence("estimator_objective", "source_context", "estimator/objective cue", target, source_spans=_cue_spans(target, ("estimator", "objective function", "loss function", "minimize", "maximum likelihood"))))
+    if any(cue in lowered for cue in ("according to", "reported in", "we reproduce", "source reports", "table", "empirical result")):
+        roles.append(_role_evidence("source_reported_result", "source_context", "source-result cue", target, source_spans=_cue_spans(target, ("according to", "reported in", "we reproduce", "source reports", "table", "empirical result"))))
+    if any(cue in lowered for cue in ("we derive", "it follows that", "therefore", "hence", "our result")):
+        roles.append(_role_evidence("local_derived_claim", "source_context", "local-derivation cue", target, source_spans=_cue_spans(target, ("we derive", "it follows that", "therefore", "hence", "our result"))))
+    if any(cue in lowered for cue in ("conjecture", "we hypothesize", "heuristic", "rule of thumb", "plausibly")):
+        roles.append(_role_evidence("conjecture_heuristic", "source_context", "conjecture/heuristic cue", target, source_spans=_cue_spans(target, ("conjecture", "we hypothesize", "heuristic", "rule of thumb", "plausibly"))))
+
     if _contains_inverse(text) and _contains_power_series(text):
         roles.append(
             _role_evidence(
@@ -155,15 +194,179 @@ def classify_exposition_roles(target: dict[str, Any]) -> list[dict[str, Any]]:
     return deduped
 
 
+def primary_exposition_route(roles: list[dict[str, Any]]) -> dict[str, Any]:
+    """Choose a deterministic non-certifying route while preserving ambiguity."""
+    names = [str(item.get("role")) for item in roles if isinstance(item, dict)]
+    known = [name for name in names if name in PRIMARY_ROUTE_BY_ROLE and name != "unknown"]
+    if not known or len(set(known)) > 1:
+        role = "unknown" if not known else "unknown"
+        reason = "no known role" if not known else "multiple role families require human classification"
+    else:
+        role = known[0]
+        reason = "single deterministic role family"
+    return {
+        "role": role,
+        "route": PRIMARY_ROUTE_BY_ROLE[role],
+        "reason": reason,
+        "certifying": False,
+        "non_claim": "Primary exposition routing selects diagnostics only; it never certifies a mathematical claim.",
+    }
+
+
+def route_metadata_for_target(target: dict[str, Any], roles: list[dict[str, Any]]) -> dict[str, Any]:
+    """Describe the diagnostic route and explicit vetoes for one display."""
+    names = {str(item.get("role")) for item in roles if isinstance(item, dict)}
+    if "source_reported_result" in names:
+        family = "source_reconstruction"
+    elif "local_derived_claim" in names:
+        family = "formal_proof_candidate"
+    elif "conjecture_heuristic" in names:
+        family = "human_review"
+    else:
+        family = "symbolic_exposition"
+    has_numeric_artifact = any(
+        target.get(key) not in (None, "", [], {})
+        for key in ("numeric_inputs", "numeric_artifact", "implementation_target")
+    )
+    return {
+        "family": family,
+        "roles": sorted(names),
+        "numeric_artifact_present": has_numeric_artifact,
+        "formal_backend_authorized": family == "formal_proof_candidate",
+        "route_vetoes": [
+            "numeric_diagnostic_without_numeric_artifact"
+            if family == "symbolic_exposition" and not has_numeric_artifact
+            else None,
+            "proof_route_for_source_or_heuristic_claim"
+            if family in {"source_reconstruction", "human_review"}
+            else None,
+        ],
+        "non_claim": "Route metadata selects bounded diagnostics; it does not certify the displayed claim.",
+    }
+
+
+def _surface_diagnostic(
+    diagnostic_id: str,
+    spans: list[dict[str, Any]],
+    *,
+    required: bool = True,
+) -> dict[str, Any]:
+    return {
+        "id": diagnostic_id,
+        "status": "present" if spans else ("not_observed_in_bounded_context" if required else "not_applicable"),
+        "evidence_spans": spans,
+        "required_for_this_display": required,
+        "authority": "source_surface_observation_only",
+    }
+
+
+def build_exposition_surface_diagnostics(
+    target: dict[str, Any],
+    roles: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Inspect bounded equation exposition without claiming readability."""
+    label = str(target.get("label") or "")
+    text = str(target.get("text") or "")
+    definition_spans = _cue_spans(
+        target,
+        ("defined by", "we define", "is defined", "are defined", "define the", "here ", "denote"),
+    )
+    dimension_spans = _supporting_paragraphs(
+        target,
+        lambda value: any(
+            token in value.lower()
+            for token in ("vector", "scalar", "dimension", "domain", "support", "positive definite", "j\\times j", "j x j")
+        )
+        or r"\mathbb{" in value
+        or r"\in" in value,
+    )
+    assumption_spans = _cue_spans(
+        target,
+        ("assume", "suppose", "requires", "requirement", "maintained", "if the", "provided that", "restriction"),
+    )
+    role_spans = _unique_spans(
+        span
+        for role in roles
+        for span in role.get("source_spans", [])
+        if isinstance(span, dict)
+    )
+    source_spans = _supporting_paragraphs(
+        target,
+        lambda value: any(token in value.lower() for token in ("source", "according to", "reported in", "we reproduce"))
+        or r"\cite" in value,
+    )
+    interpretation_spans = _supporting_paragraphs(
+        target,
+        lambda value: any(
+            token in value.lower()
+            for token in ("means", "measures", "represents", "interpreted", "is own", "collects", "accounting map", "not welfare")
+        ),
+    )
+    later_reuse_spans = _supporting_paragraphs(
+        target,
+        lambda value: bool(
+            label
+            and re.search(rf"\\(?:eqref|ref|autoref|cref|Cref)\{{{re.escape(label)}\}}", value)
+        ),
+    )
+    later_reuse_spans = [
+        span
+        for span in later_reuse_spans
+        if isinstance(span.get("line_start"), int)
+        and isinstance(target.get("line_end"), int)
+        and span["line_start"] > int(target["line_end"])
+    ]
+    identity_required = _contains_inverse(text) and bool(re.search(r"(?<![A-Za-z])I(?![A-Za-z])", text))
+    identity_spans = _supporting_paragraphs(
+        target,
+        lambda value: "identity matrix" in value.lower() and bool(re.search(r"(?<![A-Za-z])I(?![A-Za-z])", value)),
+    )
+    path_required = _contains_power_series(text)
+    path_spans = _supporting_paragraphs(
+        target,
+        lambda value: "path" in value.lower() and any(token in value for token in (r"\Omega", "exposure")),
+    )
+    diagnostics = [
+        _surface_diagnostic("symbol_or_object_definitions", definition_spans),
+        _surface_diagnostic("dimension_or_domain_declaration", dimension_spans),
+        _surface_diagnostic("assumption_or_restriction", assumption_spans),
+        _surface_diagnostic("equation_role_language", role_spans),
+        _surface_diagnostic("source_or_version_anchor", source_spans, required=False),
+        _surface_diagnostic("prose_interpretation", interpretation_spans),
+        _surface_diagnostic("later_equation_reuse", later_reuse_spans, required=False),
+        _surface_diagnostic("identity_definition", identity_spans, required=identity_required),
+        _surface_diagnostic("path_interpretation", path_spans, required=path_required),
+    ]
+    return {
+        "schema_version": "exposition_surface_diagnostics@1",
+        "context_file": target.get("exposition_context", {}).get("file"),
+        "context_line_start": target.get("exposition_context", {}).get("context_start"),
+        "context_line_end": target.get("exposition_context", {}).get("context_end"),
+        "diagnostics": diagnostics,
+        "missing_required_ids": [
+            item["id"]
+            for item in diagnostics
+            if item["required_for_this_display"] and item["status"] != "present"
+        ],
+        "non_claim": "These are bounded source-surface observations, not readability, pedagogy, source-truth, or proof certification.",
+    }
+
+
 def enrich_targets_with_exposition_roles(targets: list[dict[str, Any]]) -> list[dict[str, Any]]:
     enriched: list[dict[str, Any]] = []
     for target in targets:
         roles = classify_exposition_roles(target)
+        primary_route = primary_exposition_route(roles)
+        route_metadata = route_metadata_for_target(target, roles)
+        surface_diagnostics = build_exposition_surface_diagnostics(target, roles)
         enriched.append(
             {
                 **target,
                 "equation_roles": [item["role"] for item in roles],
                 "equation_role_evidence": roles,
+                "primary_exposition_route": primary_route,
+                "route_metadata": route_metadata,
+                "exposition_surface_diagnostics": surface_diagnostics,
                 "role_nonclaim": "Role classification is source/structure evidence, not mathematical certification.",
             }
         )
@@ -280,6 +483,8 @@ def _inverse_issue(target: dict[str, Any], raw_gaps: list[dict[str, Any]]) -> di
         "existing_context_support": all_support,
         "unresolved_obligations": unresolved,
         "route_evidence": _raw_subevidence(raw_gaps, label),
+        "route_metadata": target.get("route_metadata", {}),
+        "exposition_surface_diagnostics": target.get("exposition_surface_diagnostics", {}),
         "evidence_refs": _raw_refs(raw_gaps, label),
         "candidate_patch": candidate_patch,
         "patch_class": "candidate_exposition_patch_not_certificate" if candidate_patch else None,
@@ -288,7 +493,42 @@ def _inverse_issue(target: dict[str, Any], raw_gaps: list[dict[str, Any]]) -> di
             "It does not certify the matrix theorem or source-specific validity."
         ),
     }
-    issue["issue_digest"] = content_digest(issue)
+    issue["issue_digest"] = semantic_issue_digest(issue)
+    return issue
+
+
+def _determinant_issue(target: dict[str, Any], raw_gaps: list[dict[str, Any]]) -> dict[str, Any]:
+    """Project a bounded log-determinant exposition obligation."""
+    label = str(target.get("label") or "")
+    context = _context_text(target).lower()
+    support = _supporting_paragraphs(
+        target,
+        lambda value: any(token in value.lower() for token in ("positive definite", "determinant domain", "nonsingular", "log determinant")),
+    )
+    unresolved = [] if support else ["determinant_domain"]
+    candidate_patch = None if support else (
+        "State the matrix dimension and determinant domain before using the log-determinant "
+        "expression; for a covariance logdet, state the positive-definiteness condition."
+    )
+    issue = {
+        "issue_id": f"{label}/determinant-domain",
+        "id": f"{label}/determinant-domain",
+        "label": label,
+        "family": "determinant-domain",
+        "status": "resolved_by_existing_context" if not unresolved else "unresolved",
+        "roles": list(target.get("equation_roles", [])),
+        "location": target.get("location"),
+        "subevidence": ["determinant_domain"],
+        "existing_context_support": support,
+        "unresolved_obligations": unresolved,
+        "route_evidence": _raw_subevidence(raw_gaps, label),
+        "route_metadata": target.get("route_metadata", {}),
+        "exposition_surface_diagnostics": target.get("exposition_surface_diagnostics", {}),
+        "candidate_patch": candidate_patch,
+        "patch_class": "candidate_exposition_patch_not_certificate" if candidate_patch else None,
+        "math_nonclaim": "The determinant-domain diagnostic is scoped exposition evidence, not a proof of a log-determinant identity.",
+    }
+    issue["issue_digest"] = semantic_issue_digest(issue)
     return issue
 
 
@@ -320,12 +560,14 @@ def _fallback_issue(target: dict[str, Any], raw_gaps: list[dict[str, Any]]) -> d
         "existing_context_support": [],
         "unresolved_obligations": unresolved,
         "route_evidence": raw,
+        "route_metadata": target.get("route_metadata", {}),
+        "exposition_surface_diagnostics": target.get("exposition_surface_diagnostics", {}),
         "evidence_refs": _raw_refs(raw_gaps, label),
         "candidate_patch": None,
         "patch_class": None,
         "math_nonclaim": "Formalization status is diagnostic and does not establish truth or falsehood.",
     }
-    issue["issue_digest"] = content_digest(issue)
+    issue["issue_digest"] = semantic_issue_digest(issue)
     return issue
 
 
@@ -341,6 +583,8 @@ def build_exposition_projection(
         text = str(target.get("text") or "")
         if _contains_inverse(text):
             issues.append(_inverse_issue(target, raw_gaps))
+        elif "log\\det" in text or "\\det" in text or "logdet" in text.lower():
+            issues.append(_determinant_issue(target, raw_gaps))
         else:
             if not _raw_subevidence(raw_gaps, label):
                 continue

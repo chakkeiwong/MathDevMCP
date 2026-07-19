@@ -22,6 +22,8 @@ def test_proof_packet_bundles_audit_graph_and_boundary():
     assert packet["proof_audit_v2"]["metadata"]["contract"] == "proof_audit_v2_result"
     assert packet["dependency_graph"]["metadata"]["contract"] == "dependency_graph"
     assert "Only nested deterministic backend certificates" in packet["certification_boundary"]
+    label_nodes = [node for node in packet["dependency_graph"]["nodes"] if node["kind"] == "label"]
+    assert [node["label"] for node in label_nodes] == ["eq:proof-audit-single"]
 
 
 def test_proof_packet_identity_excludes_nondeterministic_parser_runtime() -> None:

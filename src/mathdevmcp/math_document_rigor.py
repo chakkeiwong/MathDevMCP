@@ -21,6 +21,12 @@ from .derivation_target_extraction import extract_derivation_targets_for_label
 from .document_exposition import build_exposition_projection
 from .latex_index import build_index, extract_paragraph_context_for_label, scan_latex_headings
 from .role_obligations import build_role_specific_obligations, has_role_specific_builder
+from .rigor_report_contracts import (
+    REPORT_PROFILES,
+    build_editorial_integration_records,
+    compare_rigor_reports,
+    validate_obligation_metadata,
+)
 
 
 RIGOR_AUDIT_CONTRACT = "math_document_rigor_audit"
@@ -725,10 +731,16 @@ def audit_math_document_rigor(
     backend_env: str = "mathdevmcp-backends",
     validation_backends: list[str] | None = None,
     audit_fix_result: dict[str, Any] | None = None,
+    prior_report: dict[str, Any] | None = None,
+    revision_manifest: dict[str, Any] | None = None,
+    report_profile: str = "actionable",
+    obligation_metadata: dict[str, Any] | None = None,
     context_before: int = 4,
     context_after: int = 1,
 ) -> dict[str, Any]:
     """Run a focused document-rigor audit and optionally write Markdown/JSON artifacts."""
+    if report_profile not in REPORT_PROFILES:
+        raise ValueError("report_profile must be actionable or forensic")
     path = Path(tex_path)
     plan = plan_math_document_rigor_audit(
         path,
@@ -738,6 +750,16 @@ def audit_math_document_rigor(
         context_after=context_after,
     )
     target_labels = [str(item["label"]) for item in plan["target_selection"]["targets"] if item.get("label")]
+    source = {
+        "file": path.name,
+        "canonical_path": str(path.resolve()),
+        "source_digest": hashlib.sha256(path.read_bytes()).hexdigest(),
+    }
+    validated_metadata = validate_obligation_metadata(
+        obligation_metadata,
+        source=source,
+        selected_labels=target_labels,
+    )
     tool_uses = list(plan.get("tool_uses", []))
     backend = _backend_provenance(path, backend_env=backend_env)
     tool_uses.append(
@@ -828,7 +850,8 @@ def audit_math_document_rigor(
     }
     result = {
         "tex_path": str(path),
-        "source": {"file": path.name, "source_digest": hashlib.sha256(path.read_bytes()).hexdigest()},
+        "source": source,
+        "report_profile": report_profile,
         "backend_env": backend_env,
         "backend_provenance": backend,
         "document_inventory": plan["document_inventory"],
@@ -839,6 +862,15 @@ def audit_math_document_rigor(
         "proposals": proposals,
         "issues": exposition["issues"],
         "semantic_issues": exposition["issues"],
+        "editorial_integration": {
+            "schema_version": "exposition_surface_diagnostics@1",
+            "records": build_editorial_integration_records(
+                exposition["issues"],
+                source=source,
+                obligation_metadata=validated_metadata,
+            ),
+            "metadata_supplied": bool(validated_metadata),
+        },
         "proposal_ledgers": ledgers,
         "source_reports": {
             "audit_and_propose_fix": fix_report,
@@ -861,13 +893,18 @@ def audit_math_document_rigor(
         ],
     }
     result = attach_contract(result, RIGOR_AUDIT_CONTRACT)
+    result["lifecycle_comparison"] = (
+        compare_rigor_reports(result, prior_report, revision_manifest=revision_manifest)
+        if prior_report is not None
+        else None
+    )
     forensic_markdown = render_math_document_rigor_markdown(result)
     actionable_markdown = render_actionable_math_document_rigor_markdown(result)
     result["forensic_markdown"] = forensic_markdown
     result["actionable_markdown"] = actionable_markdown
-    result["markdown"] = actionable_markdown
+    result["markdown"] = actionable_markdown if report_profile == "actionable" else forensic_markdown
     if output_md is not None:
-        Path(output_md).write_text(actionable_markdown, encoding="utf-8")
+        Path(output_md).write_text(result["markdown"], encoding="utf-8")
         result["output_md"] = str(output_md)
     if output_json is not None:
         serializable = dict(result)

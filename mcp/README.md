@@ -105,6 +105,14 @@ Facade registry: `src/mathdevmcp/mcp_facade.py`
 - `audit_math_document_rigor` - experimentally audit one LaTeX file and write
   a rigor gap/proposal report. Use `response_mode="compact"` with
   `artifact_root` for a bounded summary backed by exact local detailed bytes.
+  `report_profile="actionable"` is the default issue-first view;
+  `report_profile="forensic"` selects full provenance Markdown. Supply a
+  source-bound `prior_report` and, for edited source bytes, a controlled
+  `revision_manifest` to obtain `closed`, `improved_but_open`, `unchanged`,
+  `regressed`, and `new` issue transitions. Optional `obligation_metadata`
+  must use `obligation_metadata@1`, match the exact source file/digest and
+  selected label, and remains advisory `author_supplied` evidence rather than
+  source truth.
 - `audit_document_derivation_tree` - experimentally audit LaTeX targets with
   semantic work packets, agent-guided hypothesis branches, tree/backend
   evidence, and `tool_grounded_proposal_compiler_result`. The default MCP/CLI
@@ -124,9 +132,23 @@ Facade registry: `src/mathdevmcp/mcp_facade.py`
   the page's `page_token`, exact collection name, `artifact_root`, and the exact
   target ID for target-scoped collections. Resolver `limit` controls record
   pagination independently of the token's target-page limit.
+- `page_resumable_tree_records` - page validated immutable per-target tree
+  checkpoints without loading the monolithic full-tree artifact. Responses
+  remain bounded, ordered, diagnostic, and publication-disabled. Issued page
+  tokens are persisted under local byte-identity authority.
+- `resolve_resumable_tree_record` - stream exact canonical checkpoint bytes in
+  bounded chunks scoped by an issued resumable-tree page token and expected
+  record digest. Artifact identity does not create access-control or
+  mathematical authority.
 - `resolve_agent_report` - resolve the exact verified detailed report behind a
   compact `prepare_review_packet`, `audit_and_propose_fix`, or
   `audit_math_document_rigor` response.
+- `page_math_document_rigor_records` - page an allowlisted collection from an
+  exact persisted forensic `audit_math_document_rigor` artifact. Retrieval is
+  transport-only and does not filter evidence or establish proof. Supported
+  collections are `issues`, `gaps`, `proposals`, `tool_uses`, `targets`,
+  `raw_route_gaps`, and `raw_route_proposals`; every record carries its own
+  canonical SHA-256 under the exact detailed-report SHA-256.
 
 Resolver collections are machine-readable in each compact page and through
 `capability_registry`. Global collections are `global_blocker_records`,

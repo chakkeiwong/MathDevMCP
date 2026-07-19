@@ -102,14 +102,25 @@ def test_document_derivation_fastmcp_schema_exposes_v2_structured_content_tools(
     assert resolver_properties["limit"]["default"] == 100
     assert resolver.fn_metadata.output_schema is None
 
+    tree_page = mcp._tool_manager._tools["page_resumable_tree_records"]
+    assert tree_page.parameters["properties"]["limit"]["default"] == 20
+    tree_resolver = mcp._tool_manager._tools["resolve_resumable_tree_record"]
+    assert tree_resolver.parameters["properties"]["byte_limit"]["default"] == 16384
+
     registry = {spec.name: spec for spec in MCP_TOOL_SPECS}
     assert registry["audit_document_derivation_tree"].output_contract == "document_derivation_response"
     assert registry["resolve_document_derivation_records"].output_contract == "document_derivation_record_page"
+    assert registry["page_resumable_tree_records"].output_contract == "resumable_document_tree_page"
+    assert registry["resolve_resumable_tree_record"].output_contract == "resumable_document_tree_record_resolution"
 
     audit_fix = mcp._tool_manager._tools["audit_and_propose_fix"]
     assert audit_fix.parameters["properties"]["response_mode"]["enum"] == ["detailed", "compact"]
     rigor = mcp._tool_manager._tools["audit_math_document_rigor"]
     assert rigor.parameters["properties"]["response_mode"]["enum"] == ["detailed", "compact"]
+    assert rigor.parameters["properties"]["report_profile"]["enum"] == ["actionable", "forensic"]
+    assert rigor.parameters["properties"]["prior_report"]["default"] is None
+    assert rigor.parameters["properties"]["revision_manifest"]["default"] is None
+    assert rigor.parameters["properties"]["obligation_metadata"]["default"] is None
     review = mcp._tool_manager._tools["prepare_review_packet"]
     assert review.parameters["properties"]["response_mode"]["enum"] == ["detailed", "compact"]
 

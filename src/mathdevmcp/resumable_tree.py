@@ -3,6 +3,7 @@ from __future__ import annotations
 """Immutable per-target checkpoints for document derivation-tree audits."""
 
 from collections import defaultdict
+import base64
 import hashlib
 import json
 from pathlib import Path
@@ -32,6 +33,9 @@ from .latex_index import build_index
 
 TREE_SESSION_SCHEMA = "resumable_document_tree_session@1"
 TREE_RECORD_SCHEMA = "resumable_document_tree_target_record@1"
+TREE_PAGE_SCHEMA = "resumable_document_tree_page@1"
+TREE_ISSUED_PAGE_SCHEMA = "resumable_document_tree_issued_page@1"
+TREE_PUBLIC_BYTES = 30_720
 
 
 def _digest(value: Any) -> str:
@@ -238,6 +242,335 @@ def _load_record(root: Path, ref: str) -> dict[str, Any] | None:
     if not isinstance(record, dict) or canonical_json_bytes(record) != payload:
         raise ValueError("resumable tree record is not canonical")
     return record
+
+
+def load_resumable_tree_session(artifact_root: str | Path, session_id: str) -> dict[str, Any]:
+    root = Path(artifact_root)
+    ref = f"resumable-trees/{session_id}/session.json"
+    payload, _ = read_bytes_no_follow(root, ref)
+    try:
+        session = json.loads(payload.decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError("resumable tree session is invalid JSON") from exc
+    if not isinstance(session, dict) or canonical_json_bytes(session) != payload:
+        raise ValueError("resumable tree session is not canonical")
+    if session.get("session_id") != session_id:
+        raise ValueError("resumable tree session path identity mismatch")
+    return validate_resumable_tree_session(session)
+
+
+def load_resumable_tree_target_record(
+    artifact_root: str | Path,
+    session: dict[str, Any],
+    index: int,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    validate_resumable_tree_session(session)
+    labels = session.get("labels")
+    if not isinstance(labels, list) or not 0 <= index < len(labels):
+        raise ValueError("resumable tree target index is out of range")
+    ref = _tree_record_ref(str(session["session_id"]), index, str(labels[index]))
+    root = Path(artifact_root)
+    record = _load_record(root, ref)
+    if record is None:
+        raise ValueError("resumable tree target record is missing")
+    validate_resumable_tree_record(record, session, index)
+    payload, _ = read_bytes_no_follow(root, ref)
+    return record, {
+        "ref": ref,
+        "sha256": hashlib.sha256(payload).hexdigest(),
+        "byte_count": len(payload),
+        "authority": "local_byte_identity_only",
+    }
+
+
+def _tree_page_token(payload: dict[str, Any]) -> str:
+    raw = canonical_json_bytes(payload)
+    envelope = {"payload": payload, "sha256": hashlib.sha256(raw).hexdigest()}
+    encoded = base64.urlsafe_b64encode(canonical_json_bytes(envelope)).decode("ascii").rstrip("=")
+    return encoded
+
+
+def _decode_tree_page_token(token: str) -> dict[str, Any]:
+    if not isinstance(token, str) or not token:
+        raise ValueError("tree page token must be a non-empty string")
+    try:
+        padded = token + "=" * (-len(token) % 4)
+        envelope = json.loads(base64.urlsafe_b64decode(padded.encode("ascii")).decode("utf-8"))
+    except (ValueError, UnicodeError, json.JSONDecodeError, base64.binascii.Error) as exc:
+        raise ValueError("tree page token is invalid") from exc
+    payload = envelope.get("payload") if isinstance(envelope, dict) else None
+    if not isinstance(payload, dict) or envelope.get("sha256") != hashlib.sha256(canonical_json_bytes(payload)).hexdigest():
+        raise ValueError("tree page token digest mismatch")
+    if payload.get("schema_version") != TREE_PAGE_SCHEMA:
+        raise ValueError("tree page token schema mismatch")
+    return payload
+
+
+def _issued_tree_page_ref(session_id: str, token: str) -> str:
+    token_digest = hashlib.sha256(token.encode("ascii")).hexdigest()
+    return f"resumable-trees/{session_id}/pages/{token_digest}.json"
+
+
+def _persist_issued_tree_page(
+    artifact_root: str | Path,
+    session_id: str,
+    token: str,
+) -> dict[str, Any]:
+    ref = _issued_tree_page_ref(session_id, token)
+    record = {
+        "schema_version": TREE_ISSUED_PAGE_SCHEMA,
+        "session_id": session_id,
+        "token": token,
+        "authority": "local_byte_identity_only",
+        "non_claim": "An issued local page token scopes exact checkpoint resolution; it is not an access-control credential or mathematical authority.",
+    }
+    payload = canonical_json_bytes(record)
+    root = Path(artifact_root)
+    try:
+        result = atomic_write_bytes_no_replace(root, ref, payload)
+    except EvidenceConflictError:
+        existing, _ = read_bytes_no_follow(root, ref)
+        if existing != payload:
+            raise ValueError("issued tree page persistence conflict") from None
+        result = {
+            "sha256": hashlib.sha256(payload).hexdigest(),
+            "byte_count": len(payload),
+        }
+    return {
+        "ref": ref,
+        "sha256": result["sha256"],
+        "byte_count": result["byte_count"],
+        "authority": "local_byte_identity_only",
+    }
+
+
+def _validate_issued_tree_page(
+    artifact_root: str | Path,
+    token: str,
+) -> dict[str, Any]:
+    token_payload = _decode_tree_page_token(token)
+    session_id = str(token_payload.get("session_id", ""))
+    ref = _issued_tree_page_ref(session_id, token)
+    try:
+        payload, _ = read_bytes_no_follow(Path(artifact_root), ref)
+    except (FileNotFoundError, ValueError) as exc:
+        raise ValueError("tree page token was not issued by this artifact root") from exc
+    try:
+        record = json.loads(payload.decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError("issued tree page record is invalid JSON") from exc
+    if (
+        not isinstance(record, dict)
+        or canonical_json_bytes(record) != payload
+        or record.get("schema_version") != TREE_ISSUED_PAGE_SCHEMA
+        or record.get("session_id") != session_id
+        or record.get("token") != token
+    ):
+        raise ValueError("issued tree page record binding mismatch")
+    return token_payload
+
+
+def _tree_record_inventory(artifact_root: str | Path, session: dict[str, Any]) -> list[dict[str, Any]]:
+    expected_refs = [
+        _tree_record_ref(str(session["session_id"]), index, str(label))
+        for index, label in enumerate(session["labels"])
+    ]
+    target_directory = (
+        Path(artifact_root)
+        / "resumable-trees"
+        / str(session["session_id"])
+        / "targets"
+    )
+    if not target_directory.is_dir():
+        raise ValueError("resumable tree target directory is missing")
+    expected_names = {Path(ref).name for ref in expected_refs}
+    observed_names = {
+        entry.name
+        for entry in target_directory.iterdir()
+        if entry.is_file() and not entry.is_symlink()
+    }
+    if observed_names != expected_names or any(
+        not entry.is_file() or entry.is_symlink()
+        for entry in target_directory.iterdir()
+    ):
+        raise ValueError("resumable tree target record inventory mismatch")
+    records: list[dict[str, Any]] = []
+    for index in range(len(session["labels"])):
+        record, artifact = load_resumable_tree_target_record(artifact_root, session, index)
+        records.append(
+            {
+                "index": index,
+                "label": session["labels"][index],
+                "record_id": record["record_id"],
+                "obligation_id": record["obligation_id"],
+                "obligation_digest": record["obligation_digest"],
+                "record_sha256": artifact["sha256"],
+                "byte_count": artifact["byte_count"],
+                "ref": artifact["ref"],
+            }
+        )
+    return records
+
+
+def page_resumable_tree_records(
+    artifact_root: str | Path,
+    session_id: str,
+    *,
+    offset: int = 0,
+    limit: int = 20,
+    page_token: str | None = None,
+) -> dict[str, Any]:
+    """Return bounded summaries over validated target checkpoints."""
+    if not 1 <= int(limit) <= 100:
+        raise ValueError("tree page limit must be between 1 and 100")
+    session = load_resumable_tree_session(artifact_root, session_id)
+    inventory = _tree_record_inventory(artifact_root, session)
+    inventory_digest = _digest(inventory)
+    if page_token:
+        token = _validate_issued_tree_page(artifact_root, page_token)
+        if token.get("session_id") != session_id or token.get("source_digest") != session["source_digest"] or token.get("inventory_digest") != inventory_digest:
+            raise ValueError("tree page token session or inventory mismatch")
+        offset = int(token["next_offset"])
+        limit = int(token["limit"])
+    if offset < 0 or offset > len(inventory):
+        raise ValueError("tree page offset is out of range")
+    selected = inventory[offset : offset + int(limit)]
+
+    def response_for(items: list[dict[str, Any]]) -> dict[str, Any]:
+        next_offset = offset + len(items)
+        token_payload = {
+            "schema_version": TREE_PAGE_SCHEMA,
+            "session_id": session_id,
+            "source_digest": session["source_digest"],
+            "inventory_digest": inventory_digest,
+            "offset": offset,
+            "next_offset": next_offset,
+            "limit": int(limit),
+            "record_bindings": [
+                {
+                    key: item[key]
+                    for key in ("index", "record_id", "record_sha256", "obligation_digest")
+                }
+                for item in items
+            ],
+        }
+        return {
+            "schema_version": TREE_PAGE_SCHEMA,
+            "session_id": session_id,
+            "source_digest": session["source_digest"],
+            "status": "complete" if next_offset == len(inventory) else "partial",
+            "publication_enabled": False,
+            "publication_mode": DOCUMENT_PUBLICATION_MODE,
+            "total_count": len(inventory),
+            "offset": offset,
+            "requested_limit": int(limit),
+            "returned_count": len(items),
+            "records": items,
+            "page_token": _tree_page_token(token_payload),
+            "continuation_token": _tree_page_token(token_payload) if next_offset < len(inventory) else None,
+            "inventory_digest": inventory_digest,
+            "non_claims": [
+                "This page exposes validated checkpoint metadata, not a full-document proof or publication result.",
+                "Exact large records remain local artifacts addressed by their recorded digest and reference.",
+            ],
+        }
+
+    response = response_for(selected)
+    while len(canonical_json_bytes(response)) > TREE_PUBLIC_BYTES and len(selected) > 1:
+        selected.pop()
+        response = response_for(selected)
+    if not selected or len(canonical_json_bytes(response)) > TREE_PUBLIC_BYTES:
+        raise ValueError("one resumable tree summary exceeds the public payload budget")
+    response["payload_guardrail"] = {
+        "status": "met",
+        "public_target_bytes": TREE_PUBLIC_BYTES,
+        "canonical_byte_count": 0,
+    }
+    while True:
+        size = len(canonical_json_bytes(response))
+        if response["payload_guardrail"]["canonical_byte_count"] == size:
+            break
+        response["payload_guardrail"]["canonical_byte_count"] = size
+    if size > TREE_PUBLIC_BYTES:
+        raise ValueError("resumable tree page exceeds the public payload budget")
+    response["issued_page_artifact"] = _persist_issued_tree_page(
+        artifact_root,
+        session_id,
+        response["page_token"],
+    )
+    while True:
+        size = len(canonical_json_bytes(response))
+        if response["payload_guardrail"]["canonical_byte_count"] == size:
+            break
+        response["payload_guardrail"]["canonical_byte_count"] = size
+    if size > TREE_PUBLIC_BYTES:
+        raise ValueError("resumable tree page exceeds the public payload budget")
+    return response
+
+
+def resolve_resumable_tree_record(
+    artifact_root: str | Path,
+    page_token: str,
+    index: int,
+    *,
+    record_sha256: str,
+    byte_offset: int = 0,
+    byte_limit: int = 16_384,
+) -> dict[str, Any]:
+    """Stream canonical checkpoint bytes scoped by one issued bounded page."""
+    token = _validate_issued_tree_page(artifact_root, page_token)
+    session_id = str(token["session_id"])
+    session = load_resumable_tree_session(artifact_root, session_id)
+    if token.get("source_digest") != session["source_digest"]:
+        raise ValueError("tree record page token session mismatch")
+    if not int(token["offset"]) <= int(index) < int(token["next_offset"]):
+        raise ValueError("tree record index is outside the page token scope")
+    if byte_offset < 0 or not 1 <= byte_limit <= 16_384:
+        raise ValueError("tree record byte range is invalid")
+    record, artifact = load_resumable_tree_target_record(artifact_root, session, int(index))
+    bindings = token.get("record_bindings")
+    binding = next(
+        (
+            item
+            for item in bindings
+            if isinstance(item, dict) and item.get("index") == int(index)
+        ),
+        None,
+    ) if isinstance(bindings, list) else None
+    if not isinstance(binding, dict) or any(
+        binding.get(key) != value
+        for key, value in (
+            ("record_id", record["record_id"]),
+            ("record_sha256", artifact["sha256"]),
+            ("obligation_digest", record["obligation_digest"]),
+        )
+    ):
+        raise ValueError("tree record differs from the page token binding")
+    if artifact["sha256"] != record_sha256:
+        raise ValueError("tree record digest mismatch")
+    payload = canonical_json_bytes(record)
+    if byte_offset > len(payload):
+        raise ValueError("tree record byte offset is out of range")
+    chunk = payload[byte_offset : byte_offset + byte_limit]
+    next_offset = byte_offset + len(chunk)
+    return {
+        "schema_version": "resumable_document_tree_record_resolution@1",
+        "session_id": session_id,
+        "index": int(index),
+        "label": record["label"],
+        "record_id": record["record_id"],
+        "obligation_id": record["obligation_id"],
+        "obligation_digest": record["obligation_digest"],
+        "artifact": artifact,
+        "byte_offset": byte_offset,
+        "byte_limit": byte_limit,
+        "returned_byte_count": len(chunk),
+        "next_byte_offset": next_offset if next_offset < len(payload) else None,
+        "canonical_record_base64": base64.b64encode(chunk).decode("ascii"),
+        "publication_enabled": False,
+        "publication_mode": DOCUMENT_PUBLICATION_MODE,
+        "non_claim": "The handle proves local artifact identity and does not create mathematical or publication authority.",
+    }
 
 
 def run_resumable_tree_targets(

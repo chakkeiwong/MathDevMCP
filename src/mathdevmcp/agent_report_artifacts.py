@@ -160,6 +160,7 @@ def compact_evidence_packet(report: Mapping[str, Any], artifact: Mapping[str, An
             "numeric_evidence": report.get("numeric_evidence"),
             "code_links": report.get("code_links", []),
             "actions": report.get("actions", audit.get("high_priority_actions", [])),
+            "audit_provenance": report.get("audit_provenance"),
             "vetoes": {
                 "claim_eligibility": "ineligible",
                 "publication_enabled": False,
@@ -303,6 +304,14 @@ def compact_rigor_report(result: Mapping[str, Any], artifact: Mapping[str, Any])
             }
             if isinstance(item.get("routing_role"), Mapping)
             else None,
+            "primary_exposition_route": item.get("primary_exposition_route"),
+            "route_metadata": item.get("route_metadata"),
+            "exposition_surface_diagnostics": {
+                "schema_version": item.get("exposition_surface_diagnostics", {}).get("schema_version"),
+                "missing_required_ids": item.get("exposition_surface_diagnostics", {}).get("missing_required_ids", []),
+            }
+            if isinstance(item.get("exposition_surface_diagnostics"), Mapping)
+            else None,
             "obligation_id": item.get("obligation_id"),
             "obligation_digest": item.get("obligation_digest"),
             "local_obligation_ids": [
@@ -341,6 +350,7 @@ def compact_rigor_report(result: Mapping[str, Any], artifact: Mapping[str, Any])
         {
             "status": result.get("coverage", {}).get("status"),
             "workflow": "audit_math_document_rigor",
+            "report_profile": result.get("report_profile", "actionable"),
             "source": dict(result.get("source", {}))
             if isinstance(result.get("source"), Mapping)
             else {"file": Path(str(result.get("tex_path", ""))).name},
@@ -360,6 +370,15 @@ def compact_rigor_report(result: Mapping[str, Any], artifact: Mapping[str, Any])
             "actionable_proposals": actionable_proposals,
             "actionable_proposal_total_count": total_actionable_proposal_count,
             "actionable_proposals_truncated": False,
+            "lifecycle_comparison": result.get("lifecycle_comparison"),
+            "editorial_integration": {
+                "schema_version": result.get("editorial_integration", {}).get("schema_version"),
+                "record_digests": [
+                    item.get("record_digest")
+                    for item in result.get("editorial_integration", {}).get("records", [])
+                    if isinstance(item, Mapping) and item.get("record_digest")
+                ],
+            },
             "gap_ledger_total_count": total_gap_count,
             "gap_ledger_truncated": False,
             "non_claims": result.get("non_claims", []),

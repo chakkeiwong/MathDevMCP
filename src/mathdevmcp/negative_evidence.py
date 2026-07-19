@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from pathlib import Path
 
 from .contracts import attach_contract, contract_metadata
 
@@ -72,3 +73,70 @@ def build_negative_evidence_packet(label: str, evidence: dict) -> dict:
         metadata=contract_metadata("negative_evidence_packet"),
     )
     return attach_contract(asdict(packet), "negative_evidence_packet", doc_context=evidence.get("provenance"))
+
+
+def build_negative_evidence_label(
+    root: str,
+    label: str,
+    *,
+    file: str | None = None,
+    source_digest: str | None = None,
+    checkpoint_root: str | Path | None = None,
+    checkpoint_session_id: str | None = None,
+    checkpoint_record_index: int | None = None,
+    checkpoint_record_id: str | None = None,
+) -> dict:
+    """Build negative evidence from a computed audit or one exact checkpoint."""
+
+    checkpoint_selector = any(
+        value is not None
+        for value in (
+            checkpoint_root,
+            checkpoint_session_id,
+            checkpoint_record_index,
+            checkpoint_record_id,
+        )
+    )
+    if checkpoint_selector:
+        if not all(
+            value is not None
+            for value in (
+                checkpoint_root,
+                checkpoint_session_id,
+                checkpoint_record_index,
+                checkpoint_record_id,
+            )
+        ):
+            raise ValueError("checkpoint reuse requires root, session, record index, and record ID")
+        from .resumable_audit import load_packet_audit_checkpoint
+
+        _, record = load_packet_audit_checkpoint(
+            checkpoint_root,
+            str(checkpoint_session_id),
+            int(checkpoint_record_index),
+            str(checkpoint_record_id),
+            root=root,
+            label=label,
+            target_file=file,
+            source_digest=source_digest,
+            summary_only=True,
+        )
+        audit = record["result"]
+        audit_provenance = {
+            "mode": "reused_validated_checkpoint",
+            "record_id": record["record_id"],
+        }
+    else:
+        from .proof_audit_v2 import audit_derivation_v2_for_label
+
+        audit = audit_derivation_v2_for_label(
+            root,
+            label,
+            summary_only=True,
+            file=file,
+            source_digest=source_digest,
+        )
+        audit_provenance = {"mode": "computed", "record_id": None}
+    result = build_negative_evidence_packet(label, audit)
+    result["audit_provenance"] = audit_provenance
+    return result

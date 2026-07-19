@@ -51,6 +51,7 @@ from .literature_local_audit import literature_local_audit
 from .math_claim_classifier import classify_math_claim
 from .math_change_impact import math_change_impact
 from .math_document_rigor import audit_math_document_rigor as high_level_audit_math_document_rigor
+from .rigor_report_contracts import page_rigor_report_records
 from .math_document_rigor import plan_math_document_rigor_audit as high_level_plan_math_document_rigor_audit
 from .math_document_rigor import render_compact_math_document_rigor_markdown
 from .report_claim_boundary import audit_report_claim_boundary
@@ -71,7 +72,8 @@ from .proof_audit_v2 import audit_derivation_v2_for_label
 from .proof_packet import build_proof_packet_label
 from .agent_report_artifacts import compact_evidence_packet, compact_rigor_report, persist_agent_report, resolve_agent_report
 from .proof_gap import localize_proof_gap
-from .negative_evidence import build_negative_evidence_packet
+from .negative_evidence import build_negative_evidence_label, build_negative_evidence_packet
+from .resumable_tree import page_resumable_tree_records, resolve_resumable_tree_record
 from .public_release import public_release_check
 from .governance import governance_policy, validate_governance
 from .release_corpus import release_corpus_manifest, validate_release_corpus_manifest
@@ -472,6 +474,9 @@ def _cmd_plan_math_document_rigor_audit(args: argparse.Namespace) -> int:
 
 def _cmd_audit_math_document_rigor(args: argparse.Namespace) -> int:
     max_labels = None if args.max_labels is not None and args.max_labels <= 0 else args.max_labels
+    prior_report = _load_json_argument_or_file(args.prior_report) if args.prior_report else None
+    revision_manifest = _load_json_argument_or_file(args.revision_manifest) if args.revision_manifest else None
+    obligation_metadata = _load_json_argument_or_file(args.obligation_metadata) if args.obligation_metadata else None
     result = high_level_audit_math_document_rigor(
         args.tex_path,
         output_md=Path(args.output_md) if args.output_md and args.response_mode != "compact" else None,
@@ -480,6 +485,10 @@ def _cmd_audit_math_document_rigor(args: argparse.Namespace) -> int:
         max_labels=max_labels,
         backend_env=args.backend_env,
         validation_backends=args.validation_backend or None,
+        report_profile=args.report_profile,
+        prior_report=prior_report,
+        revision_manifest=revision_manifest,
+        obligation_metadata=obligation_metadata,
     )
     if args.response_mode == "compact":
         if not args.artifact_root:
@@ -502,6 +511,12 @@ def _cmd_audit_math_document_rigor(args: argparse.Namespace) -> int:
     serializable = dict(result)
     serializable.pop("markdown", None)
     print(json.dumps(serializable, indent=2))
+    return 0
+
+
+def _cmd_page_math_document_rigor_records(args: argparse.Namespace) -> int:
+    result = page_rigor_report_records(args.artifact_root, args.sha256, args.collection, offset=args.offset, limit=args.limit)
+    print(json.dumps(result, indent=2))
     return 0
 
 
@@ -919,6 +934,10 @@ def _cmd_proof_packet_label(args: argparse.Namespace) -> int:
         summary_only=args.summary_only,
         file=args.file or None,
         source_digest=args.source_digest or None,
+        checkpoint_root=args.checkpoint_root or None,
+        checkpoint_session_id=args.checkpoint_session_id or None,
+        checkpoint_record_index=args.checkpoint_record_index,
+        checkpoint_record_id=args.checkpoint_record_id or None,
     )
     if args.response_mode == "compact":
         if not args.artifact_root:
@@ -932,14 +951,16 @@ def _cmd_proof_packet_label(args: argparse.Namespace) -> int:
 
 
 def _cmd_negative_evidence_label(args: argparse.Namespace) -> int:
-    audit = audit_derivation_v2_for_label(
+    result = build_negative_evidence_label(
         args.root,
         args.label,
-        summary_only=True,
         file=args.file or None,
         source_digest=args.source_digest or None,
+        checkpoint_root=args.checkpoint_root or None,
+        checkpoint_session_id=args.checkpoint_session_id or None,
+        checkpoint_record_index=args.checkpoint_record_index,
+        checkpoint_record_id=args.checkpoint_record_id or None,
     )
-    result = build_negative_evidence_packet(args.label, audit)
     if args.response_mode == "compact":
         if not args.artifact_root:
             raise ValueError("--artifact-root is required for compact packet responses")
@@ -953,6 +974,25 @@ def _cmd_negative_evidence_label(args: argparse.Namespace) -> int:
 
 def _cmd_resolve_agent_report(args: argparse.Namespace) -> int:
     print(json.dumps(resolve_agent_report(args.artifact_root, args.sha256), indent=2))
+    return 0
+
+
+def _cmd_page_resumable_tree_records(args: argparse.Namespace) -> int:
+    result = page_resumable_tree_records(
+        args.artifact_root, args.session_id, offset=args.offset, limit=args.limit,
+        page_token=args.page_token or None,
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_resolve_resumable_tree_record(args: argparse.Namespace) -> int:
+    result = resolve_resumable_tree_record(
+        args.artifact_root, args.page_token, args.index,
+        record_sha256=args.record_sha256, byte_offset=args.byte_offset,
+        byte_limit=args.byte_limit,
+    )
+    print(json.dumps(result, indent=2))
     return 0
 
 
@@ -1298,8 +1338,20 @@ def make_parser() -> argparse.ArgumentParser:
     p_audit_rigor.add_argument("--validation-backend", action="append", choices=["lean", "sage", "sympy"], default=[], help="Backend validation order; can be repeated")
     p_audit_rigor.add_argument("--print-markdown", action="store_true", help="Print Markdown instead of JSON")
     p_audit_rigor.add_argument("--response-mode", choices=["detailed", "compact"], default="detailed", help="Return a detailed report or compact digest-resolvable response")
+    p_audit_rigor.add_argument("--report-profile", choices=["actionable", "forensic"], default="actionable", help="Select the human-facing actionable or forensic report profile")
+    p_audit_rigor.add_argument("--prior-report", default="", help="Optional prior rigor report JSON object or file for source-bound lifecycle comparison")
+    p_audit_rigor.add_argument("--revision-manifest", default="", help="Optional controlled source-revision manifest JSON object or file")
+    p_audit_rigor.add_argument("--obligation-metadata", default="", help="Optional source-bound author obligation metadata JSON object or file")
     p_audit_rigor.add_argument("--artifact-root", default="", help="Required detailed-report store for compact mode")
     p_audit_rigor.set_defaults(func=_cmd_audit_math_document_rigor)
+
+    p_page_rigor = sub.add_parser("page-math-document-rigor-records", help="Page an allowlisted collection from a persisted forensic rigor report")
+    p_page_rigor.add_argument("artifact_root", help="Artifact root containing the persisted report")
+    p_page_rigor.add_argument("sha256", help="Exact persisted report SHA-256")
+    p_page_rigor.add_argument("collection", choices=["issues", "gaps", "proposals", "tool_uses", "targets", "raw_route_gaps", "raw_route_proposals"])
+    p_page_rigor.add_argument("--offset", type=int, default=0)
+    p_page_rigor.add_argument("--limit", type=int, default=100)
+    p_page_rigor.set_defaults(func=_cmd_page_math_document_rigor_records)
 
     p_doc_tree = sub.add_parser("audit-document-derivation-tree", help="Audit LaTeX document targets with semantic work packets and derivation trees")
     p_doc_tree.add_argument("tex_path", help="Target TeX file")
@@ -1342,6 +1394,23 @@ def make_parser() -> argparse.ArgumentParser:
     p_doc_records.add_argument("--offset", type=int, default=0, help="Record offset")
     p_doc_records.add_argument("--limit", type=int, default=100, help="Maximum records to return (1-100)")
     p_doc_records.set_defaults(func=_cmd_resolve_document_derivation_records)
+
+    p_tree_page = sub.add_parser("page-resumable-tree-records", help="Page validated resumable tree checkpoints")
+    p_tree_page.add_argument("session_id", help="Exact resumable tree session ID")
+    p_tree_page.add_argument("--artifact-root", required=True, help="Root containing the resumable tree session")
+    p_tree_page.add_argument("--offset", type=int, default=0, help="Initial record offset")
+    p_tree_page.add_argument("--limit", type=int, default=20, help="Requested records per page (1-100)")
+    p_tree_page.add_argument("--page-token", default="", help="Continuation token from the preceding page")
+    p_tree_page.set_defaults(func=_cmd_page_resumable_tree_records)
+
+    p_tree_resolve = sub.add_parser("resolve-resumable-tree-record", help="Stream canonical bytes for one page-authorized tree checkpoint")
+    p_tree_resolve.add_argument("page_token", help="Issued page token scoping the record index")
+    p_tree_resolve.add_argument("index", type=int, help="Exact target index within the page scope")
+    p_tree_resolve.add_argument("record_sha256", help="Expected canonical record SHA-256")
+    p_tree_resolve.add_argument("--artifact-root", required=True, help="Root containing the resumable tree session")
+    p_tree_resolve.add_argument("--byte-offset", type=int, default=0, help="Canonical record byte offset")
+    p_tree_resolve.add_argument("--byte-limit", type=int, default=16_384, help="Maximum canonical record bytes (1-16384)")
+    p_tree_resolve.set_defaults(func=_cmd_resolve_resumable_tree_record)
 
     p_matrix = sub.add_parser("tool-matrix", help="Print the current tool matrix")
     p_matrix.set_defaults(func=_cmd_tool_matrix)
@@ -1560,6 +1629,10 @@ def make_parser() -> argparse.ArgumentParser:
     p_proof_packet.add_argument("--source-digest", default="", help="Required SHA-256 of the selected source bytes")
     p_proof_packet.add_argument("--response-mode", choices=["compact", "detailed"], default="detailed")
     p_proof_packet.add_argument("--artifact-root", default="", help="Verified artifact root required for compact mode")
+    p_proof_packet.add_argument("--checkpoint-root", default="", help="Resumable audit artifact root for validated checkpoint reuse")
+    p_proof_packet.add_argument("--checkpoint-session-id", default="", help="Exact resumable audit session ID")
+    p_proof_packet.add_argument("--checkpoint-record-index", type=int, default=None, help="Exact ordered checkpoint record index")
+    p_proof_packet.add_argument("--checkpoint-record-id", default="", help="Exact resumable audit record ID")
     p_proof_packet.set_defaults(func=_cmd_proof_packet_label)
 
     p_negative_packet = sub.add_parser("negative-evidence-label", help="Build a negative-evidence packet for a labeled document block")
@@ -1570,6 +1643,10 @@ def make_parser() -> argparse.ArgumentParser:
     p_negative_packet.add_argument("--source-digest", default="", help="Required SHA-256 of the selected source bytes")
     p_negative_packet.add_argument("--response-mode", choices=["compact", "detailed"], default="detailed")
     p_negative_packet.add_argument("--artifact-root", default="", help="Verified artifact root required for compact mode")
+    p_negative_packet.add_argument("--checkpoint-root", default="", help="Resumable audit artifact root for validated checkpoint reuse")
+    p_negative_packet.add_argument("--checkpoint-session-id", default="", help="Exact resumable audit session ID")
+    p_negative_packet.add_argument("--checkpoint-record-index", type=int, default=None, help="Exact ordered checkpoint record index")
+    p_negative_packet.add_argument("--checkpoint-record-id", default="", help="Exact resumable audit record ID")
     p_negative_packet.set_defaults(func=_cmd_negative_evidence_label)
 
     p_resolve_agent = sub.add_parser("resolve-agent-report", help="Resolve a digest-bound detailed agent report")

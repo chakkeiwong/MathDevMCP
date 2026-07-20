@@ -117,10 +117,16 @@ def _entry_from_mapping(item: object) -> ReleaseCorpusEntry:
     )
 
 
-def _load_private_entries(private_manifest: str | Path | None = None) -> PrivateManifestLoad:
+def _load_private_entries(private_manifest: str | Path | None = None, *, repo_root: Path | None = None) -> PrivateManifestLoad:
     path = _private_manifest_path(private_manifest)
     if path is None:
         return PrivateManifestLoad([], {"configured": False, "path": None, "status": "not_configured"}, [])
+    if repo_root is not None and _is_relative_to(path, repo_root):
+        return PrivateManifestLoad(
+            [],
+            {"configured": True, "path": "<redacted-private-manifest>", "status": "inside_checkout"},
+            [{"severity": "high", "kind": "private_manifest_inside_checkout"}],
+        )
     if not path.exists():
         return PrivateManifestLoad([], {"configured": True, "path": "<redacted-private-manifest>", "status": "missing"}, [])
     try:
@@ -416,7 +422,7 @@ def release_corpus_manifest(
             "Private/sanitized fixture still needed.",
         ),
     ]
-    private_load = _load_private_entries(private_manifest)
+    private_load = _load_private_entries(private_manifest, repo_root=_repo_root(base))
     entries.extend(private_load.entries)
     public_entries = entries if include_private_paths else [_redact_private_entry(entry) for entry in entries]
     return attach_contract(

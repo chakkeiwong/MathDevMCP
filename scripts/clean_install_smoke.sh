@@ -6,7 +6,7 @@ usage() {
 Usage: scripts/clean_install_smoke.sh TARGET_DIR
 
 Create a clean copy of the current checkout, create a temporary conda env,
-install MathDevMCP in editable mode, and run a small release smoke.
+install the built MathDevMCP wheel, and run a colleague-facing CLI/MCP smoke.
 
 Set MATHDEVMCP_INSTALL_BACKENDS=1 to also run scripts/setup_backend_env.sh
 inside the clean copy. Backend install may require network access.
@@ -80,8 +80,32 @@ trap cleanup EXIT
 
 log_phase "creating conda env $ENV_NAME"
 conda create -y -n "$ENV_NAME" python=3.11 pip
-log_phase "installing MathDevMCP base profile"
-conda run -n "$ENV_NAME" python -m pip install -e "$TARGET[dev,symbolic]"
+log_phase "building MathDevMCP wheel"
+mkdir -p "$TARGET/.release-dist"
+conda run -n "$ENV_NAME" python -m pip wheel --no-deps --no-build-isolation "$TARGET" -w "$TARGET/.release-dist"
+WHEEL="$(find "$TARGET/.release-dist" -maxdepth 1 -type f -name '*.whl' -print -quit)"
+if [[ -z "$WHEEL" ]]; then
+  echo "Wheel build did not produce an artifact." >&2
+  exit 1
+fi
+log_phase "installing MathDevMCP base profile from wheel"
+conda run -n "$ENV_NAME" python -m pip install "$WHEEL"
+log_phase "checking runtime provenance comes from installed wheel"
+conda run -n "$ENV_NAME" python -c 'import mathdevmcp, pathlib; path = pathlib.Path(mathdevmcp.__file__).resolve(); assert "site-packages" in str(path), path; print(path)'
+
+log_phase "checking actionable base-profile MCP failure"
+set +e
+BASE_MCP_OUTPUT="$(conda run -n "$ENV_NAME" mathdevmcp-mcp 2>&1)"
+BASE_MCP_STATUS=$?
+set -e
+if [[ "$BASE_MCP_STATUS" != "2" || "$BASE_MCP_OUTPUT" != *"mathdevmcp[mcp]"* ]]; then
+  echo "Base-profile MCP command did not return the documented install instruction." >&2
+  echo "$BASE_MCP_OUTPUT" >&2
+  exit 1
+fi
+
+log_phase "installing supported colleague MCP/symbolic profile"
+conda run -n "$ENV_NAME" python -m pip install "${WHEEL}[mcp,symbolic]" pytest
 
 if [[ "${MATHDEVMCP_INSTALL_BACKENDS:-0}" == "1" ]]; then
   if [[ "${MATHDEVMCP_CLEAN_SKIP_NETWORK_HEAVY:-0}" == "1" ]]; then
@@ -94,16 +118,24 @@ fi
 
 if [[ -n "$ARTIFACT_DIR" ]]; then
   mkdir -p "$ARTIFACT_DIR"
-  PYTHONPATH="$TARGET/src" conda run -n "$ENV_NAME" python -m mathdevmcp.cli doctor | tee "$ARTIFACT_DIR/clean-doctor.json"
-  PYTHONPATH="$TARGET/src" conda run -n "$ENV_NAME" pytest -q "$TARGET/tests/test_parser_benchmark.py" "$TARGET/tests/test_packaging_release_policy.py" | tee "$ARTIFACT_DIR/clean-tests.txt"
-  PYTHONPATH="$TARGET/src" conda run -n "$ENV_NAME" python -m mathdevmcp.cli benchmark-gate --root "$TARGET" | tee "$ARTIFACT_DIR/clean-benchmark-gate.json"
+  conda run -n "$ENV_NAME" python "$TARGET/scripts/create_release_manifest.py" --root "$TARGET" --wheel "$WHEEL" --output "$ARTIFACT_DIR/release-manifest.json" | tee "$ARTIFACT_DIR/release-manifest-rendered.json"
+  conda run -n "$ENV_NAME" python -m mathdevmcp.cli doctor | tee "$ARTIFACT_DIR/clean-doctor.json"
+  conda run -n "$ENV_NAME" python "$TARGET/scripts/mcp_stdio_smoke.py" --root "$TARGET" | tee "$ARTIFACT_DIR/clean-mcp-stdio.json"
+  conda run -n "$ENV_NAME" mathdevmcp search-latex Kalman --root "$TARGET/benchmarks/fixtures" --limit 1 | tee "$ARTIFACT_DIR/clean-fixture-search.json"
+  (cd "$TARGET" && conda run -n "$ENV_NAME" pytest -q tests/test_latex_index.py tests/test_packaging_release_policy.py) | tee "$ARTIFACT_DIR/clean-tests.txt"
+  conda run -n "$ENV_NAME" python -m mathdevmcp.cli benchmark-gate --root "$TARGET" | tee "$ARTIFACT_DIR/clean-benchmark-gate.json"
 else
+  conda run -n "$ENV_NAME" python "$TARGET/scripts/create_release_manifest.py" --root "$TARGET" --wheel "$WHEEL" --output "$TARGET/.release-manifest.json" >/dev/null
   log_phase "running doctor"
-  PYTHONPATH="$TARGET/src" conda run -n "$ENV_NAME" python -m mathdevmcp.cli doctor
+  conda run -n "$ENV_NAME" python -m mathdevmcp.cli doctor
+  log_phase "initializing stdio MCP and calling doctor"
+  conda run -n "$ENV_NAME" python "$TARGET/scripts/mcp_stdio_smoke.py" --root "$TARGET"
+  log_phase "searching a real LaTeX fixture through the installed CLI"
+  conda run -n "$ENV_NAME" mathdevmcp search-latex Kalman --root "$TARGET/benchmarks/fixtures" --limit 1
   log_phase "running focused clean-install tests"
-  PYTHONPATH="$TARGET/src" conda run -n "$ENV_NAME" pytest -q "$TARGET/tests/test_parser_benchmark.py" "$TARGET/tests/test_packaging_release_policy.py"
+  (cd "$TARGET" && conda run -n "$ENV_NAME" pytest -q tests/test_latex_index.py tests/test_packaging_release_policy.py)
   log_phase "running benchmark gate"
-  PYTHONPATH="$TARGET/src" conda run -n "$ENV_NAME" python -m mathdevmcp.cli benchmark-gate --root "$TARGET"
+  conda run -n "$ENV_NAME" python -m mathdevmcp.cli benchmark-gate --root "$TARGET"
 fi
 
 log_phase "clean install smoke completed"

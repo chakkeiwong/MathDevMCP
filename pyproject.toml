@@ -6,13 +6,14 @@ build-backend = "setuptools.build_meta"
 name = "mathdevmcp"
 version = "0.1.0"
 description = "Mathematical development MCP tools for large docs and code-doc consistency"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 readme = "README.md"
-license = {text = "Proprietary internal release candidate; public release license pending"}
+license = "LicenseRef-MathDevMCP-Controlled-Internal"
+license-files = ["LICENSE"]
 authors = [{name = "MathDevMCP maintainers"}]
 classifiers = [
+    "Private :: Do Not Upload",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Mathematics",
@@ -20,7 +21,7 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest", "build", "twine"]
+dev = ["pytest", "build", "twine", "coverage"]
 quality = ["build", "twine"]
 symbolic = ["sympy==1.14.0"]
 mcp = ["mcp==1.27.0"]
@@ -32,10 +33,21 @@ all = ["sympy==1.14.0", "mcp==1.27.0", "lean-dojo==4.20.0", "lean-explore==1.2.1
 
 [project.scripts]
 mathdevmcp = "mathdevmcp.cli:main"
-mathdevmcp-mcp = "mathdevmcp.mcp_server:main"
+mathdevmcp-mcp = "mathdevmcp.mcp_entrypoint:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
     "requires_external_tool: trusted external mathematical backend smoke; deselect unless explicitly authorized",
 ]
+
+[tool.coverage.run]
+branch = true
+source = ["mathdevmcp"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+# CI publishes the first measured baseline before a reviewed floor is chosen.
+# This is not a mathematical correctness criterion.
+fail_under = 0

@@ -134,6 +134,23 @@ def test_real_task_public_manifest_rejects_missing_referenced_files(tmp_path: Pa
     assert any(finding["kind"] == "referenced_path_missing" for finding in validation["findings"])
 
 
+def test_real_task_public_manifest_rejects_arbitrary_existing_escape(tmp_path: Path) -> None:
+    case = _valid_case_dict()
+    outside = tmp_path.parent / "manifest_escape_probe.py"
+    outside.write_text("# probe\n", encoding="utf-8")
+    import os
+
+    case["document_files"] = [os.path.relpath(outside, ROOT)]
+    manifest_path = tmp_path / "public_cases.json"
+    manifest_path.write_text(json.dumps({"metadata": {"schema_version": "1.0", "contract": "real_task_public_case_manifest"}, "cases": [case]}), encoding="utf-8")
+    try:
+        validation = validate_real_task_public_manifest(ROOT, manifest_path=manifest_path)
+    finally:
+        outside.unlink()
+    assert validation["status"] == "mismatch"
+    assert any(finding["kind"] == "referenced_path_escapes_declared_repo" for finding in validation["findings"])
+
+
 def test_real_task_public_manifest_requires_gold_fields(tmp_path: Path) -> None:
     case = _valid_case_dict()
     del case["gold"]["required_terms"]

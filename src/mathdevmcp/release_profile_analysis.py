@@ -6,7 +6,8 @@ from pathlib import Path
 from typing import Any
 
 from .contracts import attach_contract
-from .release_policy import PROFILE_POLICY_VERSION, RELEASE_PROFILES, release_readiness_report
+from .release_policy import release_claim_ready, release_readiness_report
+from .release_profiles import PROFILE_POLICY_VERSION, RELEASE_PROFILES
 
 
 PROFILE_ORDER = ("base", "public", "backend", "latexml", "private-corpus", "full")
@@ -64,7 +65,7 @@ def _profile_entry(profile: str, report: dict[str, Any]) -> dict:
     return {
         "profile": profile,
         "status": report["status"],
-        "claim_ready": report["status"] in {"ready", "ready_with_caveats"},
+        "claim_ready": release_claim_ready(report),
         "strict": profile in STRICT_PROFILES,
         "public_claim": profile == "public",
         "required_capabilities": report["required_capabilities"],
@@ -79,8 +80,8 @@ def _profile_entry(profile: str, report: dict[str, Any]) -> dict:
 def _release_claims(reports: dict[str, dict]) -> dict[str, dict]:
     base = reports["base"]
     public = reports["public"]
-    base_public_ready = base["status"] in {"ready", "ready_with_caveats"} and public["status"] in {"ready", "ready_with_caveats"}
-    base_public_status = "not_ready" if not base_public_ready else "ready" if base["status"] == "ready" and public["status"] == "ready" else "ready_with_caveats"
+    base_public_ready = release_claim_ready(base) and release_claim_ready(public)
+    base_public_status = "not_ready" if not base_public_ready else "ready"
     return {
         "base_public": {
             "claim_ready": base_public_ready,
@@ -97,7 +98,7 @@ def _release_claims(reports: dict[str, dict]) -> dict[str, dict]:
 
 def _single_claim(report: dict, profile: str, interpretation: str) -> dict:
     return {
-        "claim_ready": report["status"] in {"ready", "ready_with_caveats"},
+        "claim_ready": release_claim_ready(report),
         "profiles": [profile],
         "status": report["status"],
         "interpretation": interpretation,

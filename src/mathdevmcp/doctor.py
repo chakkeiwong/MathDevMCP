@@ -155,7 +155,19 @@ def _python_capability(name: str, module: str, package: str | None = None) -> Ca
     try:
         version = importlib.metadata.version(package or module.replace("_", "-"))
     except importlib.metadata.PackageNotFoundError:
-        version = "unknown"
+        return Capability(
+            name,
+            True,
+            "python",
+            sys.executable,
+            None,
+            "importable_unversioned",
+            f"Python module {module} imports in active Python, but its distribution metadata is unavailable.",
+            environment_scope="active_python",
+            backend_requested=False,
+            backend_env=None,
+            backend_prefix=None,
+        )
     return Capability(
         name,
         True,

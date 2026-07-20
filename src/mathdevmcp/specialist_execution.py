@@ -29,7 +29,17 @@ def _source_semantics(source_path: Path, obligation: Mapping[str, Any], routing_
     raw = source_path.read_bytes()
     source = routing_role["source"]
     start, end = int(source["context_start"]), int(source["context_end"])
+    if start < 0 or end < start or end > len(raw):
+        raise ValueError("source context span is outside source byte bounds")
+    observed_digest = hashlib.sha256(raw).hexdigest()
+    expected_digest = str(obligation.get("document", {}).get("source_digest", ""))
+    routed_digest = str(source.get("source_digest", ""))
+    if expected_digest != observed_digest or routed_digest != observed_digest:
+        raise ValueError("source digest does not match the selected source bytes")
     source_target = str(obligation["source_math"])
+    context_text = raw[start:end].decode("utf-8")
+    if source_target not in context_text:
+        raise ValueError("source_math is not contained in the selected source span")
     return {
         "role": "definition",
         "authority": "source_evidenced_role",
@@ -72,19 +82,35 @@ def execute_source_bound_specialist(
     label = str(obligation.get("label", ""))
     target = str(obligation.get("normalized_target", {}).get("display_text", ""))
     result: dict[str, Any]
-    if role == "placeholder_definition" and label == "eq:terminal-value-base":
+    supported = (role == "placeholder_definition" and label == "eq:terminal-value-base") or (
+        role == "accounting_identity" and label == "eq:pd-lgd-ead"
+    )
+    source_semantics: dict[str, Any] | None = None
+    if supported:
+        try:
+            source_semantics = _source_semantics(source_path, obligation, routing_role)
+        except (OSError, UnicodeDecodeError, KeyError, TypeError, ValueError) as exc:
+            result = {
+                "status": "source_binding_error",
+                "reason": f"Source-bound execution refused: {exc}",
+                "backend_attempt": None,
+                "next_evidence": "Re-extract the obligation and verify source digest and byte span.",
+            }
+            selected = None
+            status = "source_binding_error"
+    if supported and role == "placeholder_definition" and label == "eq:terminal-value-base" and source_semantics is not None:
         result = validate_terminal_value_definition(
             TERMINAL_VALUE_TARGET,
             provided_assumptions=["r_disc + lambda_attrition + q != 0"],
-            claim_semantics=_source_semantics(source_path, obligation, routing_role),
+            claim_semantics=source_semantics,
         )
         selected = "sympy"
         status = result.get("status", "inconclusive")
-    elif role == "accounting_identity" and label == "eq:pd-lgd-ead":
+    elif supported and role == "accounting_identity" and label == "eq:pd-lgd-ead" and source_semantics is not None:
         result = _accounting_normalization(label, target)
         selected = "sympy" if result.get("backend_attempt") else None
         status = result.get("status", "typed_abstention")
-    else:
+    elif not supported:
         missing = {
             "causal_estimand_object": "A typed probability model and separate identification evidence are required.",
             "statistical_estimator": "A nonzero first stage plus source-backed IV assumptions and scope evidence are required.",

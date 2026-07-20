@@ -18,10 +18,7 @@ from .doctor import doctor_report
 from .governance import governance_policy, validate_governance
 from .parser_policy import decide_parser_policy
 from .release_corpus import validate_release_corpus_manifest
-
-
-RELEASE_PROFILES = {"base", "backend", "latexml", "private-corpus", "full", "public"}
-PROFILE_POLICY_VERSION = "2026-04-public-surface"
+from .release_profiles import PROFILE_POLICY_VERSION, RELEASE_PROFILES
 
 
 def release_readiness_report(root: str | Path, *, profile: str = "base") -> dict:
@@ -186,6 +183,17 @@ def release_readiness_report(root: str | Path, *, profile: str = "base") -> dict
             "caveats": caveats,
         },
         "release_readiness_report",
+    )
+
+
+def release_claim_ready(report: dict) -> bool:
+    """Only a clean, fully evidenced report can authorize a release claim."""
+
+    return (
+        report.get("status") == "ready"
+        and report.get("dirty_worktree") is False
+        and not report.get("caveats")
+        and not report.get("blockers")
     )
 
 

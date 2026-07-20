@@ -20,9 +20,9 @@ def test_release_profile_analysis_contract_and_profile_coverage(monkeypatch):
     assert report["metadata"] == {"schema_version": "1.0", "contract": "release_profile_analysis"}
     assert {entry["profile"] for entry in report["profiles"]} == RELEASE_PROFILES
     assert len(report["profiles"]) == len(RELEASE_PROFILES)
-    assert report["release_claims"]["base_public"]["claim_ready"] is True
+    assert report["release_claims"]["base_public"]["claim_ready"] is False
     assert report["release_claims"]["base_public"]["profiles"] == ["base", "public"]
-    assert report["status"] in {"ready", "ready_with_caveats"}
+    assert report["status"] == "not_ready"
 
 
 def test_release_profile_analysis_keeps_strict_blockers_visible(monkeypatch):

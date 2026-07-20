@@ -9,6 +9,7 @@ import re
 from typing import Any
 
 from .contracts import attach_contract, contract_metadata, success_result
+from .artifact_storage import write_bytes_safe
 from .high_level_contracts import (
     action,
     default_non_claims,
@@ -1515,7 +1516,7 @@ def build_audit_fix_report(
     if output_path is not None:
         path = Path(output_path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(report["markdown"], encoding="utf-8")
+        write_bytes_safe(path, report["markdown"].encode("utf-8"))
     return report
 
 

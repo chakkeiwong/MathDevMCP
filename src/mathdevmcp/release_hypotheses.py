@@ -15,7 +15,7 @@ from typing import Any
 from .contracts import attach_contract
 from .public_release import public_release_check
 from .release_corpus import validate_release_corpus_manifest
-from .release_policy import release_readiness_report
+from .release_policy import release_claim_ready, release_readiness_report
 from .release_profile_analysis import release_profile_analysis
 
 
@@ -85,8 +85,8 @@ def _publication_invariant(root: Path) -> dict[str, Any]:
                 "detail": public_surface["status"],
             }
         )
-    if public_ready["status"] != "ready":
-        severity = "medium" if public_ready["status"] == "ready_with_caveats" else "high"
+    if not release_claim_ready(public_ready):
+        severity = "high"
         findings.append(
             {
                 "check": "publication_invariant",
@@ -185,8 +185,8 @@ def _strict_full_reproducibility(root: Path, *, require_canonical_backend: bool)
         findings.append({"check": "strict_full_reproducibility", "severity": "high", "kind": "latexml_strict_env_required"})
 
     full = release_readiness_report(root, profile="full")
-    if full["status"] != "ready":
-        severity = "medium" if full["status"] == "ready_with_caveats" else "high"
+    if not release_claim_ready(full):
+        severity = "high"
         findings.append(
             {
                 "check": "strict_full_reproducibility",

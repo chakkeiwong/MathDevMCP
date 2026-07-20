@@ -12,6 +12,7 @@ import re
 from typing import Any
 
 from .actionable_abstentions import build_actionable_abstention_payload
+from .artifact_storage import write_bytes_safe
 from .audit_and_propose_fix import audit_and_propose_fix
 from .contracts import attach_contract
 from .doctor import doctor_report
@@ -904,12 +905,12 @@ def audit_math_document_rigor(
     result["actionable_markdown"] = actionable_markdown
     result["markdown"] = actionable_markdown if report_profile == "actionable" else forensic_markdown
     if output_md is not None:
-        Path(output_md).write_text(result["markdown"], encoding="utf-8")
+        write_bytes_safe(Path(output_md), result["markdown"].encode("utf-8"))
         result["output_md"] = str(output_md)
     if output_json is not None:
         serializable = dict(result)
         serializable.pop("markdown", None)
-        Path(output_json).write_text(json.dumps(serializable, indent=2, sort_keys=True), encoding="utf-8")
+        write_bytes_safe(Path(output_json), json.dumps(serializable, indent=2, sort_keys=True).encode("utf-8"))
         result["output_json"] = str(output_json)
     return result
 

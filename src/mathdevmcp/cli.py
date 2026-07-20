@@ -1055,7 +1055,9 @@ def _cmd_release_readiness(args: argparse.Namespace) -> int:
 def _cmd_release_profile_analysis(args: argparse.Namespace) -> int:
     result = release_profile_analysis(args.root)
     print(json.dumps(result, indent=2))
-    return 0 if result["status"] in {"ready", "ready_with_caveats"} else 1
+    # This command is an inspection report. Release enforcement belongs to the
+    # profile-specific release-readiness and hypothesis commands.
+    return 0
 
 
 def _cmd_lean_readiness(args: argparse.Namespace) -> int:

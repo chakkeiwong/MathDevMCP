@@ -22,6 +22,7 @@ from .benchmarks import benchmark_gate_report, build_benchmark_report, build_hig
 from .code_search import search_files
 from .consistency import compare_files, compare_label_to_code
 from .contracts import attach_contract, error_result, success_result
+from .artifact_storage import write_bytes_safe
 from .derivation import derive_step_for_label
 from .derivation_audit_report import audit_and_propose_derivations as high_level_audit_and_propose_derivations
 from .debug_derivation import debug_derivation as high_level_debug_derivation
@@ -1050,9 +1051,9 @@ def _tool_audit_math_document_rigor(args: dict[str, Any]) -> dict[str, Any]:
         artifact_root = _required_string(args, "artifact_root")
         artifact = persist_agent_report(result, artifact_root)
         if args.get("output_md"):
-            Path(str(args["output_md"])).write_text(
-                render_compact_math_document_rigor_markdown(result, artifact=artifact),
-                encoding="utf-8",
+            write_bytes_safe(
+                Path(str(args["output_md"])),
+                render_compact_math_document_rigor_markdown(result, artifact=artifact).encode("utf-8"),
             )
         return compact_rigor_report(result, artifact)
     return result
@@ -1162,9 +1163,9 @@ def _tool_audit_document_derivation_tree(args: dict[str, Any]) -> dict[str, Any]
             workers=workers,
         )
         if response_mode == "compact" and args.get("output_md"):
-            Path(str(args["output_md"])).write_text(
-                render_compact_document_derivation_tree_markdown(audit),
-                encoding="utf-8",
+            write_bytes_safe(
+                Path(str(args["output_md"])),
+                render_compact_document_derivation_tree_markdown(audit).encode("utf-8"),
             )
     return compile_document_derivation_response(
         audit,

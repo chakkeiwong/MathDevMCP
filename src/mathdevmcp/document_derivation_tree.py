@@ -19,6 +19,7 @@ import re
 from typing import Any
 
 from .actionable_abstentions import build_actionable_abstention_payload
+from .artifact_storage import persist_document_outputs
 from .agent_hypothesis_expansion import propose_hypothesis_expansions
 from .assumption_discovery import assumptions_required
 from .contracts import attach_contract
@@ -4108,14 +4109,7 @@ def audit_document_derivation_tree(
     result = attach_contract(result, DOCUMENT_DERIVATION_TREE_CONTRACT)
     markdown = render_document_derivation_tree_markdown(result)
     result["markdown"] = markdown
-    if output_md is not None:
-        Path(output_md).write_text(markdown, encoding="utf-8")
-        result["output_md"] = str(output_md)
-    if output_json is not None:
-        serializable = dict(result)
-        serializable.pop("markdown", None)
-        Path(output_json).write_text(json.dumps(serializable, indent=2, sort_keys=True), encoding="utf-8")
-        result["output_json"] = str(output_json)
+    result.update(persist_document_outputs(result, output_md=output_md, output_json=output_json))
     return result
 
 

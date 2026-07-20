@@ -193,6 +193,16 @@ def _resolve_repo_relative(root: Path, raw_path: str) -> Path:
     return (root / raw_path).resolve()
 
 
+def _path_allowed_for_case(root: Path, case: RealTaskCaseEntry, path: Path) -> bool:
+    """Allow checkout paths and the explicitly named sibling repository only."""
+
+    allowed_roots = [root.resolve(), (root.resolve().parent / case.repo).resolve()]
+    return any(
+        path == allowed or allowed in path.parents
+        for allowed in allowed_roots
+    )
+
+
 def _validate_manifest_metadata(metadata: dict[str, Any], findings: list[dict[str, Any]]) -> None:
     if metadata.get("schema_version") != "1.0":
         findings.append({"severity": "high", "kind": "manifest_schema_version_mismatch", "expected": "1.0", "observed": metadata.get("schema_version")})
@@ -229,6 +239,18 @@ def _validate_case(case: RealTaskCaseEntry, *, root: Path) -> list[dict[str, Any
                 continue
             seen.add(raw_path)
             resolved = _resolve_repo_relative(root, raw_path)
+            if not _path_allowed_for_case(root, case, resolved):
+                findings.append(
+                    {
+                        "severity": "high",
+                        "kind": "referenced_path_escapes_declared_repo",
+                        "case_id": case.id,
+                        "field": field,
+                        "path": raw_path,
+                        "declared_repo": case.repo,
+                    }
+                )
+                continue
             if not resolved.exists():
                 findings.append({"severity": "high", "kind": "referenced_path_missing", "case_id": case.id, "field": field, "path": raw_path})
     return findings

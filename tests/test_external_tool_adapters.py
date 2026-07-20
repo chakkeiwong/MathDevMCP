@@ -1,6 +1,7 @@
 import hashlib
 import json
 from pathlib import Path
+import time
 
 from mathdevmcp.derivation_search_tree import branch_promotion_report
 from mathdevmcp.external_tool_adapters import (
@@ -178,6 +179,16 @@ def test_counterexample_timeout_like_result_remains_diagnostic() -> None:
     assert attempt["certification_status"] == "diagnostic"
     assert attempt["timeout_seconds"] == 1
     assert branch_promotion_report(_node(attempt))["can_promote"] is False
+
+
+def test_late_algebra_runner_is_classified_as_timeout() -> None:
+    def late_runner(target, *, lhs=None, rhs=None, backend="auto"):
+        time.sleep(0.02)
+        return {"status": "proved", "reason": "late"}
+
+    result = adapt_algebra_check("x = x", timeout_seconds=0.001, runner=late_runner)
+    assert result["status"] == "backend_timeout"
+    assert result["attempt"]["certification_status"] == "diagnostic"
 
 
 def test_fake_lean_verified_label_remains_diagnostic_without_exact_live_binding() -> None:

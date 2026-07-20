@@ -423,6 +423,11 @@ def adapt_algebra_check(
         result = _exception_payload(tool, exc)
     ended = datetime.now(timezone.utc)
     wall_time_ns = time.monotonic_ns() - start_ns
+    if timeout_seconds is not None and wall_time_ns > timeout_seconds * 1_000_000_000:
+        result = {
+            "status": "backend_timeout",
+            "reason": f"{tool} adapter result arrived after the {timeout_seconds:g}s deadline.",
+        }
     status, evidence_kind, certification_status = _derive_status_mapping(result, tool=tool)
     output_ref = _stable_ref(tool, result, fallback=status) if evidence_kind != "diagnostic" else None
     attempt = _attempt(
@@ -489,6 +494,13 @@ def adapt_counterexample_search(
         result = _exception_payload("counterexample", exc)
     ended = datetime.now(timezone.utc)
     wall_time_ns = time.monotonic_ns() - start_ns
+    if timeout_seconds is not None and wall_time_ns > timeout_seconds * 1_000_000_000:
+        result = {
+            "status": "backend_timeout",
+            "reason": f"Counterexample adapter result arrived after the {timeout_seconds:g}s deadline.",
+            "backend": "counterexample",
+            "counterexample": None,
+        }
     status, evidence_kind, certification_status = _counterexample_status_mapping(result)
     output_ref = _stable_ref("counterexample", result, fallback=status) if evidence_kind == "counterexample" else None
     attempt = _attempt(

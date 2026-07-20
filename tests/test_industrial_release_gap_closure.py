@@ -1,6 +1,4 @@
 from pathlib import Path
-import subprocess
-import sys
 
 from mathdevmcp.ast_operation_graph import build_ast_operation_graph, build_ast_operation_graph_for_file
 from mathdevmcp.governance import governance_policy
@@ -146,22 +144,20 @@ def test_release_readiness_report_contains_non_recursive_gate_and_caveats():
     assert result["schema_version"] == "1.0"
 
 
-def test_release_cli_fails_closed_for_caveated_current_readiness():
-    result = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "mathdevmcp.cli",
-            "release-readiness",
-            "--root",
-            str(ROOT),
-        ],
-        check=False,
-        capture_output=True,
-        text=True,
-        env={"PYTHONPATH": str(ROOT / "src")},
-    )
+def test_release_cli_fails_closed_for_caveated_current_readiness(monkeypatch):
+    import mathdevmcp.cli as cli
 
-    assert result.returncode == 1
-    assert '"contract": "release_readiness_report"' in result.stdout
-    assert '"dirty_worktree"' in result.stdout
+    original = cli.release_readiness_report
+    monkeypatch.setattr(
+        cli,
+        "release_readiness_report",
+        lambda root, profile="base": {
+            **original(root, profile=profile),
+            "status": "ready_with_caveats",
+            "caveats": [{"kind": "synthetic_caveat"}],
+        },
+    )
+    # A subprocess cannot see the in-process monkeypatch; invoke the command
+    # handler directly to test the strict predicate deterministically.
+    args = type("Args", (), {"root": str(ROOT), "profile": "base"})()
+    assert cli._cmd_release_readiness(args) == 1

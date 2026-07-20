@@ -70,7 +70,7 @@ from .prove_or_refute import prove_or_refute
 from .proof_audit import audit_derivation_for_label
 from .proof_audit_v2 import audit_derivation_v2_for_label
 from .proof_packet import build_proof_packet_label
-from .agent_report_artifacts import compact_evidence_packet, compact_rigor_report, persist_agent_report, resolve_agent_report
+from .agent_report_artifacts import compact_evidence_packet, compact_rigor_report, persist_agent_report, resolve_agent_report, write_bytes_safe
 from .proof_gap import localize_proof_gap
 from .negative_evidence import build_negative_evidence_label, build_negative_evidence_packet
 from .resumable_tree import page_resumable_tree_records, resolve_resumable_tree_record
@@ -79,7 +79,7 @@ from .governance import governance_policy, validate_governance
 from .release_corpus import release_corpus_manifest, validate_release_corpus_manifest
 from .release_hypotheses import release_hypothesis_check
 from .release_profile_analysis import release_profile_analysis
-from .release_policy import RELEASE_PROFILES, release_readiness_report
+from .release_policy import RELEASE_PROFILES, release_claim_ready, release_readiness_report
 from .real_local_high_level_pilot import run_high_level_pilot
 from .real_local_high_level_benchmark import (
     build_real_local_high_level_baseline_report,
@@ -495,9 +495,9 @@ def _cmd_audit_math_document_rigor(args: argparse.Namespace) -> int:
             raise ValueError("--artifact-root is required for compact rigor responses")
         artifact = persist_agent_report(result, args.artifact_root)
         if args.output_md:
-            Path(args.output_md).write_text(
-                render_compact_math_document_rigor_markdown(result, artifact=artifact),
-                encoding="utf-8",
+            write_bytes_safe(
+                Path(args.output_md),
+                render_compact_math_document_rigor_markdown(result, artifact=artifact).encode("utf-8"),
             )
         compact = compact_rigor_report(result, artifact)
         if args.print_markdown:
@@ -581,9 +581,9 @@ def _cmd_audit_document_derivation_tree_validated(args: argparse.Namespace) -> i
             workers=args.workers,
         )
         if args.output_md and args.response_mode == "compact":
-            Path(args.output_md).write_text(
-                render_compact_document_derivation_tree_markdown(result),
-                encoding="utf-8",
+            write_bytes_safe(
+                Path(args.output_md),
+                render_compact_document_derivation_tree_markdown(result).encode("utf-8"),
             )
     if args.print_markdown:
         print(result["markdown"])
@@ -944,8 +944,7 @@ def _cmd_proof_packet_label(args: argparse.Namespace) -> int:
             raise ValueError("--artifact-root is required for compact packet responses")
         result = compact_evidence_packet(result, persist_agent_report(result, args.artifact_root))
     if args.output:
-        Path(args.output).parent.mkdir(parents=True, exist_ok=True)
-        Path(args.output).write_text(json.dumps(result, indent=2), encoding="utf-8")
+        write_bytes_safe(Path(args.output), (json.dumps(result, indent=2) + "\n").encode("utf-8"))
     print(json.dumps(result, indent=2))
     return 0
 
@@ -966,8 +965,7 @@ def _cmd_negative_evidence_label(args: argparse.Namespace) -> int:
             raise ValueError("--artifact-root is required for compact packet responses")
         result = compact_evidence_packet(result, persist_agent_report(result, args.artifact_root))
     if args.output:
-        Path(args.output).parent.mkdir(parents=True, exist_ok=True)
-        Path(args.output).write_text(json.dumps(result, indent=2), encoding="utf-8")
+        write_bytes_safe(Path(args.output), (json.dumps(result, indent=2) + "\n").encode("utf-8"))
     print(json.dumps(result, indent=2))
     return 0
 
@@ -1049,7 +1047,9 @@ def _cmd_validate_governance(args: argparse.Namespace) -> int:
 def _cmd_release_readiness(args: argparse.Namespace) -> int:
     result = release_readiness_report(args.root, profile=args.profile)
     print(json.dumps(result, indent=2))
-    return 0 if result["status"] in {"ready", "ready_with_caveats"} else 1
+    # A report can be useful for inspection while still being ineligible for a
+    # release claim.  CLI exit status is the handoff boundary, so fail closed.
+    return 0 if release_claim_ready(result) else 1
 
 
 def _cmd_release_profile_analysis(args: argparse.Namespace) -> int:

@@ -13,6 +13,9 @@ dist/
 .vscode/
 artifacts/release-evidence/
 *.latexml.log
+.coverage
+.security-scan.json
+.handoff-artifacts/
 
 # LaTeX build artifacts
 *.aux

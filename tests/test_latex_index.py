@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from mathdevmcp.equation_locator import locate_equations_in_text, summarize_equation_localization
+from mathdevmcp.equation_locator import _comment_mask
 from mathdevmcp.latex_index import (
     build_index,
     extract_context_for_label,
@@ -80,6 +81,14 @@ d &= e^{-1} f
     assert rows[0]["localization_status"] == "localized_with_uncertainty"
     assert "alignment_markers_preserved" in rows[0]["uncertainty"]
     assert rows[1]["row_index"] == 1
+
+
+def test_comment_mask_preserves_escaped_percent_and_masks_comments():
+    raw = b"a\\%b % hidden\nnext % hidden\n"
+    masked = _comment_mask(raw)
+    assert masked.splitlines()[0].startswith(b"a\\%b ")
+    assert b"hidden" not in masked
+    assert masked.splitlines()[1].startswith(b"next ")
 
 
 def test_equation_localization_summary_reports_uncertainty():

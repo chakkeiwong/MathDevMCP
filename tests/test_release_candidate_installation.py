@@ -63,6 +63,23 @@ def test_clean_install_smoke_copies_dirty_non_ignored_checkout():
     assert "copying current non-ignored checkout" in script
 
 
+def test_clean_install_smoke_exercises_base_and_mcp_profiles():
+    script = (ROOT / "scripts" / "clean_install_smoke.sh").read_text(encoding="utf-8")
+
+    assert "actionable base-profile MCP failure" in script
+    assert '"${WHEEL}[mcp,symbolic]" pytest' in script
+    assert "mcp_stdio_smoke.py" in script
+    assert "search-latex Kalman" in script
+    assert "tests/test_latex_index.py" in script
+    assert "tests/test_parser_benchmark.py" not in script
+    assert 'PYTHONPATH="$TARGET/src"' not in script
+    assert 'cd "$TARGET"' in script
+
+
+def test_local_test_helpers_are_an_explicit_package():
+    assert (ROOT / "tests" / "__init__.py").is_file()
+
+
 def test_release_readiness_records_latexml_optional_caveat_when_unavailable(monkeypatch):
     monkeypatch.setenv("MATHDEVMCP_LATEXML_PATH", "/definitely/missing/latexml")
 

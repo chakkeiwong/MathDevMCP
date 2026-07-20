@@ -15,6 +15,28 @@ from mcp.shared.message import SessionMessage
 
 MAX_INPUT_LINE_BYTES = 4 * 1024 * 1024
 
+
+def _input_size_error(buffer: bytes) -> ValueError | None:
+    """Return a typed error when an unterminated input line is too large."""
+
+    if len(buffer) > MAX_INPUT_LINE_BYTES:
+        return ValueError("MCP input line exceeds the 4 MiB limit")
+    return None
+
+
+def _split_input_buffer(buffer: bytes) -> tuple[list[bytes], bytes, ValueError | None]:
+    """Split complete lines and enforce the limit on the remaining line."""
+
+    lines: list[bytes] = []
+    while b"\n" in buffer:
+        line, buffer = buffer.split(b"\n", 1)
+        error = _input_size_error(line)
+        if error is not None:
+            return lines, buffer, error
+        if line.strip():
+            lines.append(line)
+    return lines, buffer, _input_size_error(buffer)
+
 @asynccontextmanager
 async def posix_stdio_server() -> AsyncIterator[tuple[Any, Any]]:
     """Yield MCP streams backed by event-loop pipe reads, without worker threads."""
@@ -43,19 +65,19 @@ async def posix_stdio_server() -> AsyncIterator[tuple[Any, Any]]:
                         return
                     if not chunk:
                         if buffer.strip():
+                            error = _input_size_error(buffer)
+                            if error is not None:
+                                await read_send.send(error)
+                                return
                             await _send_line(read_send, buffer)
                         return
                     buffer += chunk
-                    if len(buffer) > MAX_INPUT_LINE_BYTES and b"\n" not in buffer:
-                        await read_send.send(ValueError("MCP input line exceeds the 4 MiB limit"))
+                    lines, buffer, error = _split_input_buffer(buffer)
+                    if error is not None:
+                        await read_send.send(error)
                         return
-                    while b"\n" in buffer:
-                        line, buffer = buffer.split(b"\n", 1)
-                        if len(line) > MAX_INPUT_LINE_BYTES:
-                            await read_send.send(ValueError("MCP input line exceeds the 4 MiB limit"))
-                            return
-                        if line.strip():
-                            await _send_line(read_send, line)
+                    for line in lines:
+                        await _send_line(read_send, line)
         finally:
             loop.remove_reader(stdin_fd)
 

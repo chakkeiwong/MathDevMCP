@@ -13,6 +13,7 @@ import sys
 import time
 from typing import Any
 
+from mathdevmcp.capstone_harness import normalized_phrase_present, status_of
 from mathdevmcp.index_cache import load_or_build_index
 from mathdevmcp.latex_index import (
     extract_paragraph_context_for_label,
@@ -103,10 +104,6 @@ def sha256_bytes(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
-def normalized_phrase_present(text: str, phrase: str) -> bool:
-    return re.sub(r"\s+", " ", phrase).strip() in re.sub(r"\s+", " ", text).strip()
-
-
 def write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(canonical_bytes(value))
@@ -115,16 +112,6 @@ def write_json(path: Path, value: Any) -> None:
 def write_text(path: Path, value: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(value, encoding="utf-8")
-
-
-def status_of(value: Any) -> str:
-    if isinstance(value, dict):
-        if isinstance(value.get("status"), str):
-            return str(value["status"])
-        if isinstance(value.get("error"), dict):
-            return str(value["error"].get("code", "error"))
-        return "no_status"
-    return type(value).__name__
 
 
 def source_file_of(value: Any) -> str | None:

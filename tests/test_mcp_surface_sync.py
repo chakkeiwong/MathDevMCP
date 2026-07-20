@@ -1,7 +1,9 @@
 from pathlib import Path
+import subprocess
+import sys
 
 from mathdevmcp.mcp_facade import MCP_TOOL_SPECS, TOOL_HANDLERS, call_mcp_tool, list_mcp_tools
-from mathdevmcp.mcp_server import MCP_SERVER_EXPOSED_TOOLS, mcp
+from mathdevmcp.mcp_server import MCP_SERVER_EXPOSED_TOOLS, configure_mcp_profile, mcp_profile_tool_names, mcp
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -66,6 +68,54 @@ def test_mcp_server_exposure_matches_registry_aliases():
     assert server_names == MCP_SERVER_EXPOSED_TOOLS
     assert "tool_matrix" in {spec.name for spec in MCP_TOOL_SPECS}
     assert "get_tool_matrix" in MCP_SERVER_EXPOSED_TOOLS
+
+
+def test_mcp_server_exposure_inventory_is_derived_from_registry():
+    source = (ROOT / "src" / "mathdevmcp" / "mcp_server.py").read_text(encoding="utf-8")
+
+    assert "MCP_SERVER_EXPOSED_TOOLS = {spec.exposed_server_name for spec in MCP_TOOL_SPECS}" in source
+
+
+def test_mcp_profile_rejects_unknown_profile():
+    import pytest
+
+    with pytest.raises(ValueError, match="Expected stable or all"):
+        configure_mcp_profile("experimental")
+
+
+def test_mcp_profile_catalog_declares_explicit_stable_boundary():
+    stable = mcp_profile_tool_names("stable")
+    all_tools = mcp_profile_tool_names("all")
+    nonstable = all_tools - stable
+
+    assert len(stable) == 23
+    assert all_tools == MCP_SERVER_EXPOSED_TOOLS
+    assert len(nonstable) == 45
+    assert "doctor" in stable
+
+
+def test_mcp_profile_reconfiguration_cannot_report_a_false_surface():
+    # Configuration is process-scoped because FastMCP removal mutates its
+    # registry; a different profile requires a fresh stdio process.
+    probe = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+                "from mathdevmcp import mcp_server as s\n"
+                "assert s.configure_mcp_profile('stable') == 'stable'\n"
+                "assert len(s.mcp._tool_manager._tools) == 23\n"
+                "try:\n"
+                "    s.configure_mcp_profile('all')\n"
+                "except RuntimeError as exc:\n"
+                "    assert 'fresh process' in str(exc)\n"
+                "else:\n"
+                "    raise AssertionError('profile reconfiguration was accepted')\n",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert probe.returncode == 0
 
 
 def test_document_derivation_fastmcp_schema_exposes_v2_structured_content_tools():

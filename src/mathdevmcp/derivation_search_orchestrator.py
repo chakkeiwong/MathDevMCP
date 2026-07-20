@@ -18,21 +18,19 @@ from .derivation_search_tree import (
     validate_branch_tree,
 )
 from .evidence_manifest import canonical_json_bytes, content_digest
+from .backend_protocol import (
+    P04_BOUNDARY,
+    P04_EVENT_SCHEMA,
+    P04_ORCHESTRATOR_CONTRACT,
+    P04_REQUEST_SCHEMA,
+    P04_RESULT_SCHEMA,
+)
 from .external_adapter_contract import (
     validate_external_adapter_result,
     verify_live_adapter_manifest,
 )
 
 
-P04_ORCHESTRATOR_CONTRACT = "p04_branch_search_orchestrator@1"
-P04_REQUEST_SCHEMA = "p04_branch_request@1"
-P04_RESULT_SCHEMA = "p04_branch_result@2"
-P04_EVENT_SCHEMA = "p04_branch_event@1"
-P04_BOUNDARY = (
-    "The Phase 04 orchestrator demonstrates branch-local state, evidence, and "
-    "resource accounting with injected executors. Synthetic proved/refuted "
-    "states are state-machine evidence only, not mathematical certification."
-)
 P04_RESULT_RESERVATION_MULTIPLIER = 4
 P04_RESULT_RESERVATION_OVERHEAD_BYTES = 65_536
 P04_MAX_RESULT_OBSERVATIONS = 2

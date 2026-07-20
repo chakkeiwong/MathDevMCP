@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 from pathlib import Path
 from typing import Any, Mapping
 
 from .contracts import attach_contract
+from .artifact_storage import write_bytes_no_replace, write_bytes_safe
 
 
 AGENT_REPORT_TRANSPORT_BYTES = 30_720
@@ -55,19 +55,7 @@ def persist_agent_report(report: Mapping[str, Any], artifact_root: str | Path) -
     if root not in directory.parents:
         raise ValueError("agent report directory escapes artifact_root")
     destination = directory / f"{digest}.json"
-    if destination.exists():
-        if destination.is_symlink() or destination.read_bytes() != payload:
-            raise ValueError("agent report artifact identity collision")
-    else:
-        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
-        if hasattr(os, "O_NOFOLLOW"):
-            flags |= os.O_NOFOLLOW
-        descriptor = os.open(destination, flags, 0o600)
-        try:
-            os.write(descriptor, payload)
-            os.fsync(descriptor)
-        finally:
-            os.close(descriptor)
+    write_bytes_no_replace(destination, payload)
     return {
         "state": "verified",
         "sha256": digest,

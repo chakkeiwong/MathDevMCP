@@ -19,6 +19,15 @@ _ALLOWED_FAMILIES = {
 }
 _ALLOWED_DIFFICULTIES = {"easy", "medium", "hard"}
 _ALLOWED_STATUSES = {"consistent", "mismatch", "unverified", "inconclusive", "equivalent"}
+# Repository names are identifiers, not filesystem expressions.  Keep this
+# list explicit so a manifest cannot turn `repo` into an arbitrary path.
+_ALLOWED_SIBLING_REPOS = {
+    "MathDevMCP",
+    "MacroFinance",
+    "MacroFinance/ResearchAssistant",
+    "dsge_hmc",
+    "latex-papers",
+}
 
 
 @dataclass(frozen=True)
@@ -196,6 +205,8 @@ def _resolve_repo_relative(root: Path, raw_path: str) -> Path:
 def _path_allowed_for_case(root: Path, case: RealTaskCaseEntry, path: Path) -> bool:
     """Allow checkout paths and the explicitly named sibling repository only."""
 
+    if case.repo not in _ALLOWED_SIBLING_REPOS:
+        return path == root.resolve() or root.resolve() in path.parents
     allowed_roots = [root.resolve(), (root.resolve().parent / case.repo).resolve()]
     return any(
         path == allowed or allowed in path.parents
@@ -218,6 +229,8 @@ def _validate_case(case: RealTaskCaseEntry, *, root: Path) -> list[dict[str, Any
         findings.append({"severity": "high", "kind": "unsupported_case_difficulty", "case_id": case.id, "observed": case.difficulty})
     if case.gold.expected_status not in _ALLOWED_STATUSES:
         findings.append({"severity": "high", "kind": "unsupported_expected_status", "case_id": case.id, "observed": case.gold.expected_status})
+    if case.repo not in _ALLOWED_SIBLING_REPOS:
+        findings.append({"severity": "high", "kind": "unsupported_repository_identifier", "case_id": case.id, "observed": case.repo})
     if case.gold.expected_labels and not case.document_files:
         findings.append({"severity": "high", "kind": "expected_labels_without_document_files", "case_id": case.id})
     if case.code_files and not case.code_roots:

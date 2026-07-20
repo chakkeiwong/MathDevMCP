@@ -1,4 +1,5 @@
 from pathlib import Path
+import importlib
 import tomllib
 
 from mathdevmcp.release_policy import release_readiness_report
@@ -21,6 +22,86 @@ def test_optional_dependency_groups_keep_base_package_small():
     assert "mcp" in names(optional["mcp"])
     assert "lean-dojo" in names(optional["leandojo"])
     assert {"sympy", "mcp", "lean-dojo", "build", "twine"}.issubset(names(optional["all"]))
+
+
+def test_declared_python_floor_matches_standard_library_usage_and_ci():
+    data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+
+    assert data["project"]["requires-python"] == ">=3.11"
+    assert "Programming Language :: Python :: 3.10" not in data["project"]["classifiers"]
+    assert 'python-version: ["3.11", "3.12"]' in workflow
+
+
+def test_mcp_entrypoint_uses_dependency_aware_launcher():
+    data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+
+    assert data["project"]["scripts"]["mathdevmcp-mcp"] == "mathdevmcp.mcp_entrypoint:main"
+
+
+def test_release_entrypoints_and_policy_modules_are_present():
+    for relative in (
+        "src/mathdevmcp/mcp_entrypoint.py",
+        "src/mathdevmcp/release_profiles.py",
+        "src/mathdevmcp/release_report_audit.py",
+        "src/mathdevmcp/backend_protocol.py",
+        "src/mathdevmcp/maintainability.py",
+        "scripts/handoff_gate.sh",
+        "scripts/maintainer_check.sh",
+        "scripts/mcp_stdio_smoke.py",
+        "LICENSE",
+        "CHANGELOG.md",
+    ):
+        assert (ROOT / relative).is_file(), relative
+
+
+def test_test_lanes_script_is_executable():
+    assert (ROOT / "scripts" / "test_lanes.sh").stat().st_mode & 0o111
+
+
+def test_mcp_launcher_reports_missing_extra_without_traceback(monkeypatch, capsys):
+    launcher = importlib.import_module("mathdevmcp.mcp_entrypoint")
+
+    def missing_mcp(name: str):
+        error = ModuleNotFoundError("No module named 'mcp'", name="mcp")
+        raise error
+
+    monkeypatch.setattr(launcher.importlib, "import_module", missing_mcp)
+
+    assert launcher.main([]) == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "mathdevmcp[mcp]" in captured.err
+    assert "ModuleNotFoundError" not in captured.err
+
+
+def test_mcp_launcher_preflights_named_extra_before_server(monkeypatch):
+    launcher = importlib.import_module("mathdevmcp.mcp_entrypoint")
+    imports: list[str] = []
+
+    def record_import(name: str):
+        imports.append(name)
+        if name == "mcp":
+            error = ModuleNotFoundError("No module named 'mcp'", name="mcp")
+            raise error
+        raise AssertionError("server import must not run when the MCP extra is absent")
+
+    monkeypatch.setattr(launcher.importlib, "import_module", record_import)
+
+    assert launcher.main([]) == 2
+    assert imports == ["mcp"]
+
+
+def test_internal_license_and_version_policy_are_present():
+    license_text = (ROOT / "LICENSE").read_text(encoding="utf-8")
+    policy = (ROOT / "docs" / "mathdevmcp-versioning-policy.md").read_text(encoding="utf-8")
+
+    assert "controlled internal use" in license_text.lower()
+    assert "redistribution" in license_text.lower()
+    assert "Stable tools" in policy
+    assert "Experimental tools" in policy
+    assert "Deprecated tools" in policy
+    assert "CHANGELOG.md" in policy
 
 
 def test_docs_explain_optional_mcp_runtime_policy():

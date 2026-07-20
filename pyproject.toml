@@ -48,6 +48,6 @@ source = ["mathdevmcp"]
 [tool.coverage.report]
 show_missing = true
 skip_covered = false
-# CI publishes the first measured baseline before a reviewed floor is chosen.
+# No reviewed floor is promoted until a complete measured baseline is recorded.
 # This is not a mathematical correctness criterion.
 fail_under = 0

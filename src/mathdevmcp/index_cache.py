@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from .artifact_storage import write_bytes_safe
 
 from .latex_index import build_index, iter_tex_files
 
@@ -42,6 +43,6 @@ def load_or_build_index(root: Path, cache_path: Path) -> dict:
 
     index = build_index(root)
     cache_path.parent.mkdir(parents=True, exist_ok=True)
-    cache_path.write_text(json.dumps({"fingerprint": fingerprint, "index": index}, indent=2), encoding="utf-8")
+    write_bytes_safe(cache_path, json.dumps({"fingerprint": fingerprint, "index": index}, indent=2).encode("utf-8"))
     index["cache"] = {"path": str(cache_path), "hit": False}
     return index

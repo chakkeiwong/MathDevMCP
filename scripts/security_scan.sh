@@ -4,7 +4,9 @@ set -euo pipefail
 ROOT="${1:-$(pwd)}"
 OUT="${MATHDEVMCP_SECURITY_ARTIFACT:-$ROOT/.security-scan.json}"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
-"$PYTHON_BIN" - "$ROOT" "$OUT" <<'PY'
+MODE="${MATHDEVMCP_SECURITY_SCAN_MODE:-required}"
+export PYTHONPATH="$ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
+"$PYTHON_BIN" - "$ROOT" "$OUT" "$MODE" <<'PY'
 import hashlib
 import json
 import shutil
@@ -12,8 +14,11 @@ import subprocess
 import sys
 from pathlib import Path
 
+from mathdevmcp.artifact_storage import write_bytes_safe
+
 root = Path(sys.argv[1]).resolve()
 out = Path(sys.argv[2]).resolve()
+mode = sys.argv[3]
 
 
 def run_optional(name, args):
@@ -44,15 +49,21 @@ checks = {
 report = {
     "schema_version": "mathdevmcp-security-scan@1",
     "scope": "engineering_supply_chain_only",
+    "mode": mode,
     "checks": checks,
     "claims": {
         "mathematical_correctness": "not_evaluated",
         "security_completeness": "not_claimed_when_tools_unavailable",
     },
 }
-out.parent.mkdir(parents=True, exist_ok=True)
-out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+write_bytes_safe(out, (json.dumps(report, indent=2, sort_keys=True) + "\n").encode("utf-8"))
 print(json.dumps(report, indent=2, sort_keys=True))
 failed = [item for item in checks.values() if item.get("status") == "failed"]
-sys.exit(1 if failed else 0)
+unavailable = [item for item in checks.values() if item.get("status") == "not_available"]
+if mode not in {"required", "diagnostic"}:
+    print(f"Unsupported security scan mode: {mode}", file=sys.stderr)
+    sys.exit(2)
+if failed or (mode == "required" and unavailable):
+    sys.exit(1)
+sys.exit(0)
 PY

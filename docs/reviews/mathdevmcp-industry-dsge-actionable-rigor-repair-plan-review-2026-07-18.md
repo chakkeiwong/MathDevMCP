@@ -28,9 +28,10 @@ Verdict: `PASS_AFTER_REVISION`
 7. Existing production files contain uncommitted resumability work. The plan now
    requires working with those changes and validating the combined surface,
    rather than overwriting or reverting it.
-8. The final commit request could accidentally stage another agent's `skills/`
-   work or feedback memo. Those paths are explicitly excluded unless ownership
-   changes before commit.
+8. The final commit request could accidentally stage the unscoped `skills/`
+   work or feedback memo. Those paths are explicitly excluded unless the
+   scope is deliberately changed before commit; this review does not establish
+   who authored them.
 
 ## Feasibility
 

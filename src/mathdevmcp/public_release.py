@@ -14,8 +14,8 @@ from pathlib import Path
 from typing import Any
 
 from .contracts import attach_contract
-from .mcp_facade import MCP_TOOL_SPECS
-from .release_policy import RELEASE_PROFILES
+from .release_report_audit import audit_release_report_substance
+from .release_profiles import RELEASE_PROFILES
 
 
 PUBLIC_RELEASE_CHECK_VERSION = "2026-04-public-surface"
@@ -32,6 +32,7 @@ def public_release_check(root: str | Path) -> dict[str, Any]:
         _check_docs_release_boundary(root_path),
         _check_quality_gate(root_path),
         _check_private_path_leaks(root_path),
+        _check_release_report_substance(root_path),
     ]
     blockers = [finding for check in checks for finding in check["findings"] if finding["severity"] == "high"]
     caveats = [finding for check in checks for finding in check["findings"] if finding["severity"] != "high"]
@@ -70,7 +71,7 @@ def _check_ci_workflow(root: Path) -> dict[str, Any]:
         findings.append({"check": "ci_workflow", "severity": "high", "kind": "ci_release_gate_missing", "path": str(path)})
     else:
         text = path.read_text(encoding="utf-8")
-        required_markers = ["pytest", "release_smoke.sh", "release_matrix.sh", "audit_release_report_substance.sh", "public-release-check", "release-hypothesis-check"]
+        required_markers = ["pytest", "maintainer_check.sh", "release_smoke.sh", "release_matrix.sh", "public-release-check", "release-hypothesis-check"]
         for marker in required_markers:
             if marker not in text:
                 findings.append({"check": "ci_workflow", "severity": "high", "kind": "ci_required_command_missing", "detail": marker})
@@ -106,8 +107,7 @@ def _check_mcp_surface(root: Path) -> dict[str, Any]:
     readme = root / "mcp" / "README.md"
     text = readme.read_text(encoding="utf-8") if readme.exists() else ""
     findings: list[dict[str, Any]] = []
-    registry_names = {spec.name for spec in MCP_TOOL_SPECS}
-    server_names = {spec.exposed_server_name for spec in MCP_TOOL_SPECS}
+    registry_names, server_names = _facade_tool_names(root)
     missing_server = sorted(server_names - _server_exposed_tools(root))
     if missing_server:
         findings.append({"check": "mcp_surface", "severity": "high", "kind": "mcp_server_exposure_missing", "detail": ", ".join(missing_server)})
@@ -137,6 +137,40 @@ def _server_exposed_tools(root: Path) -> set[str]:
                 ):
                     names.add(node.name)
     return names
+
+
+def _facade_tool_names(root: Path) -> tuple[set[str], set[str]]:
+    """Read the canonical facade registry without importing its runtime graph."""
+
+    path = root / "src" / "mathdevmcp" / "mcp_facade.py"
+    try:
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    except OSError:
+        return set(), set()
+    registry_names: set[str] = set()
+    server_names: set[str] = set()
+    for node in ast.walk(tree):
+        if not (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "MCPToolSpec"
+            and node.args
+            and isinstance(node.args[0], ast.Constant)
+            and isinstance(node.args[0].value, str)
+        ):
+            continue
+        name = node.args[0].value
+        server_name = name
+        for keyword in node.keywords:
+            if (
+                keyword.arg == "server_name"
+                and isinstance(keyword.value, ast.Constant)
+                and isinstance(keyword.value.value, str)
+            ):
+                server_name = keyword.value.value
+        registry_names.add(name)
+        server_names.add(server_name)
+    return registry_names, server_names
 
 
 def _check_support_matrix(root: Path) -> dict[str, Any]:
@@ -195,6 +229,15 @@ def _check_private_path_leaks(root: Path) -> dict[str, Any]:
                 if marker in text:
                     findings.append({"check": "private_path_leaks", "severity": "high", "kind": "generated_evidence_path_leak", "path": str(path.relative_to(root)), "detail": marker})
     return _check_result("private_path_leaks", findings)
+
+
+def _check_release_report_substance(root: Path) -> dict[str, Any]:
+    report = audit_release_report_substance(root)
+    findings = [
+        {"check": "release_report_substance", **finding}
+        for finding in report.get("findings", [])
+    ]
+    return _check_result("release_report_substance", findings)
 
 
 def _check_result(name: str, findings: list[dict[str, Any]]) -> dict[str, Any]:

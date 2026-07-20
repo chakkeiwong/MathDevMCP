@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import importlib
 from pathlib import Path
 import sys
 from typing import Literal
@@ -34,7 +35,6 @@ from .proof_gap import localize_proof_gap
 from .proof_audit import audit_derivation_for_label
 from .proof_audit_v2 import audit_derivation_v2_for_label
 from .release_corpus import validate_release_corpus_manifest
-from .release_policy import release_readiness_report
 from .typed_workflows import typed_obligation_for_label
 from .workbench_benchmark_schema import EXPECTED_SEEDED_WORKBENCH_TOOLS, FIXED_MUTATION_FAMILY, ORACLE_CLASSES, workbench_benchmark_quality_report
 from .workflow import build_implementation_brief
@@ -1516,6 +1516,12 @@ def run_release_corpus_benchmark(root: Path) -> list[dict]:
 
 
 def run_release_policy_benchmark(root: Path) -> list[dict]:
+    # Keep the large benchmark graph below the release-policy layer. This
+    # optional composition point is intentionally lazy to avoid a module cycle.
+    release_readiness_report = importlib.import_module(
+        "mathdevmcp.release_policy"
+    ).release_readiness_report
+
     results: list[dict] = []
     for case in _release_policy_cases(root):
         result = release_readiness_report(case["root"])
@@ -1992,5 +1998,7 @@ def benchmark_gate_report(root: Path, *, include_release_policy: bool = True) ->
 
 def write_benchmark_report(root: Path, output_path: Path, *, include_release_policy: bool = True) -> dict:
     report = build_benchmark_report(root, include_release_policy=include_release_policy)
-    output_path.write_text(__import__('json').dumps(report, indent=2), encoding='utf-8')
+    from .artifact_storage import write_bytes_safe
+
+    write_bytes_safe(output_path, __import__('json').dumps(report, indent=2).encode('utf-8'))
     return success_result({"output": str(output_path), "report": report}, contract="benchmark_report")

@@ -19,7 +19,7 @@ from mathdevmcp.promotion_policy import (
     verify_phase06_promotion_decision,
 )
 
-from test_claim_evidence_normalization import _sage_fixture
+from tests.test_claim_evidence_normalization import _sage_fixture
 
 
 SOURCE_BYTES = b"(x + 1)**2 = x**2 + 2*x + 1"

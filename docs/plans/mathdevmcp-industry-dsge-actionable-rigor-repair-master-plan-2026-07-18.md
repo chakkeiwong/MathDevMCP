@@ -240,11 +240,11 @@ Material revisions made during review:
 7. **Numeric regression:** suppression applies only without a numeric artifact or
    implementation target; existing explicit numeric tests remain gates.
 8. **Shared worktree:** implementation must preserve existing resumability edits
-   and exclude the concurrently owned `skills/` tree and downstream memo from
-   staging.
+   and exclude the out-of-scope `skills/` tree and downstream memo from staging.
+   Their authorship is not inferred from the dirty worktree.
 9. **Commit scope:** the final commit may include the completed resumability
    program already present in overlapping production files only after the full
-   suite and diff review pass; unrelated/concurrent `skills/` content remains
+   suite and diff review pass; unrelated `skills/` content remains
    excluded.
 10. **XFAIL misuse:** XFAIL markers are not a final success state. Phase 6 must
     convert them to ordinary passing regressions.

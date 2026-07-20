@@ -12,7 +12,9 @@ MathDevMCP is designed for five recurring tasks:
 4. checking whether a claimed derivation step is clearly supported,
 5. producing a document-grounded implementation brief.
 
-It is intentionally conservative. It helps surface support and mismatches, but it does **not** prove arbitrary algebraic equivalence.
+It is exploratory in search and rigorous at the claim boundary. It surfaces
+candidate assumptions, routes, support, and mismatches, but it does **not**
+prove arbitrary algebraic equivalence without certifying backend evidence.
 
 ## High-level math workflows
 

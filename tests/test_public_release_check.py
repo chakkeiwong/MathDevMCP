@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import mathdevmcp.public_release as public_release
 from mathdevmcp.public_release import public_release_check
 from mathdevmcp.release_policy import release_readiness_report
 
@@ -21,6 +22,7 @@ def test_public_release_check_passes_product_surface():
         "docs_release_boundary",
         "quality_gate",
         "private_path_leaks",
+        "release_report_substance",
     }
 
 
@@ -56,3 +58,29 @@ def test_public_release_check_rejects_generated_home_path_leaks():
 
     assert '"/home/chakwong"' in source
     assert "/home/chakwong" not in generated
+
+
+def test_public_release_check_propagates_release_report_failure(monkeypatch):
+    monkeypatch.setattr(
+        public_release,
+        "audit_release_report_substance",
+        lambda root: {
+            "status": "mismatch",
+            "findings": [
+                {
+                    "severity": "high",
+                    "kind": "missing_chapter_role",
+                    "detail": "Audit a Derivation",
+                }
+            ],
+        },
+    )
+
+    report = public_release_check(ROOT)
+
+    assert report["status"] == "mismatch"
+    assert any(
+        finding["check"] == "release_report_substance"
+        and finding["kind"] == "missing_chapter_role"
+        for finding in report["blockers"]
+    )

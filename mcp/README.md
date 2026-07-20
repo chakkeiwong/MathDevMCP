@@ -224,6 +224,10 @@ Installed script entrypoint:
 mathdevmcp-mcp
 ```
 
+The console entry point is present in every install so client configuration can
+remain stable. A base-only install exits with an actionable message asking for
+the `[mcp]` extra; it must not emit a raw missing-module traceback.
+
 From a checkout without installation:
 
 ```bash

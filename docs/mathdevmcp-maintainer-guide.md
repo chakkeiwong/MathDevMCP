@@ -1,152 +1,180 @@
 # MathDevMCP Maintainer Guide
 
-This guide is for developers who need to maintain MathDevMCP without knowing
-the whole codebase.
+This is the canonical operating guide for the primary maintainer. Start here;
+`docs/plans/` and `docs/reviews/` are historical evidence, not current execution
+authority.
 
-## Repository Map
+## Supported Boundary
 
-- `src/mathdevmcp/latex_index.py`: LaTeX parsing, labels, context, and search.
-- `src/mathdevmcp/consistency.py`: document/code term comparison.
-- `src/mathdevmcp/derivation.py`: scoped derivation-step checks.
-- `src/mathdevmcp/proof_audit.py`: first-generation proof-audit workflow.
-- `src/mathdevmcp/proof_audit_v2.py`: release-facing typed proof-audit
-  workflow.
-- `src/mathdevmcp/math_ir.py`: typed/dimensional obligation diagnostics.
-- `src/mathdevmcp/ast_operation_graph.py`: Python AST operation extraction.
-- `src/mathdevmcp/parser_benchmark.py`: parser backend measurement.
-- `src/mathdevmcp/parser_policy.py`: parser routing decision for proof audit.
-- `src/mathdevmcp/release_corpus.py`: public/private corpus manifest and
-  privacy validation.
-- `src/mathdevmcp/release_policy.py`: release profiles, blockers, caveats, and
-  evidence command list.
-- `src/mathdevmcp/public_release.py`: public industrial release product-surface
-  checks for CI, packaging, MCP docs, support matrix, and redaction evidence.
-- `src/mathdevmcp/doctor.py`: runtime capability diagnostics.
-- `src/mathdevmcp/backend_env.py`: isolated backend environment selection.
-- `src/mathdevmcp/mcp_facade.py`: in-process MCP tool facade.
-- `src/mathdevmcp/mcp_server.py`: FastMCP server wrapper.
-- `src/mathdevmcp/cli.py`: command-line entry point.
-- `scripts/`: repeatable release, backend, and evidence workflows.
-- `docs/generated/release_report/`: committed, redacted release-report
-  snippets generated from commands.
+The supported colleague deployment is a trusted local Python 3.11 or 3.12
+environment using MCP over stdio. MathDevMCP reads files with the colleague's
+filesystem permissions. It is not a sandbox, network service, multi-tenant
+service, or safe processor for hostile documents. Do not expose it to untrusted
+network clients or grant it access to directories the user should not read.
 
-## Maintenance Rules
-
-- Preserve JSON `metadata.contract` names unless a compatibility path is added.
-- Keep CLI and MCP wrappers thin; put behavior in library functions.
-- Keep optional tools optional unless a strict release profile requires them.
-- Keep LeanDojo in the backend environment.
-- Keep base/public release checks separate from strict backend checks. Missing
-  backend evidence remains visible in doctor output, but it should only affect
-  the release recommendation for profiles that require backend evidence.
-- Treat Lean toolchain download and availability failures as diagnostic
-  `inconclusive` evidence. Only direct Lean rejection of supplied source is a
-  `mismatch`.
-- Never commit private documents or populated private manifests.
-- Run focused tests after each behavior change, then the full suite.
-- Treat `full` as strict internal/deployment evidence and `public` as the
-  public industrial release product-surface gate.
-
-## Adding a Benchmark Case
-
-1. Add or update public/sanitized fixtures under `benchmarks/fixtures`.
-2. Add a benchmark case in the appropriate case builder.
-3. Add or update tests that assert the new expected total or category summary.
-4. Run `PYTHONPATH=src python -m mathdevmcp.cli benchmark-gate --root "$PWD"`.
-5. Update the release report evidence if the new case affects release claims.
-
-## Adding a Private Corpus Entry
-
-1. Keep the source documents outside git.
-2. Add the entry to an external manifest, not to the repository.
-3. Include expected labels, operations, parser backends, and either expected
-   abstentions or false-confidence seeds.
-4. Run `scripts/validate_private_corpus.sh "$PWD"`.
-5. Confirm output contains `<redacted-private-path>`.
-
-## Adding a Backend
-
-1. Add a capability check in `doctor.py`.
-2. Add backend environment handling in `backend_env.py` if isolation is needed.
-3. Wrap subprocess calls with explicit timeouts.
-4. Return structured unavailable, timeout, diagnostic, mismatch, and certifying
-   states.
-5. Add tests for missing backend behavior.
-6. Only then add release-profile requirements.
-
-## Updating the Release Report
-
-Regenerate evidence:
+## First 30 Minutes
 
 ```bash
-MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/secure/local/path/corpus.json \
-scripts/generate_release_report_evidence.sh docs/generated/release_report
+git status --short
+python --version                     # must be 3.11 or 3.12
+python -m pip install -e ".[dev,mcp,symbolic]"
+CUDA_VISIBLE_DEVICES=-1 scripts/maintainer_check.sh
+CUDA_VISIBLE_DEVICES=-1 python scripts/mcp_stdio_smoke.py --root "$PWD"
 ```
 
-## Public Industrial Release Checks
-
-Before any public industrial release claim, run the cross-profile analysis
-first, then the public gate:
+`maintainer_check.sh` is the fast, routine safety net. It is not the final
+handoff/release gate. Before giving a revision to colleagues, run:
 
 ```bash
-PYTHONPATH=src python -m mathdevmcp.cli release-profile-analysis --root "$PWD"
-scripts/quality_gate.sh
-PYTHONPATH=src python -m mathdevmcp.cli public-release-check --root "$PWD"
-PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile public
+CUDA_VISIBLE_DEVICES=-1 scripts/handoff_gate.sh
 ```
 
-The profile analysis answers which release claims are currently justified and
-which strict profile hypotheses remain. The public gate checks that CI,
-packaging metadata, MCP surface documentation, support matrix coverage,
-documentation boundary language, quality checks, and generated-evidence
-redaction all agree. It does not certify arbitrary mathematics; it certifies
-that the public product surface is coherent enough for release review.
+The full gate intentionally takes longer because it runs every test. Optional
+external backend and private-corpus profiles remain separate.
 
-For strict internal/full release evidence, configure all optional evidence in
-one shell. An existing validated backend env may be selected with
-`MATHDEVMCP_BACKEND_CONDA_ENV`; `scripts/setup_backend_env.sh` remains the
-bootstrap path when no such env exists. `scripts/validate_backend_install.sh`
-requires Pandoc, Lean, Sage, and isolated LeanDojo evidence, and reports SymPy
-as an optional symbolic-backend caveat.
+The department gate also requires the security scan tools to be available and
+passing. If they are unavailable, run the scanner in diagnostic mode only; that
+result cannot authorize a handoff. Coverage is currently reported but no floor
+is promoted until a complete measured baseline is recorded; it is not evidence
+of mathematical correctness.
 
-```bash
-export MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends
-export MATHDEVMCP_LEAN_TOOLCHAIN=leanprover/lean4:v4.20.0
-export MATHDEVMCP_REQUIRE_LATEXML=1
-export MATHDEVMCP_PRIVATE_CORPUS_MANIFEST=/secure/local/path/corpus.json
-scripts/backend_env_doctor.sh "$PWD"
-scripts/validate_backend_install.sh "$PWD"
-scripts/validate_private_corpus.sh "$PWD"
-PYTHONPATH=src python -m mathdevmcp.cli release-profile-analysis --root "$PWD"
-PYTHONPATH=src python -m mathdevmcp.cli release-readiness --root "$PWD" --profile full
+When asked what gaps remain, run `mathdevmcp release-profile-analysis --root
+"$PWD"` before interpreting readiness. It separates the controlled internal
+base/product surface from strict profile hypotheses for backend, LaTeXML,
+private-corpus, and full-profile evidence.
+
+## Architecture And Dependency Direction
+
+```text
+CLI / typed FastMCP wrappers
+            |
+            v
+      mcp_facade registry
+            |
+            v
+ workflow/report libraries  ---> evidence contracts/artifact helpers
+            |
+            v
+ parser + deterministic/specialist adapters
+
+ release inspection ---> dependency-free profile catalog
+ release policy -----> benchmark gate (without release-policy recursion)
 ```
 
-Scan for path leaks:
+Authoritative locations:
 
-```bash
-rg -n "/secure|/tmp/mathdevmcp|manifest.json|/home/" docs/generated/release_report
-```
+- `src/mathdevmcp/mcp_facade.py`: tool names, handler binding, tier, stability,
+  output contract, aliases, and optional capability metadata.
+- `src/mathdevmcp/mcp_server.py`: handwritten typed FastMCP signatures. Keep
+  these signatures explicit because they define client schemas.
+- `src/mathdevmcp/cli.py`: CLI parsing and thin dispatch.
+- `src/mathdevmcp/contracts.py`: common public result envelopes.
+- `src/mathdevmcp/release_policy.py`: profile evaluation.
+- `src/mathdevmcp/public_release.py`: repository-local product checks.
+- `src/mathdevmcp/release_report_audit.py`: executable release-report audit.
+- `src/mathdevmcp/maintainability.py`: debt baseline and regression ratchet.
+- `src/mathdevmcp/evidence_manifest.py`: security-sensitive no-follow artifact
+  storage.
+- `src/mathdevmcp/mcp_stdio_transport.py`: POSIX stdio adapter. It exists
+  because the pinned SDK's AnyIO file adapter can hang in some conda runtimes;
+  keep the raw and client smoke tests when changing it.
 
-Build the report:
+## Change Recipes
 
-```bash
-cd docs
-pdflatex -interaction=nonstopmode -halt-on-error mathdevmcp-release-report.tex
-bibtex mathdevmcp-release-report || true
-pdflatex -interaction=nonstopmode -halt-on-error mathdevmcp-release-report.tex
-pdflatex -interaction=nonstopmode -halt-on-error mathdevmcp-release-report.tex
-```
+### Add or modify an MCP tool
 
-## Common Failure Modes
+1. Put behavior in a library function, not in the server wrapper.
+2. Add or update its `MCPToolSpec` in `mcp_facade.py`.
+3. Add or update the explicit typed wrapper in `mcp_server.py`.
+4. Update `mcp/README.md` and `CHANGELOG.md` when the public contract changes.
+5. Run `tests/test_mcp_facade.py`, `tests/test_mcp_server.py`,
+   `tests/test_mcp_surface_sync.py`, and `tests/test_mcp_stdio_smoke.py`.
 
-- `private_corpus_manifest_required`: set
-  `MATHDEVMCP_PRIVATE_CORPUS_MANIFEST` to an external manifest.
-- `backend_lean_dojo_unavailable`: run `scripts/setup_backend_env.sh` and set
-  `MATHDEVMCP_BACKEND_CONDA_ENV=mathdevmcp-backends`, or select another
-  validated backend env. Missing SymPy is an optional symbolic-backend caveat,
-  not the LeanDojo backend blocker.
-- `latexml_required_backend_unavailable`: install LaTeXML or set
-  `MATHDEVMCP_LATEXML_PATH`.
-- Dirty worktree caveat: commit or intentionally record the dirty evidence.
-- Parser policy blocked: check expected labels and provenance in
-  `parser-benchmark`.
+### Change an output contract
+
+1. Read `docs/mathdevmcp-versioning-policy.md`.
+2. Add characterization tests for current stable behavior.
+3. Update validators and producers together.
+4. Record additive or breaking behavior in `CHANGELOG.md`.
+5. Never rename a contract or field silently.
+
+### Add a benchmark case
+
+1. Add public or sanitized fixtures under `benchmarks/fixtures`.
+2. Add the case and its explicit expected status/evidence boundary.
+3. Update assertions that intentionally pin totals.
+4. Run `python -m mathdevmcp.cli benchmark-gate --root "$PWD"`.
+5. Do not infer broad mathematical correctness from a seeded pass.
+
+### Add an external backend
+
+1. Record it in `integration_versions.py` and `doctor.py`.
+2. Keep conflicting dependencies in an isolated backend environment.
+3. Use explicit executable allowlists, timeouts, bounded output, and structured
+   unavailable/timeout/mismatch/certified states.
+4. Add missing, timeout, malformed-output, and successful-path tests.
+5. Do not make it a default or release requirement without reviewed evidence.
+
+## Test Ladder
+
+1. Smallest affected test module.
+2. `scripts/maintainer_check.sh` for routine changes.
+3. Related subsystem tests and real MCP stdio smoke.
+4. `scripts/handoff_gate.sh` before an internal release or ownership handoff.
+5. Optional backend/private-corpus validation only when claiming those profiles.
+
+The fast check cannot establish full regression success. If the full suite fails,
+classify the failure before editing: implementation defect, environment/backend
+absence, stale fixture, or scientific-contract disagreement.
+
+## Release And Rollback
+
+1. Confirm `git status --short` contains only intended work.
+2. Update `CHANGELOG.md` and any affected maintained docs.
+3. Run `scripts/handoff_gate.sh` and archive its summary outside git if needed.
+4. Inspect `release-readiness --profile base` for this handoff. Run
+   `public-release-check` separately as a broad product-surface diagnostic; it
+   does not change the controlled-internal distribution boundary in `LICENSE`.
+   Older checks call this the `public industrial release` profile; that legacy
+   phrase names a technical gate and does not authorize public distribution.
+5. Tag or share only the tested commit. Roll back by reinstalling the last
+   tested commit; do not patch an installed environment manually.
+
+## Failure Triage
+
+- Raw `ModuleNotFoundError: mcp`: installation or launcher regression; install
+  `[mcp]` and rerun the clean-wheel test.
+- MCP initialize timeout: run `scripts/mcp_stdio_smoke.py`; then inspect
+  `mcp_stdio_transport.py` and the installed `mcp` version.
+- Report audit mismatch: run `scripts/audit_release_report_substance.sh`; fix
+  the maintained report/evidence or semantic role check, not chapter numbering.
+- Dirty worktree caveat: identify the owner of every path; never revert unknown
+  work.
+- Missing Lean/LeanDojo/LaTeXML/private corpus: diagnostic unless that strict
+  profile is explicitly being claimed.
+- Generic injected Python callbacks are not killable; a late callback is
+  classified as `backend_timeout` and is never promotion evidence. Only the
+  process-backed adapters provide hard termination at their deadline.
+- Parser or proof-status change: stop and request scientific review before
+  changing expected outputs.
+
+## Known Debt And Escalation
+
+- `document_derivation_tree.py`, `extraction_evidence.py`,
+  `evidence_manifest.py`, and `document_derivation_response.py` remain large.
+  Split them only behind characterization tests for a concrete ownership
+  boundary; file size alone is not authority to rewrite them.
+- `derivation_search_orchestrator`, `external_adapter_contract`, and
+  `sage_adapter` retain an import cycle across a scientific backend boundary.
+  Do not change it without specialist-backend tests and mathematical contract
+  review.
+- The CLI parser remains large. Prefer extracting declarative argument groups
+  incrementally when a real command change touches them.
+- Repository-wide strict typing is not yet enabled. Add annotations and focused
+  checking per touched subsystem rather than bulk suppressions.
+
+Escalate to the project owner for mathematical status changes, publication
+enablement, default backend changes, stable API breaks, private-data policy,
+public distribution, or any request to expose the MCP as a network service.
+A public industrial release is outside this handoff scope and requires the
+separate public surface gate plus explicit project-owner authorization.

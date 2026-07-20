@@ -146,7 +146,7 @@ def test_release_readiness_report_contains_non_recursive_gate_and_caveats():
     assert result["schema_version"] == "1.0"
 
 
-def test_release_cli_surfaces_exit_success_for_current_readiness():
+def test_release_cli_fails_closed_for_caveated_current_readiness():
     result = subprocess.run(
         [
             sys.executable,
@@ -162,6 +162,6 @@ def test_release_cli_surfaces_exit_success_for_current_readiness():
         env={"PYTHONPATH": str(ROOT / "src")},
     )
 
-    assert result.returncode == 0, result.stderr
+    assert result.returncode == 1
     assert '"contract": "release_readiness_report"' in result.stdout
     assert '"dirty_worktree"' in result.stdout

@@ -85,9 +85,10 @@ def _comment_mask(raw: bytes) -> bytes:
         line_end = raw.find(b"\n", line_start)
         if line_end < 0:
             line_end = len(raw)
-        for position in range(line_start, line_end):
-            if raw[position] != ord("%"):
-                continue
+        # Search only percent-byte candidates. Scanning every byte in every
+        # source line made indexing large real documents needlessly expensive.
+        position = raw.find(b"%", line_start, line_end)
+        while position >= 0:
             backslashes = 0
             cursor = position - 1
             while cursor >= line_start and raw[cursor] == ord("\\"):
@@ -96,6 +97,7 @@ def _comment_mask(raw: bytes) -> bytes:
             if backslashes % 2 == 0:
                 masked[position:line_end] = b" " * (line_end - position)
                 break
+            position = raw.find(b"%", position + 1, line_end)
         line_start = line_end + 1
     return bytes(masked)
 

@@ -1,4 +1,4 @@
-from scripts.run_bgs_d447_staged_capstone import normalized_phrase_present, status_of
+from mathdevmcp.capstone_harness import normalized_phrase_present, status_of
 
 
 def test_normalized_phrase_present_accepts_latex_line_wrapping() -> None:

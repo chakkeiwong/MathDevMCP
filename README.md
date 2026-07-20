@@ -8,9 +8,15 @@ publication decision, or scientific promotion. Release and private-corpus
 controls remain available as operator capabilities, but they do not define the
 academic mission.
 
+Current distribution status: **controlled internal research beta** for trusted
+local stdio use. It is intended for academic colleagues and designated
+maintainers, not untrusted network or multi-tenant deployment.
+
 The primary product document is:
 
 - [Final release report](docs/mathdevmcp-release-report.tex)
+- [Colleague quick start](docs/mathdevmcp-colleague-quick-start.md)
+- [Maintained documentation index](docs/README.md)
 - [Operator guide](docs/mathdevmcp-operator-guide.md)
 - [Deployment guide](docs/mathdevmcp-deployment-guide.md)
 - [Release policy](docs/mathdevmcp-release-policy.md)
@@ -18,6 +24,11 @@ The primary product document is:
 - [Private corpus manifest guide](docs/private-corpus-manifest-guide.md)
 - [Maintainer guide](docs/mathdevmcp-maintainer-guide.md)
 - [Support matrix](docs/mathdevmcp-support-matrix.md)
+- [Versioning and compatibility policy](docs/mathdevmcp-versioning-policy.md)
+
+Distribution is restricted to colleagues authorized by the project owner under
+the controlled-internal [license](LICENSE). Do not upload this package or its
+third-party document corpus to a public repository or package index.
 
 ## Install
 

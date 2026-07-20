@@ -47,13 +47,12 @@ def build_release_manifest(
     )
     metadata = _wheel_metadata(wheel_path)
     supplied_tests = test_summary or {"status": "not_recorded"}
-    test_binding = {
-        "status": "verified"
-        if isinstance(supplied_tests, dict)
-        and supplied_tests.get("git_commit") == commit.stdout.strip()
-        and supplied_tests.get("wheel_sha256") == hashlib.sha256(raw).hexdigest()
-        else "unbound_caller_supplied"
-    }
+    test_binding = _test_evidence_binding(
+        root_path,
+        supplied_tests,
+        commit=commit.stdout.strip(),
+        wheel_sha256=hashlib.sha256(raw).hexdigest(),
+    )
     manifest: dict[str, Any] = {
         "schema_version": "mathdevmcp-release-manifest@1",
         "source": {
@@ -101,6 +100,31 @@ def _lock_identity(path: Path | None) -> dict[str, Any]:
         return {"status": "missing", "sha256": None, "path": path.name}
     raw = path.read_bytes()
     return {"status": "supplied", "sha256": hashlib.sha256(raw).hexdigest(), "path": path.name}
+
+
+def _test_evidence_binding(root: Path, summary: object, *, commit: str, wheel_sha256: str) -> dict[str, Any]:
+    """Bind release evidence to bytes on disk, not only caller assertions."""
+
+    if not isinstance(summary, dict):
+        return {"status": "unbound_caller_supplied", "reason": "test summary is not an object"}
+    path_value = summary.get("artifact_path")
+    if not isinstance(path_value, str) or not path_value:
+        return {"status": "unbound_caller_supplied", "reason": "artifact_path is required"}
+    path = Path(path_value).resolve()
+    try:
+        path.relative_to(root)
+    except ValueError:
+        return {"status": "unbound_caller_supplied", "reason": "test evidence is outside release root"}
+    if not path.is_file():
+        return {"status": "unbound_caller_supplied", "reason": "test evidence file is missing"}
+    actual_sha256 = hashlib.sha256(path.read_bytes()).hexdigest()
+    if summary.get("artifact_sha256") != actual_sha256:
+        return {"status": "unbound_caller_supplied", "reason": "test evidence digest does not match artifact"}
+    if summary.get("git_commit") != commit or summary.get("wheel_sha256") != wheel_sha256:
+        return {"status": "unbound_caller_supplied", "reason": "test evidence identity does not match release"}
+    if summary.get("status") != "passed":
+        return {"status": "unbound_caller_supplied", "reason": "test evidence is not a passed run"}
+    return {"status": "verified", "artifact_sha256": actual_sha256, "artifact_path": path.name}
 
 
 def _wheel_metadata(path: Path) -> dict[str, str]:

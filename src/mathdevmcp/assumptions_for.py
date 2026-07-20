@@ -13,6 +13,7 @@ from .assumption_gap_proposals import (
     build_unknown_route_proposal,
     summarize_assumption_validation,
 )
+from .artifact_storage import write_bytes_safe
 from .assumption_discovery import assumptions_required
 from .contracts import attach_contract, contract_metadata
 from .derivation_target_extraction import extract_derivation_targets_for_label
@@ -526,5 +527,5 @@ def audit_and_propose_assumptions(
         "certification_boundary": ASSUMPTION_REPORT_NON_CLAIM["text"],
     }
     if output_path:
-        Path(output_path).write_text(report["markdown"], encoding="utf-8")
+        write_bytes_safe(Path(output_path), report["markdown"].encode("utf-8"))
     return attach_contract(report, ASSUMPTION_REPORT_CONTRACT)

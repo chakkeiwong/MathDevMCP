@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from mathdevmcp.mcp_server import assumptions_for, audit_and_propose_assumptions, audit_and_propose_derivations, audit_derivation_label, audit_implementation_label, audit_kalman_recursion, audit_math_to_code, audit_report_claim_boundary, benchmark_gate, check_equality, compare_label_code, debug_derivation, derive_from, external_tool_first_plan, extract_latex_context, get_tool_matrix, governance_policy, high_level_workflow_quality, implementation_brief, latex_label_lookup, lean_check, prepare_review_packet, prove_or_counterexample, release_readiness, run_benchmarks, typed_obligation_label, validate_release_corpus, workbench_benchmark_quality
-from test_context_and_fixtures import EXPECTED_BENCHMARK_TOTAL
+from tests.test_context_and_fixtures import EXPECTED_BENCHMARK_TOTAL
 
 
 FIXTURES = Path(__file__).resolve().parent.parent / "benchmarks" / "fixtures"

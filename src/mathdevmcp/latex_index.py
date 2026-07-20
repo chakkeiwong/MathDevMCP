@@ -14,6 +14,7 @@ from typing import Iterable, Mapping
 
 from .equation_locator import locate_equations_in_file, summarize_equation_localization
 from .evidence_manifest import EvidenceValidationError, validate_logical_path
+from .artifact_storage import write_bytes_safe
 
 
 @dataclass(frozen=True)
@@ -749,8 +750,7 @@ def build_index(root: Path) -> dict:
 
 def write_index(root: Path, output: Path) -> dict:
     index = build_index(root)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(index, indent=2), encoding="utf-8")
+    write_bytes_safe(output, json.dumps(index, indent=2).encode("utf-8"))
     return index
 
 

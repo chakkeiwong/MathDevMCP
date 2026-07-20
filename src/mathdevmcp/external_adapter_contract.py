@@ -11,6 +11,11 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from .evidence_manifest import canonical_json_bytes, content_digest
+from .backend_protocol import (
+    P04_REQUEST_SCHEMA,
+    P04_RESULT_SCHEMA,
+    verify_registered_manifest,
+)
 
 
 P05_ADAPTER_REQUEST_SCHEMA = "p05_external_adapter_request@1"
@@ -603,20 +608,10 @@ def verify_live_adapter_manifest(value: Mapping[str, Any]) -> dict[str, Any]:
         )
     tool = result["request"]["tool"]["name"]
     manifest_ref = result["evidence"]["manifest_ref"]
-    if tool == "sage":
-        # Runtime import avoids a module cycle: the Sage adapter builds this contract.
-        from .sage_adapter import verify_sage_execution_manifest
-
-        try:
-            verified = verify_sage_execution_manifest(str(manifest_ref))
-        except (OSError, ValueError) as exc:
-            raise ExternalAdapterContractError(
-                f"Sage manifest verification failed: {exc}"
-            ) from exc
-    else:
-        raise ExternalAdapterContractError(
-            f"no live manifest verifier is registered for tool {tool!r}"
-        )
+    try:
+        verified = verify_registered_manifest(tool, str(manifest_ref))
+    except (LookupError, OSError, ValueError) as exc:
+        raise ExternalAdapterContractError(f"{tool} manifest verification failed: {exc}") from exc
     if verified.get("manifest_sha256") != result["evidence"]["manifest_sha256"]:
         raise ExternalAdapterContractError("live manifest file digest mismatch")
     manifest = verified.get("manifest")
@@ -664,7 +659,6 @@ def _validate_p04_claim_bundle(
     result: Mapping[str, Any],
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     """Validate exact Phase 04 records without accepting legacy-shaped copies."""
-    from .derivation_search_orchestrator import P04_REQUEST_SCHEMA, P04_RESULT_SCHEMA
     from .derivation_search_tree import validate_branch_record
 
     branch_copy = deepcopy(dict(branch)) if isinstance(branch, Mapping) else {}
@@ -1161,10 +1155,8 @@ def normalize_registered_adapter_claim_evidence(
             "registered claim normalization has no assumption-encoding reader "
             f"for tool {request['tool']['name']!r}"
         )
-    from .sage_adapter import verify_sage_execution_manifest
-
     try:
-        native_projection = verify_sage_execution_manifest(receipt["manifest_ref"])
+        native_projection = verify_registered_manifest("sage", receipt["manifest_ref"])
     except (OSError, ValueError) as exc:
         raise ExternalAdapterContractError(
             f"Sage assumption-encoding verification failed: {exc}"

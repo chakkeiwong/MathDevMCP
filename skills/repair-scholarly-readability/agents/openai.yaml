@@ -1,0 +1,4 @@
+interface:
+  display_name: "Repair Scholarly Readability"
+  short_description: "Repair mathematical prose and reader interfaces"
+  default_prompt: "Use $repair-scholarly-readability to audit and repair this scholarly LaTeX/PDF for motivation, equation exposition, source fidelity, and rendered readability."

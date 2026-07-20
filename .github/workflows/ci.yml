@@ -22,9 +22,12 @@ jobs:
       - name: Install package and coverage
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ".[dev,mcp,symbolic]" coverage
+          python -m pip install build coverage pytest
+          python -m pip wheel --no-deps --no-build-isolation . -w dist
+          WHEEL=$(find dist -maxdepth 1 -type f -name '*.whl' -print -quit)
+          python -m pip install "${WHEEL}[dev,mcp,symbolic]"
       - name: Maintainer checks
-        run: scripts/maintainer_check.sh
+        run: MATHDEVMCP_USE_INSTALLED_PACKAGE=1 scripts/maintainer_check.sh
       - name: Tests
         run: CUDA_VISIBLE_DEVICES=-1 PYTHONPATH=src coverage run --branch -m pytest -q
       - name: Coverage report

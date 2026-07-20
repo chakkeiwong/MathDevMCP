@@ -2,7 +2,7 @@ from pathlib import Path
 
 from mathdevmcp.derive_from import derive_from
 from mathdevmcp.mcp_facade import call_mcp_tool, list_mcp_tools
-from test_context_and_fixtures import EXPECTED_BENCHMARK_SUMMARY, EXPECTED_BENCHMARK_TOTAL
+from tests.test_context_and_fixtures import EXPECTED_BENCHMARK_SUMMARY, EXPECTED_BENCHMARK_TOTAL
 
 
 FIXTURES = Path(__file__).resolve().parent.parent / "benchmarks" / "fixtures"

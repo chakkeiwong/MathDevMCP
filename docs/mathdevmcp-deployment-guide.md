@@ -6,6 +6,8 @@ The public industrial release gate is separate from internal deployment
 profiles and is checked with `public-release-check`.
 The MCP server runtime is also optional; install `mathdevmcp[mcp]` or
 `.[dev,mcp]` before running `mathdevmcp-mcp`.
+The supported deployment is trusted local stdio. Network or multi-tenant
+deployment is outside the maintained security boundary.
 
 ## Local Smoke
 
@@ -84,7 +86,12 @@ For a clean checkout smoke after committing release changes:
 scripts/clean_install_smoke.sh /tmp/mathdevmcp-clean
 ```
 
-This copies `HEAD` with `git archive`, installs the base package in a disposable conda env, and runs doctor, focused parser tests, and the benchmark gate. Set `MATHDEVMCP_INSTALL_BACKENDS=1` only when backend installation should be tested explicitly.
+This copies the committed or current non-ignored tree, installs the base package
+in a disposable conda env, verifies the base-only MCP install instruction,
+installs the MCP extra, initializes stdio and calls a tool, searches a maintained
+LaTeX fixture through the installed CLI, and runs focused tests plus the
+benchmark gate. Set `MATHDEVMCP_INSTALL_BACKENDS=1` only when backend
+installation should be tested explicitly.
 
 Use release evidence collection for review artifacts:
 

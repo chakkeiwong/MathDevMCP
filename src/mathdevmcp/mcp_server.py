@@ -2,93 +2,66 @@
 
 from __future__ import annotations
 
+import anyio
 from collections.abc import Sequence
+import os
 from typing import Any, Literal
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import CallToolResult, TextContent
 
-from .mcp_facade import call_mcp_tool
+from .mcp_facade import MCP_TOOL_SPECS, call_mcp_tool
 from .document_derivation_response import DOCUMENT_DERIVATION_COMPATIBILITY_TEXT
+from .mcp_stdio_transport import run_fastmcp_stdio
 
 
-MCP_SERVER_TOOL_ALIASES = {"tool_matrix": "get_tool_matrix"}
-MCP_SERVER_EXPOSED_TOOLS = {
-    "search_latex",
-    "latex_label_lookup",
-    "extract_latex_context",
-    "extract_latex_neighborhood",
-    "search_code_docs",
-    "compare_doc_code",
-    "code_implements_equation",
-    "classify_math_claim",
-    "audit_report_claim_boundary",
-    "reconcile_notation",
-    "generate_math_tests",
-    "math_review_packet",
-    "math_change_impact",
-    "literature_local_audit",
-    "derive_from",
-    "prove_or_counterexample",
-    "assumptions_for",
-    "audit_and_propose_assumptions",
-    "audit_and_propose_derivations",
-    "debug_derivation",
-    "audit_math_to_code",
-    "prepare_review_packet",
-    "propose_fix",
-    "audit_and_propose_fix",
-    "audit_implementation_label",
-    "compare_label_code",
-    "derive_label_step",
-    "derive_or_refute",
-    "prove_or_refute",
-    "localize_proof_gap",
-    "implementation_brief",
-    "check_equality",
-    "check_proof_obligation",
-    "lean_check",
-    "audit_derivation_label",
-    "audit_derivation_v2_label",
-    "audit_kalman_recursion",
-    "typed_obligation_label",
-    "proof_packet_label",
-    "negative_evidence_label",
-    "domain_templates",
-    "suggest_domain_templates",
-    "generate_template_obligations",
-    "claim_support_packet",
-    "audit_temporal_contract",
-    "run_benchmarks",
-    "benchmark_gate",
-    "workbench_benchmark_quality",
-    "high_level_workflow_quality",
-    "get_tool_matrix",
-    "external_tool_first_plan",
-    "status_taxonomy",
-    "capability_registry",
-    "doctor",
-    "release_corpus_manifest",
-    "validate_release_corpus",
-    "governance_policy",
-    "release_readiness",
-    "release_profile_analysis",
-    "lean_readiness",
-    "plan_math_document_rigor_audit",
-    "audit_math_document_rigor",
-    "page_math_document_rigor_records",
-    "audit_document_derivation_tree",
-    "resolve_document_derivation_records",
-    "page_resumable_tree_records",
-    "resolve_resumable_tree_record",
-    "resolve_agent_report",
+MCP_SERVER_TOOL_ALIASES = {
+    spec.name: spec.exposed_server_name
+    for spec in MCP_TOOL_SPECS
+    if spec.exposed_server_name != spec.name
 }
+MCP_SERVER_EXPOSED_TOOLS = {spec.exposed_server_name for spec in MCP_TOOL_SPECS}
+MCP_PROFILE_NAMES = {"stable", "all"}
+_CONFIGURED_MCP_PROFILE: str | None = None
 
 
 mcp = FastMCP(
     name="MathDevMCP",
     instructions="Thin MCP facade for MathDevMCP document, consistency, derivation, and benchmark tools.",
 )
+
+
+def mcp_profile_tool_names(profile: str) -> set[str]:
+    """Return the declared tool names for a launch profile without mutation."""
+
+    selected = profile.strip().lower()
+    if selected not in MCP_PROFILE_NAMES:
+        raise ValueError(f"Unknown MCP profile: {selected}. Expected stable or all")
+    return {
+        spec.exposed_server_name
+        for spec in MCP_TOOL_SPECS
+        if selected == "all" or spec.stability == "stable"
+    }
+
+
+def configure_mcp_profile(profile: str | None = None) -> str:
+    """Expose stable tools by default; widen only with explicit opt-in."""
+
+    global _CONFIGURED_MCP_PROFILE
+    selected = (profile or os.environ.get("MATHDEVMCP_MCP_PROFILE", "stable")).strip().lower()
+    allowed = mcp_profile_tool_names(selected)
+    if _CONFIGURED_MCP_PROFILE is not None:
+        if _CONFIGURED_MCP_PROFILE != selected:
+            raise RuntimeError(
+                "MCP profile is already configured for this process; launch a fresh process to change it"
+            )
+        return selected
+    if selected == "stable":
+        for spec in MCP_TOOL_SPECS:
+            if spec.exposed_server_name not in allowed:
+                mcp.remove_tool(spec.exposed_server_name)
+    _CONFIGURED_MCP_PROFILE = selected
+    return selected
 
 
 @mcp.tool(description="Search indexed LaTeX blocks with provenance.", structured_output=False)
@@ -1282,7 +1255,8 @@ def resolve_agent_report(artifact_root: str, sha256: str) -> dict:
 
 def main(argv: list[str] | None = None) -> int:
     _ = argv
-    mcp.run(transport="stdio")
+    configure_mcp_profile()
+    anyio.run(run_fastmcp_stdio, mcp)
     return 0
 
 

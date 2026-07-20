@@ -23,6 +23,7 @@ from .external_adapter_contract import (
     build_external_adapter_result,
     validate_external_adapter_request,
 )
+from .backend_protocol import register_manifest_verifier
 from .evidence_manifest import content_digest
 
 
@@ -1342,3 +1343,8 @@ def run_sage_polynomial_obligation(
             status="malformed_output",
             reason=f"Sage evidence failed the external adapter contract: {exc}",
         )
+
+
+# Optional-backend registration occurs only after the verifier definition is
+# complete.  The dependency-free protocol remains importable without Sage.
+register_manifest_verifier("sage", verify_sage_execution_manifest)

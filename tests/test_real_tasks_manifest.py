@@ -15,7 +15,7 @@ def _valid_case_dict() -> dict:
     return {
         "id": "CASE-001",
         "family": "evidence_boundary_discipline",
-        "repo": "ExampleRepo",
+        "repo": "MathDevMCP",
         "task_type": "example_audit",
         "difficulty": "easy",
         "public": True,
@@ -149,6 +149,22 @@ def test_real_task_public_manifest_rejects_arbitrary_existing_escape(tmp_path: P
         outside.unlink()
     assert validation["status"] == "mismatch"
     assert any(finding["kind"] == "referenced_path_escapes_declared_repo" for finding in validation["findings"])
+
+
+def test_real_task_public_manifest_rejects_path_like_repository_identifier(tmp_path: Path) -> None:
+    case = _valid_case_dict()
+    case["repo"] = ".."
+    case["document_files"] = ["../DynareMCP/README.md"]
+    manifest_path = tmp_path / "public_cases.json"
+    manifest_path.write_text(json.dumps({
+        "metadata": {"schema_version": "1.0", "contract": "real_task_public_case_manifest"},
+        "cases": [case],
+    }), encoding="utf-8")
+
+    validation = validate_real_task_public_manifest(ROOT, manifest_path=manifest_path)
+
+    assert validation["status"] == "mismatch"
+    assert any(finding["kind"] == "unsupported_repository_identifier" for finding in validation["findings"])
 
 
 def test_real_task_public_manifest_requires_gold_fields(tmp_path: Path) -> None:

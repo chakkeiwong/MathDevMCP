@@ -412,7 +412,13 @@ def adapt_algebra_check(
     evidence_context: EvidenceContext | None = None,
     artifact_root: str | Path | None = None,
 ) -> dict[str, Any]:
-    """Run or wrap a scoped algebra derivation/refutation attempt."""
+    """Run or wrap a scoped algebra attempt.
+
+    An injected in-process callback cannot be safely force-killed; a late
+    return is therefore classified as ``backend_timeout`` and is never
+    promotable. Process-backed adapters enforce termination in their process
+    runner before producing the same status.
+    """
     prepared = _prepare_evidence(evidence_context, artifact_root, expected_tool=tool)
     started = datetime.now(timezone.utc)
     start_ns = time.monotonic_ns()
@@ -482,7 +488,11 @@ def adapt_counterexample_search(
     evidence_context: EvidenceContext | None = None,
     artifact_root: str | Path | None = None,
 ) -> dict[str, Any]:
-    """Run or wrap bounded counterexample search evidence."""
+    """Run or wrap bounded counterexample evidence.
+
+    See :func:`adapt_algebra_check` for the distinction between post-hoc
+    classification of injected callbacks and hard process-backed deadlines.
+    """
     expected_tool = evidence_context.tool_name if evidence_context is not None else "counterexample"
     prepared = _prepare_evidence(evidence_context, artifact_root, expected_tool=expected_tool)
     started = datetime.now(timezone.utc)

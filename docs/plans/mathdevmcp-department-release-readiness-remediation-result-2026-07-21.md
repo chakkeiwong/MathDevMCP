@@ -19,11 +19,16 @@ Evidence:
 - coverage lane: `60 passed, 1 skipped`, `24%` measured total against `20%` floor;
 - wheel build: passed with `pip wheel --no-build-isolation`;
 - isolated PEP 517 build: blocked by offline setuptools fetch;
-- full 1,771-test suite: not completed in this environment.
+- base readiness: `ready`, clean, exit 0;
+- pushed identity: `HEAD == origin/main` at audited commit
+  `a5c4e3fbfe4425bd62f20d26ddfbfcead590a089`;
+- full 1,771-test suite: bounded at 180 seconds, exit 124 after partial progress;
+- required security scan: exit 1 because `pip-audit`, `gitleaks`, and `syft`
+  are unavailable.
 
-Remaining blockers are clean commit/push and snapshot verification, complete
-full-lane evidence, required security scanners or an approved exception, any
-strict-profile evidence being claimed, and department product/build/security
-owner assignment. These checks do not establish mathematical correctness,
-scientific validity, hostile-document sandboxing, network security, public
-redistribution, or theorem-proving capability.
+Remaining blockers are complete full-lane evidence, required security scanners
+or an approved exception, any strict-profile evidence being claimed, and
+department product/build/security owner assignment. These checks do not
+establish mathematical correctness, scientific validity, hostile-document
+sandboxing, network security, public redistribution, or theorem-proving
+capability.

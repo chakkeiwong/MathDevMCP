@@ -8,6 +8,7 @@ environment variables so dependency conflicts stay out of the main workflow.
 from __future__ import annotations
 
 import os
+from dataclasses import dataclass
 from pathlib import Path
 import shutil
 import subprocess
@@ -20,6 +21,40 @@ LEAN_TOOLCHAIN_VAR = "MATHDEVMCP_LEAN_TOOLCHAIN"
 DEFAULT_BACKEND_CONDA_ENV = "mathdevmcp-backends"
 
 
+@dataclass(frozen=True)
+class BackendConfig:
+    """Immutable backend selection for one capability or workflow request."""
+
+    conda_env: str | None = None
+    prefix: Path | None = None
+    python: str | None = None
+    lean_toolchain: str | None = None
+
+    @classmethod
+    def from_environment(cls) -> "BackendConfig":
+        return cls(
+            conda_env=backend_conda_env(),
+            prefix=backend_prefix(),
+            python=os.environ.get(BACKEND_PYTHON_VAR, "").strip() or None,
+            lean_toolchain=os.environ.get(LEAN_TOOLCHAIN_VAR, "").strip() or None,
+        )
+
+    def with_conda_env(
+        self,
+        conda_env: str | None,
+        *,
+        default_lean_toolchain: str | None = None,
+    ) -> "BackendConfig":
+        """Return a request config with an explicit environment selection."""
+
+        return BackendConfig(
+            conda_env=conda_env,
+            prefix=_prefix_for_env(conda_env),
+            python=self.python,
+            lean_toolchain=self.lean_toolchain or default_lean_toolchain,
+        )
+
+
 def backend_conda_env() -> str | None:
     value = os.environ.get(BACKEND_ENV_VAR, "").strip()
     return value or None
@@ -29,24 +64,14 @@ def backend_python_requested() -> bool:
     return any(os.environ.get(name, "").strip() for name in (BACKEND_ENV_VAR, BACKEND_PREFIX_VAR, BACKEND_PYTHON_VAR))
 
 
-def backend_prefix() -> Path | None:
-    explicit = os.environ.get(BACKEND_PREFIX_VAR, "").strip()
-    if explicit:
-        return Path(explicit)
-    env_name = backend_conda_env()
+def _prefix_for_env(env_name: str | None) -> Path | None:
     if not env_name:
         return None
     conda = shutil.which("conda")
     if conda is None:
         return None
     try:
-        completed = subprocess.run(
-            [conda, "env", "list"],
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
+        completed = subprocess.run([conda, "env", "list"], check=False, capture_output=True, text=True, timeout=10)
     except Exception:
         return None
     if completed.returncode != 0:
@@ -61,11 +86,18 @@ def backend_prefix() -> Path | None:
     return None
 
 
-def backend_bin(executable: str) -> str | None:
+def backend_prefix() -> Path | None:
+    explicit = os.environ.get(BACKEND_PREFIX_VAR, "").strip()
+    if explicit:
+        return Path(explicit)
+    return _prefix_for_env(backend_conda_env())
+
+
+def backend_bin(executable: str, config: BackendConfig | None = None) -> str | None:
     override = os.environ.get(f"MATHDEVMCP_{executable.upper()}_PATH", "").strip()
     if override:
         return override
-    prefix = backend_prefix()
+    prefix = config.prefix if config is not None else backend_prefix()
     if prefix is not None:
         candidate = prefix / "bin" / executable
         if candidate.exists():
@@ -77,22 +109,22 @@ def backend_bin(executable: str) -> str | None:
     return shutil.which(executable)
 
 
-def backend_subprocess_env() -> dict[str, str]:
+def backend_subprocess_env(config: BackendConfig | None = None) -> dict[str, str]:
     env = os.environ.copy()
-    prefix = backend_prefix()
+    prefix = config.prefix if config is not None else backend_prefix()
     if prefix is not None:
         env["PATH"] = f"{prefix / 'bin'}{os.pathsep}{env.get('PATH', '')}"
-    lean_toolchain = env.get(LEAN_TOOLCHAIN_VAR, "").strip()
+    lean_toolchain = config.lean_toolchain if config is not None else env.get(LEAN_TOOLCHAIN_VAR, "").strip()
     if lean_toolchain:
         env["ELAN_TOOLCHAIN"] = lean_toolchain
     return env
 
 
-def backend_python() -> str | None:
-    override = os.environ.get(BACKEND_PYTHON_VAR, "").strip()
+def backend_python(config: BackendConfig | None = None) -> str | None:
+    override = config.python if config is not None else os.environ.get(BACKEND_PYTHON_VAR, "").strip()
     if override:
         return override
-    prefix = backend_prefix()
+    prefix = config.prefix if config is not None else backend_prefix()
     if prefix is not None:
         candidate = prefix / "bin" / "python"
         if candidate.exists():
@@ -100,8 +132,8 @@ def backend_python() -> str | None:
     return None
 
 
-def run_backend_python(module: str, *, package: str | None = None, timeout: int = 10) -> tuple[bool, str | None, str]:
-    python = backend_python()
+def run_backend_python(module: str, *, package: str | None = None, timeout: int = 10, config: BackendConfig | None = None) -> tuple[bool, str | None, str]:
+    python = backend_python(config)
     if python is None:
         return False, None, "No backend Python interpreter is configured."
     code = (

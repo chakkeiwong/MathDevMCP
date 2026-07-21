@@ -14,6 +14,10 @@ MAX_FUNCTION_LINES_BASELINE = 637
 MAX_IMPORT_FANOUT_BASELINE = 64
 MAX_ESTIMATED_COMPLEXITY_BASELINE = 93
 MAX_COMPLEXITY_20_COUNT_BASELINE = 178
+TARGET_MODULE_LINES = 1_000
+TARGET_FUNCTION_LINES = 100
+TARGET_IMPORT_FANOUT = 20
+TARGET_ESTIMATED_COMPLEXITY = 20
 ALLOWED_IMPORT_CYCLES: set[frozenset[str]] = set()
 REQUIRED_HANDOFF_FILES = (
     "LICENSE",
@@ -79,11 +83,16 @@ def maintainability_report(root: str | Path) -> dict[str, Any]:
     complexity_20_count = sum(row["estimated_complexity"] >= 20 for row in function_rows)
     if complexity_20_count > MAX_COMPLEXITY_20_COUNT_BASELINE:
         findings.append({"kind": "high_complexity_function_count_exceeds_handoff_baseline", "severity": "high", "count": complexity_20_count})
-    status = "consistent" if not findings else "mismatch"
+    target_hotspots = _target_hotspots(module_rows, function_rows, fanout_rows)
+    ratchet_status = "consistent" if not findings else "mismatch"
+    target_status = "target_met" if not target_hotspots else "debt_present"
     return attach_contract(
         {
-            "status": status,
-            "reason": "Maintainability stayed within the reviewed handoff baseline." if status == "consistent" else "Maintainability has handoff-blocking regressions.",
+            # Compatibility status consumed by the existing maintainer gate.
+            "status": ratchet_status,
+            "ratchet_status": ratchet_status,
+            "target_status": target_status,
+            "reason": "Maintainability stayed within the reviewed non-growth baseline." if ratchet_status == "consistent" else "Maintainability has handoff-blocking regressions.",
             "baseline": {
                 "max_module_lines": MAX_MODULE_LINES_BASELINE,
                 "max_function_lines": MAX_FUNCTION_LINES_BASELINE,
@@ -92,6 +101,12 @@ def maintainability_report(root: str | Path) -> dict[str, Any]:
                 "max_complexity_20_count": MAX_COMPLEXITY_20_COUNT_BASELINE,
                 "allowed_import_cycles": [sorted(cycle) for cycle in ALLOWED_IMPORT_CYCLES],
             },
+            "targets": {
+                "max_module_lines": TARGET_MODULE_LINES,
+                "max_function_lines": TARGET_FUNCTION_LINES,
+                "max_import_fanout": TARGET_IMPORT_FANOUT,
+                "max_estimated_complexity": TARGET_ESTIMATED_COMPLEXITY,
+            },
             "largest_modules": largest_modules,
             "largest_functions": largest_functions,
             "highest_complexity_functions": highest_complexity,
@@ -99,9 +114,30 @@ def maintainability_report(root: str | Path) -> dict[str, Any]:
             "complexity_20_count": complexity_20_count,
             "import_cycles": cycles,
             "findings": findings,
+            "target_hotspots": target_hotspots,
+            "target_hotspot_count": len(target_hotspots),
+            "interpretation": (
+                "Ratchet status detects debt growth. Target status describes current maintainability debt; "
+                "neither establishes mathematical or scientific correctness."
+            ),
         },
         "maintainability_report",
     )
+
+
+def _target_hotspots(
+    modules: list[dict[str, Any]],
+    functions: list[dict[str, Any]],
+    fanouts: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Return deterministic target debt without making existing debt a regression."""
+
+    rows: list[dict[str, Any]] = []
+    rows.extend({"kind": "module_lines", **row, "target": TARGET_MODULE_LINES} for row in modules if row["line_count"] > TARGET_MODULE_LINES)
+    rows.extend({"kind": "function_lines", **row, "target": TARGET_FUNCTION_LINES} for row in functions if row["line_count"] > TARGET_FUNCTION_LINES)
+    rows.extend({"kind": "function_complexity", **row, "target": TARGET_ESTIMATED_COMPLEXITY} for row in functions if row["estimated_complexity"] > TARGET_ESTIMATED_COMPLEXITY)
+    rows.extend({"kind": "import_fanout", **row, "target": TARGET_IMPORT_FANOUT} for row in fanouts if row["import_fanout"] > TARGET_IMPORT_FANOUT)
+    return sorted(rows, key=lambda row: (row["kind"], row["path"], row.get("line", 0), row.get("name", "")))
 
 
 def _estimated_complexity(node: ast.FunctionDef | ast.AsyncFunctionDef) -> int:

@@ -158,12 +158,12 @@ def test_audit_math_document_rigor_selects_requested_backend_env(monkeypatch, tm
     _write_fixture(tex)
     seen = {}
 
-    def fake_doctor_report():
-        seen["doctor_env"] = __import__("os").environ.get("MATHDEVMCP_BACKEND_CONDA_ENV")
+    def fake_doctor_report(*, backend_config=None):
+        seen["doctor_env"] = backend_config.conda_env if backend_config else None
         return {"ok": True, "python": {"executable": "python"}, "capabilities": {"lean_dojo": {"status": "available", "environment_scope": "backend_python", "backend_env": seen["doctor_env"]}}, "metadata": {"schema_version": "1.0", "contract": "doctor_report"}}
 
-    def fake_lean_readiness(root):
-        seen["readiness_env"] = __import__("os").environ.get("MATHDEVMCP_BACKEND_CONDA_ENV")
+    def fake_lean_readiness(root, *, backend_config=None):
+        seen["readiness_env"] = backend_config.conda_env if backend_config else None
         return {"status": "ready_with_caveats", "lean_dojo": {"status": "available", "environment_scope": "backend_python", "backend_env": seen["readiness_env"]}, "metadata": {"schema_version": "1.0", "contract": "lean_readiness"}}
 
     monkeypatch.setattr("mathdevmcp.math_document_rigor.doctor_report", fake_doctor_report)

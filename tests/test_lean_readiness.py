@@ -22,7 +22,7 @@ def test_lean_readiness_reports_separate_sections():
 
 
 def test_lean_readiness_surfaces_leandojo_environment_scope(monkeypatch):
-    def fake_doctor_report():
+    def fake_doctor_report(*, backend_config=None):
         return {
             "capabilities": {
                 "lean": {"available": False, "path": None},

@@ -34,9 +34,10 @@ external backend and private-corpus profiles remain separate.
 
 The department gate also requires the security scan tools to be available and
 passing. If they are unavailable, run the scanner in diagnostic mode only; that
-result cannot authorize a handoff. Coverage is currently reported but no floor
-is promoted until a complete measured baseline is recorded; it is not evidence
-of mathematical correctness.
+result cannot authorize a handoff. Coverage is currently reported but no
+repository-wide floor is promoted until a complete measured baseline is
+recorded; scoped `coverage-core` output is not full-suite coverage and is not
+evidence of mathematical correctness.
 
 When asked what gaps remain, run `mathdevmcp release-profile-analysis --root
 "$PWD"` before interpreting readiness. It separates the controlled internal
@@ -164,10 +165,9 @@ absence, stale fixture, or scientific-contract disagreement.
   `evidence_manifest.py`, and `document_derivation_response.py` remain large.
   Split them only behind characterization tests for a concrete ownership
   boundary; file size alone is not authority to rewrite them.
-- `derivation_search_orchestrator`, `external_adapter_contract`, and
-  `sage_adapter` retain an import cycle across a scientific backend boundary.
-  Do not change it without specialist-backend tests and mathematical contract
-  review.
+- The current import graph has no detected cycles. Preserve that property when
+  changing `derivation_search_orchestrator`, `external_adapter_contract`, or
+  `sage_adapter`; run direct-module and specialist-backend tests.
 - The CLI parser remains large. Prefer extracting declarative argument groups
   incrementally when a real command change touches them.
 - Repository-wide strict typing is not yet enabled. Add annotations and focused

@@ -16,7 +16,8 @@ Evidence:
 - integration lane: `77 passed`;
 - fast/release-profile subset: `42 passed, 1 skipped`;
 - maintainer gate: `88 passed`;
-- coverage lane: `60 passed, 1 skipped`, `24%` measured total against `20%` floor;
+- scoped coverage lane: `60 passed, 1 skipped`, `24%` observed for that lane;
+  the live repository-wide floor remains `0` pending a complete baseline;
 - wheel build: passed with `pip wheel --no-build-isolation`;
 - isolated PEP 517 build: blocked by offline setuptools fetch;
 - base readiness: `ready`, clean, exit 0;

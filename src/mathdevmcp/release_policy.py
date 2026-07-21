@@ -13,7 +13,7 @@ import subprocess
 from pathlib import Path
 
 from .contracts import attach_contract
-from .backend_env import run_backend_python
+from .backend_env import BackendConfig, DEFAULT_BACKEND_CONDA_ENV, run_backend_python
 from .doctor import doctor_report
 from .governance import governance_policy, validate_governance
 from .parser_policy import decide_parser_policy
@@ -221,16 +221,10 @@ def backend_environment_policy() -> dict:
 
 
 def _run_backend_python_with_default_env(module: str, *, package: str) -> tuple[bool, str | None, str]:
-    previous = os.environ.get("MATHDEVMCP_BACKEND_CONDA_ENV")
-    if not previous:
-        os.environ["MATHDEVMCP_BACKEND_CONDA_ENV"] = "mathdevmcp-backends"
-    try:
-        return run_backend_python(module, package=package)
-    finally:
-        if previous is None:
-            os.environ.pop("MATHDEVMCP_BACKEND_CONDA_ENV", None)
-        else:
-            os.environ["MATHDEVMCP_BACKEND_CONDA_ENV"] = previous
+    config = BackendConfig.from_environment()
+    if not config.conda_env:
+        config = config.with_conda_env(DEFAULT_BACKEND_CONDA_ENV)
+    return run_backend_python(module, package=package, config=config)
 
 
 def _normalize_profile(profile: str) -> str:

@@ -20,6 +20,7 @@ from typing import Any
 
 from .actionable_abstentions import build_actionable_abstention_payload
 from .artifact_storage import persist_document_outputs
+from .backend_env import BackendConfig
 from .agent_hypothesis_expansion import propose_hypothesis_expansions
 from .assumption_discovery import assumptions_required
 from .contracts import attach_contract
@@ -30,6 +31,17 @@ from .derivation_target_extraction import build_proposition_context_packet, extr
 from .derivation_tree_expansion import expand_tree_with_hypotheses
 from .derivation_tree_report import render_derivation_tree_report
 from .document_evidence_binding import build_document_evidence_binding
+from .document_presentation import (
+    display_pattern as _display_pattern,
+    line_number_at as _line_number_at,
+    markdown_cell as _md,
+    operator_inventory as _operator_inventory,
+    sentence as _sentence,
+    slug as _slug,
+    split_target as _split_target,
+    strip_display_markup as _strip_display_markup,
+    symbol_inventory as _symbol_inventory,
+)
 from .doctor import doctor_report
 from .equation_locator import DISPLAY_ENVIRONMENTS, locate_equations_in_file, summarize_equation_localization
 from .latex_index import build_index, extract_paragraph_context_for_label
@@ -62,71 +74,22 @@ BRANCH_EXECUTION_PENDING = "branch_execution_pending"
 FORMALIZATION_BLOCKED = "formalization_blocked"
 
 
+@contextmanager
+def _backend_env_scope(backend_env: str | None):
+    """Compatibility shim yielding immutable configuration without mutation."""
+
+    yield BackendConfig.from_environment().with_conda_env(
+        backend_env,
+        default_lean_toolchain="leanprover/lean4:v4.20.0",
+    )
+
+
 def compile_context_only_report(packet: dict[str, Any]) -> dict[str, Any]:
     """Expose the P03 backend-free report contract to legacy document consumers."""
     return {
         "compact": compact_context_only_packet(packet),
         "markdown": render_context_only_packet_markdown(packet),
     }
-
-_LATEX_COMMANDS_NOT_SYMBOLS = {
-    "begin",
-    "end",
-    "label",
-    "left",
-    "right",
-    "mid",
-    "middle",
-    "mathrm",
-    "text",
-    "quad",
-    "qquad",
-    "nonumber",
-    "approx",
-    "in",
-    "sum",
-    "max",
-    "min",
-    "frac",
-    "partial",
-}
-
-
-@contextmanager
-def _backend_env_scope(backend_env: str | None):
-    old_env = os.environ.get("MATHDEVMCP_BACKEND_CONDA_ENV")
-    old_toolchain = os.environ.get("MATHDEVMCP_LEAN_TOOLCHAIN")
-    if backend_env:
-        os.environ["MATHDEVMCP_BACKEND_CONDA_ENV"] = backend_env
-    if backend_env and not os.environ.get("MATHDEVMCP_LEAN_TOOLCHAIN"):
-        os.environ["MATHDEVMCP_LEAN_TOOLCHAIN"] = "leanprover/lean4:v4.20.0"
-    try:
-        yield
-    finally:
-        if old_env is None:
-            os.environ.pop("MATHDEVMCP_BACKEND_CONDA_ENV", None)
-        else:
-            os.environ["MATHDEVMCP_BACKEND_CONDA_ENV"] = old_env
-        if old_toolchain is None:
-            os.environ.pop("MATHDEVMCP_LEAN_TOOLCHAIN", None)
-        else:
-            os.environ["MATHDEVMCP_LEAN_TOOLCHAIN"] = old_toolchain
-
-
-def _md(value: Any) -> str:
-    return str(value).replace("|", "\\|").replace("\n", " ")
-
-
-def _slug(value: str) -> str:
-    return re.sub(r"[^A-Za-z0-9]+", "_", value).strip("_").lower() or "target"
-
-
-def _sentence(value: Any) -> str:
-    text = " ".join(str(value or "").split())
-    if not text:
-        return ""
-    return text if text.endswith((".", "!", "?")) else f"{text}."
-
 
 def _effective_document_promotion(
     raw_promotion: dict[str, Any] | None = None,
@@ -235,72 +198,6 @@ def _document_attempt_view(attempt: dict[str, Any]) -> dict[str, Any]:
 def _document_tool_disabled() -> bool:
     value = os.environ.get(DOCUMENT_TOOL_DISABLE_ENV, "").strip().lower()
     return not DOCUMENT_DERIVATION_TREE_TOOL_ENABLED or value in {"1", "true", "yes", "on"}
-
-
-def _split_target(text: str) -> tuple[str | None, str | None, str]:
-    target = str(text or "").replace("&=", "=").strip().rstrip(",.")
-    if "=" not in target:
-        return None, None, target
-    lhs, rhs = target.split("=", 1)
-    return lhs.strip() or None, rhs.strip() or None, f"{lhs.strip()} = {rhs.strip()}"
-
-
-def _line_number_at(text: str, offset: int) -> int:
-    return text.count("\n", 0, offset) + 1
-
-
-def _display_pattern() -> re.Pattern[str]:
-    envs = "|".join(DISPLAY_ENVIRONMENTS)
-    return re.compile(
-        rf"\\begin\{{(?P<env>{envs})\*?\}}(?P<body>.*?)\\end\{{(?P=env)\*?\}}",
-        re.DOTALL,
-    )
-
-
-def _strip_display_markup(source: str) -> str:
-    text = re.sub(r"\\begin\{[^}]+\*?\}", "", source)
-    text = re.sub(r"\\end\{[^}]+\*?\}", "", text)
-    text = re.sub(r"\\label\{[^}]+\}", "", text)
-    text = re.sub(r"\\nonumber\b", "", text)
-    return text.strip()
-
-
-def _operator_inventory(text: str) -> list[str]:
-    operators: list[str] = []
-    checks = [
-        ("equality", r"="),
-        ("conditional_expectation", r"\\E\b|\\mathbb\{E\}"),
-        ("conditional_bar", r"\\mid|\\middle\|"),
-        ("summation", r"\\sum(?![A-Za-z])"),
-        ("maximum", r"\\max(?![A-Za-z])"),
-        ("minimum", r"\\min(?![A-Za-z])"),
-        ("derivative", r"\\partial|\\frac\s*\{d|\\frac\s*\{\\partial"),
-        ("indicator", r"\\1\{"),
-        ("transpose", r"\\top\b"),
-        ("integral", r"\\int\b"),
-    ]
-    for name, pattern in checks:
-        if re.search(pattern, text, flags=re.IGNORECASE | re.DOTALL):
-            operators.append(name)
-    return operators
-
-
-def _symbol_inventory(text: str) -> dict[str, list[str]]:
-    macros = sorted(
-        {
-            f"\\{match.group(1)}"
-            for match in re.finditer(r"\\([A-Za-z]+)", text)
-            if match.group(1) not in _LATEX_COMMANDS_NOT_SYMBOLS
-        }
-    )
-    identifiers = sorted(
-        {
-            item
-            for item in re.findall(r"(?<!\\)\b[A-Za-z][A-Za-z0-9_]*\b", re.sub(r"\\[A-Za-z]+", " ", text))
-            if len(item) <= 40
-        }
-    )
-    return {"macros": macros, "identifiers": identifiers}
 
 
 def _conditioning_object(text: str) -> str | None:
@@ -3783,10 +3680,13 @@ def audit_document_derivation_tree(
             rows_by_label[str(row["label"])].append(row)
         if row.get("environment_id"):
             rows_by_environment[str(row["environment_id"])].append(row)
-    with _backend_env_scope(backend_env):
-        doctor = doctor_report()
-        capabilities = doctor.get("capabilities", {})
-        integrations = doctor.get("integrations", {})
+    backend_config = BackendConfig.from_environment().with_conda_env(
+        backend_env,
+        default_lean_toolchain="leanprover/lean4:v4.20.0",
+    )
+    doctor = doctor_report(backend_config=backend_config)
+    capabilities = doctor.get("capabilities", {})
+    integrations = doctor.get("integrations", {})
 
     if precomputed_target_results is None:
         target_results, execution = _ordered_target_results(

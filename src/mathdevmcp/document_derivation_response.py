@@ -15,6 +15,7 @@ import struct
 import sys
 from typing import Any
 
+from .artifact_storage import write_bytes_no_replace
 from .contracts import contract_metadata
 from .failure_ledgers import validate_discriminating_action
 
@@ -1339,26 +1340,7 @@ def _persist_detailed_artifact(
     _assert_artifact_path_has_no_symlink(root, destination)
     if root not in destination.resolve(strict=False).parents:
         raise ValueError("detailed artifact path escapes artifact_root")
-    if destination.exists():
-        if destination.read_bytes() != payload:
-            raise ValueError("detailed artifact identity collision with different bytes")
-    else:
-        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
-        if hasattr(os, "O_NOFOLLOW"):
-            flags |= os.O_NOFOLLOW
-        descriptor = os.open(destination, flags, 0o600)
-        try:
-            with os.fdopen(descriptor, "wb", closefd=False) as stream:
-                stream.write(payload)
-                stream.flush()
-                os.fsync(stream.fileno())
-        finally:
-            os.close(descriptor)
-        directory_fd = os.open(destination.parent, os.O_RDONLY)
-        try:
-            os.fsync(directory_fd)
-        finally:
-            os.close(directory_fd)
+    write_bytes_no_replace(destination, payload)
     digest = hashlib.sha256(payload).hexdigest()
     return {
         "state": "verified",

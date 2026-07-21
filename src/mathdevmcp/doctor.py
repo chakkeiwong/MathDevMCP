@@ -11,6 +11,7 @@ import subprocess
 import sys
 
 from .backend_env import (
+    BackendConfig,
     backend_bin,
     backend_conda_env,
     backend_prefix,
@@ -63,15 +64,15 @@ def _run_version(command: list[str], *, env: dict[str, str] | None = None, timeo
     return first_line or None, "available"
 
 
-def _executable_capability(name: str, executable: str, version_args: list[str]) -> Capability:
-    path = backend_bin(executable)
+def _executable_capability(name: str, executable: str, version_args: list[str], *, config: BackendConfig | None = None) -> Capability:
+    path = backend_bin(executable, config)
     if path is None and executable == "lean":
         elan_path = Path.home() / ".elan" / "bin" / "lean"
         if elan_path.exists():
             path = str(elan_path)
     if path is None:
         return Capability(name, False, "executable", None, None, "unavailable", f"{executable} was not found on PATH")
-    version, detail = _run_version([path, *version_args], env=backend_subprocess_env())
+    version, detail = _run_version([path, *version_args], env=backend_subprocess_env(config))
     if detail != "available":
         return Capability(name, False, "executable", path, version, "unavailable", detail)
     return Capability(name, True, "executable", path, version, "available", detail)
@@ -85,8 +86,8 @@ def _local_integration_executable_path(name: str) -> str | None:
     return None
 
 
-def _integration_executable_status(name: str) -> tuple[bool, str | None, str | None, str]:
-    path = backend_bin(name) or _local_integration_executable_path(name)
+def _integration_executable_status(name: str, *, config: BackendConfig | None = None) -> tuple[bool, str | None, str | None, str]:
+    path = backend_bin(name, config) or _local_integration_executable_path(name)
     if path is None:
         return False, None, None, f"{name} executable was not found on PATH, backend bin, env override, or pinned local build path"
     if not Path(path).exists():
@@ -96,18 +97,18 @@ def _integration_executable_status(name: str) -> tuple[bool, str | None, str | N
     return True, path, None, "executable exists"
 
 
-def _python_capability(name: str, module: str, package: str | None = None) -> Capability:
-    requested = backend_python_requested()
-    env_name = backend_conda_env()
-    prefix = backend_prefix()
+def _python_capability(name: str, module: str, package: str | None = None, *, config: BackendConfig | None = None) -> Capability:
+    requested = backend_python_requested() if config is None else bool(config.conda_env or config.prefix or config.python)
+    env_name = backend_conda_env() if config is None else config.conda_env
+    prefix = backend_prefix() if config is None else config.prefix
     prefix_text = str(prefix) if prefix is not None else None
-    backend = run_backend_python(module, package=package)
+    backend = run_backend_python(module, package=package, config=config)
     if backend[0]:
         return Capability(
             name,
             True,
             "python",
-            backend_python(),
+            backend_python(config),
             backend[1],
             "available",
             backend[2],
@@ -121,7 +122,7 @@ def _python_capability(name: str, module: str, package: str | None = None) -> Ca
             name,
             False,
             "python",
-            backend_python(),
+            backend_python(config),
             None,
             "unavailable",
             backend[2],
@@ -201,11 +202,12 @@ def _pydantic_conflicts() -> list[str]:
     return conflicts
 
 
-def _integration_statuses() -> dict[str, dict]:
+def _integration_statuses(*, config: BackendConfig | None = None) -> dict[str, dict]:
     statuses = active_python_integration_status()
+    backend_requested = backend_python_requested() if config is None else bool(config.conda_env or config.prefix or config.python)
     for tool in SUPPORTED_INTEGRATION_TOOLS:
         if tool.kind == "lean_executable":
-            available, path, version, detail = _integration_executable_status(tool.name)
+            available, path, version, detail = _integration_executable_status(tool.name, config=config)
             statuses[tool.name]["available"] = available
             statuses[tool.name]["path"] = path
             statuses[tool.name]["version"] = version
@@ -214,9 +216,9 @@ def _integration_statuses() -> dict[str, dict]:
             continue
         if tool.module is None or tool.package is None:
             continue
-        backend = run_backend_python(tool.module, package=tool.package)
+        backend = run_backend_python(tool.module, package=tool.package, config=config)
         if not backend[0]:
-            if backend_python_requested():
+            if backend_requested:
                 statuses[tool.name]["backend_available"] = False
                 statuses[tool.name]["backend_version"] = None
                 statuses[tool.name]["backend_version_status"] = "missing"
@@ -268,14 +270,15 @@ def _integration_statuses() -> dict[str, dict]:
     return statuses
 
 
-def doctor_report() -> dict:
+def doctor_report(*, backend_config: BackendConfig | None = None) -> dict:
+    config = backend_config
     capabilities = [
-        _executable_capability("latexml", "latexml", ["--VERSION"]),
-        _executable_capability("pandoc", "pandoc", ["--version"]),
-        _executable_capability("lean", "lean", ["--version"]),
-        _executable_capability("sage", "sage", ["--version"]),
-        _python_capability("lean_dojo", "lean_dojo", "lean-dojo"),
-        _python_capability("sympy", "sympy", "sympy"),
+        _executable_capability("latexml", "latexml", ["--VERSION"], config=config),
+        _executable_capability("pandoc", "pandoc", ["--version"], config=config),
+        _executable_capability("lean", "lean", ["--version"], config=config),
+        _executable_capability("sage", "sage", ["--version"], config=config),
+        _python_capability("lean_dojo", "lean_dojo", "lean-dojo", config=config),
+        _python_capability("sympy", "sympy", "sympy", config=config),
     ]
     python_info = {
         "executable": sys.executable,
@@ -287,7 +290,7 @@ def doctor_report() -> dict:
         ok=True,
         python=python_info,
         capabilities={capability.name: asdict(capability) for capability in capabilities},
-        integrations=_integration_statuses(),
+        integrations=_integration_statuses(config=config),
         conflicts=_pydantic_conflicts(),
         metadata=contract_metadata("doctor_report"),
     )

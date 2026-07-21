@@ -116,8 +116,8 @@ def create_resumable_tree_session(
     )
     if extraction.get("failure_count") or [row.get("label") for row in selected_rows] != labels:
         raise ValueError("tree labels do not resolve to exact ordered targets")
-    with _backend_env_scope(backend_env):
-        doctor = doctor_report()
+    with _backend_env_scope(backend_env) as config:
+        doctor = doctor_report(backend_config=config)
     snapshot = {
         "capabilities": doctor.get("capabilities", {}),
         "integrations": doctor.get("integrations", {}),

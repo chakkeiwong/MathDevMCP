@@ -11,7 +11,7 @@ import subprocess
 import tempfile
 from typing import Any, Mapping
 
-from .backend_env import backend_bin, backend_subprocess_env
+from .backend_env import BackendConfig, backend_bin, backend_subprocess_env
 from .contracts import attach_contract
 
 
@@ -76,10 +76,10 @@ _LEAN_IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_'.]*$")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 
-def _lean_path(explicit: str | None = None) -> str | None:
+def _lean_path(explicit: str | None = None, backend_config: BackendConfig | None = None) -> str | None:
     if explicit:
         return explicit
-    configured = backend_bin("lean")
+    configured = backend_bin("lean", backend_config)
     if configured is not None:
         return configured
     env_path = os.environ.get("PATH", "")
@@ -501,11 +501,12 @@ def check_lean_source(
     executable: str | None = None,
     project_root: str | None = None,
     lean_toolchain: str | None = None,
+    backend_config: BackendConfig | None = None,
 ) -> dict:
-    lean = _lean_path(executable)
+    lean = _lean_path(executable, backend_config)
     uses_sorry = _uses_placeholder(source)
     resolved_project_root = os.path.realpath(project_root) if project_root else None
-    environment = backend_subprocess_env()
+    environment = backend_subprocess_env(backend_config)
     if lean_toolchain:
         environment["ELAN_TOOLCHAIN"] = lean_toolchain
     if lean is None:

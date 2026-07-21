@@ -429,12 +429,10 @@ def _validate_optional_mapping(result: dict[str, Any], field: str, errors: list[
         errors.append(f"{field} must be an object")
 
 
-def validate_high_level_result(result: dict[str, Any]) -> list[str]:
-    errors: list[str] = []
+def _validate_envelope(result: dict[str, Any], errors: list[str]) -> None:
     unknown = sorted(set(result) - TOP_LEVEL_FIELDS)
     if unknown:
         errors.append(f"unknown top-level fields: {', '.join(unknown)}")
-
     metadata = result.get("metadata")
     if not isinstance(metadata, dict):
         errors.append("metadata must be an object")
@@ -443,16 +441,16 @@ def validate_high_level_result(result: dict[str, Any]) -> list[str]:
             errors.append("metadata.schema_version must be 1.0")
         if metadata.get("contract") != HIGH_LEVEL_CONTRACT:
             errors.append(f"metadata.contract must be {HIGH_LEVEL_CONTRACT}")
-
     for field in ("status", "workflow", "question", "claim_class", "answer", "certification_source"):
         if not _is_non_empty_string(result.get(field)):
             errors.append(f"{field} must be a non-empty string")
 
+
+def _validate_enums(result: dict[str, Any], errors: list[str]) -> None:
     status = result.get("status")
     workflow = result.get("workflow")
     claim_class = result.get("claim_class")
     certification_source = result.get("certification_source")
-
     if status not in HIGH_LEVEL_STATUSES:
         errors.append("status is unsupported")
     if workflow not in HIGH_LEVEL_WORKFLOWS:
@@ -464,6 +462,8 @@ def validate_high_level_result(result: dict[str, Any]) -> list[str]:
     if certification_source not in CERTIFICATION_SOURCES:
         errors.append("certification_source is unsupported")
 
+
+def _validate_collection_shapes(result: dict[str, Any], errors: list[str]) -> tuple[list, list, list, list, list, list, list]:
     for field in ("evidence", "evidence_classes", "veto_reasons", "assumptions", "counterexamples", "actions", "non_claims"):
         if not isinstance(result.get(field), list):
             errors.append(f"{field} must be a list")
@@ -471,21 +471,10 @@ def validate_high_level_result(result: dict[str, Any]) -> list[str]:
         _validate_optional_mapping_list(result, field, errors)
     for field in ("source", "coverage", "validation"):
         _validate_optional_mapping(result, field, errors)
+    return tuple(result.get(field) if isinstance(result.get(field), list) else [] for field in ("evidence", "evidence_classes", "veto_reasons", "assumptions", "counterexamples", "actions", "non_claims"))
 
-    evidence = result.get("evidence") if isinstance(result.get("evidence"), list) else []
-    evidence_classes = result.get("evidence_classes") if isinstance(result.get("evidence_classes"), list) else []
-    veto_reasons = result.get("veto_reasons") if isinstance(result.get("veto_reasons"), list) else []
-    assumptions = result.get("assumptions") if isinstance(result.get("assumptions"), list) else []
-    counterexamples = result.get("counterexamples") if isinstance(result.get("counterexamples"), list) else []
-    actions = result.get("actions") if isinstance(result.get("actions"), list) else []
-    non_claims = result.get("non_claims") if isinstance(result.get("non_claims"), list) else []
 
-    if not evidence and status != "inconclusive":
-        errors.append("evidence may be empty only for inconclusive")
-    expected_classes = summarize_evidence_classes(evidence)
-    if evidence_classes != expected_classes:
-        errors.append("evidence_classes must equal sorted deduplicated evidence classes")
-
+def _validate_collection_items(evidence: list, assumptions: list, veto_reasons: list, non_claims: list, actions: list, counterexamples: list, errors: list[str]) -> None:
     seen_ids: set[str] = set()
     for index, item in enumerate(evidence):
         _validate_required_string_fields(item, ("id", "class", "source", "summary"), f"evidence[{index}]", errors)
@@ -498,7 +487,6 @@ def validate_high_level_result(result: dict[str, Any]) -> list[str]:
                 seen_ids.add(evidence_id)
             if evidence_class not in EVIDENCE_CLASSES:
                 errors.append(f"evidence[{index}].class is unsupported")
-
     for index, item in enumerate(assumptions):
         _validate_required_string_fields(item, ("text", "status", "source", "necessity"), f"assumptions[{index}]", errors)
     for index, item in enumerate(veto_reasons):
@@ -510,6 +498,23 @@ def validate_high_level_result(result: dict[str, Any]) -> list[str]:
     for index, item in enumerate(counterexamples):
         if not isinstance(item, dict) or not item:
             errors.append(f"counterexamples[{index}] must be a non-empty object")
+
+
+def validate_high_level_result(result: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    status = result.get("status")
+    certification_source = result.get("certification_source")
+    _validate_envelope(result, errors)
+    _validate_enums(result, errors)
+    evidence, evidence_classes, veto_reasons, assumptions, counterexamples, actions, non_claims = _validate_collection_shapes(result, errors)
+
+    if not evidence and status != "inconclusive":
+        errors.append("evidence may be empty only for inconclusive")
+    expected_classes = summarize_evidence_classes(evidence)
+    if evidence_classes != expected_classes:
+        errors.append("evidence_classes must equal sorted deduplicated evidence classes")
+
+    _validate_collection_items(evidence, assumptions, veto_reasons, non_claims, actions, counterexamples, errors)
 
     non_claim_codes = _codes(non_claims)
     missing_global = sorted(GLOBAL_NON_CLAIM_CODES - non_claim_codes)

@@ -16,6 +16,7 @@ from .artifact_storage import write_bytes_safe
 from .audit_and_propose_fix import audit_and_propose_fix
 from .contracts import attach_contract
 from .doctor import doctor_report
+from .backend_env import BackendConfig
 from .equation_locator import locate_equations_in_file, summarize_equation_localization
 from .lean_readiness import lean_readiness
 from .derivation_target_extraction import extract_derivation_targets_for_label
@@ -222,22 +223,13 @@ def _tool_use(tool: str, purpose: str, status: str, output_contract: str, argume
 
 @contextmanager
 def _backend_env_scope(backend_env: str | None):
-    old = os.environ.get("MATHDEVMCP_BACKEND_CONDA_ENV")
-    if backend_env:
-        os.environ["MATHDEVMCP_BACKEND_CONDA_ENV"] = backend_env
-    try:
-        yield
-    finally:
-        if old is None:
-            os.environ.pop("MATHDEVMCP_BACKEND_CONDA_ENV", None)
-        else:
-            os.environ["MATHDEVMCP_BACKEND_CONDA_ENV"] = old
+    yield BackendConfig.from_environment().with_conda_env(backend_env)
 
 
 def _backend_provenance(tex_path: Path, *, backend_env: str | None) -> dict[str, Any]:
-    with _backend_env_scope(backend_env):
-        doctor = doctor_report()
-        readiness = lean_readiness(tex_path.parent)
+    with _backend_env_scope(backend_env) as config:
+        doctor = doctor_report(backend_config=config)
+        readiness = lean_readiness(tex_path.parent, backend_config=config)
     return {
         "doctor": doctor,
         "lean_readiness": readiness,

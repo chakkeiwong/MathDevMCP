@@ -22,6 +22,11 @@ working tree and has passed the latest relevant checks:
 - source-specific leakage scan: no Boehl labels, names, or answer-key phrases
   in production code, semantic tests, or the frozen fixture corpus.
 
+The unfiltered repository command `PYTHONPATH=src pytest -q` did not produce a
+pytest summary in this environment: it exited during collection/execution at
+roughly 7-8% after reporting passing tests. This is recorded as an incomplete
+full-suite diagnostic, not as a pass or a failure classification.
+
 The latest repair addresses two previously reproduced fail-open paths:
 
 1. specifically identified and unresolved ownership objects no longer pair;

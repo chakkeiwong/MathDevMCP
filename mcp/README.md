@@ -100,6 +100,24 @@ Facade registry: `src/mathdevmcp/mcp_facade.py`
 - `external_tool_first_plan` - experimentally plan the external tools that
   must be considered before in-house mathematical search. This is a routing
   and governance artifact, not a proof.
+- `extract_pdf_with_research_assistant` - experimentally extract a local PDF
+  through a source- and provider-bound ResearchAssistant CLI bridge. The
+  compact response is the default; detailed parser bodies are opt-in. Parser
+  metadata, equations, and citations remain non-certifying and require source
+  review. This tool is available only in the explicit `all` MCP profile.
+- `audit_applied_math_document` - experimentally audit applied mathematical
+  documents through source intake, general obligation coverage, and optional
+  specialist routing. The compact response is artifact-backed; it does not
+  certify equations, claims, code equivalence, or scientific validity. This
+  tool is available only in the explicit `all` MCP profile.
+- `page_applied_math_audit_records` - resolve an allowlisted collection from
+  an exact SHA-256-bound applied-math audit artifact. Supported collections
+  include findings, obligations, evidence packets, claim-IR nodes/edges,
+  source-discovery records, specialist executions, equation blocks, semantic
+  profiles, relation hypotheses, and semantic checks. The semantic records
+  are candidate interpretations of parser text, not authenticated equations.
+  Paging changes transport only and does not establish mathematical
+  correctness. This tool is available only in the explicit `all` MCP profile.
 - `plan_math_document_rigor_audit` - experimentally plan a focused
   mathematical rigor audit for one LaTeX file.
 - `audit_math_document_rigor` - experimentally audit one LaTeX file and write
@@ -222,6 +240,13 @@ Installed script entrypoint:
 
 ```bash
 mathdevmcp-mcp
+```
+
+Stable tools are exposed by default. To opt into experimental tools such as
+the ResearchAssistant PDF bridge, launch a fresh server process with:
+
+```bash
+MATHDEVMCP_MCP_PROFILE=all mathdevmcp-mcp
 ```
 
 The console entry point is present in every install so client configuration can

@@ -90,7 +90,7 @@ def test_mcp_profile_catalog_declares_explicit_stable_boundary():
 
     assert len(stable) == 23
     assert all_tools == MCP_SERVER_EXPOSED_TOOLS
-    assert len(nonstable) == 45
+    assert len(nonstable) == 48
     assert "doctor" in stable
 
 

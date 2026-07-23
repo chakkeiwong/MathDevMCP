@@ -154,6 +154,47 @@ PYTHONPATH=src python -m mathdevmcp.cli external-tool-first-plan \
   "a + b = b + a"
 ```
 
+Extract a local PDF through the optional ResearchAssistant checkout:
+
+```bash
+PYTHONPATH=src python -m mathdevmcp.cli \
+  extract-pdf-with-research-assistant /absolute/path/paper.pdf \
+  --response-mode compact --output-json /tmp/paper-extraction.json
+```
+
+This experimental provider bridge binds the output to the PDF bytes and the
+local ResearchAssistant checkout. It defaults to a compact response and keeps
+parser failures, disagreements, and capability limits visible. PDF equations
+and citations remain non-certifying; check material claims against rendered
+pages or structured source. ResearchAssistant currently exposes PDF parsing
+through its CLI rather than its MCP server.
+
+Run the experimental general applied-mathematics audit over PDF/LaTeX sources,
+with optional code/model and data paths:
+
+```bash
+PYTHONPATH=src python -m mathdevmcp.cli audit-applied-math-document \
+  /absolute/path/paper.pdf --response-mode compact \
+  --artifact-root /tmp/mathdevmcp-applied-audit
+```
+
+The compact response is backed by an immutable detailed JSON artifact. Resolve
+one bounded collection by its exact artifact digest:
+
+```bash
+PYTHONPATH=src python -m mathdevmcp.cli page-applied-math-audit-records \
+  /tmp/mathdevmcp-applied-audit/audit-<source-prefix>.json <artifact-sha256> findings
+```
+
+The audit preserves page/line/source evidence, explicit abstentions, optional
+ResearchAssistant intake, and typed DynareMCP diagnostics. It does not certify
+equations, code equivalence, causal validity, or scientific conclusions.
+Detailed artifacts also expose pageable `equation_blocks`,
+`semantic_profiles`, `relation_hypotheses`, and `semantic_checks`. These
+records reconstruct candidate parser-text relations and diagnostic tensions;
+they do not authenticate PDF transcription or prove that a displayed equation
+is correct or wrong.
+
 These tools are exploratory in search and rigorous at the claim boundary. Backend-certified scoped obligations can support
 proof/refutation statuses; structural code matches, numeric diagnostics,
 generated tests, and review packets remain diagnostic unless linked to a

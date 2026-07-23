@@ -1055,6 +1055,70 @@ def lean_readiness(root: str | None = None) -> dict:
     return call_mcp_tool("lean_readiness", {"root": root})
 
 
+@mcp.tool(description="Extract a local PDF through ResearchAssistant with source/provider binding and non-certifying parser limits.", structured_output=False)
+def extract_pdf_with_research_assistant(
+    pdf_path: str,
+    research_assistant_root: str | None = None,
+    response_mode: Literal["compact", "detailed"] = "compact",
+    timeout_seconds: float = 1_000,
+    max_provider_output_bytes: int = 64 * 1024 * 1024,
+) -> dict:
+    return call_mcp_tool(
+        "extract_pdf_with_research_assistant",
+        {
+            "pdf_path": pdf_path,
+            "research_assistant_root": research_assistant_root,
+            "response_mode": response_mode,
+            "timeout_seconds": timeout_seconds,
+            "max_provider_output_bytes": max_provider_output_bytes,
+        },
+    )
+
+
+@mcp.tool(description="Audit applied mathematical documents through source intake, general obligation coverage, and optional specialist routing.", structured_output=False)
+def audit_applied_math_document(
+    sources: Sequence[str],
+    code_paths: Sequence[str] | None = None,
+    data_paths: Sequence[str] | None = None,
+    mode: Literal["screen", "deep", "reproduce"] = "screen",
+    specialist_policy: Literal["auto", "none", "explicit"] = "auto",
+    response_mode: Literal["compact", "detailed"] = "compact",
+    artifact_root: str = ".mathdevmcp/applied_math_audits",
+) -> dict:
+    return call_mcp_tool(
+        "audit_applied_math_document",
+        {
+            "sources": list(sources),
+            "code_paths": list(code_paths) if code_paths is not None else None,
+            "data_paths": list(data_paths) if data_paths is not None else None,
+            "mode": mode,
+            "specialist_policy": specialist_policy,
+            "response_mode": response_mode,
+            "artifact_root": artifact_root,
+        },
+    )
+
+
+@mcp.tool(description="Page an allowlisted collection from an exact applied-math audit artifact.", structured_output=False)
+def page_applied_math_audit_records(
+    artifact_path: str,
+    artifact_sha256: str,
+    collection: str,
+    offset: int = 0,
+    limit: int = 50,
+) -> dict:
+    return call_mcp_tool(
+        "page_applied_math_audit_records",
+        {
+            "artifact_path": artifact_path,
+            "artifact_sha256": artifact_sha256,
+            "collection": collection,
+            "offset": offset,
+            "limit": limit,
+        },
+    )
+
+
 @mcp.tool(description="Plan a focused mathematical rigor audit for one LaTeX file.", structured_output=False)
 def plan_math_document_rigor_audit(
     tex_path: str,

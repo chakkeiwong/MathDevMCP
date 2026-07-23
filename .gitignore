@@ -47,3 +47,33 @@ tests/test_literature_gate.py
 
 # Local downloaded papers/code caches used while preparing surveys.
 .localresources/
+
+# Generated local runtime, build, test, and package artifacts.
+.mathdevmcp/
+build/
+dist/
+src/mathdevmcp.egg-info/
+**/__pycache__/
+
+# Generated document/report trees. Authored plans and claim-supporting review
+# conclusions remain trackable under docs/plans and docs/reviews.
+docs/generated/
+
+# Bulk parser and replay payloads are reproducible inputs to the authored
+# manifests/reports, not durable claim records.
+docs/reviews/**/audit*.json
+docs/reviews/**/cli-output.json
+docs/reviews/**/committee-focused-rigor-audit.json
+docs/reviews/**/committee-latex-index.json
+docs/reviews/**/paper-extraction-*.json
+docs/reviews/**/appendix-extraction-*.json
+docs/reviews/**/paper-pdftotext-layout.txt
+docs/reviews/**/appendix-pdftotext-layout.txt
+
+# Authoritative claim/promotion evidence retained despite the bulk-payload
+# rules above. These files are bound by the durable manifests and scorecards.
+!docs/reviews/boehl-qe-pdf-audit-2026-07-21/committee-focused-rigor-audit.json
+!docs/reviews/boehl-qe-pdf-audit-2026-07-21/committee-latex-index.json
+!docs/reviews/boehl-qe-fresh-codex-blind-2026-07-22/audit.json
+!docs/reviews/boehl-qe-tuned-replay-2026-07-22/fresh-r5/audit-fcd0847c98b84e3de119b2977abacf3e.json
+!docs/reviews/generic-semantic-equation-audit-2026-07-22/baseline/current-output.json

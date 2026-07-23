@@ -1,0 +1,186 @@
+{
+  "schema": "applied_math_semantic_fixture_corpus/1.0",
+  "claim_boundary": "Visible engineering corpus; not a sealed holdout or evidence of general recall.",
+  "cases": [
+    {
+      "id": "P01",
+      "domain": "finance",
+      "class": "positive_tension",
+      "authentication_state": "parser_candidate_only",
+      "body_text": "The level asset return is defined by\nJ_t = (a + eta P_t) / P_{t-1}.\n\n(A.1)\n\nThe linearized return on the same asset is\n-Jbar (j_t + p_{t-1}) = zeta p_t.\n\n(A.2)",
+      "oracle": {
+        "block_labels": ["A.1", "A.2"],
+        "profile_roles": {"A.1": "level_definition", "A.2": "linearized_relation"},
+        "hypotheses": ["level_to_linearized"],
+        "checks": ["sign_or_coefficient_mismatch"],
+        "finding_checks": ["sign_or_coefficient_mismatch"],
+        "forbidden_dispositions": ["confirmed_defect", "consistent_under_checked_assumptions"]
+      }
+    },
+    {
+      "id": "P02",
+      "domain": "economics",
+      "class": "positive_tension",
+      "authentication_state": "parser_candidate_only",
+      "body_text": "Acknowledging that M_t/M_{t-1} R^s_{t-1} = 1, we linearize the pricing kernel as\nm_t = + r^s_{t-1} + z_t.\n\n(B.2)",
+      "oracle": {
+        "block_labels": ["B.2"],
+        "profile_roles": {"B.2": "normalization_linearization"},
+        "hypotheses": ["normalization_to_movement"],
+        "checks": ["normalization_sign_tension"],
+        "finding_checks": ["normalization_sign_tension"],
+        "forbidden_dispositions": ["confirmed_defect", "consistent_under_checked_assumptions"]
+      }
+    },
+    {
+      "id": "P03",
+      "domain": "management",
+      "class": "positive_tension",
+      "authentication_state": "parser_candidate_only",
+      "body_text": "A new unit enters with initial capital equal to a share of last period asset holdings of the unit.\nW_t = rho[P_{t-1} K^u_{t-1} + S_{t-1} B^u_{t-1}].\n\n(C.1)\n\nThe linearized equation defining the starting capital of the new unit is\nw_t = rho(k_t + b_t), where k and b are aggregate holdings.\n\n(C.2)",
+      "oracle": {
+        "block_labels": ["C.1", "C.2"],
+        "profile_roles": {"C.1": "ownership_definition", "C.2": "ownership_linearization"},
+        "hypotheses": ["ownership_preservation"],
+        "checks": ["ownership_scope_mismatch"],
+        "finding_checks": ["ownership_scope_mismatch"],
+        "forbidden_dispositions": ["confirmed_defect", "consistent_under_checked_assumptions"]
+      }
+    },
+    {
+      "id": "P04",
+      "domain": "marketing",
+      "class": "positive_tension",
+      "authentication_state": "parser_candidate_only",
+      "body_text": "The level response index is defined by\nH_t = alpha + beta X_t.\n\n(D.1)\n\nLinearizing the response index yields\nh_t = gamma x_t.\n\n(D.2)",
+      "oracle": {
+        "block_labels": ["D.1", "D.2"],
+        "profile_roles": {"D.1": "level_definition", "D.2": "linearized_relation"},
+        "hypotheses": ["level_to_linearized"],
+        "checks": ["coefficient_family_mismatch"],
+        "finding_checks": ["coefficient_family_mismatch"],
+        "forbidden_dispositions": ["confirmed_defect", "consistent_under_checked_assumptions"]
+      }
+    },
+    {
+      "id": "C01",
+      "domain": "finance",
+      "class": "no_tension",
+      "authentication_state": "parser_candidate_only",
+      "body_text": "The level asset return is defined by\nJ_t = (a + eta P_t) / P_{t-1}.\n\n(E.1)\n\nThe linearized return on the same asset is\nJbar (j_t + p_{t-1}) = eta p_t.\n\n(E.2)",
+      "oracle": {
+        "block_labels": ["E.1", "E.2"],
+        "profile_roles": {"E.1": "level_definition", "E.2": "linearized_relation"},
+        "hypotheses": ["level_to_linearized"],
+        "checks": ["no_semantic_tension_nominated"],
+        "finding_checks": [],
+        "forbidden_dispositions": ["confirmed_defect", "consistent_under_checked_assumptions", "not_reproduced"]
+      }
+    },
+    {
+      "id": "C02",
+      "domain": "economics",
+      "class": "no_tension",
+      "authentication_state": "parser_candidate_only",
+      "body_text": "Acknowledging that Z_t/Z_{t-1} R^a_{t-1} = 1, we linearize the pricing kernel as\nz_t = - r^a_{t-1} + u_t.\n\n(F.2)",
+      "oracle": {
+        "block_labels": ["F.2"],
+        "profile_roles": {"F.2": "normalization_linearization"},
+        "hypotheses": ["normalization_to_movement"],
+        "checks": ["no_semantic_tension_nominated"],
+        "finding_checks": [],
+        "forbidden_dispositions": ["confirmed_defect", "consistent_under_checked_assumptions", "not_reproduced"]
+      }
+    },
+    {
+      "id": "C03",
+      "domain": "management",
+      "class": "no_tension",
+      "authentication_state": "parser_candidate_only",
+      "body_text": "A new team starts with a share of prior assets held by the team.\nV_t = rho[P_{t-1} K^u_{t-1} + S_{t-1} B^u_{t-1}].\n\n(G.1)\n\nThe linearized starting value is\nv_t = rho(k^u_t + b^u_t), where both are team-held assets.\n\n(G.2)",
+      "oracle": {
+        "block_labels": ["G.1", "G.2"],
+        "profile_roles": {"G.1": "ownership_definition", "G.2": "ownership_linearization"},
+        "hypotheses": ["ownership_preservation"],
+        "checks": ["ownership_scope_preserved"],
+        "finding_checks": [],
+        "forbidden_dispositions": ["confirmed_defect", "consistent_under_checked_assumptions", "not_reproduced"]
+      }
+    },
+    {
+      "id": "C04",
+      "domain": "marketing",
+      "class": "no_tension",
+      "authentication_state": "parser_candidate_only",
+      "body_text": "The level response index is defined by\nH_t = alpha + beta X_t.\n\n(H.1)\n\nLinearizing the response index yields\nh_t = delta x_t, where delta denotes the same coefficient beta.\n\n(H.2)",
+      "oracle": {
+        "block_labels": ["H.1", "H.2"],
+        "profile_roles": {"H.1": "level_definition", "H.2": "linearized_relation"},
+        "hypotheses": ["level_to_linearized"],
+        "checks": ["no_semantic_tension_nominated"],
+        "finding_checks": [],
+        "forbidden_dispositions": ["confirmed_defect", "consistent_under_checked_assumptions", "not_reproduced"]
+      }
+    },
+    {
+      "id": "A01",
+      "domain": "finance",
+      "class": "ambiguous",
+      "authentication_state": "parser_candidate_only",
+      "body_text": "The first level asset return is\nJ_t = (a + eta P_t) / P_{t-1}.\n\n(I.1)\n\nA second level asset return is\nJ_t = (c + eta S_t) / S_{t-1}.\n\n(I.2)\n\nThe linearized return is\nj_t = eta p_t.\n\n(I.3)",
+      "oracle": {
+        "block_labels": ["I.1", "I.2", "I.3"],
+        "profile_roles": {"I.1": "level_definition", "I.2": "level_definition", "I.3": "linearized_relation"},
+        "hypotheses": [],
+        "checks": ["ambiguous_relation_candidates"],
+        "finding_checks": [],
+        "forbidden_dispositions": ["confirmed_defect", "consistent_under_checked_assumptions", "supported_tension"]
+      }
+    },
+    {
+      "id": "A02",
+      "domain": "economics",
+      "class": "ambiguous",
+      "authentication_state": "parser_candidate_only",
+      "body_text": "The product normalization is M_t/M_{t-1} R^s_{t-1} = 1.\n\n(J.1)\n\nThe next section studies an unrelated output equation.",
+      "oracle": {
+        "block_labels": ["J.1"],
+        "profile_roles": {"J.1": "normalization_statement"},
+        "hypotheses": [],
+        "checks": ["missing_linearized_movement"],
+        "finding_checks": [],
+        "forbidden_dispositions": ["confirmed_defect", "consistent_under_checked_assumptions", "supported_tension"]
+      }
+    },
+    {
+      "id": "A03",
+      "domain": "management",
+      "class": "ambiguous",
+      "authentication_state": "parser_candidate_only",
+      "body_text": "The level relation is\nV_t = rho(P_t K_t + S_t B_t).\n\n(K.1)\n\nThe linearized relation is\nv_t = rho(k_t + b_t).\n\n(K.2)",
+      "oracle": {
+        "block_labels": ["K.1", "K.2"],
+        "profile_roles": {"K.1": "level_definition", "K.2": "linearized_relation"},
+        "hypotheses": [],
+        "checks": ["ownership_scope_unresolved"],
+        "finding_checks": [],
+        "forbidden_dispositions": ["confirmed_defect", "consistent_under_checked_assumptions", "supported_tension"]
+      }
+    },
+    {
+      "id": "A04",
+      "domain": "marketing",
+      "class": "ambiguous",
+      "authentication_state": "parser_candidate_only",
+      "body_text": "The response follows the method discussed in equation (L.2), but no display or formula is reproduced here.",
+      "oracle": {
+        "block_labels": [],
+        "profile_roles": {},
+        "hypotheses": [],
+        "checks": [],
+        "finding_checks": [],
+        "forbidden_dispositions": ["confirmed_defect", "consistent_under_checked_assumptions", "supported_tension"]
+      }
+    }
+  ]
+}

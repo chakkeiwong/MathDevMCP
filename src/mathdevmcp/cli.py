@@ -60,7 +60,7 @@ from .math_to_tests import generate_math_tests
 from .mcp_alias_audit import audit_deprecated_alias_usage
 from .notation_reconciliation import reconcile_notation
 from .performance import index_performance_smoke
-from .parser_benchmark import compare_parser_backends
+from .parser_cli import register_parser_commands
 from .proof_obligations import check_proof_obligation
 from .prepare_review_packet import prepare_review_packet as high_level_prepare_review_packet, review_packet_agent_handoff
 from .propose_fix import propose_fix as high_level_propose_fix, proposal_agent_handoff
@@ -114,6 +114,8 @@ def _load_text_argument_or_file(value: str) -> str:
     except (OSError, ValueError):
         pass
     return value
+
+
 
 
 def _cmd_index(args: argparse.Namespace) -> int:
@@ -740,13 +742,6 @@ def _cmd_claim_support(args: argparse.Namespace) -> int:
 
 def _cmd_doctor(args: argparse.Namespace) -> int:
     print(json.dumps(doctor_report(), indent=2))
-    return 0
-
-
-
-def _cmd_parser_benchmark(args: argparse.Namespace) -> int:
-    result = compare_parser_backends(Path(args.root), backends=args.backend or None)
-    print(json.dumps(result, indent=2))
     return 0
 
 
@@ -1455,10 +1450,7 @@ def make_parser() -> argparse.ArgumentParser:
     p_doctor = sub.add_parser("doctor", help="Report external backend capabilities and environment diagnostics")
     p_doctor.set_defaults(func=_cmd_doctor)
 
-    p_parser_benchmark = sub.add_parser("parser-benchmark", help="Compare LaTeX parser backends on a corpus")
-    p_parser_benchmark.add_argument("--root", default=".", help="Root directory containing LaTeX files")
-    p_parser_benchmark.add_argument("--backend", action="append", choices=["current", "latexml", "pandoc"], help="Parser backend to run; can be repeated")
-    p_parser_benchmark.set_defaults(func=_cmd_parser_benchmark)
+    register_parser_commands(sub)
 
     p_derive = sub.add_parser("derive-step", help="Evaluate whether a derivation step is justified")
     p_derive.add_argument("doc", help="Document path used for provenance")
@@ -1589,6 +1581,7 @@ def make_parser() -> argparse.ArgumentParser:
     p_brief.add_argument("--limit", type=int, default=3, help="Maximum search results")
     p_brief.add_argument("--cache", default="", help="Optional cache JSON path for index reuse")
     p_brief.set_defaults(func=_cmd_implementation_brief)
+
 
     p_obligation = sub.add_parser("check-proof-obligation", help="Check a bounded derivation/proof obligation")
     p_obligation.add_argument("lhs", help="Left-hand side expression")

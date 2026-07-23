@@ -40,7 +40,7 @@ async def _run(command: str, command_args: list[str], cwd: Path) -> dict[str, ob
             listed_seconds = time.monotonic() - started
             tool_names = sorted(tool.name for tool in listed.tools)
             profile = os.environ.get("MATHDEVMCP_MCP_PROFILE", "stable").strip().lower()
-            expected_count = {"stable": 23, "all": 68}.get(profile)
+            expected_count = {"stable": 23, "all": 71}.get(profile)
             if expected_count is None:
                 raise RuntimeError(f"unsupported MCP smoke profile: {profile}")
             if len(tool_names) != expected_count or "doctor" not in tool_names:

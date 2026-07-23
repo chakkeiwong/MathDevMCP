@@ -49,4 +49,4 @@ def test_mcp_stdio_smoke_can_explicitly_opt_in_to_all_tools() -> None:
     assert result.returncode == 0, result.stderr
     report = json.loads(result.stdout)
     assert report["profile"] == "all"
-    assert report["tool_count"] == 68
+    assert report["tool_count"] == 71

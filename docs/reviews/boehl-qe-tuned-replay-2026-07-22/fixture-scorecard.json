@@ -1,0 +1,144 @@
+{
+  "ambiguous_abstaining_or_tension": 8,
+  "ambiguous_confirmed_defects": 0,
+  "ambiguous_count": 8,
+  "case_count": 16,
+  "closed_correct": 8,
+  "closed_count": 8,
+  "closed_non_abstaining": 8,
+  "contract": "boehl_gap_closure_fixture_scorecard",
+  "evidence_chain_completeness": 1.0,
+  "false_link_rate": 0.0,
+  "matrix_ref": "docs/plans/mathdevmcp-boehl-blind-gap-closure-phase-00-fixture-matrix-2026-07-22.md",
+  "non_claim": "Visible engineering regression only; not a scientific holdout or generalization result.",
+  "rows": [
+    {
+      "actual": "consistent_under_checked_assumptions",
+      "category": "closed-positive",
+      "domain": "finance",
+      "expected": "consistent_under_checked_assumptions",
+      "id": "P01",
+      "reason_code": null
+    },
+    {
+      "actual": "consistent_under_checked_assumptions",
+      "category": "closed-positive",
+      "domain": "marketing",
+      "expected": "consistent_under_checked_assumptions",
+      "id": "P02",
+      "reason_code": null
+    },
+    {
+      "actual": "consistent_under_checked_assumptions",
+      "category": "closed-positive",
+      "domain": "management",
+      "expected": "consistent_under_checked_assumptions",
+      "id": "P03",
+      "reason_code": null
+    },
+    {
+      "actual": "consistent_under_checked_assumptions",
+      "category": "closed-positive",
+      "domain": "economics",
+      "expected": "consistent_under_checked_assumptions",
+      "id": "P04",
+      "reason_code": null
+    },
+    {
+      "actual": "confirmed_defect",
+      "category": "closed-negative",
+      "domain": "finance",
+      "expected": "confirmed_defect",
+      "id": "N01",
+      "reason_code": null
+    },
+    {
+      "actual": "confirmed_defect",
+      "category": "closed-negative",
+      "domain": "marketing",
+      "expected": "confirmed_defect",
+      "id": "N02",
+      "reason_code": null
+    },
+    {
+      "actual": "confirmed_defect",
+      "category": "closed-negative",
+      "domain": "management",
+      "expected": "confirmed_defect",
+      "id": "N03",
+      "reason_code": null
+    },
+    {
+      "actual": "confirmed_defect",
+      "category": "closed-negative",
+      "domain": "economics",
+      "expected": "confirmed_defect",
+      "id": "N04",
+      "reason_code": null
+    },
+    {
+      "actual": "backend_abstention",
+      "category": "ambiguous",
+      "domain": "finance",
+      "expected": "backend_abstention",
+      "id": "A01",
+      "reason_code": "unauthenticated_transcription"
+    },
+    {
+      "actual": "supported_tension",
+      "category": "ambiguous",
+      "domain": "marketing",
+      "expected": "supported_tension",
+      "id": "A02",
+      "reason_code": "relation_not_explicit_in_source"
+    },
+    {
+      "actual": "backend_abstention",
+      "category": "ambiguous",
+      "domain": "management",
+      "expected": "backend_abstention",
+      "id": "A03",
+      "reason_code": null
+    },
+    {
+      "actual": "supported_tension",
+      "category": "ambiguous",
+      "domain": "economics",
+      "expected": "supported_tension",
+      "id": "A04",
+      "reason_code": "relation_not_explicit_in_source"
+    },
+    {
+      "actual": "supported_tension",
+      "category": "ambiguous",
+      "domain": "economics",
+      "expected": "supported_tension",
+      "id": "R01",
+      "reason_code": "relation_not_explicit_in_source"
+    },
+    {
+      "actual": "supported_tension",
+      "category": "ambiguous",
+      "domain": "finance",
+      "expected": "supported_tension",
+      "id": "R02",
+      "reason_code": "relation_not_explicit_in_source"
+    },
+    {
+      "actual": "supported_tension",
+      "category": "ambiguous",
+      "domain": "marketing",
+      "expected": "supported_tension",
+      "id": "D01",
+      "reason_code": "relation_not_explicit_in_source"
+    },
+    {
+      "actual": "supported_tension",
+      "category": "ambiguous",
+      "domain": "management",
+      "expected": "supported_tension",
+      "id": "X01",
+      "reason_code": "relation_not_explicit_in_source"
+    }
+  ]
+}

@@ -74,6 +74,8 @@ from .claim_support import build_claim_support_packet
 from .release_corpus import release_corpus_manifest, validate_release_corpus_manifest
 from .release_profile_analysis import release_profile_analysis
 from .release_policy import release_readiness_report
+from .research_assistant_pdf import extract_pdf_with_research_assistant
+from .applied_math_audit import audit_applied_math_document, page_applied_math_audit_records
 from .status_taxonomy import status_taxonomy
 from .temporal_contracts import audit_temporal_contract
 from .typed_workflows import typed_obligation_for_label
@@ -114,7 +116,7 @@ def _looks_like_path(value: str) -> bool:
         "/" in value
         or "\\" in value
         or value.startswith(".")
-        or bool(re.search(r"\.(py|tex|md|json|txt|lean)\b", value))
+        or bool(re.search(r"\.(py|tex|md|json|txt|lean|pdf)\b", value))
     )
 
 
@@ -1215,6 +1217,48 @@ def _tool_external_tool_first_plan(args: dict[str, Any]) -> dict[str, Any]:
     )
 
 
+def _tool_extract_pdf_with_research_assistant(args: dict[str, Any]) -> dict[str, Any]:
+    provider_root = args.get("research_assistant_root")
+    if provider_root is not None and not isinstance(provider_root, str):
+        raise ValueError("research_assistant_root must be a string")
+    return extract_pdf_with_research_assistant(
+        _required_string(args, "pdf_path"),
+        research_assistant_root=provider_root or Path.home() / "python" / "ResearchAssistant",
+        response_mode=str(args.get("response_mode", "compact")),
+        timeout_seconds=float(args.get("timeout_seconds", 1_000)),
+        max_provider_output_bytes=int(args.get("max_provider_output_bytes", 64 * 1024 * 1024)),
+    )
+
+
+def _tool_audit_applied_math_document(args: dict[str, Any]) -> dict[str, Any]:
+    sources = args.get("sources")
+    if not isinstance(sources, list) or not sources or not all(isinstance(item, str) for item in sources):
+        raise ValueError("sources must be a non-empty list of file paths")
+    for name in ("code_paths", "data_paths"):
+        value = args.get(name)
+        if value is not None and (not isinstance(value, list) or not all(isinstance(item, str) for item in value)):
+            raise ValueError(f"{name} must be a list of file paths")
+    return audit_applied_math_document(
+        sources,
+        code_paths=args.get("code_paths"),
+        data_paths=args.get("data_paths"),
+        mode=str(args.get("mode", "screen")),
+        specialist_policy=str(args.get("specialist_policy", "auto")),
+        response_mode=str(args.get("response_mode", "compact")),
+        artifact_root=args.get("artifact_root", ".mathdevmcp/applied_math_audits"),
+    )
+
+
+def _tool_page_applied_math_audit_records(args: dict[str, Any]) -> dict[str, Any]:
+    return page_applied_math_audit_records(
+        _required_string(args, "artifact_path"),
+        _required_string(args, "artifact_sha256"),
+        _required_string(args, "collection"),
+        offset=int(args.get("offset", 0)),
+        limit=int(args.get("limit", 50)),
+    )
+
+
 MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
     MCPToolSpec("search_latex", _tool_search_latex, "Search indexed LaTeX blocks with provenance.", "latex_search_results", "primitive"),
     MCPToolSpec("latex_label_lookup", _tool_latex_label_lookup, "Fetch a labeled LaTeX block with paragraph neighborhood and provenance.", "latex_paragraph_context", "primitive"),
@@ -1507,6 +1551,30 @@ MCP_TOOL_SPECS: tuple[MCPToolSpec, ...] = (
     ),
     MCPToolSpec("status_taxonomy", _tool_status_taxonomy, "Return the current MathDevMCP status and substatus taxonomy.", "status_taxonomy", "informational"),
     MCPToolSpec("capability_registry", _tool_capability_registry, "Classify MCP-exposed and intentionally operator-only capabilities, including resolver vocabulary.", "capability_registry", "informational", stability="experimental"),
+    MCPToolSpec(
+        "extract_pdf_with_research_assistant",
+        _tool_extract_pdf_with_research_assistant,
+        "Extract a local PDF through ResearchAssistant with source/provider binding and non-certifying parser limits.",
+        "research_assistant_pdf_extraction",
+        "workflow",
+        stability="experimental",
+    ),
+    MCPToolSpec(
+        "audit_applied_math_document",
+        _tool_audit_applied_math_document,
+        "Audit applied mathematical documents through source intake, general obligation coverage, and optional specialist routing.",
+        "applied_math_audit",
+        "workflow",
+        stability="experimental",
+    ),
+    MCPToolSpec(
+        "page_applied_math_audit_records",
+        _tool_page_applied_math_audit_records,
+        "Page an allowlisted collection from an exact applied-math audit artifact.",
+        "applied_math_audit_record_page",
+        "workflow",
+        stability="experimental",
+    ),
     MCPToolSpec("doctor", _tool_doctor, "Report external backend capabilities and environment diagnostics.", "doctor_report", "operational"),
     MCPToolSpec("release_corpus_manifest", _tool_release_corpus_manifest, "Return the release corpus manifest.", "release_corpus_manifest", "operational"),
     MCPToolSpec("validate_release_corpus", _tool_validate_release_corpus, "Validate release corpus privacy and gate metadata.", "release_corpus_validation_report", "operational"),

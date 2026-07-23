@@ -45,6 +45,9 @@ def test_list_mcp_tools_includes_implementation_brief():
     assert "proof_packet_label" in names
     assert "negative_evidence_label" in names
     assert "capability_registry" in names
+    assert "extract_pdf_with_research_assistant" in names
+    assert tools["extract_pdf_with_research_assistant"]["stability"] == "experimental"
+    assert tools["extract_pdf_with_research_assistant"]["certifying_capable"] is False
     assert tools["compare_label_code"]["deprecated"] is True
     assert tools["compare_label_code"]["replacement"] == "audit_implementation_label"
     assert tools["check_proof_obligation"]["deprecated"] is True

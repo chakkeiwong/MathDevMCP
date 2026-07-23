@@ -1,0 +1,77 @@
+{
+  "cases": [
+    {
+      "claim_ir_errors": [],
+      "dispositions": [],
+      "finding_ids": [],
+      "id": "P01"
+    },
+    {
+      "claim_ir_errors": [],
+      "dispositions": [],
+      "finding_ids": [],
+      "id": "P02"
+    },
+    {
+      "claim_ir_errors": [],
+      "dispositions": [],
+      "finding_ids": [],
+      "id": "P03"
+    },
+    {
+      "claim_ir_errors": [],
+      "dispositions": [],
+      "finding_ids": [],
+      "id": "P04"
+    },
+    {
+      "claim_ir_errors": [],
+      "dispositions": [],
+      "finding_ids": [],
+      "id": "C01"
+    },
+    {
+      "claim_ir_errors": [],
+      "dispositions": [],
+      "finding_ids": [],
+      "id": "C02"
+    },
+    {
+      "claim_ir_errors": [],
+      "dispositions": [],
+      "finding_ids": [],
+      "id": "C03"
+    },
+    {
+      "claim_ir_errors": [],
+      "dispositions": [],
+      "finding_ids": [],
+      "id": "C04"
+    },
+    {
+      "claim_ir_errors": [],
+      "dispositions": [],
+      "finding_ids": [],
+      "id": "A01"
+    },
+    {
+      "claim_ir_errors": [],
+      "dispositions": [],
+      "finding_ids": [],
+      "id": "A02"
+    },
+    {
+      "claim_ir_errors": [],
+      "dispositions": [],
+      "finding_ids": [],
+      "id": "A03"
+    },
+    {
+      "claim_ir_errors": [],
+      "dispositions": [],
+      "finding_ids": [],
+      "id": "A04"
+    }
+  ],
+  "schema": "applied_math_semantic_baseline/1.0"
+}
